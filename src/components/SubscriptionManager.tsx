@@ -487,7 +487,7 @@ export function SubscriptionManager() {
                   </button>
 
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    Automatic activation • Secure payment via Razorpay • Cancel anytime
+                    Card required for trial • Secure payment via Razorpay • Cancel anytime
                   </p>
                 </div>
               ))}
@@ -506,42 +506,26 @@ export function SubscriptionManager() {
         </div>
       )}
 
-      {/* Feature Comparison */}
+      {/* Premium Features */}
       <div className="glass rounded-2xl p-6 border border-gray-700/50">
-        <h4 className="text-lg font-bold text-white mb-6">Free vs Premium</h4>
+        <h4 className="text-lg font-bold text-white mb-6">Premium Features</h4>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h5 className="font-semibold text-gray-300 flex items-center gap-2">
-              <X className="h-5 w-5 text-red-400" />
-              Free Plan
-            </h5>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>• 3 AI Study Plans per month</li>
-              <li>• Basic progress tracking</li>
-              <li>• Limited flashcards (50/month)</li>
-              <li>• Basic practice tests</li>
-              <li>• Community support</li>
-            </ul>
-          </div>
-
-          <div className="space-y-4">
-            <h5 className="font-semibold text-yellow-400 flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-400" />
-              Premium Plan
-            </h5>
-            <ul className="space-y-2 text-sm text-green-400">
-              <li>• Unlimited AI Study Plans</li>
-              <li>• Advanced analytics & insights</li>
-              <li>• Unlimited flashcards</li>
-              <li>• Advanced practice tests</li>
-              <li>• Study groups & social features</li>
-              <li>• Smart notifications</li>
-              <li>• Priority support</li>
-              <li>• Offline access</li>
-              <li>• Export capabilities</li>
-            </ul>
-          </div>
+        <div className="space-y-4">
+          <h5 className="font-semibold text-yellow-400 flex items-center gap-2">
+            <Crown className="h-5 w-5 text-yellow-400" />
+            Premium Plan - ₹400/month
+          </h5>
+          <ul className="space-y-2 text-sm text-green-400">
+            <li>• Unlimited AI Study Plans</li>
+            <li>• Advanced analytics & insights</li>
+            <li>• Unlimited flashcards</li>
+            <li>• Advanced practice tests</li>
+            <li>• Study groups & social features</li>
+            <li>• Smart notifications</li>
+            <li>• Priority support</li>
+            <li>• Offline access</li>
+            <li>• Export capabilities</li>
+          </ul>
         </div>
       </div>
     </div>

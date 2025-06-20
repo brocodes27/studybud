@@ -169,7 +169,7 @@ export function Landing() {
                 </div>
                 <div className="flex items-center gap-2 text-blue-400">
                   <Shield className="h-5 w-5" />
-                  <span>No Credit Card Required</span>
+                  <span>Secure Payment</span>
                 </div>
                 <div className="flex items-center gap-2 text-purple-400">
                   <Zap className="h-5 w-5" />
