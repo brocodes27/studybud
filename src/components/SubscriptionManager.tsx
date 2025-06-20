@@ -48,7 +48,7 @@ export function SubscriptionManager() {
     {
       id: 'premium_monthly',
       name: 'Premium Monthly',
-      price: 400,
+      price: 99,
       currency: 'INR',
       interval: 'monthly',
       trialDays: 7,
@@ -513,7 +513,7 @@ export function SubscriptionManager() {
         <div className="space-y-4">
           <h5 className="font-semibold text-yellow-400 flex items-center gap-2">
             <Crown className="h-5 w-5 text-yellow-400" />
-            Premium Plan - ₹400/month
+            Premium Plan - ₹99/month
           </h5>
           <ul className="space-y-2 text-sm text-green-400">
             <li>• Unlimited AI Study Plans</li>

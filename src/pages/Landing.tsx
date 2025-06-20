@@ -28,23 +28,17 @@ export function Landing() {
           school: formData.school
         });
         if (error) throw error;
-        showToast('Account created! Please start your free trial.', 'success');
+        showToast('Account created! Welcome to STUBUD!', 'success');
       } else {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
-        showToast('Welcome back!', 'success');
+        showToast('Welcome back to STUBUD!', 'success');
       }
     } catch (error: any) {
       showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSubscriptionClick = () => {
-    // Open Razorpay subscription link in new tab
-    window.open('https://rzp.io/rzp/tfsl1R3', '_blank');
-    showToast('Redirecting to secure payment page...', 'info');
   };
 
   const features = [
@@ -90,7 +84,7 @@ export function Landing() {
     {
       name: 'Priya Sharma',
       grade: 'Class 12',
-      text: 'AI Study Planner helped me improve my JEE preparation by 40%. The personalized study plans are incredible!',
+      text: 'STUBUD helped me improve my JEE preparation by 40%. The personalized study plans are incredible!',
       rating: 5
     },
     {
@@ -146,9 +140,9 @@ export function Landing() {
                 </div>
                 <div>
                   <h1 className="text-5xl lg:text-6xl font-bold gradient-text">
-                    AI Study Planner
+                    STUBUD
                   </h1>
-                  <p className="text-blue-300 text-lg">Powered by Advanced AI</p>
+                  <p className="text-blue-300 text-lg">Your AI Study Buddy</p>
                 </div>
               </div>
 
@@ -179,12 +173,12 @@ export function Landing() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={handleSubscriptionClick}
+                  onClick={() => setIsSignUp(true)}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse flex items-center justify-center gap-2"
                 >
                   <Crown className="h-6 w-6" />
-                  Start Free Trial
-                  <ExternalLink className="h-5 w-5" />
+                  Get Started Free
+                  <ArrowRight className="h-5 w-5" />
                 </button>
                 <button className="bg-gray-800/50 hover:bg-gray-700/50 text-white font-semibold py-4 px-8 rounded-xl border border-gray-600 hover:border-gray-500 transition-all duration-300 flex items-center justify-center gap-2">
                   <Play className="h-5 w-5" />
@@ -197,10 +191,10 @@ export function Landing() {
             <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  {isSignUp ? 'Create Free Account' : 'Welcome Back'}
+                  {isSignUp ? 'Join STUBUD Today' : 'Welcome Back'}
                 </h3>
                 <p className="text-gray-400">
-                  {isSignUp ? 'Join thousands of successful students' : 'Continue your learning journey'}
+                  {isSignUp ? 'Start your AI-powered learning journey' : 'Continue your learning journey'}
                 </p>
               </div>
 
@@ -275,7 +269,7 @@ export function Landing() {
                   onClick={() => setIsSignUp(!isSignUp)}
                   className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
                 >
-                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create free account"}
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Join STUBUD"}
                 </button>
               </div>
 
@@ -327,7 +321,7 @@ export function Landing() {
                 Loved by <span className="gradient-text">Students Everywhere</span>
               </h2>
               <p className="text-xl text-gray-400">
-                See what students are saying about their success with AI Study Planner
+                See what students are saying about their success with STUBUD
               </p>
             </div>
 
@@ -358,7 +352,7 @@ export function Landing() {
                 Simple, <span className="gradient-text">Transparent Pricing</span>
               </h2>
               <p className="text-xl text-gray-400">
-                Start with a free trial, then just ₹400/month for unlimited access
+                Start with a free account, then just ₹99/month for unlimited access
               </p>
             </div>
 
@@ -369,7 +363,7 @@ export function Landing() {
                 </div>
                 <h3 className="text-3xl font-bold text-white mb-2">Premium Plan</h3>
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-5xl font-bold text-yellow-400">₹400</span>
+                  <span className="text-5xl font-bold text-yellow-400">₹99</span>
                   <span className="text-gray-400">/month</span>
                 </div>
                 <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-medium inline-block">
@@ -387,16 +381,17 @@ export function Landing() {
               </div>
 
               <button
-                onClick={handleSubscriptionClick}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center gap-2"
+                onClick={() => setIsSignUp(true)}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
               >
-                <Crown className="h-6 w-6" />
-                Start Your Free Trial
-                <ExternalLink className="h-5 w-5" />
+                <div className="flex items-center justify-center gap-2">
+                  <Crown className="h-6 w-6" />
+                  Start Your Free Trial
+                </div>
               </button>
 
               <p className="text-center text-sm text-gray-500 mt-4">
-                Secure payment via Razorpay • Cancel anytime • Full access during trial
+                Card required for trial • Cancel anytime • Full access during trial
               </p>
             </div>
           </div>
@@ -409,14 +404,13 @@ export function Landing() {
               Ready to Transform Your Studies?
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Join thousands of students who've improved their grades with AI Study Planner
+              Join thousands of students who've improved their grades with STUBUD
             </p>
             <button
-              onClick={handleSubscriptionClick}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg flex items-center justify-center gap-2 mx-auto"
+              onClick={() => setIsSignUp(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg"
             >
               Start Free Trial Now
-              <ExternalLink className="h-5 w-5" />
             </button>
           </div>
         </section>
@@ -428,10 +422,10 @@ export function Landing() {
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
                 <Brain className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text">AI Study Planner</span>
+              <span className="text-xl font-bold gradient-text">STUBUD</span>
             </div>
             <p className="text-center text-gray-400">
-              © 2025 AI Study Planner. All rights reserved. Empowering students with AI-powered learning.
+              © 2025 STUBUD. All rights reserved. Empowering students with AI-powered learning.
             </p>
           </div>
         </footer>

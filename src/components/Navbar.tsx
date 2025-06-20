@@ -36,7 +36,7 @@ export function Navbar() {
               <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 animate-pulse" />
             </div>
             <span className="text-xl font-bold gradient-text">
-              AI Study Planner
+              STUBUD
             </span>
           </Link>
 

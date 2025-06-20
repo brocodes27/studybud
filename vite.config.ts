@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'AI Study Planner',
-        short_name: 'StudyAI',
-        description: 'AI-powered personalized study schedules and learning tools',
+        name: 'STUBUD',
+        short_name: 'STUBUD',
+        description: 'AI-powered study companion for personalized learning',
         theme_color: '#3B82F6',
         background_color: '#1F2937',
         display: 'standalone',
