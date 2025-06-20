@@ -62,4 +62,19 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8'
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        format: 'es',
+        entryFileNames: '[name]-[hash].js',
+        chunkFileNames: '[name]-[hash].js',
+        assetFileNames: '[name]-[hash].[ext]'
+      }
+    }
+  }
 });
