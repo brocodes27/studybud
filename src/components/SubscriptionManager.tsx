@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Check, X, CreditCard, Calendar, AlertCircle, Zap, Star, Shield, Sparkles, ExternalLink } from 'lucide-react';
+import { Crown, Check, X, CreditCard, Calendar, AlertCircle, Zap, Star, Shield, Sparkles, ExternalLink, Mail, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
@@ -10,7 +10,7 @@ interface SubscriptionData {
   user_id: string;
   razorpay_subscription_id: string;
   plan_id: string;
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
+  status: 'active' | 'cancelled' | 'expired' | 'trial' | 'pending';
   current_period_start: string;
   current_period_end: string;
   trial_end: string | null;
@@ -36,6 +36,13 @@ export function SubscriptionManager() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPricing, setShowPricing] = useState(false);
+  const [showActivationForm, setShowActivationForm] = useState(false);
+  const [activationData, setActivationData] = useState({
+    payment_id: '',
+    subscription_id: '',
+    email: user?.email || '',
+    phone: ''
+  });
 
   const pricingPlans: PricingPlan[] = [
     {
@@ -91,9 +98,72 @@ export function SubscriptionManager() {
   };
 
   const handleSubscriptionClick = (plan: PricingPlan) => {
+    // Create a pending subscription record first
+    createPendingSubscription(plan);
+    
     // Open Razorpay subscription link in new tab
     window.open(plan.razorpayLink, '_blank');
     showToast('Redirecting to secure payment page...', 'info');
+    
+    // Show activation form after a delay
+    setTimeout(() => {
+      setShowActivationForm(true);
+    }, 3000);
+  };
+
+  const createPendingSubscription = async (plan: PricingPlan) => {
+    try {
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
+      const periodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000));
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user?.id,
+          plan_id: plan.id,
+          status: 'pending',
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          trial_end: trialEnd.toISOString(),
+        });
+
+      if (error) throw error;
+      
+      fetchSubscription();
+    } catch (error) {
+      console.error('Error creating pending subscription:', error);
+    }
+  };
+
+  const submitActivationRequest = async () => {
+    if (!activationData.payment_id.trim()) {
+      showToast('Please enter your payment ID', 'error');
+      return;
+    }
+
+    try {
+      // Update subscription with payment details
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          razorpay_subscription_id: activationData.subscription_id || activationData.payment_id,
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user?.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+
+      // Send notification email (you can implement this later)
+      showToast('Activation request submitted! Your account will be activated within 24 hours.', 'success');
+      setShowActivationForm(false);
+      fetchSubscription();
+    } catch (error) {
+      console.error('Error submitting activation request:', error);
+      showToast('Failed to submit activation request', 'error');
+    }
   };
 
   const cancelSubscription = async () => {
@@ -104,8 +174,6 @@ export function SubscriptionManager() {
     }
 
     try {
-      // For now, we'll just update the status in our database
-      // In a real implementation, you'd also cancel via Razorpay API
       const { error } = await supabase
         .from('subscriptions')
         .update({
@@ -131,6 +199,14 @@ export function SubscriptionManager() {
     const now = new Date();
     const trialEnd = subscription.trial_end ? new Date(subscription.trial_end) : null;
     const periodEnd = new Date(subscription.current_period_end);
+
+    if (subscription.status === 'pending') {
+      return { 
+        status: 'pending', 
+        text: 'Payment Pending', 
+        color: 'text-yellow-400'
+      };
+    }
 
     if (subscription.status === 'trial' && trialEnd && now < trialEnd) {
       const daysLeft = differenceInDays(trialEnd, now);
@@ -220,6 +296,8 @@ export function SubscriptionManager() {
           <div className={`p-4 rounded-xl border ${
             isSubscriptionActive() 
               ? 'border-green-500/30 bg-green-500/10' 
+              : subscription?.status === 'pending'
+              ? 'border-yellow-500/30 bg-yellow-500/10'
               : 'border-gray-700/50 bg-gray-800/50'
           }`}>
             <div className="flex items-center gap-2 mb-2">
@@ -256,13 +334,21 @@ export function SubscriptionManager() {
         </div>
 
         <div className="flex gap-4">
-          {!isSubscriptionActive() ? (
+          {!isSubscriptionActive() && subscription?.status !== 'pending' ? (
             <button
               onClick={() => setShowPricing(true)}
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
             >
               <Crown className="h-5 w-5" />
               Upgrade to Premium
+            </button>
+          ) : subscription?.status === 'pending' ? (
+            <button
+              onClick={() => setShowActivationForm(true)}
+              className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-6 py-3 rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all duration-200 flex items-center gap-2"
+            >
+              <AlertCircle className="h-5 w-5" />
+              Complete Activation
             </button>
           ) : (
             subscription?.status === 'active' && (
@@ -275,6 +361,19 @@ export function SubscriptionManager() {
             )
           )}
         </div>
+
+        {/* Pending Payment Notice */}
+        {subscription?.status === 'pending' && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-5 w-5 text-yellow-400" />
+              <span className="font-semibold text-yellow-400">Payment Verification Required</span>
+            </div>
+            <p className="text-gray-300 text-sm">
+              We've detected that you started the subscription process. Please complete the activation by providing your payment details.
+            </p>
+          </div>
+        )}
 
         {/* Trial/Subscription Benefits */}
         {isSubscriptionActive() && (
@@ -290,24 +389,110 @@ export function SubscriptionManager() {
         )}
       </div>
 
-      {/* Manual Subscription Activation */}
-      {!isSubscriptionActive() && (
-        <div className="glass rounded-2xl p-6 border border-blue-500/30 bg-blue-500/10">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertCircle className="h-5 w-5 text-blue-400" />
-            <h4 className="font-semibold text-blue-400">Already Subscribed?</h4>
+      {/* Activation Form Modal */}
+      {showActivationForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="glass rounded-2xl p-8 border border-gray-700/50 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Complete Activation</h3>
+              <button
+                onClick={() => setShowActivationForm(false)}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Payment ID / Transaction ID *
+                </label>
+                <input
+                  type="text"
+                  value={activationData.payment_id}
+                  onChange={(e) => setActivationData(prev => ({ ...prev, payment_id: e.target.value }))}
+                  placeholder="Enter your Razorpay payment ID"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Subscription ID (if available)
+                </label>
+                <input
+                  type="text"
+                  value={activationData.subscription_id}
+                  onChange={(e) => setActivationData(prev => ({ ...prev, subscription_id: e.target.value }))}
+                  placeholder="Enter subscription ID (optional)"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={activationData.phone}
+                  onChange={(e) => setActivationData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter your phone number"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-blue-400 text-sm">
+                  <strong>Where to find your Payment ID:</strong><br/>
+                  • Check your email from Razorpay<br/>
+                  • Look for "Payment ID" or "Transaction ID"<br/>
+                  • Usually starts with "pay_" followed by numbers/letters
+                </p>
+              </div>
+
+              <button
+                onClick={submitActivationRequest}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+              >
+                Submit for Activation
+              </button>
+
+              <p className="text-center text-xs text-gray-500">
+                Your account will be activated within 24 hours after verification
+              </p>
+            </div>
           </div>
-          <p className="text-gray-300 text-sm mb-4">
-            If you've already completed your subscription payment, please contact support to activate your account manually.
-          </p>
-          <button
-            onClick={() => showToast('Please contact support at support@aistudyplanner.com with your payment details', 'info')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
-          >
-            Contact Support
-          </button>
         </div>
       )}
+
+      {/* Contact Support */}
+      <div className="glass rounded-2xl p-6 border border-blue-500/30 bg-blue-500/10">
+        <div className="flex items-center gap-2 mb-4">
+          <Mail className="h-5 w-5 text-blue-400" />
+          <h4 className="font-semibold text-blue-400">Need Help?</h4>
+        </div>
+        <p className="text-gray-300 text-sm mb-4">
+          If you're having trouble with your subscription or need immediate assistance, contact our support team.
+        </p>
+        <div className="flex gap-4">
+          <a
+            href="mailto:support@aistudyplanner.com"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm flex items-center gap-2"
+          >
+            <Mail className="h-4 w-4" />
+            Email Support
+          </a>
+          <a
+            href="tel:+919876543210"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm flex items-center gap-2"
+          >
+            <Phone className="h-4 w-4" />
+            Call Support
+          </a>
+        </div>
+      </div>
 
       {/* Pricing Modal */}
       {showPricing && (
@@ -381,11 +566,14 @@ export function SubscriptionManager() {
             <div className="mt-8 p-4 bg-gray-800/50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="h-5 w-5 text-green-400" />
-                <span className="font-semibold text-white">Secure Payment</span>
+                <span className="font-semibold text-white">How It Works</span>
               </div>
-              <p className="text-gray-300 text-sm">
-                Payments are processed securely through Razorpay. Your payment details are never stored on our servers.
-              </p>
+              <ol className="text-gray-300 text-sm space-y-1">
+                <li>1. Click "Start Free Trial" to go to secure Razorpay payment page</li>
+                <li>2. Complete your payment on Razorpay</li>
+                <li>3. Return here and click "Complete Activation"</li>
+                <li>4. Enter your payment ID for instant activation</li>
+              </ol>
             </div>
           </div>
         </div>
