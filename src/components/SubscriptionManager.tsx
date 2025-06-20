@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Crown, Check, X, CreditCard, Calendar, AlertCircle, Zap, Star, Shield, Sparkles } from 'lucide-react';
+import { Crown, Check, X, CreditCard, Calendar, AlertCircle, Zap, Star, Shield, Sparkles, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
@@ -27,12 +27,7 @@ interface PricingPlan {
   features: string[];
   popular?: boolean;
   trialDays: number;
-}
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
+  razorpayLink: string;
 }
 
 export function SubscriptionManager() {
@@ -40,7 +35,6 @@ export function SubscriptionManager() {
   const { showToast } = useToast();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
 
   const pricingPlans: PricingPlan[] = [
@@ -52,6 +46,7 @@ export function SubscriptionManager() {
       interval: 'monthly',
       trialDays: 7,
       popular: true,
+      razorpayLink: 'https://rzp.io/rzp/tfsl1R3',
       features: [
         'Unlimited AI Study Plans',
         'Advanced Analytics & Insights',
@@ -70,18 +65,8 @@ export function SubscriptionManager() {
   useEffect(() => {
     if (user) {
       fetchSubscription();
-      loadRazorpayScript();
     }
   }, [user]);
-
-  const loadRazorpayScript = () => {
-    if (window.Razorpay) return;
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-  };
 
   const fetchSubscription = async () => {
     try {
@@ -105,87 +90,10 @@ export function SubscriptionManager() {
     }
   };
 
-  const createSubscription = async (planId: string) => {
-    setProcessingPayment(true);
-    try {
-      // Create subscription via edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          plan_id: planId,
-          user_email: user?.email,
-          user_name: user?.user_metadata?.full_name || user?.email
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create subscription');
-      }
-
-      const { subscription: razorpaySubscription, order } = await response.json();
-
-      // Initialize Razorpay payment
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        subscription_id: razorpaySubscription.id,
-        name: 'AI Study Planner',
-        description: 'Premium Subscription',
-        image: '/pwa-192x192.png',
-        handler: async (response: any) => {
-          try {
-            // Verify payment and activate subscription
-            const verifyResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-subscription`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_subscription_id: response.razorpay_subscription_id,
-                razorpay_signature: response.razorpay_signature,
-                plan_id: planId
-              }),
-            });
-
-            if (!verifyResponse.ok) {
-              throw new Error('Payment verification failed');
-            }
-
-            showToast('Subscription activated successfully! Welcome to Premium! 🎉', 'success');
-            fetchSubscription();
-          } catch (error) {
-            console.error('Payment verification error:', error);
-            showToast('Payment verification failed. Please contact support.', 'error');
-          }
-        },
-        prefill: {
-          email: user?.email,
-          name: user?.user_metadata?.full_name || user?.email
-        },
-        theme: {
-          color: '#3B82F6'
-        },
-        modal: {
-          ondismiss: () => {
-            setProcessingPayment(false);
-          }
-        }
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-
-    } catch (error) {
-      console.error('Error creating subscription:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to create subscription', 'error');
-      setProcessingPayment(false);
-    }
+  const handleSubscriptionClick = (plan: PricingPlan) => {
+    // Open Razorpay subscription link in new tab
+    window.open(plan.razorpayLink, '_blank');
+    showToast('Redirecting to secure payment page...', 'info');
   };
 
   const cancelSubscription = async () => {
@@ -196,20 +104,18 @@ export function SubscriptionManager() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          subscription_id: subscription.razorpay_subscription_id
-        }),
-      });
+      // For now, we'll just update the status in our database
+      // In a real implementation, you'd also cancel via Razorpay API
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscription.id);
 
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
+      if (error) throw error;
 
       showToast('Subscription cancelled successfully', 'success');
       fetchSubscription();
@@ -384,6 +290,25 @@ export function SubscriptionManager() {
         )}
       </div>
 
+      {/* Manual Subscription Activation */}
+      {!isSubscriptionActive() && (
+        <div className="glass rounded-2xl p-6 border border-blue-500/30 bg-blue-500/10">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="h-5 w-5 text-blue-400" />
+            <h4 className="font-semibold text-blue-400">Already Subscribed?</h4>
+          </div>
+          <p className="text-gray-300 text-sm mb-4">
+            If you've already completed your subscription payment, please contact support to activate your account manually.
+          </p>
+          <button
+            onClick={() => showToast('Please contact support at support@aistudyplanner.com with your payment details', 'info')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 text-sm"
+          >
+            Contact Support
+          </button>
+        </div>
+      )}
+
       {/* Pricing Modal */}
       {showPricing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -439,25 +364,15 @@ export function SubscriptionManager() {
                   </div>
 
                   <button
-                    onClick={() => createSubscription(plan.id)}
-                    disabled={processingPayment}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
+                    onClick={() => handleSubscriptionClick(plan)}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {processingPayment ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        Processing...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        <Zap className="h-5 w-5" />
-                        Start {plan.trialDays}-Day Free Trial
-                      </div>
-                    )}
+                    <ExternalLink className="h-5 w-5" />
+                    Start {plan.trialDays}-Day Free Trial
                   </button>
 
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    No commitment. Cancel anytime during trial.
+                    Secure payment via Razorpay • Cancel anytime during trial
                   </p>
                 </div>
               ))}
@@ -469,7 +384,7 @@ export function SubscriptionManager() {
                 <span className="font-semibold text-white">Secure Payment</span>
               </div>
               <p className="text-gray-300 text-sm">
-                Payments are processed securely through Razorpay. Your card details are never stored on our servers.
+                Payments are processed securely through Razorpay. Your payment details are never stored on our servers.
               </p>
             </div>
           </div>

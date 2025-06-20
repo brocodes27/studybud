@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp } from 'lucide-react';
+import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 
@@ -39,6 +39,12 @@ export function Landing() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubscriptionClick = () => {
+    // Open Razorpay subscription link in new tab
+    window.open('https://rzp.io/rzp/tfsl1R3', '_blank');
+    showToast('Redirecting to secure payment page...', 'info');
   };
 
   const features = [
@@ -173,12 +179,12 @@ export function Landing() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => setIsSignUp(true)}
+                  onClick={handleSubscriptionClick}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse flex items-center justify-center gap-2"
                 >
                   <Crown className="h-6 w-6" />
                   Start Free Trial
-                  <ArrowRight className="h-5 w-5" />
+                  <ExternalLink className="h-5 w-5" />
                 </button>
                 <button className="bg-gray-800/50 hover:bg-gray-700/50 text-white font-semibold py-4 px-8 rounded-xl border border-gray-600 hover:border-gray-500 transition-all duration-300 flex items-center justify-center gap-2">
                   <Play className="h-5 w-5" />
@@ -191,7 +197,7 @@ export function Landing() {
             <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  {isSignUp ? 'Start Your Free Trial' : 'Welcome Back'}
+                  {isSignUp ? 'Create Free Account' : 'Welcome Back'}
                 </h3>
                 <p className="text-gray-400">
                   {isSignUp ? 'Join thousands of successful students' : 'Continue your learning journey'}
@@ -259,7 +265,7 @@ export function Landing() {
                       Please wait...
                     </div>
                   ) : (
-                    isSignUp ? 'Start Free Trial' : 'Sign In'
+                    isSignUp ? 'Create Account' : 'Sign In'
                   )}
                 </button>
               </form>
@@ -269,7 +275,7 @@ export function Landing() {
                   onClick={() => setIsSignUp(!isSignUp)}
                   className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
                 >
-                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Start free trial"}
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create free account"}
                 </button>
               </div>
 
@@ -381,17 +387,16 @@ export function Landing() {
               </div>
 
               <button
-                onClick={() => setIsSignUp(true)}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                onClick={handleSubscriptionClick}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center gap-2"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <Crown className="h-6 w-6" />
-                  Start Your Free Trial
-                </div>
+                <Crown className="h-6 w-6" />
+                Start Your Free Trial
+                <ExternalLink className="h-5 w-5" />
               </button>
 
               <p className="text-center text-sm text-gray-500 mt-4">
-                No credit card required • Cancel anytime • Full access during trial
+                Secure payment via Razorpay • Cancel anytime • Full access during trial
               </p>
             </div>
           </div>
@@ -407,10 +412,11 @@ export function Landing() {
               Join thousands of students who've improved their grades with AI Study Planner
             </p>
             <button
-              onClick={() => setIsSignUp(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg"
+              onClick={handleSubscriptionClick}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg flex items-center justify-center gap-2 mx-auto"
             >
               Start Free Trial Now
+              <ExternalLink className="h-5 w-5" />
             </button>
           </div>
         </section>
