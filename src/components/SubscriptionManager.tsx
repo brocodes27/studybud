@@ -48,7 +48,7 @@ export function SubscriptionManager() {
     {
       id: 'premium_monthly',
       name: 'Premium Monthly',
-      price: 99,
+      price: 400,
       currency: 'INR',
       interval: 'monthly',
       trialDays: 7,
@@ -129,22 +129,12 @@ export function SubscriptionManager() {
     setProcessingPayment(true);
     
     try {
-      // Create Razorpay order for one-time payment
-      const orderData = {
-        amount: plan.price * 100, // Amount in paise
-        currency: plan.currency,
-        receipt: `receipt_${Date.now()}`,
-        notes: {
-          user_id: user?.id,
-          user_email: user?.email,
-          plan_id: plan.id,
-          trial_days: plan.trialDays
-        }
-      };
+      // Check if we have the required environment variables
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured. Please check your environment variables.');
+      }
 
-      // For now, we'll use the direct Razorpay link approach
-      // but with automatic webhook detection
-      
       // Store user's intent to subscribe
       await supabase
         .from('user_profiles')
@@ -156,7 +146,7 @@ export function SubscriptionManager() {
 
       // Open Razorpay payment link
       window.open(plan.razorpayLink, '_blank');
-      showToast('Redirecting to secure payment page. Your subscription will be activated automatically after payment.', 'info');
+      showToast('Redirecting to secure payment page. Your 7-day free trial will start after payment confirmation.', 'info');
       
       // Start polling for subscription updates
       startSubscriptionPolling();
@@ -182,14 +172,14 @@ export function SubscriptionManager() {
         // Check if subscription was created/updated
         if (subscription && subscription.status !== 'pending') {
           clearInterval(pollInterval);
-          showToast('Subscription activated successfully! Welcome to Premium! 🎉', 'success');
+          showToast('Payment confirmed! Your 7-day free trial has started! 🎉', 'success');
           return;
         }
         
         // Stop polling after max attempts
         if (pollCount >= maxPolls) {
           clearInterval(pollInterval);
-          showToast('Payment verification is taking longer than expected. Your subscription will be activated automatically once payment is confirmed.', 'info');
+          showToast('Payment verification is taking longer than expected. Your trial will be activated automatically once payment is confirmed.', 'info');
         }
       } catch (error) {
         console.error('Error polling subscription:', error);
@@ -235,7 +225,7 @@ export function SubscriptionManager() {
       const daysLeft = differenceInDays(trialEnd, now);
       return { 
         status: 'trial', 
-        text: `Trial (${daysLeft} days left)`, 
+        text: `Free Trial (${daysLeft} days left)`, 
         color: 'text-blue-400',
         daysLeft 
       };
@@ -361,7 +351,7 @@ export function SubscriptionManager() {
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
             >
               <Crown className="h-5 w-5" />
-              Upgrade to Premium
+              Start 7-Day Free Trial
             </button>
           ) : (
             subscription?.status === 'active' && (
@@ -380,36 +370,41 @@ export function SubscriptionManager() {
           <div className="mt-6 p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-5 w-5 text-yellow-400" />
-              <span className="font-semibold text-yellow-400">Premium Benefits Active</span>
+              <span className="font-semibold text-yellow-400">
+                {subscription?.status === 'trial' ? '7-Day Free Trial Active' : 'Premium Benefits Active'}
+              </span>
             </div>
             <p className="text-gray-300 text-sm">
-              You have access to all premium features including unlimited AI study plans, advanced analytics, and priority support.
+              {subscription?.status === 'trial' 
+                ? 'You have full access to all premium features during your free trial. You will be charged ₹400/month after the trial ends.'
+                : 'You have access to all premium features including unlimited AI study plans, advanced analytics, and priority support.'
+              }
             </p>
           </div>
         )}
       </div>
 
-      {/* Automatic Activation Notice */}
+      {/* Free Trial Information */}
       <div className="glass rounded-2xl p-6 border border-blue-500/30 bg-blue-500/10">
         <div className="flex items-center gap-2 mb-4">
           <Zap className="h-5 w-5 text-blue-400" />
-          <h4 className="font-semibold text-blue-400">Automatic Activation</h4>
+          <h4 className="font-semibold text-blue-400">7-Day Free Trial</h4>
         </div>
         <p className="text-gray-300 text-sm mb-4">
-          Your subscription will be activated automatically within seconds of completing payment. No manual steps required!
+          Start your premium journey with a complete 7-day free trial. Experience all features before any charges apply.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</div>
-            <span className="text-gray-300">Click "Start Free Trial"</span>
+            <span className="text-gray-300">Start 7-day free trial</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</div>
-            <span className="text-gray-300">Complete payment on Razorpay</span>
+            <span className="text-gray-300">Full premium access</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">✓</div>
-            <span className="text-gray-300">Instant premium access!</span>
+            <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</div>
+            <span className="text-gray-300">₹400/month after trial</span>
           </div>
         </div>
       </div>
@@ -419,7 +414,7 @@ export function SubscriptionManager() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="glass rounded-2xl p-8 border border-gray-700/50 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-white">Choose Your Plan</h3>
+              <h3 className="text-2xl font-bold text-white">Start Your Free Trial</h3>
               <button
                 onClick={() => setShowPricing(false)}
                 className="text-gray-400 hover:text-white text-xl"
@@ -451,11 +446,13 @@ export function SubscriptionManager() {
                         <span className="text-3xl font-bold text-blue-400">₹{plan.price}</span>
                         <span className="text-gray-400">/{plan.interval}</span>
                       </div>
+                      <p className="text-sm text-gray-400 mt-1">after {plan.trialDays}-day free trial</p>
                     </div>
                     <div className="text-right">
-                      <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
-                        {plan.trialDays} Days Free Trial
+                      <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-medium">
+                        {plan.trialDays} Days FREE
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">No charges during trial</p>
                     </div>
                   </div>
 
@@ -487,7 +484,7 @@ export function SubscriptionManager() {
                   </button>
 
                   <p className="text-center text-xs text-gray-500 mt-3">
-                    Card required for trial • Secure payment via Razorpay • Cancel anytime
+                    Card required for trial • ₹{plan.price} charged after {plan.trialDays} days • Cancel anytime
                   </p>
                 </div>
               ))}
@@ -496,10 +493,10 @@ export function SubscriptionManager() {
             <div className="mt-8 p-4 bg-gray-800/50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="h-5 w-5 text-green-400" />
-                <span className="font-semibold text-white">Secure & Automatic</span>
+                <span className="font-semibold text-white">Secure & Risk-Free</span>
               </div>
               <p className="text-gray-300 text-sm">
-                Payments are processed securely through Razorpay. Your subscription will be activated automatically within seconds of payment completion using our webhook system.
+                Your 7-day free trial includes full access to all premium features. You can cancel anytime during the trial period with no charges. After the trial, you'll be charged ₹400/month.
               </p>
             </div>
           </div>
@@ -513,7 +510,7 @@ export function SubscriptionManager() {
         <div className="space-y-4">
           <h5 className="font-semibold text-yellow-400 flex items-center gap-2">
             <Crown className="h-5 w-5 text-yellow-400" />
-            Premium Plan - ₹99/month
+            Premium Plan - ₹400/month (7-day free trial)
           </h5>
           <ul className="space-y-2 text-sm text-green-400">
             <li>• Unlimited AI Study Plans</li>

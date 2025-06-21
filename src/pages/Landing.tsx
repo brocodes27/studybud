@@ -177,7 +177,7 @@ export function Landing() {
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse flex items-center justify-center gap-2"
                 >
                   <Crown className="h-6 w-6" />
-                  Get Started Free
+                  Start 7-Day Free Trial
                   <ArrowRight className="h-5 w-5" />
                 </button>
                 <button className="bg-gray-800/50 hover:bg-gray-700/50 text-white font-semibold py-4 px-8 rounded-xl border border-gray-600 hover:border-gray-500 transition-all duration-300 flex items-center justify-center gap-2">
@@ -352,7 +352,7 @@ export function Landing() {
                 Simple, <span className="gradient-text">Transparent Pricing</span>
               </h2>
               <p className="text-xl text-gray-400">
-                Start with a free account, then just ₹99/month for unlimited access
+                Start with a 7-day free trial, then just ₹400/month for unlimited access
               </p>
             </div>
 
@@ -363,12 +363,15 @@ export function Landing() {
                 </div>
                 <h3 className="text-3xl font-bold text-white mb-2">Premium Plan</h3>
                 <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-5xl font-bold text-yellow-400">₹99</span>
+                  <span className="text-5xl font-bold text-yellow-400">₹400</span>
                   <span className="text-gray-400">/month</span>
                 </div>
                 <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-medium inline-block">
                   7 Days Free Trial
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  No charges during trial period
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -386,12 +389,12 @@ export function Landing() {
               >
                 <div className="flex items-center justify-center gap-2">
                   <Crown className="h-6 w-6" />
-                  Start Your Free Trial
+                  Start Your 7-Day Free Trial
                 </div>
               </button>
 
               <p className="text-center text-sm text-gray-500 mt-4">
-                Card required for trial • Cancel anytime • Full access during trial
+                Card required for trial • ₹400/month after trial • Cancel anytime
               </p>
             </div>
           </div>
@@ -410,7 +413,7 @@ export function Landing() {
               onClick={() => setIsSignUp(true)}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg"
             >
-              Start Free Trial Now
+              Start 7-Day Free Trial Now
             </button>
           </div>
         </section>
