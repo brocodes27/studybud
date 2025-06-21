@@ -21,6 +21,7 @@ interface PabblyWebhookPayload {
   custom_fields?: {
     user_id?: string;
     subscription_id?: string;
+    plan_id?: string;
   };
 }
 
