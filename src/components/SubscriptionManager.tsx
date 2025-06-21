@@ -116,8 +116,72 @@ export function SubscriptionManager() {
     try {
       const stripeCheckoutUrl = `https://buy.stripe.com/test_28EdRbeP1gFaefZ0KT9sk00?client_reference_id=${user?.id}&prefilled_email=${user?.email}&items%5B0%5D%5Bprice%5D=${plan.stripePriceId}&items%5B0%5D%5Bquantity%5D=1`;
 
+<<<<<<< HEAD
       console.log('Opening Stripe URL:', stripeCheckoutUrl);
       window.open(stripeCheckoutUrl, '_blank');
+=======
+      // Check for existing active/trial subscription
+      const { data: existingSubscription, error: existingError } = await supabase
+        .from('subscriptions')
+        .select('id, status')
+        .eq('user_id', user?.id)
+        .eq('plan_id', plan.id)
+        .in('status', ['active', 'trial'])
+        .single();
+
+      if (existingSubscription) {
+        showToast('You already have an active subscription to this plan.', 'info');
+        return;
+      }
+
+      // Create or update a pending subscription record
+      const { data: pendingSubscription, error } = await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id: user?.id,
+          plan_id: plan.id,
+          status: 'pending',
+          pabbly_subscription_id: 'pending_' + Date.now(), // Add a temporary ID until Pabbly provides the real one
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          trial_end: trialEnd.toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id, plan_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Store user profile information for Pabbly webhook identification
+      await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user?.id,
+          full_name: user?.user_metadata?.full_name || user?.email,
+          notification_settings: { 
+            subscription_intent: true,
+            pending_subscription_id: pendingSubscription.id,
+            plan_id: plan.id
+          }
+        });
+
+      // Open Pabbly payment link with user information
+      const pabblyUrl = new URL(plan.pabblyLink);
+      pabblyUrl.searchParams.append('customer_email', user?.email || '');
+      pabblyUrl.searchParams.append('customer_name', user?.user_metadata?.full_name || user?.email || '');
+      if (!user?.id || !pendingSubscription.id) {
+        showToast('Missing user ID or subscription ID for payment.', 'error');
+        setProcessingPayment(false);
+        return;
+      }
+
+      pabblyUrl.searchParams.append('user_id', user.id);
+      pabblyUrl.searchParams.append('subscription_id', pendingSubscription.id);
+      pabblyUrl.searchParams.append('plan_id', plan.id);
+
+      console.log('Opening Pabbly URL:', pabblyUrl.toString());
+      window.open(pabblyUrl.toString(), '_blank');
+>>>>>>> ffe93fe52245f2c717d77bfc91c0aed5ebb56725
       showToast('Redirecting to secure payment page. Your 7-day free trial will start after payment confirmation.', 'info');
       
     } catch (error) {
