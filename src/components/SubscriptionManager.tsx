@@ -167,9 +167,16 @@ export function SubscriptionManager() {
       const pabblyUrl = new URL(plan.pabblyLink);
       pabblyUrl.searchParams.append('customer_email', user?.email || '');
       pabblyUrl.searchParams.append('customer_name', user?.user_metadata?.full_name || user?.email || '');
-      pabblyUrl.searchParams.append('user_id', user?.id || '');
+      if (!user?.id || !pendingSubscription.id) {
+        showToast('Missing user ID or subscription ID for payment.', 'error');
+        setProcessingPayment(false);
+        return;
+      }
+
+      pabblyUrl.searchParams.append('user_id', user.id);
       pabblyUrl.searchParams.append('subscription_id', pendingSubscription.id);
 
+      console.log('Opening Pabbly URL:', pabblyUrl.toString());
       window.open(pabblyUrl.toString(), '_blank');
       showToast('Redirecting to secure payment page. Your 7-day free trial will start after payment confirmation.', 'info');
       
