@@ -63,8 +63,28 @@ Deno.serve(async (req: Request) => {
 async function handleSubscriptionUpdated(subscription: any, supabaseUrl: string, supabaseServiceKey: string) {
   console.log("Stripe Subscription Updated:", subscription.id);
 
-  const userId = subscription.client_reference_id;
-  console.log("Stripe Webhook - userId:", userId);
+  const stripeCustomerId = subscription.customer;
+  console.log("Stripe Webhook - stripe_customer_id:", stripeCustomerId);
+
+  // Fetch user_id from profiles table using stripeCustomerId
+  const { data: userData, error: userError } = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?stripe_customer_id=eq.${stripeCustomerId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+        "apikey": supabaseServiceKey,
+      },
+    }
+  ).then(res => res.json());
+
+  if (userError || !userData || userData.length === 0) {
+    console.error("Stripe Webhook - User not found for stripe_customer_id:", stripeCustomerId, userError);
+    return;
+  }
+
+  const userId = userData[0].id;
   console.log("Stripe Webhook - stripe_subscription_id:", subscription.id);
   let status = subscription.status;
   if (status === 'trialing') {
