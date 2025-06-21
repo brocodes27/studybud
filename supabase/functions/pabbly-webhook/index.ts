@@ -83,9 +83,12 @@ Deno.serve(async (req: Request) => {
 
 async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supabaseUrl: string, supabaseServiceKey: string) {
   console.log("Subscription activated:", payload.subscription_id);
+  console.log("Pabbly Webhook Payload custom_fields:", payload.custom_fields);
+  console.log("Pabbly Webhook Payload customer_email:", payload.customer_email);
 
   // Find user by email or custom fields
   let userId = payload.custom_fields?.user_id;
+  console.log("Derived userId:", userId);
   
   if (!userId) {
     // Try to find user by email
@@ -117,6 +120,50 @@ async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supaba
 
   // Create or update subscription
   const subscriptionData = {
+    user_id: userId,
+    pabbly_subscription_id: payload.subscription_id,
+    plan_id: payload.plan_id || 'stubud_pro',
+    status: status,
+    current_period_start: payload.current_period_start,
+    current_period_end: payload.current_period_end,
+    trial_end: payload.trial_end || null,
+    updated_at: new Date().toISOString(),
+  };
+  console.log("Subscription Data being sent to Supabase:", subscriptionData);
+
+  // Try to update existing subscription first
+  const updateResponse = await fetch(
+    `${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+        "apikey": supabaseServiceKey,
+      },
+      body: JSON.stringify(subscriptionData),
+    }
+  );
+
+  // If no rows were updated, create new subscription
+  if (updateResponse.ok) {
+    const result = await updateResponse.text();
+    if (!result || result === '[]') {
+      // No existing subscription found, create new one
+      await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "apikey": supabaseServiceKey,
+        },
+        body: JSON.stringify(subscriptionData),
+      });
+    }
+  }
+
+  console.log(`Subscription ${status} for user ${userId}`);
+}
     user_id: userId,
     pabbly_subscription_id: payload.subscription_id,
     plan_id: payload.plan_id || 'stubud_pro',
