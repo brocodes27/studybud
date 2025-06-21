@@ -8,9 +8,9 @@ import { format, addDays, differenceInDays } from 'date-fns';
 interface SubscriptionData {
   id: string;
   user_id: string;
-  razorpay_subscription_id: string;
+  pabbly_subscription_id: string;
   plan_id: string;
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
+  status: 'active' | 'cancelled' | 'expired' | 'trial' | 'pending';
   current_period_start: string;
   current_period_end: string;
   trial_end: string | null;
@@ -27,13 +27,7 @@ interface PricingPlan {
   features: string[];
   popular?: boolean;
   trialDays: number;
-  razorpayLink: string;
-}
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
+  pabblyLink: string;
 }
 
 export function SubscriptionManager() {
@@ -46,14 +40,14 @@ export function SubscriptionManager() {
 
   const pricingPlans: PricingPlan[] = [
     {
-      id: 'premium_monthly',
-      name: 'Premium Monthly',
+      id: 'stubud_pro',
+      name: 'STUBUD Pro',
       price: 400,
       currency: 'INR',
       interval: 'monthly',
       trialDays: 7,
       popular: true,
-      razorpayLink: 'https://rzp.io/rzp/tfsl1R3',
+      pabblyLink: 'https://payments.pabbly.com/subscribe/68564aa2d0b4ddc94e168be6/stubud-pro',
       features: [
         'Unlimited AI Study Plans',
         'Advanced Analytics & Insights',
@@ -72,7 +66,6 @@ export function SubscriptionManager() {
   useEffect(() => {
     if (user) {
       fetchSubscription();
-      loadRazorpayScript();
       
       // Set up real-time subscription updates
       const subscription = supabase
@@ -93,15 +86,6 @@ export function SubscriptionManager() {
       };
     }
   }, [user]);
-
-  const loadRazorpayScript = () => {
-    if (window.Razorpay) return;
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-  };
 
   const fetchSubscription = async () => {
     try {
@@ -129,27 +113,52 @@ export function SubscriptionManager() {
     setProcessingPayment(true);
     
     try {
-      // Check if we have the required environment variables
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured. Please check your environment variables.');
-      }
+      // Store user's subscription intent in the database
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
+      const periodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000));
 
-      // Store user's intent to subscribe
+      // Create a pending subscription record
+      const { data: pendingSubscription, error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user?.id,
+          plan_id: plan.id,
+          status: 'pending',
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          trial_end: trialEnd.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Store user profile information for Pabbly webhook identification
       await supabase
         .from('user_profiles')
         .upsert({
           id: user?.id,
           full_name: user?.user_metadata?.full_name || user?.email,
-          notification_settings: { subscription_intent: true }
+          notification_settings: { 
+            subscription_intent: true,
+            pending_subscription_id: pendingSubscription.id,
+            plan_id: plan.id
+          }
         });
 
-      // Open Razorpay payment link
-      window.open(plan.razorpayLink, '_blank');
+      // Open Pabbly payment link with user information
+      const pabblyUrl = new URL(plan.pabblyLink);
+      pabblyUrl.searchParams.append('customer_email', user?.email || '');
+      pabblyUrl.searchParams.append('customer_name', user?.user_metadata?.full_name || user?.email || '');
+      pabblyUrl.searchParams.append('user_id', user?.id || '');
+      pabblyUrl.searchParams.append('subscription_id', pendingSubscription.id);
+
+      window.open(pabblyUrl.toString(), '_blank');
       showToast('Redirecting to secure payment page. Your 7-day free trial will start after payment confirmation.', 'info');
       
       // Start polling for subscription updates
-      startSubscriptionPolling();
+      startSubscriptionPolling(pendingSubscription.id);
       
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -159,20 +168,30 @@ export function SubscriptionManager() {
     }
   };
 
-  const startSubscriptionPolling = () => {
+  const startSubscriptionPolling = (subscriptionId: string) => {
     let pollCount = 0;
-    const maxPolls = 60; // Poll for 5 minutes (60 * 5 seconds)
+    const maxPolls = 120; // Poll for 10 minutes (120 * 5 seconds)
     
     const pollInterval = setInterval(async () => {
       pollCount++;
       
       try {
-        await fetchSubscription();
+        const { data: updatedSubscription, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('id', subscriptionId)
+          .single();
+
+        if (error) throw error;
         
-        // Check if subscription was created/updated
-        if (subscription && subscription.status !== 'pending') {
+        // Check if subscription was activated
+        if (updatedSubscription && updatedSubscription.status !== 'pending') {
           clearInterval(pollInterval);
-          showToast('Payment confirmed! Your 7-day free trial has started! 🎉', 'success');
+          setSubscription(updatedSubscription);
+          
+          if (updatedSubscription.status === 'trial' || updatedSubscription.status === 'active') {
+            showToast('Payment confirmed! Your 7-day free trial has started! 🎉', 'success');
+          }
           return;
         }
         
@@ -206,7 +225,7 @@ export function SubscriptionManager() {
 
       if (error) throw error;
 
-      showToast('Subscription cancelled successfully', 'success');
+      showToast('Subscription cancelled successfully. Please also cancel your subscription in Pabbly to stop future payments.', 'success');
       fetchSubscription();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
@@ -220,6 +239,14 @@ export function SubscriptionManager() {
     const now = new Date();
     const trialEnd = subscription.trial_end ? new Date(subscription.trial_end) : null;
     const periodEnd = new Date(subscription.current_period_end);
+
+    if (subscription.status === 'pending') {
+      return { 
+        status: 'pending', 
+        text: 'Payment Pending', 
+        color: 'text-yellow-400'
+      };
+    }
 
     if (subscription.status === 'trial' && trialEnd && now < trialEnd) {
       const daysLeft = differenceInDays(trialEnd, now);
@@ -326,7 +353,7 @@ export function SubscriptionManager() {
               <span className="font-semibold text-white">Plan</span>
             </div>
             <p className="text-sm text-blue-400">
-              {subscription ? 'Premium Monthly' : 'Free Plan'}
+              {subscription ? 'STUBUD Pro' : 'Free Plan'}
             </p>
           </div>
 
@@ -510,7 +537,7 @@ export function SubscriptionManager() {
         <div className="space-y-4">
           <h5 className="font-semibold text-yellow-400 flex items-center gap-2">
             <Crown className="h-5 w-5 text-yellow-400" />
-            Premium Plan - ₹400/month (7-day free trial)
+            STUBUD Pro - ₹400/month (7-day free trial)
           </h5>
           <ul className="space-y-2 text-sm text-green-400">
             <li>• Unlimited AI Study Plans</li>
@@ -524,6 +551,17 @@ export function SubscriptionManager() {
             <li>• Export capabilities</li>
           </ul>
         </div>
+      </div>
+
+      {/* Pabbly Integration Notice */}
+      <div className="glass rounded-2xl p-6 border border-green-500/30 bg-green-500/10">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="h-5 w-5 text-green-400" />
+          <h4 className="font-semibold text-green-400">Secure Payment Processing</h4>
+        </div>
+        <p className="text-gray-300 text-sm">
+          Payments are securely processed through Pabbly. Your subscription will be automatically tracked and activated upon successful payment confirmation.
+        </p>
       </div>
     </div>
   );
