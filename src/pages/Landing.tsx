@@ -389,12 +389,7 @@ export function Landing() {
             <p className="text-xl text-gray-300 mb-8">
               Join thousands of students who've improved their grades with STUBUD
             </p>
-            <button
-              onClick={() => setIsSignUp(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg"
-            >
-              Start 7-Day Free Trial Now
-            </button>
+            
           </div>
         </section>
 
