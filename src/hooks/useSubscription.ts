@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 interface SubscriptionData {
   id: string;
   user_id: string;
-  razorpay_subscription_id: string;
+  pabbly_subscription_id: string;
   plan_id: string;
   status: 'active' | 'cancelled' | 'expired' | 'trial';
   current_period_start: string;
