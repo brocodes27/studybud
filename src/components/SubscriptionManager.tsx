@@ -8,7 +8,8 @@ import { format, addDays, differenceInDays } from 'date-fns';
 interface SubscriptionData {
   id: string;
   user_id: string;
-  pabbly_subscription_id: string;
+  stripe_subscription_id: string;
+  razorpay_subscription_id: string | null;
   plan_id: string;
   status: 'active' | 'cancelled' | 'expired' | 'trial' | 'pending';
   current_period_start: string;
@@ -27,7 +28,7 @@ interface PricingPlan {
   features: string[];
   popular?: boolean;
   trialDays: number;
-  pabblyLink: string;
+  stripePriceId: string;
 }
 
 export function SubscriptionManager() {
@@ -47,7 +48,7 @@ export function SubscriptionManager() {
       interval: 'monthly',
       trialDays: 7,
       popular: true,
-      pabblyLink: 'https://payments.pabbly.com/subscribe/68564aa2d0b4ddc94e168be6/stubud-pro',
+      stripePriceId: 'price_1OQ38pSJTb1gXl2t4f3f4f3f',
       features: [
         'Unlimited AI Study Plans',
         'Advanced Analytics & Insights',
@@ -113,68 +114,11 @@ export function SubscriptionManager() {
     setProcessingPayment(true);
     
     try {
-      // Store user's subscription intent in the database
-      const now = new Date();
-      const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
-      const periodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const stripeCheckoutUrl = `https://buy.stripe.com/test_28EdRbeP1gFaefZ0KT9sk00?client_reference_id=${user?.id}&prefilled_email=${user?.email}&items%5B0%5D%5Bprice%5D=${plan.stripePriceId}&items%5B0%5D%5Bquantity%5D=1`;
 
-      // Check for existing active/trial subscription
-      const { data: existingSubscription, error: existingError } = await supabase
-        .from('subscriptions')
-        .select('id, status')
-        .eq('user_id', user?.id)
-        .eq('plan_id', plan.id)
-        .in('status', ['active', 'trial'])
-        .single();
-
-      if (existingSubscription) {
-        showToast('You already have an active subscription to this plan.', 'info');
-        return;
-      }
-
-      // Create or update a pending subscription record
-      const { data: pendingSubscription, error } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: user?.id,
-          plan_id: plan.id,
-          status: 'pending',
-          pabbly_subscription_id: 'pending_' + Date.now(), // Add a temporary ID until Pabbly provides the real one
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          trial_end: trialEnd.toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id, plan_id' })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Store user profile information for Pabbly webhook identification
-      await supabase
-        .from('user_profiles')
-        .upsert({
-          id: user?.id,
-          full_name: user?.user_metadata?.full_name || user?.email,
-          notification_settings: { 
-            subscription_intent: true,
-            pending_subscription_id: pendingSubscription.id,
-            plan_id: plan.id
-          }
-        });
-
-      // Open Pabbly payment link with user information
-      const pabblyUrl = new URL(plan.pabblyLink);
-      pabblyUrl.searchParams.append('customer_email', user?.email || '');
-      pabblyUrl.searchParams.append('customer_name', user?.user_metadata?.full_name || user?.email || '');
-      pabblyUrl.searchParams.append('user_id', user?.id || '');
-      pabblyUrl.searchParams.append('subscription_id', pendingSubscription.id);
-
-      window.open(pabblyUrl.toString(), '_blank');
+      console.log('Opening Stripe URL:', stripeCheckoutUrl);
+      window.open(stripeCheckoutUrl, '_blank');
       showToast('Redirecting to secure payment page. Your 7-day free trial will start after payment confirmation.', 'info');
-      
-      // Start polling for subscription updates
-      startSubscriptionPolling(pendingSubscription.id);
       
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -184,69 +128,13 @@ export function SubscriptionManager() {
     }
   };
 
-  const startSubscriptionPolling = (subscriptionId: string) => {
-    let pollCount = 0;
-    const maxPolls = 120; // Poll for 10 minutes (120 * 5 seconds)
-    
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      
-      try {
-        const { data: updatedSubscription, error } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('id', subscriptionId)
-          .single();
 
-        if (error) throw error;
-        
-        // Check if subscription was activated
-        if (updatedSubscription && updatedSubscription.status !== 'pending') {
-          clearInterval(pollInterval);
-          setSubscription(updatedSubscription);
-          
-          if (updatedSubscription.status === 'trial' || updatedSubscription.status === 'active') {
-            showToast('Payment confirmed! Your 7-day free trial has started! 🎉', 'success');
-          }
-          return;
-        }
-        
-        // Stop polling after max attempts
-        if (pollCount >= maxPolls) {
-          clearInterval(pollInterval);
-          showToast('Payment verification is taking longer than expected. Your trial will be activated automatically once payment is confirmed.', 'info');
-        }
-      } catch (error) {
-        console.error('Error polling subscription:', error);
-      }
-    }, 5000); // Poll every 5 seconds
-  };
 
   const cancelSubscription = async () => {
     if (!subscription) return;
 
-    if (!confirm('Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your current billing period.')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'cancelled',
-          cancelled_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subscription.id);
-
-      if (error) throw error;
-
-      showToast('Subscription cancelled successfully. Please also cancel your subscription in Pabbly to stop future payments.', 'success');
-      fetchSubscription();
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      showToast('Failed to cancel subscription', 'error');
-    }
+    showToast('Please manage your subscription directly on Stripe.', 'info');
+    window.open('https://billing.stripe.com/p/login/test_cN2021g90000000000000000', '_blank');
   };
 
   const getSubscriptionStatus = () => {
