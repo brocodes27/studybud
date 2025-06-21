@@ -372,16 +372,7 @@ export function Landing() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setIsSignUp(true)}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Crown className="h-6 w-6" />
-                  Start Your 7-Day Free Trial
-                </div>
-              </button>
-
+              
               <p className="text-center text-sm text-gray-500 mt-4">
                 Card required for trial • ₹400/month after trial • Cancel anytime
               </p>
