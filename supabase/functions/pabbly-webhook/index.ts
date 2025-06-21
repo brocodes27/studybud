@@ -25,12 +25,12 @@ interface PabblyWebhookPayload {
   };
 }
 
-Deno.serve(async (req: Request) => {
+// Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
-    });
+    // });
   }
 
   try {
@@ -72,15 +72,15 @@ Deno.serve(async (req: Request) => {
     return new Response("OK", {
       status: 200,
       headers: corsHeaders,
-    });
+    // });
   } catch (error) {
     console.error("Webhook error:", error);
     return new Response("Internal Server Error", {
       status: 500,
       headers: corsHeaders,
-    });
+    // });
   }
-});
+// });
 
 async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supabaseUrl: string, supabaseServiceKey: string) {
   console.log("Subscription activated:", payload.subscription_id);
@@ -98,7 +98,7 @@ async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supaba
         "Authorization": `Bearer ${supabaseServiceKey}`,
         "apikey": supabaseServiceKey,
       },
-    });
+    // });
 
     if (userResponse.ok) {
       const users = await userResponse.json();
@@ -159,7 +159,7 @@ async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supaba
           "apikey": supabaseServiceKey,
         },
         body: JSON.stringify(subscriptionData),
-      });
+      // });
     }
   }
 
@@ -202,7 +202,7 @@ async function handleSubscriptionActivated(payload: PabblyWebhookPayload, supaba
           "apikey": supabaseServiceKey,
         },
         body: JSON.stringify(subscriptionData),
-      });
+      // });
     }
   }
 

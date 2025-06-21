@@ -64,7 +64,14 @@ async function handleSubscriptionUpdated(subscription: any, supabaseUrl: string,
   console.log("Stripe Subscription Updated:", subscription.id);
 
   const userId = subscription.client_reference_id;
-  const status = subscription.status;
+  console.log("Stripe Webhook - userId:", userId);
+  console.log("Stripe Webhook - stripe_subscription_id:", subscription.id);
+  let status = subscription.status;
+  if (status === 'trialing') {
+    status = 'trial';
+  } else if (status === 'active') {
+    status = 'active';
+  }
   const current_period_start = new Date(subscription.current_period_start * 1000).toISOString();
   const current_period_end = new Date(subscription.current_period_end * 1000).toISOString();
   const trial_end = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
@@ -73,13 +80,15 @@ async function handleSubscriptionUpdated(subscription: any, supabaseUrl: string,
     user_id: userId,
     stripe_subscription_id: subscription.id,
     razorpay_subscription_id: null,
-    plan_id: 'stubud_pro', // Assuming a single plan for now
+    plan_id: subscription.items.data[0].price.id,
     status: status,
     current_period_start: current_period_start,
     current_period_end: current_period_end,
     trial_end: trial_end,
     updated_at: new Date().toISOString(),
   };
+  console.log("Stripe Webhook - Subscription Data (PATCH/POST):");
+  console.log(JSON.stringify(subscriptionData, null, 2));
 
   const updateResponse = await fetch(
     `${supabaseUrl}/rest/v1/subscriptions?stripe_subscription_id=eq.${subscription.id}`,
@@ -94,8 +103,13 @@ async function handleSubscriptionUpdated(subscription: any, supabaseUrl: string,
     }
   );
 
+  console.log("Stripe Webhook - Update Response Status:", updateResponse.status);
+  const updateResponseBody = await updateResponse.text();
+  console.log("Stripe Webhook - Update Response Body:", updateResponseBody);
+
   // If no rows were updated, create new subscription
   if (updateResponse.status === 406) { // 406 Not Acceptable typically means no rows matched for update
+    console.log("Stripe Webhook - No existing subscription found, creating new one.");
     await fetch(`${supabaseUrl}/rest/v1/subscriptions`, {
       method: "POST",
       headers: {

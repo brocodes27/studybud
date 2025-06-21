@@ -75,7 +75,15 @@ export default defineConfig({
       // Ensure sw.js is served with the correct MIME type
       allow: ['..'],
     },
-    middlewareMode: false
+    middlewareMode: false,
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/sw.js') {
+          res.setHeader('Content-Type', 'application/javascript');
+        }
+        next();
+      });
+    },
   },
   build: {
     target: 'esnext',
