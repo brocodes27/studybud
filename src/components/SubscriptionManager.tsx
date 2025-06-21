@@ -175,6 +175,7 @@ export function SubscriptionManager() {
 
       pabblyUrl.searchParams.append('user_id', user.id);
       pabblyUrl.searchParams.append('subscription_id', pendingSubscription.id);
+      pabblyUrl.searchParams.append('plan_id', plan.id);
 
       console.log('Opening Pabbly URL:', pabblyUrl.toString());
       window.open(pabblyUrl.toString(), '_blank');
