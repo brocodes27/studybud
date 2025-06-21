@@ -116,10 +116,10 @@ export function SubscriptionManager() {
     try {
       const stripeCheckoutUrl = `https://buy.stripe.com/test_28EdRbeP1gFaefZ0KT9sk00?client_reference_id=${user?.id}&prefilled_email=${user?.email}&items%5B0%5D%5Bprice%5D=${plan.stripePriceId}&items%5B0%5D%5Bquantity%5D=1`;
 
-<<<<<<< HEAD
+
       console.log('Opening Stripe URL:', stripeCheckoutUrl);
       window.open(stripeCheckoutUrl, '_blank');
-=======
+
       // Check for existing active/trial subscription
       const { data: existingSubscription, error: existingError } = await supabase
         .from('subscriptions')
