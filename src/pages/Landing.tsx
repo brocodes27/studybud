@@ -172,18 +172,7 @@ export function Landing() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => setIsSignUp(true)}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse flex items-center justify-center gap-2"
-                >
-                  <Crown className="h-6 w-6" />
-                  Start 7-Day Free Trial
-                  <ArrowRight className="h-5 w-5" />
-                </button>
-                <button className="bg-gray-800/50 hover:bg-gray-700/50 text-white font-semibold py-4 px-8 rounded-xl border border-gray-600 hover:border-gray-500 transition-all duration-300 flex items-center justify-center gap-2">
-                  <Play className="h-5 w-5" />
-                  Watch Demo
-                </button>
+               
               </div>
             </div>
 
@@ -383,16 +372,7 @@ export function Landing() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setIsSignUp(true)}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Crown className="h-6 w-6" />
-                  Start Your 7-Day Free Trial
-                </div>
-              </button>
-
+              
               <p className="text-center text-sm text-gray-500 mt-4">
                 Card required for trial • ₹400/month after trial • Cancel anytime
               </p>
@@ -409,12 +389,7 @@ export function Landing() {
             <p className="text-xl text-gray-300 mb-8">
               Join thousands of students who've improved their grades with STUBUD
             </p>
-            <button
-              onClick={() => setIsSignUp(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl glow-blue btn-pulse text-lg"
-            >
-              Start 7-Day Free Trial Now
-            </button>
+            
           </div>
         </section>
 
