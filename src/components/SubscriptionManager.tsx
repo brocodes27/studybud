@@ -118,17 +118,33 @@ export function SubscriptionManager() {
       const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
       const periodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000));
 
-      // Create a pending subscription record
+      // Check for existing active/trial subscription
+      const { data: existingSubscription, error: existingError } = await supabase
+        .from('subscriptions')
+        .select('id, status')
+        .eq('user_id', user?.id)
+        .eq('plan_id', plan.id)
+        .in('status', ['active', 'trial'])
+        .single();
+
+      if (existingSubscription) {
+        showToast('You already have an active subscription to this plan.', 'info');
+        return;
+      }
+
+      // Create or update a pending subscription record
       const { data: pendingSubscription, error } = await supabase
         .from('subscriptions')
-        .insert({
+        .upsert({
           user_id: user?.id,
           plan_id: plan.id,
           status: 'pending',
+          pabbly_subscription_id: 'pending_' + Date.now(), // Add a temporary ID until Pabbly provides the real one
           current_period_start: now.toISOString(),
           current_period_end: periodEnd.toISOString(),
           trial_end: trialEnd.toISOString(),
-        })
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id, plan_id' })
         .select()
         .single();
 
