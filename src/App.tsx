@@ -9,6 +9,7 @@ import { StudyPlans } from './pages/StudyPlans';
 import { Progress } from './pages/Progress';
 import { StudyTools } from './pages/StudyTools';
 import { Analytics } from './pages/Analytics';
+import { CalendarSync } from './pages/CalendarSync';
 import { Social } from './pages/Social';
 import { Notifications } from './pages/Notifications';
 import { Auth } from './pages/Auth';
@@ -65,6 +66,7 @@ function AppContent() {
         <Navbar />
         <main className="container mx-auto px-4 py-8">
           <Routes>
+            <Route path="/calendar" element={<CalendarSync />} />
             <Route path="/" element={<Dashboard />} />
             <Route path="/create" element={<CreatePlan />} />
             <Route path="/plans" element={<StudyPlans />} />

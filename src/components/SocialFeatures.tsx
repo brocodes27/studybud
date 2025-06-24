@@ -106,9 +106,28 @@ export function SocialFeatures() {
     }
   }, [selectedGroup]);
 
+  const ensureUserProfile = async () => {
+    if (!user) return;
+    try {
+      const { data: existing } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (!existing) {
+        const fallbackName = (user.user_metadata as any)?.full_name || user.email?.split('@')[0] || 'Student';
+        await supabase.from('user_profiles').insert({ id: user.id, full_name: fallbackName });
+      }
+    } catch (e) {
+      console.error('ensureUserProfile error', e);
+    }
+  };
+
   const fetchSocialData = async () => {
     try {
       setLoading(true);
+      await ensureUserProfile();
       await Promise.all([
         fetchStudyGroups(),
         fetchLeaderboard(),
@@ -165,7 +184,9 @@ export function SocialFeatures() {
         }) || []
       );
 
-      setStudyGroups(processedGroups);
+      // Show only private groups the user belongs to or created
+      const visibleGroups = processedGroups.filter((g) => g.is_member || g.created_by === user?.id);
+      setStudyGroups(visibleGroups);
     } catch (error) {
       console.error('Error fetching study groups:', error);
     }
@@ -173,14 +194,31 @@ export function SocialFeatures() {
 
   const fetchLeaderboard = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: leaderboardRows, error } = await supabase
         .from('leaderboard_view')
         .select('*')
         .order('rank', { ascending: true })
         .limit(50);
 
       if (error) throw error;
-      setLeaderboard(data || []);
+
+      // attach usernames from user_profiles (fallback to id)
+      const withNames = await Promise.all(
+        (leaderboardRows || []).map(async (row) => {
+          const userId: string = (row as any).user_id ?? (row as any).id;
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('id', userId)
+            .single();
+          return {
+            ...row,
+            id: userId,
+            username: profile?.full_name || 'Unknown'
+          } as LeaderboardEntry;
+        })
+      );
+      setLeaderboard(withNames);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
     }

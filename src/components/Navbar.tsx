@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Settings } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
@@ -9,23 +9,24 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { name: 'Dashboard', icon: Home, path: '/dashboard' },
-    { name: 'Create Plan', icon: PlusCircle, path: '/create-plan' },
+    { name: 'Dashboard', icon: Home, path: '/' },
+    { name: 'Create Plan', icon: PlusCircle, path: '/create' },
     { name: 'Study Plans', icon: BookOpen, path: '/plans' },
     { name: 'Progress', icon: TrendingUp, path: '/progress' },
     { name: 'Analytics', icon: BarChart2, path: '/analytics' },
     { name: 'Study Tools', icon: Compass, path: '/tools' },
+    { name: 'Calendar', icon: Calendar, path: '/calendar' },
     { name: 'Social', icon: Users, path: '/social' },
     { name: 'Notifications', icon: Bell, path: '/notifications' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
+
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="bg-gray-800 p-4 shadow-lg">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/dashboard" className="text-2xl font-bold flex items-center gap-2">
+      <div className="container mx-auto flex items-center">
+        <Link to="/" className="text-2xl font-bold flex items-center gap-2">
           <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
             <Brain className="text-white" size={20} />
           </div>
@@ -33,7 +34,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden md:flex items-center space-x-6 ml-8 overflow-x-auto">
           {navItems.map((item) => (
             <Link
               key={item.name}
@@ -45,13 +46,14 @@ export function Navbar() {
               {item.name}
             </Link>
           ))}
-          <button
-            onClick={signOut}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-          >
-            Sign Out
-          </button>
+          
         </div>
+        <button
+          onClick={signOut}
+          className="hidden md:flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors flex-shrink-0 ml-4"
+        >
+          Sign Out
+        </button>
 
         {/* Mobile Navigation Toggle */}
         <div className="md:hidden flex items-center">

@@ -112,8 +112,63 @@ export function AdvancedAnalytics() {
 
       if (focusError) throw focusError;
 
-      // Process data for analytics
-      const analytics = processAnalyticsData(sessions || [], flashcards || [], testAttempts || [], focusSessions || []);
+            // -------------- Process data for analytics -----------------
+      // Leaderboard rank & total users
+      const { data: leaderboardData, error: leaderboardError } = await supabase
+        .from('leaderboard_view')
+        .select('id, rank')
+        .order('rank', { ascending: true });
+
+      if (leaderboardError) throw leaderboardError;
+
+      const totalUsers = leaderboardData?.length || 0;
+      const userEntry = leaderboardData?.find((row) => row.id === user?.id);
+      const rank = userEntry ? userEntry.rank : totalUsers;
+
+      // Achievements count
+      const { data: userAchievements, error: achievementsError } = await supabase
+        .from('user_achievements')
+        .select('id')
+        .eq('user_id', user?.id);
+
+      if (achievementsError) throw achievementsError;
+
+      // Study streak (consecutive days with ≥1 session)
+      const calculateStreak = (sessionsArr: any[]) => {
+        let streak = 0;
+        const today = new Date();
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          const dayStr = date.toISOString().split('T')[0];
+          const hasSession = sessionsArr.some(
+            (s) => s.completed_at && s.completed_at.startsWith(dayStr)
+          );
+          if (hasSession) {
+            streak += 1;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      };
+
+      const studyStreak = calculateStreak(sessions || []);
+
+      const socialMetrics = {
+        rank,
+        totalUsers,
+        studyStreak,
+        achievements: userAchievements?.length || 0,
+      };
+
+      const analytics = processAnalyticsData(
+        sessions || [],
+        flashcards || [],
+        testAttempts || [],
+        focusSessions || [],
+        socialMetrics
+      );
       setAnalyticsData(analytics);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
@@ -122,7 +177,7 @@ export function AdvancedAnalytics() {
     }
   };
 
-  const processAnalyticsData = (sessions: any[], flashcards: any[], testAttempts: any[], focusSessions: any[]): AnalyticsData => {
+  const processAnalyticsData = (sessions: any[], flashcards: any[], testAttempts: any[], focusSessions: any[], socialMetrics: AnalyticsData['socialMetrics']): AnalyticsData => {
     // Study patterns by hour
     const hourlyData = Array.from({ length: 24 }, (_, hour) => {
       const hourSessions = sessions.filter(s => 
@@ -199,23 +254,28 @@ export function AdvancedAnalytics() {
       current.avgDuration > peak.avgDuration ? current : peak
     ).hour;
 
-    const distractionPatterns = [
-      { timeOfDay: 'Morning', distractions: Math.floor(Math.random() * 5) + 1 },
-      { timeOfDay: 'Afternoon', distractions: Math.floor(Math.random() * 8) + 2 },
-      { timeOfDay: 'Evening', distractions: Math.floor(Math.random() * 6) + 1 },
-      { timeOfDay: 'Night', distractions: Math.floor(Math.random() * 10) + 3 }
-    ];
+    // Distraction patterns derived from focus session distribution
+    const partOfDay = (hour: number) => {
+      if (hour >= 5 && hour < 12) return 'Morning';
+      if (hour >= 12 && hour < 17) return 'Afternoon';
+      if (hour >= 17 && hour < 21) return 'Evening';
+      return 'Night';
+    };
+    const dpMap: Record<string, number> = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
+    focusSessions.forEach((fs) => {
+      if (fs.started_at) {
+        const hr = new Date(fs.started_at).getHours();
+        const key = partOfDay(hr);
+        dpMap[key] += 1;
+      }
+    });
+    const distractionPatterns = Object.entries(dpMap).map(([timeOfDay, distractions]) => ({ timeOfDay, distractions }));
 
     // AI Insights
     const aiInsights = generateAIInsights(sessions, flashcards, testAttempts, subjectPerformance);
 
     // Social metrics (simulated)
-    const socialMetrics = {
-      rank: Math.floor(Math.random() * 1000) + 1,
-      totalUsers: 5000 + Math.floor(Math.random() * 2000),
-      studyStreak: sessions.length > 0 ? Math.floor(Math.random() * 30) + 1 : 0,
-      achievements: Math.floor(sessions.length / 5) + Math.floor(flashcards.length / 10)
-    };
+    // socialMetrics computed in fetchAnalyticsData
 
     return {
       studyPatterns: hourlyData,

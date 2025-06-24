@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
+import { Toaster } from '../components/Toaster';
 
 export function Social() {
   const navigate = useNavigate();

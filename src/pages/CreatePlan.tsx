@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
 import { StudyPlanForm, FormData } from '../components/StudyPlanForm';
 import { StudyPlanDisplay } from '../components/StudyPlanDisplay';
 import { Brain, AlertCircle } from 'lucide-react';
-import { useToast } from '../hooks/useToast';
+
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 interface StudyPlan {
   days_until_exam: number;
@@ -21,12 +21,17 @@ interface StudyPlan {
 
 export function CreatePlan() {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
+  const [searchParams] = useSearchParams();
+  const initialDataFromParams: Partial<FormData> = {
+    subject: searchParams.get('subject') || undefined,
+    exam_date: searchParams.get('exam_date') || undefined,
+    chapters: searchParams.get('chapters') || undefined,
+  };
   const [formData, setFormData] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-  const { user, session } = useAuth();
+
+  const { session } = useAuth();
 
   const handleFormSubmit = async (data: FormData) => {
     setLoading(true);
@@ -52,13 +57,11 @@ export function CreatePlan() {
       const plan = await response.json();
       setStudyPlan(plan);
       setFormData(data);
-      showToast('Study plan generated successfully!', 'success');
       
     } catch (err) {
       console.error('Error generating study plan:', err);
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
-      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -68,19 +71,6 @@ export function CreatePlan() {
     setStudyPlan(null);
     setFormData(null);
     setError(null);
-  };
-
-  const handleSavePlan = async () => {
-    if (!studyPlan || !formData || !user) return;
-
-    try {
-      // The plan is already saved by the edge function, so we just need to navigate
-      showToast('Study plan saved to your dashboard!', 'success');
-      navigate('/plans');
-    } catch (error) {
-      console.error('Error saving plan:', error);
-      showToast('Failed to save study plan', 'error');
-    }
   };
 
   return (
@@ -117,14 +107,14 @@ export function CreatePlan() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto">
         {!studyPlan ? (
-          <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} />
+          <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
         ) : (
           <div className="space-y-6">
+            {/* TODO: Add save functionality */}
             <StudyPlanDisplay 
               plan={studyPlan} 
               formData={formData!} 
               onReset={handleCreateNew}
-              onSave={handleSavePlan}
             />
           </div>
         )}

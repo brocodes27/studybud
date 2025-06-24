@@ -4,6 +4,7 @@ import { Calendar, BookOpen, GraduationCap, FileText, Loader2 } from 'lucide-rea
 interface StudyPlanFormProps {
   onSubmit: (data: FormData) => void;
   loading: boolean;
+  initialData?: Partial<FormData>;
 }
 
 export interface FormData {
@@ -13,12 +14,12 @@ export interface FormData {
   exam_date: string;
 }
 
-export function StudyPlanForm({ onSubmit, loading }: StudyPlanFormProps) {
+export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlanFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    class: '',
-    subject: '',
-    chapters: '',
-    exam_date: '',
+    class: initialData.class ?? '',
+    subject: initialData.subject ?? '',
+    chapters: initialData.chapters ?? '',
+    exam_date: initialData.exam_date ?? '',
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -97,7 +98,7 @@ export function StudyPlanForm({ onSubmit, loading }: StudyPlanFormProps) {
               value={formData.class}
               onChange={(e) => handleInputChange('class', e.target.value)}
               placeholder="e.g., 11, 12, BSc"
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+              className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.class 
                   ? 'border-red-300 bg-red-50' 
                   : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
@@ -118,7 +119,7 @@ export function StudyPlanForm({ onSubmit, loading }: StudyPlanFormProps) {
               value={formData.subject}
               onChange={(e) => handleInputChange('subject', e.target.value)}
               placeholder="e.g., Physics, Mathematics"
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+              className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.subject 
                   ? 'border-red-300 bg-red-50' 
                   : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
@@ -140,7 +141,7 @@ export function StudyPlanForm({ onSubmit, loading }: StudyPlanFormProps) {
             onChange={(e) => handleInputChange('chapters', e.target.value)}
             placeholder="e.g., Gravitation, Motion, Thermodynamics"
             rows={3}
-            className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none ${
+            className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none ${
               errors.chapters 
                 ? 'border-red-300 bg-red-50' 
                 : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
@@ -161,7 +162,7 @@ export function StudyPlanForm({ onSubmit, loading }: StudyPlanFormProps) {
             value={formData.exam_date}
             onChange={(e) => handleInputChange('exam_date', e.target.value)}
             min={minDateString}
-            className={`w-full px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+            className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
               errors.exam_date 
                 ? 'border-red-300 bg-red-50' 
                 : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
