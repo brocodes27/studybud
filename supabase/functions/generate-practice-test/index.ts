@@ -8,9 +8,10 @@ interface PracticeTestRequest {
   subject: string;
   class?: string;
   chapters?: string;
-  plan_id?: string;
+
   question_count: number;
   duration_minutes: number;
+  plan_id?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -62,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const userData = await userResponse.json();
     const userId = userData.id;
 
-    const { subject, class: studentClass, chapters, plan_id, question_count, duration_minutes }: PracticeTestRequest = await req.json();
+    const { subject, class: studentClass, chapters, question_count, duration_minutes }: PracticeTestRequest = await req.json();
 
     // Prepare Gemini API request
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
@@ -176,7 +177,7 @@ Make sure questions are challenging but fair, and test real understanding of ${s
     // Save practice test to Supabase
     const testToInsert = {
       user_id: userId,
-      plan_id: plan_id || null,
+
       title: testData.title,
       subject: subject,
       questions: testData.questions,

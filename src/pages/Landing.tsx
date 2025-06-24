@@ -101,18 +101,8 @@ export function Landing() {
     }
   ];
 
-  const pricingFeatures = [
-    'Unlimited AI Study Plans',
-    'Smart Flashcard Generation',
-    'Practice Test Engine',
-    'Advanced Analytics & Insights',
-    'Study Groups & Social Features',
-    'Progress Tracking & Achievements',
-    'Smart Notifications',
-    'Offline Access',
-    'Priority Support',
-    'Export Study Materials'
-  ];
+  const pricingFeatures: any[] = [];
+
 
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
@@ -156,20 +146,7 @@ export function Landing() {
                 Join thousands of students who've improved their grades by 40% on average.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <div className="flex items-center gap-2 text-green-400">
-                  <Check className="h-5 w-5" />
-                  <span>7-Day Free Trial</span>
-                </div>
-                <div className="flex items-center gap-2 text-blue-400">
-                  <Shield className="h-5 w-5" />
-                  <span>Secure Payment</span>
-                </div>
-                <div className="flex items-center gap-2 text-purple-400">
-                  <Zap className="h-5 w-5" />
-                  <span>Cancel Anytime</span>
-                </div>
-              </div>
+
 
               <div className="flex flex-col sm:flex-row gap-4">
                
@@ -333,52 +310,7 @@ export function Landing() {
           </div>
         </section>
 
-        {/* Pricing Section */}
-        <section className="py-20 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-                Simple, <span className="gradient-text">Transparent Pricing</span>
-              </h2>
-              <p className="text-xl text-gray-400">
-                Start with a 7-day free trial, then just ₹400/month for unlimited access
-              </p>
-            </div>
 
-            <div className="glass rounded-3xl p-8 border border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 glow-blue">
-              <div className="text-center mb-8">
-                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium mb-6 inline-block">
-                  Most Popular Plan
-                </div>
-                <h3 className="text-3xl font-bold text-white mb-2">STUBUD Pro</h3>
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-5xl font-bold text-yellow-400">₹400</span>
-                  <span className="text-gray-400">/month</span>
-                </div>
-                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-full text-sm font-medium inline-block">
-                  7 Days Free Trial
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  No charges during trial period
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                {pricingFeatures.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-400 flex-shrink-0" />
-                    <span className="text-gray-300">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              
-              <p className="text-center text-sm text-gray-500 mt-4">
-                Card required for trial • ₹400/month after trial • Cancel anytime
-              </p>
-            </div>
-          </div>
-        </section>
 
         {/* CTA Section */}
         <section className="py-20 px-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20">

@@ -1,11 +1,12 @@
 import React from 'react';
 import { SocialFeatures } from '../components/SocialFeatures';
-import { PremiumGate } from '../components/PremiumGate';
-import { useSubscription } from '../hooks/useSubscription';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../hooks/useToast';
 
 export function Social() {
-  const { isPremiumUser } = useSubscription();
   const navigate = useNavigate();
 
   return (
@@ -15,13 +16,12 @@ export function Social() {
         <p className="text-gray-400 mt-2">Connect, compete, and learn together</p>
       </div>
       
-      <PremiumGate
-        feature="Social Learning Features"
-        description="Join private study groups, compete on leaderboards, share achievements, and collaborate with fellow students to enhance your learning experience."
-        onUpgrade={() => navigate('/subscription')}
-      >
-        <SocialFeatures />
-      </PremiumGate>
+      <SocialFeatures />
+      <Toaster />
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold text-white mb-6">Social Features</h1>
+        <p className="text-gray-300 mb-4">Connect with other students, share study tips, and collaborate on learning.</p>
+      </div>
     </div>
   );
 }

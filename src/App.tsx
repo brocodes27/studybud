@@ -11,18 +11,15 @@ import { StudyTools } from './pages/StudyTools';
 import { Analytics } from './pages/Analytics';
 import { Social } from './pages/Social';
 import { Notifications } from './pages/Notifications';
-import { Subscription } from './pages/Subscription';
 import { Auth } from './pages/Auth';
 import { Landing } from './pages/Landing';
 import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
 import { useOfflineStorage } from './hooks/useOfflineStorage';
-import { useSubscription } from './hooks/useSubscription';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const { isOnline } = useOfflineStorage();
-  const { isPremiumUser, loading: subscriptionLoading } = useSubscription();
 
   // Register service worker for PWA
   useEffect(() => {
@@ -37,7 +34,7 @@ function AppContent() {
     }
   }, []);
 
-  if (loading || subscriptionLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen animated-gradient flex items-center justify-center">
         <div className="relative">
@@ -54,26 +51,6 @@ function AppContent() {
     return <Landing />;
   }
 
-  // Show subscription page if user is authenticated but not premium
-  if (!isPremiumUser()) {
-    return (
-      <div className="min-h-screen bg-gray-900">
-        <div className="animated-gradient fixed inset-0 opacity-10"></div>
-        <div className="relative z-10">
-          <Navbar />
-          <main className="container mx-auto px-4 py-8">
-            <Routes>
-              <Route path="/subscription" element={<Subscription />} />
-              <Route path="*" element={<Navigate to="/subscription" replace />} />
-            </Routes>
-          </main>
-        </div>
-        <Toaster />
-      </div>
-    );
-  }
-
-  // Show full app for premium users
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="animated-gradient fixed inset-0 opacity-10"></div>
@@ -96,7 +73,7 @@ function AppContent() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<Social />} />
             <Route path="/notifications" element={<Notifications />} />
-            <Route path="/subscription" element={<Subscription />} />
+
             <Route path="/study/:planId" element={<StudySession />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -109,7 +86,7 @@ function AppContent() {
   );
 }
 
-function App() {
+export function App() {
   return (
     <Router>
       <AuthProvider>

@@ -9,8 +9,9 @@ interface FlashcardRequest {
   subject: string;
   class?: string;
   chapters?: string;
-  plan_id?: string;
+
   count: number;
+  plan_id?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -62,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const userData = await userResponse.json();
     const userId = userData.id;
 
-    const { topic, subject, class: studentClass, chapters, plan_id, count }: FlashcardRequest = await req.json();
+    const { topic, subject, class: studentClass, chapters, count }: FlashcardRequest = await req.json();
 
     // Prepare Gemini API request
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
@@ -167,7 +168,7 @@ Make sure questions are specific and answers are educational. Include definition
     // Save flashcards to Supabase
     const flashcardsToInsert = flashcardsData.flashcards.map((card: any) => ({
       user_id: userId,
-      plan_id: plan_id || null,
+
       topic: topic === 'all_chapters' ? `${subject} - All Chapters` : topic,
       question: card.question,
       answer: card.answer,
