@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Zap, Settings } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
@@ -25,9 +25,11 @@ export function Navbar() {
   return (
     <nav className="bg-gray-800 p-4 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/dashboard" className="text-white text-2xl font-bold flex items-center gap-2">
-          <Zap className="text-blue-400" size={28} />
-          Bolt
+        <Link to="/dashboard" className="text-2xl font-bold flex items-center gap-2">
+          <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+            <Brain className="text-white" size={20} />
+          </div>
+          <span className="gradient-text">STUBUD</span>
         </Link>
 
         {/* Desktop Navigation */}

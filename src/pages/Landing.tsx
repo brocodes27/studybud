@@ -133,6 +133,7 @@ export function Landing() {
                     STUBUD
                   </h1>
                   <p className="text-blue-300 text-lg">Your AI Study Buddy</p>
+                    <p className="text-green-400 font-semibold">Free during beta</p>
                 </div>
               </div>
 
