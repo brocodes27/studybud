@@ -23,8 +23,8 @@ export function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  return (
-    <nav className="bg-gray-800 p-4 shadow-lg">
+  return (<>
+    <nav className="bg-gray-800 p-4 shadow-lg md:hidden">
       <div className="container mx-auto flex items-center">
         <Link to="/" className="text-2xl font-bold flex items-center gap-2">
           <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
@@ -87,5 +87,33 @@ export function Navbar() {
         </div>
       )}
     </nav>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:fixed md:flex flex-col w-64 h-screen bg-gray-800 shadow-lg p-6 left-0 top-0">
+        <Link to="/" className="text-2xl font-bold flex items-center gap-2 mb-8">
+          <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+            <Brain className="text-white" size={20} />
+          </div>
+          <span className="gradient-text">STUBUD</span>
+        </Link>
+        <div className="flex-1 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive(item.path) ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
+            >
+              <item.icon size={18} />
+              {item.name}
+            </Link>
+          ))}
+        </div>
+        <button
+          onClick={signOut}
+          className="mt-6 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+        >
+          Sign Out
+        </button>
+      </aside></>
   );
 }
