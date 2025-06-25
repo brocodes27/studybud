@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Trophy, MessageCircle, UserPlus, Crown, Star, Target, BookOpen, Zap, Award, Send, Hash, Calendar, TrendingUp, Medal, BarChart3, Copy, Key } from 'lucide-react';
+import { Users, Trophy, MessageCircle, UserPlus, Crown, Star, Target, BookOpen, Zap, Award, Send, Hash, Calendar, TrendingUp, Medal, BarChart3, Copy, Key, Pencil, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -77,6 +77,8 @@ export function SocialFeatures() {
   });
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [newGroupName, setNewGroupName] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -404,6 +406,32 @@ export function SocialFeatures() {
     } catch (error) {
       console.error('Error creating study group:', error);
       showToast('Failed to create study group', 'error');
+    }
+  };
+
+  const startEditingGroup = (group: StudyGroup) => {
+    setEditingGroupId(group.id);
+    setNewGroupName(group.name);
+  };
+
+  const saveGroupName = async (groupId: string) => {
+    const trimmed = newGroupName.trim();
+    if (!trimmed) {
+      showToast('Group name cannot be empty', 'error');
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('study_groups')
+        .update({ name: trimmed })
+        .eq('id', groupId);
+      if (error) throw error;
+      setEditingGroupId(null);
+      fetchStudyGroups();
+      showToast('Group name updated', 'success');
+    } catch (e) {
+      console.error('saveGroupName error', e);
+      showToast('Failed to update group name', 'error');
     }
   };
 
@@ -745,8 +773,49 @@ export function SocialFeatures() {
                 <div key={group.id} className="glass rounded-2xl p-6 border border-gray-700/50 card-hover">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">{group.name}</h3>
-                      <p className="text-blue-400 text-sm">{group.subject}</p>
+                      {editingGroupId === group.id ? (
+                         <>
+                           <input
+                             type="text"
+                             value={newGroupName}
+                             onChange={(e) => setNewGroupName(e.target.value)}
+                             className="text-lg font-bold text-white mb-1 w-full bg-transparent border-b border-gray-500 focus:outline-none"
+                           />
+                           <div className="flex gap-1 mt-1">
+                             <button
+                               onClick={() => saveGroupName(group.id)}
+                               className="text-green-400 p-1"
+                               title="Save"
+                             >
+                               <Check className="h-4 w-4" />
+                             </button>
+                             <button
+                               onClick={() => {
+                                 setEditingGroupId(null);
+                                 setNewGroupName('');
+                               }}
+                               className="text-gray-400 p-1"
+                               title="Cancel"
+                             >
+                               <X className="h-4 w-4" />
+                             </button>
+                           </div>
+                         </>
+                       ) : (
+                         <div className="flex items-center gap-2">
+                           <h3 className="text-lg font-bold text-white mb-1">{group.name}</h3>
+                           {group.created_by === user?.id && (
+                             <button
+                               onClick={() => startEditingGroup(group)}
+                               className="text-gray-400 hover:text-gray-200"
+                               title="Rename group"
+                             >
+                               <Pencil className="h-4 w-4" />
+                             </button>
+                           )}
+                         </div>
+                       )}
+                       <p className="text-blue-400 text-sm">{group.subject}</p>
                     </div>
                     <div className="flex items-center gap-1 text-gray-400 text-sm">
                       <Users className="h-4 w-4" />

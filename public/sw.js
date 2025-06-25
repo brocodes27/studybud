@@ -149,3 +149,28 @@ self.addEventListener('notificationclick', (event) => {
     clients.openWindow(event.notification.data.url)
   );
 });
+
+// Receive messages from client (e.g., show notifications)
+self.addEventListener('message', (event) => {
+  if (!event.data || !event.data.type) return;
+
+  switch (event.data.type) {
+    case 'SHOW_NOTIFICATION': {
+      const payload = event.data.payload || {};
+      const title = payload.title || 'Notification';
+      const options = {
+        body: payload.body,
+        icon: payload.icon || '/pwa-192x192.png',
+        badge: payload.badge || '/pwa-192x192.png',
+        tag: payload.tag,
+        requireInteraction: payload.requireInteraction || false,
+        actions: payload.actions || []
+      };
+      event.waitUntil(self.registration.showNotification(title, options));
+      break;
+    }
+    default:
+      // Ignore other message types
+      break;
+  }
+});

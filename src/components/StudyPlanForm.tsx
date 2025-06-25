@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, BookOpen, GraduationCap, FileText, Loader2 } from 'lucide-react';
+import { Calendar, BookOpen, GraduationCap, FileText, Loader2, Pencil } from 'lucide-react';
 
 interface StudyPlanFormProps {
   onSubmit: (data: FormData) => void;
@@ -8,6 +8,7 @@ interface StudyPlanFormProps {
 }
 
 export interface FormData {
+  plan_name: string;
   class: string;
   subject: string;
   chapters: string;
@@ -16,6 +17,7 @@ export interface FormData {
 
 export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlanFormProps) {
   const [formData, setFormData] = useState<FormData>({
+    plan_name: initialData.plan_name ?? '',
     class: initialData.class ?? '',
     subject: initialData.subject ?? '',
     chapters: initialData.chapters ?? '',
@@ -26,6 +28,10 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
+
+    if (!formData.plan_name.trim()) {
+      newErrors.plan_name = 'Plan name is required';
+    }
 
     if (!formData.class.trim()) {
       newErrors.class = 'Class is required';
@@ -87,6 +93,27 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Plan Name */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+            <Pencil className="h-4 w-4" />
+            Plan Name
+          </label>
+          <input
+            type="text"
+            value={formData.plan_name}
+            onChange={(e) => handleInputChange('plan_name', e.target.value)}
+            placeholder="e.g., JEE Final Sprint, Term-1 Physics"
+            className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+              errors.plan_name
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+            }`}
+          />
+          {errors.plan_name && (
+            <p className="text-red-600 text-sm mt-2">{errors.plan_name}</p>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">

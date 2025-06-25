@@ -212,27 +212,52 @@ export function SmartNotifications() {
     }
   };
 
-  const triggerAchievementNotification = (achievement: string) => {
-    if (settings.achievementNotifications && permission === 'granted') {
-      showNotification({
-        title: '🏆 Achievement Unlocked!',
-        body: `Congratulations! You've earned: ${achievement}`,
-        tag: 'achievement',
-        requireInteraction: true
-      });
+  const triggerAchievementNotification = async (achievement: string) => {
+    // Ensure notifications are allowed
+    let canNotify = permission === 'granted';
+    if (!canNotify) {
+      canNotify = await requestPermission();
+      if (!canNotify) {
+        showToast('Please enable notifications in your browser settings', 'error');
+        return;
+      }
     }
+
+    if (!settings.achievementNotifications) {
+      showToast('Achievement notifications are disabled in settings', 'info');
+      return;
+    }
+
+    showNotification({
+      title: '🏆 Achievement Unlocked!',
+      body: `Congratulations! You've earned: ${achievement}`,
+      tag: 'achievement',
+      requireInteraction: true
+    });
   };
 
-  const triggerGoalNotification = (goal: string, completed: boolean) => {
-    if (settings.dailyGoals && permission === 'granted') {
-      showNotification({
-        title: completed ? '✅ Goal Completed!' : '⏰ Goal Reminder',
-        body: completed 
-          ? `Amazing! You've completed: ${goal}` 
-          : `Don't forget: ${goal}`,
-        tag: 'daily-goal'
-      });
+  const triggerGoalNotification = async (goal: string, completed: boolean) => {
+    let canNotify = permission === 'granted';
+    if (!canNotify) {
+      canNotify = await requestPermission();
+      if (!canNotify) {
+        showToast('Please enable notifications in your browser settings', 'error');
+        return;
+      }
     }
+
+    if (!settings.dailyGoals) {
+      showToast('Daily goal notifications are disabled in settings', 'info');
+      return;
+    }
+
+    showNotification({
+      title: completed ? '✅ Goal Completed!' : '⏰ Goal Reminder',
+      body: completed 
+        ? `Amazing! You've completed: ${goal}` 
+        : `Don't forget: ${goal}`,
+      tag: 'daily-goal'
+    });
   };
 
   const getPermissionStatus = () => {

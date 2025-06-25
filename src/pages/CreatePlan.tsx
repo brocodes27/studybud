@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 import { StudyPlanForm, FormData } from '../components/StudyPlanForm';
 import { StudyPlanDisplay } from '../components/StudyPlanDisplay';
@@ -23,6 +24,7 @@ export function CreatePlan() {
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [searchParams] = useSearchParams();
   const initialDataFromParams: Partial<FormData> = {
+    plan_name: searchParams.get('plan_name') || undefined,
     subject: searchParams.get('subject') || undefined,
     exam_date: searchParams.get('exam_date') || undefined,
     chapters: searchParams.get('chapters') || undefined,
@@ -46,7 +48,7 @@ export function CreatePlan() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, plan_name: data.plan_name }),
       });
 
       if (!response.ok) {
@@ -57,6 +59,40 @@ export function CreatePlan() {
       const plan = await response.json();
       setStudyPlan(plan);
       setFormData(data);
+
+      // Persist the custom plan name if it exists and wasn't stored by the edge function
+      if (data.plan_name) {
+                let updateErr = null;
+        if (plan && (plan as any).id) {
+          const { error: nameErr } = await supabase
+            .from('exam_plans')
+            .update({ plan_name: data.plan_name })
+            .eq('id', (plan as any).id);
+          updateErr = nameErr;
+        } else {
+          // Fallback: find the most recently created matching plan for this user/subject/date
+          const { data: latestPlan, error: fetchErr } = await supabase
+            .from('exam_plans')
+            .select('id')
+            .eq('user_id', session?.user?.id)
+            .eq('subject', data.subject)
+            .eq('exam_date', data.exam_date)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!fetchErr && latestPlan) {
+            const { error: upErr } = await supabase
+              .from('exam_plans')
+              .update({ plan_name: data.plan_name })
+              .eq('id', latestPlan.id);
+            updateErr = upErr;
+          }
+        }
+        if (updateErr) {
+          console.warn('Could not save plan_name:', updateErr.message);
+        }
+      }
       
     } catch (err) {
       console.error('Error generating study plan:', err);

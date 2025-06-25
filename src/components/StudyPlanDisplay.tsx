@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, Clock, BookOpen, CheckCircle, Target, HelpCircle } from 'lucide-react';
 
 interface StudyPlan {
@@ -16,6 +15,7 @@ interface StudyPlan {
 interface StudyPlanDisplayProps {
   plan: StudyPlan;
   formData: {
+    plan_name: string;
     class: string;
     subject: string;
     chapters: string;
@@ -62,7 +62,7 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
               <Target className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">Your Study Plan</h3>
+              <h3 className="text-2xl font-bold text-gray-900">{formData.plan_name || 'Your Study Plan'}</h3>
               <p className="text-gray-600">Personalized schedule for {formData.subject}</p>
             </div>
           </div>
