@@ -46,14 +46,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [currentCard, setCurrentCard] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [studyMode, setStudyMode] = useState<'review' | 'generate' | 'topics'>('topics');
-  const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [availablePlans, setAvailablePlans] = useState<StudyPlan[]>([]);
   const [activeTopicFilter, setActiveTopicFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
+  const [selectedTopic, setSelectedTopic] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -140,183 +139,39 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
   const generateFlashcards = async () => {
     const activePlanId = selectedPlan || planId;
-
-    // Require at least one source: a study plan+topic, a free topic, or a PDF file
-    if (!pdfFile && !selectedTopic && !activePlanId) {
-      showToast('Please select a study plan, type a topic, or upload a PDF', 'error');
+    if (!activePlanId && !selectedTopic) {
+      showToast('Please select a study plan or enter a topic to generate flashcards.', 'error');
       return;
     }
-
-    // Resolve plan data if we have one
-    const selectedPlanData = activePlanId ? availablePlans.find(plan => plan.id === activePlanId) : undefined;
-
-    // Determine topic: priority → explicit topic field, else first chapter of selected plan, else empty string
-    const topicToUse =
-      selectedTopic ||
-      (!pdfFile && selectedPlanData?.chapters
-        ? selectedPlanData.chapters.split(',')[0].trim()
-        : '');
-    if (!pdfFile && !topicToUse) {
-      showToast('Please enter a topic or upload a PDF', 'error');
+    const selectedPlanData = availablePlans.find(plan => plan.id === activePlanId);
+    const topicToUse = selectedTopic || (selectedPlanData?.chapters ? selectedPlanData.chapters.split(',')[0].trim() : '');
+    if (!topicToUse) {
+      showToast('Please select or enter a topic.', 'error');
       return;
     }
-
     setIsGenerating(true);
     try {
-      // Check if we have the required environment variables
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured. Please check your environment variables.');
-      }
-
-      // Check if user is authenticated
       if (!session?.access_token) {
         throw new Error('User not authenticated. Please sign in again.');
       }
-
-      console.log('Generating flashcards with data:', {
+      const payload = {
         topic: topicToUse,
-        subject: selectedPlanData?.subject,
-        class: selectedPlanData?.class,
-        chapters: selectedPlanData?.chapters,
-        plan_id: activePlanId,
+        subject: selectedPlanData?.subject ?? '',
+        class: selectedPlanData?.class ?? '',
+        chapters: selectedPlanData?.chapters ?? topicToUse,
+        plan_id: activePlanId ?? null,
         count: 10,
-        pdf: Boolean(pdfFile)
+      };
+      const { data, error } = await supabase.functions.invoke('generate-flashcards', {
+        body: payload,
       });
-
-      // Invoke Supabase Edge Function using the JS client (adds auth headers automatically)
-      let newFlashcards: Flashcard[] = []; // store freshly generated cards
-      if (pdfFile) {
-        const formData = new FormData();
-        formData.append('file', pdfFile);
-        if (selectedTopic) formData.append('topic', selectedTopic);
-        if (activePlanId) formData.append('plan_id', activePlanId);
-        if (selectedPlanData?.subject) formData.append('subject', selectedPlanData.subject);
-        const { data, error } = await supabase.functions.invoke('generate-flashcards-from-pdf', {
-          headers: {
-            apikey: anonKey,
-            authorization: `Bearer ${session?.access_token ?? anonKey}`,
-            Authorization: `Bearer ${session?.access_token ?? anonKey}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          body: formData,
-        });
-        if (error) throw error;
-        newFlashcards = data as Flashcard[];
-      } else {
-        const payload = {
-          topic: topicToUse,
-          subject: selectedPlanData?.subject ?? '',
-          class: selectedPlanData?.class ?? '',
-          chapters: selectedPlanData?.chapters ?? topicToUse,
-          plan_id: activePlanId ?? null,
-          count: 10,
-        };
-        const { data, error } = await supabase.functions.invoke('generate-flashcards', {
-          body: payload,
-        });
-        if (error) throw error;
-        newFlashcards = data as Flashcard[];
-      }
-
-      if (!Array.isArray(legacyFlashcards)) {
+      if (error) throw error;
+      const newFlashcards = data as Flashcard[];
+      if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-
-      setFlashcards(prev => [...legacyFlashcards, ...prev]);
-      showToast(`Generated ${legacyFlashcards.length} flashcards!`, 'success');
-      setStudyMode('topics');
-      return;
-
-      // Decide which endpoint and payload to hit
-      let apiUrl = `${supabaseUrl}/functions/v1/generate-flashcards`;
-      let fetchOptions: RequestInit;
-
-      if (pdfFile) {
-        // PDF based generation
-        apiUrl = `${supabaseUrl}/functions/v1/generate-flashcards-from-pdf`;
-        const formData = new FormData();
-        formData.append('file', pdfFile);
-        // Only attach optional metadata if available
-        if (selectedPlanData?.subject) formData.append('subject', selectedPlanData.subject);
-        if (selectedTopic) formData.append('topic', selectedTopic);
-        if (activePlanId) formData.append('plan_id', activePlanId);
-
-        fetchOptions = {
-          method: 'POST',
-          headers: {
-            'apikey': anonKey,
-            'authorization': `Bearer ${session?.access_token ?? anonKey}`,
-            'Authorization': `Bearer ${session?.access_token ?? anonKey}`,
-          },
-          body: formData,
-        };
-      } else {
-        // Topic / plan based generation
-        fetchOptions = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': anonKey,
-            'authorization': `Bearer ${session?.access_token ?? anonKey}`,
-            'Authorization': `Bearer ${session?.access_token ?? anonKey}`,
-          },
-          body: JSON.stringify({
-            topic: topicToUse,
-            subject: selectedPlanData?.subject ?? '',
-            class: selectedPlanData?.class ?? '',
-            chapters: selectedPlanData?.chapters ?? topicToUse,
-            plan_id: activePlanId ?? null,
-            count: 10,
-          }),
-        };
-      }
-
-      const apiUrlFinal = apiUrl; // just to satisfy linter
-
-      const response = await fetch(apiUrlFinal, fetchOptions);
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        // Parse the error response to get detailed error message
-        let errorMessage = 'Failed to generate flashcards';
-        let errorDetails = '';
-        
-        try {
-          const errorData = await response.json();
-          console.error('Error response data:', errorData);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-          errorDetails = errorData.details || '';
-        } catch (parseError) {
-          // If we can't parse the response, try to get text
-          try {
-            const errorText = await response.text();
-            console.error('Error response text:', errorText);
-            if (errorText) {
-              errorMessage = errorText;
-            }
-          } catch (textError) {
-            // Use the HTTP status as fallback
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          }
-        }
-        
-        const fullErrorMessage = errorDetails ? `${errorMessage} - ${errorDetails}` : errorMessage;
-        throw new Error(fullErrorMessage);
-      }
-
-      const legacyFlashcards = await response.json();
-      console.log('Generated flashcards (legacy):', legacyFlashcards);
-      
-      if (!Array.isArray(legacyFlashcards)) {
-        throw new Error('Invalid response format: expected array of flashcards');
-      }
-
-      setFlashcards(prev => [...legacyFlashcards, ...prev]);
-      showToast(`Generated ${legacyFlashcards.length} flashcards!`, 'success');
+      setFlashcards(prev => [...newFlashcards, ...prev]);
+      showToast(`Generated ${newFlashcards.length} flashcards!`, 'success');
       setStudyMode('topics');
     } catch (error) {
       console.error('Error generating flashcards:', error);
@@ -324,8 +179,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       showToast(errorMessage, 'error');
     } finally {
       setIsGenerating(false);
-      // reset pdfFile when done
-      setPdfFile(null);
     }
   };
 
@@ -570,7 +423,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         /* Generate Mode */
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
           <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
-          
           <div className="space-y-4">
             {/* Study Plan Selection */}
             {!planId && availablePlans.length > 0 && (
@@ -592,28 +444,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 </select>
               </div>
             )}
-
-            {/* Plan Details Display */}
-            {selectedPlanData && (
-              <div className="glass rounded-xl p-4 border border-gray-700/50 bg-blue-500/10">
-                <h5 className="font-semibold text-blue-400 mb-2">Selected Plan Details</h5>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Subject:</span>
-                    <span className="text-white ml-2">{selectedPlanData.subject}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Class:</span>
-                    <span className="text-white ml-2">{selectedPlanData.class}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-400">Chapters:</span>
-                    <span className="text-white ml-2">{selectedPlanData.chapters}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Topic Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -641,23 +471,26 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 />
               )}
             </div>
-
-            {/* PDF Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Upload PDF (optional)
-              </label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-              />
-              {pdfFile && (
-                <p className="text-sm text-gray-400 mt-1">Selected: {pdfFile.name}</p>
-              )}
-            </div>
-
+            {/* Plan Details Display */}
+            {selectedPlanData && (
+              <div className="glass rounded-xl p-4 border border-gray-700/50 bg-blue-500/10">
+                <h5 className="font-semibold text-blue-400 mb-2">Selected Plan Details</h5>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400">Subject:</span>
+                    <span className="text-white ml-2">{selectedPlanData.subject}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Class:</span>
+                    <span className="text-white ml-2">{selectedPlanData.class}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-400">Chapters:</span>
+                    <span className="text-white ml-2">{selectedPlanData.chapters}</span>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* No Plans Available Message */}
             {availablePlans.length === 0 && (
               <div className="glass rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/10">
@@ -666,10 +499,9 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 </p>
               </div>
             )}
-
             <button
               onClick={generateFlashcards}
-              disabled={isGenerating || (!selectedPlan && !planId && !selectedTopic && !pdfFile)}
+              disabled={isGenerating || (!selectedPlan && !planId && !selectedTopic)}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
