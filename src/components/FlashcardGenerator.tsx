@@ -160,7 +160,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         class: selectedPlanData?.class ?? '',
         chapters: selectedPlanData?.chapters ?? topicToUse,
         plan_id: activePlanId ?? null,
-        count: 10,
+        count: 65,
       };
       const { data, error } = await supabase.functions.invoke('generate-flashcards', {
         body: payload,
