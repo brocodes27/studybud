@@ -64,11 +64,17 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
   }, [isSubscribed]);
 
   const handleSubscribe = async () => {
-    console.log('Subscribe clicked', formData);
-    if (!formData?.user_id || !formData?.email) return;
-    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+    console.log('formData:', formData);
+    if (!formData?.user_id || !formData?.email) {
+      alert('User not found! Are you logged in?');
+      return;
+    }
+    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
+      },
       body: JSON.stringify({ user_id: formData.user_id, email: formData.email }),
     });
     const data = await response.json();

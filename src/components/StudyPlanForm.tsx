@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BookOpen, GraduationCap, FileText, Loader2, Pencil } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface StudyPlanFormProps {
   onSubmit: (data: FormData) => void;
@@ -18,14 +19,15 @@ export interface FormData {
 }
 
 export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlanFormProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     plan_name: initialData.plan_name ?? '',
     class: initialData.class ?? '',
     subject: initialData.subject ?? '',
     chapters: initialData.chapters ?? '',
     exam_date: initialData.exam_date ?? '',
-    user_id: initialData.user_id,
-    email: initialData.email,
+    user_id: initialData.user_id ?? user?.id,
+    email: initialData.email ?? user?.email,
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -36,6 +38,11 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
     // TODO: Replace with real backend check for subscription
     setShowPaywall(!isSubscribed);
   }, [isSubscribed]);
+
+  useEffect(() => {
+    // Keep user_id and email in sync with logged-in user
+    setFormData(prev => ({ ...prev, user_id: user?.id, email: user?.email }));
+  }, [user]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
@@ -87,11 +94,17 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
   };
 
   const handleSubscribe = async () => {
-    console.log('Subscribe clicked', formData);
-    if (!formData?.user_id || !formData?.email) return;
-    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+    console.log('formData:', formData);
+    if (!formData?.user_id || !formData?.email) {
+      alert('User not found! Are you logged in?');
+      return;
+    }
+    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
+      },
       body: JSON.stringify({ user_id: formData.user_id, email: formData.email }),
     });
     const data = await response.json();
