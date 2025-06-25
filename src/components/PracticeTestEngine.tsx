@@ -59,6 +59,8 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [availablePlans, setAvailablePlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -83,6 +85,11 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
+
+  useEffect(() => {
+    // TODO: Replace with real backend check for subscription
+    setShowPaywall(!isSubscribed);
+  }, [isSubscribed]);
 
   const fetchAvailablePlans = async () => {
     try {
@@ -301,6 +308,22 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     return 'text-red-400';
   };
 
+  const handleSubscribe = async () => {
+    console.log('Subscribe clicked', user);
+    if (!user?.id || !user?.email) return;
+    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, email: user.email }),
+    });
+    const data = await response.json();
+    if (data.short_url) {
+      window.open(data.short_url, '_blank');
+    } else {
+      // Optionally show error
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -498,7 +521,22 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   const selectedPlanData = availablePlans.find(plan => plan.id === (selectedPlan || planId));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Razorpay Paywall Overlay */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
+            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
+            <button
+              onClick={handleSubscribe}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            >
+              Go to Subscription
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

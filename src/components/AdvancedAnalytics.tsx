@@ -45,17 +45,31 @@ interface AnalyticsData {
   };
 }
 
+// Razorpay script loader
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = resolve;
+    document.body.appendChild(script);
+  });
+};
+
 export function AdvancedAnalytics() {
   const { user } = useAuth();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
+  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchAnalyticsData();
     }
-  }, [user, timeRange]);
+    // TODO: Replace with real backend check for subscription
+    setShowPaywall(!isSubscribed);
+  }, [user, timeRange, isSubscribed]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -345,6 +359,22 @@ export function AdvancedAnalytics() {
     return insights;
   };
 
+  const handleSubscribe = async () => {
+    console.log('Subscribe clicked', user);
+    if (!user?.id || !user?.email) return;
+    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, email: user.email }),
+    });
+    const data = await response.json();
+    if (data.short_url) {
+      window.open(data.short_url, '_blank');
+    } else {
+      // Optionally show error
+    }
+  };
+
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   if (loading) {
@@ -369,241 +399,139 @@ export function AdvancedAnalytics() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Advanced Analytics</h1>
-          <p className="text-gray-400 mt-2">AI-powered insights into your learning journey</p>
-        </div>
-        <div className="flex gap-2">
-          {(['week', 'month', 'quarter'] as const).map((range) => (
+    <div className="space-y-6 relative">
+      {/* Razorpay Paywall Overlay */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
+            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
             <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                timeRange === range
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
+              onClick={handleSubscribe}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
-              {range.charAt(0).toUpperCase() + range.slice(1)}
+              Go to Subscription
             </button>
-          ))}
+          </div>
         </div>
-      </div>
+      )}
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Advanced Analytics</h1>
+            <p className="text-gray-400 mt-2">AI-powered insights into your learning journey</p>
+          </div>
+          <div className="flex gap-2">
+            {(['week', 'month', 'quarter'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                  timeRange === range
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {range.charAt(0).toUpperCase() + range.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* AI Insights */}
-      <div className="glass rounded-2xl p-6 border border-gray-700/50">
-        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Brain className="h-6 w-6 text-purple-400" />
-          AI-Powered Insights
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {analyticsData.aiInsights.map((insight, index) => (
-            <div
-              key={index}
-              className={`glass rounded-xl p-4 border ${
-                insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
-                insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
-                'border-green-500/30 bg-green-500/10'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${
-                  insight.type === 'strength' ? 'bg-green-500/20' :
-                  insight.type === 'weakness' ? 'bg-red-500/20' :
-                  insight.type === 'achievement' ? 'bg-purple-500/20' :
-                  'bg-blue-500/20'
-                }`}>
-                  {insight.type === 'strength' && <Star className="h-5 w-5 text-green-400" />}
-                  {insight.type === 'weakness' && <Target className="h-5 w-5 text-red-400" />}
-                  {insight.type === 'achievement' && <Award className="h-5 w-5 text-purple-400" />}
-                  {insight.type === 'recommendation' && <Zap className="h-5 w-5 text-blue-400" />}
-                </div>
-                <div className="flex-grow">
-                  <h4 className="font-semibold text-white mb-1">{insight.title}</h4>
-                  <p className="text-gray-300 text-sm mb-2">{insight.description}</p>
-                  <ul className="text-xs text-gray-400 space-y-1">
-                    {insight.actionItems.map((item, i) => (
-                      <li key={i}>• {item}</li>
-                    ))}
-                  </ul>
+        {/* AI Insights */}
+        <div className="glass rounded-2xl p-6 border border-gray-700/50">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <Brain className="h-6 w-6 text-purple-400" />
+            AI-Powered Insights
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {analyticsData.aiInsights.map((insight, index) => (
+              <div
+                key={index}
+                className={`glass rounded-xl p-4 border ${
+                  insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
+                  insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
+                  'border-green-500/30 bg-green-500/10'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    insight.type === 'strength' ? 'bg-green-500/20' :
+                    insight.type === 'weakness' ? 'bg-red-500/20' :
+                    insight.type === 'achievement' ? 'bg-purple-500/20' :
+                    'bg-blue-500/20'
+                  }`}>
+                    {insight.type === 'strength' && <Star className="h-5 w-5 text-green-400" />}
+                    {insight.type === 'weakness' && <Target className="h-5 w-5 text-red-400" />}
+                    {insight.type === 'achievement' && <Award className="h-5 w-5 text-purple-400" />}
+                    {insight.type === 'recommendation' && <Zap className="h-5 w-5 text-blue-400" />}
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className="font-semibold text-white mb-1">{insight.title}</h4>
+                    <p className="text-gray-300 text-sm mb-2">{insight.description}</p>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      {insight.actionItems.map((item, i) => (
+                        <li key={i}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Social Metrics */}
-      <div className="glass rounded-2xl p-6 border border-gray-700/50">
-        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <Users className="h-6 w-6 text-blue-400" />
-          Social Performance
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-3 inline-block">
-              <Award className="h-8 w-8 text-white" />
-            </div>
-            <p className="text-3xl font-bold text-white">#{analyticsData.socialMetrics.rank}</p>
-            <p className="text-gray-400 text-sm">Global Rank</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-4 rounded-2xl mb-3 inline-block">
-              <TrendingUp className="h-8 w-8 text-white" />
-            </div>
-            <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.studyStreak}</p>
-            <p className="text-gray-400 text-sm">Day Streak</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl mb-3 inline-block">
-              <Star className="h-8 w-8 text-white" />
-            </div>
-            <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.achievements}</p>
-            <p className="text-gray-400 text-sm">Achievements</p>
-          </div>
-          <div className="text-center">
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl mb-3 inline-block">
-              <Users className="h-8 w-8 text-white" />
-            </div>
-            <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.totalUsers.toLocaleString()}</p>
-            <p className="text-gray-400 text-sm">Total Users</p>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Study Patterns */}
+        {/* Social Metrics */}
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Clock className="h-6 w-6 text-blue-400" />
-            Study Patterns by Hour
+            <Users className="h-6 w-6 text-blue-400" />
+            Social Performance
           </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.studyPatterns}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="hour" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                    border: '1px solid rgba(75, 85, 99, 0.3)',
-                    borderRadius: '12px',
-                    color: '#F9FAFB'
-                  }}
-                />
-                <Bar dataKey="sessions" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Subject Performance Radar */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Target className="h-6 w-6 text-green-400" />
-            Subject Performance
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={analyticsData.subjectPerformance}>
-                <PolarGrid stroke="#374151" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                <Radar
-                  name="Mastery"
-                  dataKey="mastery"
-                  stroke="#10B981"
-                  fill="#10B981"
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                />
-                <Radar
-                  name="Accuracy"
-                  dataKey="accuracy"
-                  stroke="#3B82F6"
-                  fill="#3B82F6"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                    border: '1px solid rgba(75, 85, 99, 0.3)',
-                    borderRadius: '12px',
-                    color: '#F9FAFB'
-                  }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Learning Velocity */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-purple-400" />
-            Learning Velocity
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={analyticsData.learningVelocity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="date" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                    border: '1px solid rgba(75, 85, 99, 0.3)',
-                    borderRadius: '12px',
-                    color: '#F9FAFB'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="conceptsLearned" 
-                  stroke="#8B5CF6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="retentionRate" 
-                  stroke="#EC4899" 
-                  strokeWidth={3}
-                  dot={{ fill: '#EC4899', strokeWidth: 2, r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Focus Metrics */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <Brain className="h-6 w-6 text-yellow-400" />
-            Focus Analysis
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Average Focus Score</span>
-              <span className="text-2xl font-bold text-yellow-400">
-                {Math.round(analyticsData.focusMetrics.averageFocusScore)}%
-              </span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-3 inline-block">
+                <Award className="h-8 w-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-white">#{analyticsData.socialMetrics.rank}</p>
+              <p className="text-gray-400 text-sm">Global Rank</p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Peak Focus Hour</span>
-              <span className="text-xl font-bold text-blue-400">
-                {analyticsData.focusMetrics.peakFocusHour}:00
-              </span>
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-4 rounded-2xl mb-3 inline-block">
+                <TrendingUp className="h-8 w-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.studyStreak}</p>
+              <p className="text-gray-400 text-sm">Day Streak</p>
             </div>
-            <div className="h-32">
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl mb-3 inline-block">
+                <Star className="h-8 w-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.achievements}</p>
+              <p className="text-gray-400 text-sm">Achievements</p>
+            </div>
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl mb-3 inline-block">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.totalUsers.toLocaleString()}</p>
+              <p className="text-gray-400 text-sm">Total Users</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Study Patterns */}
+          <div className="glass rounded-2xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Clock className="h-6 w-6 text-blue-400" />
+              Study Patterns by Hour
+            </h3>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsData.focusMetrics.distractionPatterns}>
-                  <XAxis dataKey="timeOfDay" stroke="#9CA3AF" />
+                <BarChart data={analyticsData.studyPatterns}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="hour" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
                   <Tooltip 
                     contentStyle={{
@@ -613,9 +541,128 @@ export function AdvancedAnalytics() {
                       color: '#F9FAFB'
                     }}
                   />
-                  <Bar dataKey="distractions" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sessions" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Subject Performance Radar */}
+          <div className="glass rounded-2xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Target className="h-6 w-6 text-green-400" />
+              Subject Performance
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={analyticsData.subjectPerformance}>
+                  <PolarGrid stroke="#374151" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                  <Radar
+                    name="Mastery"
+                    dataKey="mastery"
+                    stroke="#10B981"
+                    fill="#10B981"
+                    fillOpacity={0.3}
+                    strokeWidth={2}
+                  />
+                  <Radar
+                    name="Accuracy"
+                    dataKey="accuracy"
+                    stroke="#3B82F6"
+                    fill="#3B82F6"
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                      border: '1px solid rgba(75, 85, 99, 0.3)',
+                      borderRadius: '12px',
+                      color: '#F9FAFB'
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Learning Velocity */}
+          <div className="glass rounded-2xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-purple-400" />
+              Learning Velocity
+            </h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData.learningVelocity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="date" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                      border: '1px solid rgba(75, 85, 99, 0.3)',
+                      borderRadius: '12px',
+                      color: '#F9FAFB'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="conceptsLearned" 
+                    stroke="#8B5CF6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="retentionRate" 
+                    stroke="#EC4899" 
+                    strokeWidth={3}
+                    dot={{ fill: '#EC4899', strokeWidth: 2, r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Focus Metrics */}
+          <div className="glass rounded-2xl p-6 border border-gray-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Brain className="h-6 w-6 text-yellow-400" />
+              Focus Analysis
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">Average Focus Score</span>
+                <span className="text-2xl font-bold text-yellow-400">
+                  {Math.round(analyticsData.focusMetrics.averageFocusScore)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300">Peak Focus Hour</span>
+                <span className="text-xl font-bold text-blue-400">
+                  {analyticsData.focusMetrics.peakFocusHour}:00
+                </span>
+              </div>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analyticsData.focusMetrics.distractionPatterns}>
+                    <XAxis dataKey="timeOfDay" stroke="#9CA3AF" />
+                    <YAxis stroke="#9CA3AF" />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        border: '1px solid rgba(75, 85, 99, 0.3)',
+                        borderRadius: '12px',
+                        color: '#F9FAFB'
+                      }}
+                    />
+                    <Bar dataKey="distractions" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>

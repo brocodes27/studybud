@@ -38,6 +38,16 @@ interface FlashcardGeneratorProps {
   topics?: string[];
 }
 
+// Razorpay script loader
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = resolve;
+    document.body.appendChild(script);
+  });
+};
+
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
   const { showToast } = useToast();
@@ -53,6 +63,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState('');
+  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -64,6 +76,12 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   useEffect(() => {
     organizeFlashcardsByTopic();
   }, [flashcards]);
+
+  useEffect(() => {
+    // TODO: Replace with real backend check for subscription
+    // setIsSubscribed(true/false) based on user
+    setShowPaywall(!isSubscribed);
+  }, [isSubscribed]);
 
   const fetchAvailablePlans = async () => {
     try {
@@ -193,14 +211,28 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     setStudyMode('review');
   };
 
+  const getNextReviewDate = (masteryLevel: number) => {
+    // Days for each mastery level
+    const days = [1, 2, 4, 7, 15, 30];
+    const idx = Math.max(0, Math.min(masteryLevel, days.length - 1));
+    const now = new Date();
+    now.setDate(now.getDate() + days[idx]);
+    return now.toISOString();
+  };
+
   const handleCardResponse = async (correct: boolean) => {
     const card = flashcards[currentCard];
     if (!card) return;
 
     try {
-      const newMasteryLevel = correct 
-        ? Math.min(card.mastery_level + 1, 5)
-        : Math.max(card.mastery_level - 1, 0);
+      let newMasteryLevel = card.mastery_level;
+      if (correct) {
+        newMasteryLevel = Math.min(card.mastery_level + 1, 5);
+      } else {
+        newMasteryLevel = Math.max(card.mastery_level - 1, 0);
+      }
+
+      const nextReviewAt = getNextReviewDate(newMasteryLevel);
 
       const { error } = await supabase
         .from('flashcards')
@@ -209,19 +241,21 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           review_count: card.review_count + 1,
           correct_count: correct ? card.correct_count + 1 : card.correct_count,
           last_reviewed_at: new Date().toISOString(),
+          next_review_at: nextReviewAt,
         })
         .eq('id', card.id);
 
       if (error) throw error;
 
       // Update local state
-      setFlashcards(prev => prev.map(fc => 
-        fc.id === card.id 
-          ? { 
-              ...fc, 
+      setFlashcards(prev => prev.map(fc =>
+        fc.id === card.id
+          ? {
+              ...fc,
               mastery_level: newMasteryLevel,
               review_count: fc.review_count + 1,
-              correct_count: correct ? fc.correct_count + 1 : fc.correct_count
+              correct_count: correct ? fc.correct_count + 1 : fc.correct_count,
+              next_review_at: nextReviewAt,
             }
           : fc
       ));
@@ -270,6 +304,22 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     return 'text-red-400';
   };
 
+  const handleSubscribe = async () => {
+    console.log('Subscribe clicked', user);
+    if (!user?.id || !user?.email) return;
+    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, email: user.email }),
+    });
+    const data = await response.json();
+    if (data.short_url) {
+      window.open(data.short_url, '_blank');
+    } else {
+      // Optionally show error
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -281,8 +331,27 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const selectedPlanData = availablePlans.find(plan => plan.id === (selectedPlan || planId));
   const availableTopics = selectedPlanData ? selectedPlanData.chapters.split(',').map(c => c.trim()) : topics;
 
+  const today = new Date();
+  const dueToday = flashcards.filter(card => new Date(card.next_review_at) <= today).length;
+  const mastered = flashcards.filter(card => card.mastery_level >= 5).length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Razorpay Paywall Overlay */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
+            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
+            <button
+              onClick={handleSubscribe}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            >
+              Pay with Razorpay
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -548,6 +617,19 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             <div className="flex items-center gap-2">
               <span className="text-gray-400">Mastery:</span>
               {getMasteryStars(flashcards[currentCard]?.mastery_level || 0)}
+            </div>
+          </div>
+
+          {/* Progress Stats Bar */}
+          <div className="flex gap-4 mb-4">
+            <div className="bg-blue-700 text-white px-4 py-2 rounded-lg">
+              Due Today: {dueToday}
+            </div>
+            <div className="bg-green-700 text-white px-4 py-2 rounded-lg">
+              Mastered: {mastered}
+            </div>
+            <div className="bg-gray-700 text-white px-4 py-2 rounded-lg">
+              Total: {flashcards.length}
             </div>
           </div>
 

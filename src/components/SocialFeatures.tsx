@@ -79,6 +79,8 @@ export function SocialFeatures() {
   const [loading, setLoading] = useState(true);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
+  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -107,6 +109,11 @@ export function SocialFeatures() {
       };
     }
   }, [selectedGroup]);
+
+  useEffect(() => {
+    // TODO: Replace with real backend check for subscription
+    setShowPaywall(!isSubscribed);
+  }, [isSubscribed]);
 
   const ensureUserProfile = async () => {
     if (!user) return;
@@ -583,6 +590,22 @@ export function SocialFeatures() {
     return `${mins}m`;
   };
 
+  const handleSubscribe = async () => {
+    console.log('Subscribe clicked', user);
+    if (!user?.id || !user?.email) return;
+    const response = await fetch('/functions/v1/create-razorpay-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, email: user.email }),
+    });
+    const data = await response.json();
+    if (data.short_url) {
+      window.open(data.short_url, '_blank');
+    } else {
+      // Optionally show error
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -595,162 +618,53 @@ export function SocialFeatures() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Social Learning</h1>
-          <p className="text-gray-400 mt-2">Connect, compete, and learn together in private study groups</p>
-        </div>
-        
-        <div className="flex gap-2">
-          {(['groups', 'leaderboard', 'achievements'] as const).map((tab) => (
+    <div className="space-y-6 relative">
+      {/* Razorpay Paywall Overlay */}
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
+            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                activeTab === tab
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
+              onClick={handleSubscribe}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              Go to Subscription
             </button>
-          ))}
-        </div>
-      </div>
-
-      {activeTab === 'groups' && (
-        <div className="space-y-6">
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Private Study Groups</h2>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowJoinGroup(true)}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
-              >
-                <Key className="h-5 w-5" />
-                Join with Code
-              </button>
-              <button
-                onClick={() => setShowCreateGroup(true)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
-              >
-                <UserPlus className="h-5 w-5" />
-                Create Group
-              </button>
-            </div>
           </div>
+        </div>
+      )}
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Social Learning</h1>
+            <p className="text-gray-400 mt-2">Connect, compete, and learn together in private study groups</p>
+          </div>
+          
+          <div className="flex gap-2">
+            {(['groups', 'leaderboard', 'achievements'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                  activeTab === tab
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Join Group Modal */}
-          {showJoinGroup && (
-            <div className="glass rounded-2xl p-6 border border-gray-700/50">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Key className="h-5 w-5 text-green-400" />
-                Join Study Group
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Enter Join Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., ABC123"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-green-500 focus:outline-none text-center text-lg font-mono tracking-wider"
-                    maxLength={6}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Ask a group member for the 6-character join code
-                  </p>
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={joinGroupByCode}
-                    disabled={!joinCode.trim()}
-                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-3 px-6 rounded-xl transition-colors duration-200"
-                  >
-                    Join Group
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowJoinGroup(false);
-                      setJoinCode('');
-                    }}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Create Group Modal */}
-          {showCreateGroup && (
-            <div className="glass rounded-2xl p-6 border border-gray-700/50">
-              <h3 className="text-lg font-bold text-white mb-4">Create Private Study Group</h3>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Group Name"
-                  value={newGroupData.name}
-                  onChange={(e) => setNewGroupData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Subject"
-                  value={newGroupData.subject}
-                  onChange={(e) => setNewGroupData(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                />
-                <textarea
-                  placeholder="Description"
-                  value={newGroupData.description}
-                  onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none resize-none"
-                />
-                <div className="glass rounded-xl p-4 border border-blue-500/30 bg-blue-500/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Key className="h-4 w-4 text-blue-400" />
-                    <span className="text-blue-400 font-medium text-sm">Private Group</span>
-                  </div>
-                  <p className="text-gray-300 text-sm">
-                    Your group will be private and only accessible with a unique join code that will be generated automatically.
-                  </p>
-                </div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={createStudyGroup}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
-                  >
-                    Create Group
-                  </button>
-                  <button
-                    onClick={() => setShowCreateGroup(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Study Groups Grid */}
-          {studyGroups.length === 0 ? (
-            <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-              <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-                <Users className="h-16 w-16 text-gray-400 mx-auto" />
-              </div>
-              <h4 className="text-xl font-semibold text-white mb-2">No Study Groups Yet</h4>
-              <p className="text-gray-400 mb-6">Create your first private study group or join one with a code!</p>
-              <div className="flex gap-4 justify-center">
+        {activeTab === 'groups' && (
+          <div className="space-y-6">
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Private Study Groups</h2>
+              <div className="flex gap-3">
                 <button
                   onClick={() => setShowJoinGroup(true)}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
@@ -767,411 +681,537 @@ export function SocialFeatures() {
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {studyGroups.map((group) => (
-                <div key={group.id} className="glass rounded-2xl p-6 border border-gray-700/50 card-hover">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      {editingGroupId === group.id ? (
-                         <>
-                           <input
-                             type="text"
-                             value={newGroupName}
-                             onChange={(e) => setNewGroupName(e.target.value)}
-                             className="text-lg font-bold text-white mb-1 w-full bg-transparent border-b border-gray-500 focus:outline-none"
-                           />
-                           <div className="flex gap-1 mt-1">
-                             <button
-                               onClick={() => saveGroupName(group.id)}
-                               className="text-green-400 p-1"
-                               title="Save"
-                             >
-                               <Check className="h-4 w-4" />
-                             </button>
-                             <button
-                               onClick={() => {
-                                 setEditingGroupId(null);
-                                 setNewGroupName('');
-                               }}
-                               className="text-gray-400 p-1"
-                               title="Cancel"
-                             >
-                               <X className="h-4 w-4" />
-                             </button>
-                           </div>
-                         </>
-                       ) : (
-                         <div className="flex items-center gap-2">
-                           <h3 className="text-lg font-bold text-white mb-1">{group.name}</h3>
-                           {group.created_by === user?.id && (
-                             <button
-                               onClick={() => startEditingGroup(group)}
-                               className="text-gray-400 hover:text-gray-200"
-                               title="Rename group"
-                             >
-                               <Pencil className="h-4 w-4" />
-                             </button>
-                           )}
-                         </div>
-                       )}
-                       <p className="text-blue-400 text-sm">{group.subject}</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-gray-400 text-sm">
-                      <Users className="h-4 w-4" />
-                      {group.member_count}
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-300 text-sm mb-3 line-clamp-2">{group.description}</p>
-                  
-                  <div className="text-xs text-gray-500 mb-4">
-                    Created by {group.creator_name} • {format(new Date(group.created_at), 'MMM d, yyyy')}
-                  </div>
 
-                  {/* Join Code Display */}
-                  <div className="bg-gray-800/50 rounded-lg p-3 mb-4 border border-gray-600/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Join Code</p>
-                        <p className="font-mono text-lg font-bold text-white tracking-wider">{group.join_code}</p>
-                      </div>
-                      <button
-                        onClick={() => copyJoinCode(group.join_code)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-200"
-                        title="Copy join code"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    {group.is_member ? (
-                      <>
-                        <button
-                          onClick={() => setSelectedGroup(group)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm flex items-center justify-center gap-1"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          Chat
-                        </button>
-                        <button
-                          onClick={() => openGroupLeaderboard(group)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm flex items-center gap-1"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          Ranks
-                        </button>
-                        <button
-                          onClick={() => leaveGroup(group.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm"
-                        >
-                          Leave
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full text-center text-gray-400 text-sm py-2">
-                        Not a member
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Group Chat Modal */}
-          {selectedGroup && !showGroupLeaderboard && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="glass rounded-2xl p-6 border border-gray-700/50 w-full max-w-2xl max-h-[80vh] flex flex-col">
-                <div className="flex items-center justify-between mb-4">
+            {/* Join Group Modal */}
+            {showJoinGroup && (
+              <div className="glass rounded-2xl p-6 border border-gray-700/50">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Key className="h-5 w-5 text-green-400" />
+                  Join Study Group
+                </h3>
+                <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-bold text-white">{selectedGroup.name}</h3>
-                    <p className="text-sm text-gray-400">{selectedGroup.subject} • {selectedGroup.member_count} members</p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedGroup(null)}
-                    className="text-gray-400 hover:text-white text-xl"
-                  >
-                    ✕
-                  </button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto mb-4 space-y-3 max-h-96">
-                  {groupMessages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-400">No messages yet. Start the conversation!</p>
-                    </div>
-                  ) : (
-                    groupMessages.map((message) => (
-                      <div key={message.id} className={`p-3 rounded-lg ${
-                        message.user_id === user?.id 
-                          ? 'bg-blue-600/20 border border-blue-500/30 ml-8' 
-                          : 'bg-gray-800/50 mr-8'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`font-semibold text-sm ${
-                            message.user_id === user?.id ? 'text-blue-400' : 'text-gray-300'
-                          }`}>
-                            {message.user_id === user?.id ? 'You' : message.user_name}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {format(new Date(message.created_at), 'MMM d, HH:mm')}
-                          </span>
-                        </div>
-                        <p className="text-gray-300 text-sm">{message.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                  />
-                  <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Group Leaderboard Modal */}
-          {selectedGroup && showGroupLeaderboard && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="glass rounded-2xl p-6 border border-gray-700/50 w-full max-w-3xl max-h-[80vh] flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                      <Trophy className="h-6 w-6 text-yellow-400" />
-                      {selectedGroup.name} Leaderboard
-                    </h3>
-                    <p className="text-sm text-gray-400">Top performers in this study group</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowGroupLeaderboard(false);
-                      setSelectedGroup(null);
-                    }}
-                    className="text-gray-400 hover:text-white text-xl"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto">
-                  {groupLeaderboard.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-400">No activity data yet. Start studying to appear on the leaderboard!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {groupLeaderboard.map((entry, index) => (
-                        <div
-                          key={entry.user_id}
-                          className={`p-4 rounded-xl border transition-all duration-200 ${
-                            entry.user_id === user?.id 
-                              ? 'bg-blue-500/10 border-blue-500/30 glow-blue' 
-                              : 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/70'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                {getGroupRankIcon(entry.rank)}
-                              </div>
-                              
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                                  entry.rank <= 3 
-                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' 
-                                    : 'bg-gray-600 text-gray-300'
-                                }`}>
-                                  {entry.username.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <span className={`font-medium ${
-                                    entry.user_id === user?.id ? 'text-blue-400' : 'text-white'
-                                  }`}>
-                                    {entry.username}
-                                    {entry.user_id === user?.id && ' (You)'}
-                                  </span>
-                                  <div className="text-xs text-gray-400">
-                                    {entry.tasks_completed} tasks • {formatTime(entry.study_time_minutes)} studied
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="text-right">
-                              <div className="flex items-center gap-2">
-                                <Star className="h-4 w-4 text-yellow-400" />
-                                <span className="font-bold text-white">{entry.total_points.toLocaleString()}</span>
-                              </div>
-                              <div className="text-xs text-gray-400">points</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-700/50">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-400">
-                      Points are calculated from completed tasks, study time, practice tests, and achievements
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Enter Join Code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., ABC123"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-green-500 focus:outline-none text-center text-lg font-mono tracking-wider"
+                      maxLength={6}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ask a group member for the 6-character join code
                     </p>
                   </div>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={joinGroupByCode}
+                      disabled={!joinCode.trim()}
+                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-3 px-6 rounded-xl transition-colors duration-200"
+                    >
+                      Join Group
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowJoinGroup(false);
+                        setJoinCode('');
+                      }}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {activeTab === 'leaderboard' && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-white">Global Leaderboard</h2>
-          
-          {leaderboard.length === 0 ? (
-            <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-              <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-                <Trophy className="h-16 w-16 text-gray-400 mx-auto" />
-              </div>
-              <h4 className="text-xl font-semibold text-white mb-2">No Rankings Yet</h4>
-              <p className="text-gray-400">Complete study tasks to appear on the leaderboard!</p>
-            </div>
-          ) : (
-            <div className="glass rounded-2xl border border-gray-700/50 overflow-hidden">
-              <div className="p-6 border-b border-gray-700/50">
-                <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-400">
-                  <span>Rank</span>
-                  <span>Student</span>
-                  <span>Points</span>
-                  <span>Streak</span>
+            {/* Create Group Modal */}
+            {showCreateGroup && (
+              <div className="glass rounded-2xl p-6 border border-gray-700/50">
+                <h3 className="text-lg font-bold text-white mb-4">Create Private Study Group</h3>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Group Name"
+                    value={newGroupData.name}
+                    onChange={(e) => setNewGroupData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Subject"
+                    value={newGroupData.subject}
+                    onChange={(e) => setNewGroupData(prev => ({ ...prev, subject: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                  />
+                  <textarea
+                    placeholder="Description"
+                    value={newGroupData.description}
+                    onChange={(e) => setNewGroupData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none resize-none"
+                  />
+                  <div className="glass rounded-xl p-4 border border-blue-500/30 bg-blue-500/10">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Key className="h-4 w-4 text-blue-400" />
+                      <span className="text-blue-400 font-medium text-sm">Private Group</span>
+                    </div>
+                    <p className="text-gray-300 text-sm">
+                      Your group will be private and only accessible with a unique join code that will be generated automatically.
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={createStudyGroup}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
+                    >
+                      Create Group
+                    </button>
+                    <button
+                      onClick={() => setShowCreateGroup(false)}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-xl transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
-              
-              <div className="divide-y divide-gray-700/50">
-                {leaderboard.slice(0, 20).map((entry) => (
-                  <div
-                    key={entry.id}
-                    className={`p-6 grid grid-cols-4 gap-4 items-center hover:bg-gray-800/30 transition-colors duration-200 ${
-                      entry.id === user?.id ? 'bg-blue-500/10 border-l-4 border-blue-500' : ''
-                    }`}
+            )}
+
+            {/* Study Groups Grid */}
+            {studyGroups.length === 0 ? (
+              <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
+                <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
+                  <Users className="h-16 w-16 text-gray-400 mx-auto" />
+                </div>
+                <h4 className="text-xl font-semibold text-white mb-2">No Study Groups Yet</h4>
+                <p className="text-gray-400 mb-6">Create your first private study group or join one with a code!</p>
+                <div className="flex gap-4 justify-center">
+                  <button
+                    onClick={() => setShowJoinGroup(true)}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2"
                   >
-                    <div className="flex items-center gap-2">
-                      {getRankIcon(entry.rank)}
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        entry.rank <= 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-gray-600 text-gray-300'
-                      }`}>
-                        {entry.username.charAt(0).toUpperCase()}
+                    <Key className="h-5 w-5" />
+                    Join with Code
+                  </button>
+                  <button
+                    onClick={() => setShowCreateGroup(true)}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <UserPlus className="h-5 w-5" />
+                    Create Group
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {studyGroups.map((group) => (
+                  <div key={group.id} className="glass rounded-2xl p-6 border border-gray-700/50 card-hover">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        {editingGroupId === group.id ? (
+                           <>
+                             <input
+                               type="text"
+                               value={newGroupName}
+                               onChange={(e) => setNewGroupName(e.target.value)}
+                               className="text-lg font-bold text-white mb-1 w-full bg-transparent border-b border-gray-500 focus:outline-none"
+                             />
+                             <div className="flex gap-1 mt-1">
+                               <button
+                                 onClick={() => saveGroupName(group.id)}
+                                 className="text-green-400 p-1"
+                                 title="Save"
+                               >
+                                 <Check className="h-4 w-4" />
+                               </button>
+                               <button
+                                 onClick={() => {
+                                   setEditingGroupId(null);
+                                   setNewGroupName('');
+                                 }}
+                                 className="text-gray-400 p-1"
+                                 title="Cancel"
+                               >
+                                 <X className="h-4 w-4" />
+                               </button>
+                             </div>
+                           </>
+                         ) : (
+                           <div className="flex items-center gap-2">
+                             <h3 className="text-lg font-bold text-white mb-1">{group.name}</h3>
+                             {group.created_by === user?.id && (
+                               <button
+                                 onClick={() => startEditingGroup(group)}
+                                 className="text-gray-400 hover:text-gray-200"
+                                 title="Rename group"
+                               >
+                                 <Pencil className="h-4 w-4" />
+                               </button>
+                             )}
+                           </div>
+                         )}
+                         <p className="text-blue-400 text-sm">{group.subject}</p>
                       </div>
-                      <span className={`font-medium ${entry.id === user?.id ? 'text-blue-400' : 'text-white'}`}>
-                        {entry.username}
-                        {entry.id === user?.id && ' (You)'}
-                      </span>
+                      <div className="flex items-center gap-1 text-gray-400 text-sm">
+                        <Users className="h-4 w-4" />
+                        {group.member_count}
+                      </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <span className="font-bold text-white">{entry.total_points.toLocaleString()}</span>
+                    <p className="text-gray-300 text-sm mb-3 line-clamp-2">{group.description}</p>
+                    
+                    <div className="text-xs text-gray-500 mb-4">
+                      Created by {group.creator_name} • {format(new Date(group.created_at), 'MMM d, yyyy')}
+                    </div>
+
+                    {/* Join Code Display */}
+                    <div className="bg-gray-800/50 rounded-lg p-3 mb-4 border border-gray-600/50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Join Code</p>
+                          <p className="font-mono text-lg font-bold text-white tracking-wider">{group.join_code}</p>
+                        </div>
+                        <button
+                          onClick={() => copyJoinCode(group.join_code)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-200"
+                          title="Copy join code"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-orange-400" />
-                      <span className="font-bold text-white">{entry.study_streak} days</span>
+                    <div className="flex gap-2">
+                      {group.is_member ? (
+                        <>
+                          <button
+                            onClick={() => setSelectedGroup(group)}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm flex items-center justify-center gap-1"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            Chat
+                          </button>
+                          <button
+                            onClick={() => openGroupLeaderboard(group)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm flex items-center gap-1"
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                            Ranks
+                          </button>
+                          <button
+                            onClick={() => leaveGroup(group.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm"
+                          >
+                            Leave
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-full text-center text-gray-400 text-sm py-2">
+                          Not a member
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
 
-      {activeTab === 'achievements' && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-white">Your Achievements</h2>
-          
-          {achievements.length === 0 ? (
-            <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-              <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-                <Award className="h-16 w-16 text-gray-400 mx-auto" />
-              </div>
-              <h4 className="text-xl font-semibold text-white mb-2">No Achievements Yet</h4>
-              <p className="text-gray-400 mb-6">Start studying to unlock your first achievement!</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {achievements.map((achievement) => (
-                <div
-                  key={achievement.id}
-                  className="glass rounded-2xl p-6 border border-yellow-500/30 bg-yellow-500/10 card-hover"
-                >
-                  <div className="text-center">
-                    <div className="text-4xl mb-3">
-                      {achievement.icon}
+            {/* Group Chat Modal */}
+            {selectedGroup && !showGroupLeaderboard && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="glass rounded-2xl p-6 border border-gray-700/50 w-full max-w-2xl max-h-[80vh] flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">{selectedGroup.name}</h3>
+                      <p className="text-sm text-gray-400">{selectedGroup.subject} • {selectedGroup.member_count} members</p>
                     </div>
-                    <h3 className="font-bold text-yellow-400 mb-2">
-                      {achievement.achievement_name}
-                    </h3>
-                    <p className="text-gray-300 text-sm mb-3">{achievement.description}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-medium">
-                        +{achievement.points} points
+                    <button
+                      onClick={() => setSelectedGroup(null)}
+                      className="text-gray-400 hover:text-white text-xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto mb-4 space-y-3 max-h-96">
+                    {groupMessages.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-400">No messages yet. Start the conversation!</p>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {format(new Date(achievement.unlocked_at), 'MMM d, yyyy')}
+                    ) : (
+                      groupMessages.map((message) => (
+                        <div key={message.id} className={`p-3 rounded-lg ${
+                          message.user_id === user?.id 
+                            ? 'bg-blue-600/20 border border-blue-500/30 ml-8' 
+                            : 'bg-gray-800/50 mr-8'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`font-semibold text-sm ${
+                              message.user_id === user?.id ? 'text-blue-400' : 'text-gray-300'
+                            }`}>
+                              {message.user_id === user?.id ? 'You' : message.user_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(message.created_at), 'MMM d, HH:mm')}
+                            </span>
+                          </div>
+                          <p className="text-gray-300 text-sm">{message.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      placeholder="Type your message..."
+                      className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-1"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Group Leaderboard Modal */}
+            {selectedGroup && showGroupLeaderboard && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="glass rounded-2xl p-6 border border-gray-700/50 w-full max-w-3xl max-h-[80vh] flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <Trophy className="h-6 w-6 text-yellow-400" />
+                        {selectedGroup.name} Leaderboard
+                      </h3>
+                      <p className="text-sm text-gray-400">Top performers in this study group</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowGroupLeaderboard(false);
+                        setSelectedGroup(null);
+                      }}
+                      className="text-gray-400 hover:text-white text-xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto">
+                    {groupLeaderboard.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-400">No activity data yet. Start studying to appear on the leaderboard!</p>
                       </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {groupLeaderboard.map((entry, index) => (
+                          <div
+                            key={entry.user_id}
+                            className={`p-4 rounded-xl border transition-all duration-200 ${
+                              entry.user_id === user?.id 
+                              ? 'bg-blue-500/10 border-blue-500/30 glow-blue' 
+                              : 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/70'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  {getGroupRankIcon(entry.rank)}
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                                    entry.rank <= 3 
+                                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' 
+                                      : 'bg-gray-600 text-gray-300'
+                                  }`}>
+                                    {entry.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <span className={`font-medium ${
+                                      entry.user_id === user?.id ? 'text-blue-400' : 'text-white'
+                                    }`}>
+                                      {entry.username}
+                                      {entry.user_id === user?.id && ' (You)'}
+                                    </span>
+                                    <div className="text-xs text-gray-400">
+                                      {entry.tasks_completed} tasks • {formatTime(entry.study_time_minutes)} studied
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="text-right">
+                                <div className="flex items-center gap-2">
+                                  <Star className="h-4 w-4 text-yellow-400" />
+                                  <span className="font-bold text-white">{entry.total_points.toLocaleString()}</span>
+                                </div>
+                                <div className="text-xs text-gray-400">points</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-gray-700/50">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-400">
+                        Points are calculated from completed tasks, study time, practice tests, and achievements
+                      </p>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Achievement Progress */}
-          <div className="glass rounded-2xl p-6 border border-gray-700/50">
-            <h3 className="text-lg font-bold text-white mb-4">Achievement Progress</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy className="h-5 w-5 text-yellow-400" />
-                  <span className="font-semibold text-white">Total Achievements</span>
-                </div>
-                <p className="text-2xl font-bold text-yellow-400">{achievements.length}</p>
               </div>
-              <div className="bg-gray-800/50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="h-5 w-5 text-blue-400" />
-                  <span className="font-semibold text-white">Total Points</span>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-white">Global Leaderboard</h2>
+            
+            {leaderboard.length === 0 ? (
+              <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
+                <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
+                  <Trophy className="h-16 w-16 text-gray-400 mx-auto" />
                 </div>
-                <p className="text-2xl font-bold text-blue-400">
-                  {achievements.reduce((sum, a) => sum + a.points, 0).toLocaleString()}
-                </p>
+                <h4 className="text-xl font-semibold text-white mb-2">No Rankings Yet</h4>
+                <p className="text-gray-400">Complete study tasks to appear on the leaderboard!</p>
+              </div>
+            ) : (
+              <div className="glass rounded-2xl border border-gray-700/50 overflow-hidden">
+                <div className="p-6 border-b border-gray-700/50">
+                  <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-400">
+                    <span>Rank</span>
+                    <span>Student</span>
+                    <span>Points</span>
+                    <span>Streak</span>
+                  </div>
+                </div>
+                
+                <div className="divide-y divide-gray-700/50">
+                  {leaderboard.slice(0, 20).map((entry) => (
+                    <div
+                      key={entry.id}
+                      className={`p-6 grid grid-cols-4 gap-4 items-center hover:bg-gray-800/30 transition-colors duration-200 ${
+                        entry.id === user?.id ? 'bg-blue-500/10 border-l-4 border-blue-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {getRankIcon(entry.rank)}
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          entry.rank <= 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white' : 'bg-gray-600 text-gray-300'
+                        }`}>
+                          {entry.username.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`font-medium ${entry.id === user?.id ? 'text-blue-400' : 'text-white'}`}>
+                          {entry.username}
+                          {entry.id === user?.id && ' (You)'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 text-yellow-400" />
+                        <span className="font-bold text-white">{entry.total_points.toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-orange-400" />
+                        <span className="font-bold text-white">{entry.study_streak} days</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'achievements' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-white">Your Achievements</h2>
+            
+            {achievements.length === 0 ? (
+              <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
+                <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
+                  <Award className="h-16 w-16 text-gray-400 mx-auto" />
+                </div>
+                <h4 className="text-xl font-semibold text-white mb-2">No Achievements Yet</h4>
+                <p className="text-gray-400 mb-6">Start studying to unlock your first achievement!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {achievements.map((achievement) => (
+                  <div
+                    key={achievement.id}
+                    className="glass rounded-2xl p-6 border border-yellow-500/30 bg-yellow-500/10 card-hover"
+                  >
+                    <div className="text-center">
+                      <div className="text-4xl mb-3">
+                        {achievement.icon}
+                      </div>
+                      <h3 className="font-bold text-yellow-400 mb-2">
+                        {achievement.achievement_name}
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-3">{achievement.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-medium">
+                          +{achievement.points} points
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {format(new Date(achievement.unlocked_at), 'MMM d, yyyy')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Achievement Progress */}
+            <div className="glass rounded-2xl p-6 border border-gray-700/50">
+              <h3 className="text-lg font-bold text-white mb-4">Achievement Progress</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trophy className="h-5 w-5 text-yellow-400" />
+                    <span className="font-semibold text-white">Total Achievements</span>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-400">{achievements.length}</p>
+                </div>
+                <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="h-5 w-5 text-blue-400" />
+                    <span className="font-semibold text-white">Total Points</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {achievements.reduce((sum, a) => sum + a.points, 0).toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
