@@ -198,6 +198,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             apikey: anonKey,
             authorization: `Bearer ${session?.access_token ?? anonKey}`,
             Authorization: `Bearer ${session?.access_token ?? anonKey}`,
+            'Content-Type': 'multipart/form-data',
           },
           body: formData,
         });

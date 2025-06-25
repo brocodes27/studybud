@@ -46,6 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: userData
       }
     });
+
+    // Insert / update user_profile row
+    if (data.user) {
+      const { error: profileError } = await supabase.from('user_profile').upsert({
+        id: data.user.id,
+        full_name: userData?.full_name ?? userData?.name ?? null,
+        avatar_url: userData?.avatar_url ?? null,
+      });
+      if (profileError) console.warn('Profile upsert failed:', profileError.message);
+    }
+
     return { data, error };
   };
 
