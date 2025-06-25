@@ -186,7 +186,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       });
 
       // Invoke Supabase Edge Function using the JS client (adds auth headers automatically)
-      let newFlashcards: Flashcard[] = [];
+      let newFlashcards: Flashcard[] = []; // store freshly generated cards
       if (pdfFile) {
         const formData = new FormData();
         formData.append('file', pdfFile);
@@ -194,6 +194,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         if (activePlanId) formData.append('plan_id', activePlanId);
         if (selectedPlanData?.subject) formData.append('subject', selectedPlanData.subject);
         const { data, error } = await supabase.functions.invoke('generate-flashcards-from-pdf', {
+          headers: {
+            apikey: anonKey,
+            authorization: `Bearer ${session?.access_token ?? anonKey}`,
+            Authorization: `Bearer ${session?.access_token ?? anonKey}`,
+          },
           body: formData,
         });
         if (error) throw error;
