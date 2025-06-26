@@ -63,7 +63,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
@@ -78,10 +78,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   }, [flashcards]);
 
   useEffect(() => {
-    // TODO: Replace with real backend check for subscription
-    // setIsSubscribed(true/false) based on user
-    setShowPaywall(!isSubscribed);
-  }, [isSubscribed]);
+    setShowPaywall(false); // Never show paywall
+  }, []);
 
   const fetchAvailablePlans = async () => {
     try {
@@ -304,28 +302,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     return 'text-red-400';
   };
 
-  const handleSubscribe = async () => {
-    console.log('user:', user);
-    if (!user?.id || !user?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: user.id, email: user.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -350,10 +326,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
             <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
             <button
-              onClick={handleSubscribe}
+              onClick={() => setShowPaywall(false)}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
-              Pay with Razorpay
+              Close
             </button>
           </div>
         </div>

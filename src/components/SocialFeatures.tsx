@@ -79,7 +79,7 @@ export function SocialFeatures() {
   const [loading, setLoading] = useState(true);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
@@ -111,9 +111,8 @@ export function SocialFeatures() {
   }, [selectedGroup]);
 
   useEffect(() => {
-    // TODO: Replace with real backend check for subscription
-    setShowPaywall(!isSubscribed);
-  }, [isSubscribed]);
+    setShowPaywall(false); // Never show paywall
+  }, []);
 
   const ensureUserProfile = async () => {
     if (!user) return;

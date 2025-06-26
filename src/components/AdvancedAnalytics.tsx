@@ -60,15 +60,14 @@ export function AdvancedAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
-  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchAnalyticsData();
     }
-    // TODO: Replace with real backend check for subscription
-    setShowPaywall(!isSubscribed);
+    setShowPaywall(false); // Never show paywall
   }, [user, timeRange, isSubscribed]);
 
   const fetchAnalyticsData = async () => {

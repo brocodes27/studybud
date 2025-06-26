@@ -20,6 +20,7 @@ export interface FormData {
 
 export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlanFormProps) {
   const { user } = useAuth();
+  console.log('StudyPlanForm user:', user); // Debug log
   const [formData, setFormData] = useState<FormData>({
     plan_name: initialData.plan_name ?? '',
     class: initialData.class ?? '',
@@ -31,13 +32,12 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
-  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
-    // TODO: Replace with real backend check for subscription
-    setShowPaywall(!isSubscribed);
-  }, [isSubscribed]);
+    setShowPaywall(false); // Never show paywall
+  }, []);
 
   useEffect(() => {
     // Keep user_id and email in sync with logged-in user
@@ -93,50 +93,33 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
     }
   };
 
-  const handleSubscribe = async () => {
-    console.log('formData:', formData);
-    if (!formData?.user_id || !formData?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: formData.user_id, email: formData.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
-    }
-  };
-
   // Get minimum date (tomorrow)
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateString = minDate.toISOString().split('T')[0];
 
+  // Show loading spinner until user is loaded
+  if (user === undefined) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Show login prompt if user is not logged in
+  if (user === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[200px] text-center">
+        <div className="text-2xl font-bold mb-2">Please log in to create a study plan.</div>
+        <div className="text-gray-600 mb-4">You must be signed in to access this feature.</div>
+        {/* Optionally, add a login button or link here */}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 relative">
-      {/* Razorpay Paywall Overlay */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
-            <button
-              onClick={handleSubscribe}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-            >
-              Go to Subscription
-            </button>
-          </div>
-        </div>
-      )}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl">

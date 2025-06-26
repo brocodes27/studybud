@@ -61,7 +61,7 @@ export function SmartNotifications() {
   const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(false); // TODO: Replace with real backend check
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
@@ -77,9 +77,8 @@ export function SmartNotifications() {
   }, [user, permission, settings]);
 
   useEffect(() => {
-    // TODO: Replace with real backend check for subscription
-    setShowPaywall(!isSubscribed);
-  }, [isSubscribed]);
+    setShowPaywall(false); // Never show paywall
+  }, []);
 
   const loadNotificationSettings = async () => {
     try {
