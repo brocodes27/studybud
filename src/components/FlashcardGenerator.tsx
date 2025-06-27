@@ -69,7 +69,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [selectedTopic, setSelectedTopic] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
-  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -166,8 +165,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
   const generateFlashcards = async () => {
     const activePlanId = selectedPlan || planId;
-    if (!activePlanId && !notes.trim()) {
-      showToast('Please select a study plan or enter notes to generate flashcards.', 'error');
+    if (!activePlanId) {
+      showToast('Please select a study plan to generate flashcards.', 'error');
       return;
     }
     if (!selectedTopic.trim()) {
@@ -182,7 +181,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         throw new Error('User not authenticated. Please sign in again.');
       }
       const payload = {
-        notes: notes.trim(),
         subject: selectedPlanData?.subject ?? '',
         class: selectedPlanData?.class ?? '',
         chapters: selectedPlanData?.chapters ?? '',
@@ -543,18 +541,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
           <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
           <div className="space-y-4">
-            {/* Notes textarea for review/editing */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Review/Edit Notes
-              </label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Enter notes for these flashcards..."
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none h-32"
-              />
-            </div>
             {/* Study Plan Selection */}
             {!planId && availablePlans.length > 0 && (
               <div>
@@ -604,7 +590,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             )}
             <button
               onClick={generateFlashcards}
-              disabled={isGenerating || (!selectedPlan && !planId && !notes)}
+              disabled={isGenerating || (!selectedPlan && !planId)}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
