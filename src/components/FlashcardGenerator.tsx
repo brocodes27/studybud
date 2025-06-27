@@ -216,7 +216,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
       // Ensure topic is set for each flashcard (use selected topic from dropdown, fallback to 'General')
-      const topicValue = selectedTopic.trim() ? selectedTopic.trim() : 'General';
+      const topicValue = selectedTopic && selectedTopic.trim() ? selectedTopic.trim() : 'General';
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
         topic: topicValue,
