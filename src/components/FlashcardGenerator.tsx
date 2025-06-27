@@ -126,7 +126,12 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       const { data, error } = await query;
       if (error) throw error;
 
-      setFlashcards(data || []);
+      // Accept both array and { flashcards: array } formats
+      const newFlashcards = Array.isArray(data) ? data : (data as any).flashcards;
+      if (!Array.isArray(newFlashcards)) {
+        throw new Error('Invalid response format: expected array of flashcards');
+      }
+      setFlashcards(newFlashcards || []);
     } catch (error) {
       console.error('Error fetching flashcards:', error);
       showToast('Failed to load flashcards', 'error');
