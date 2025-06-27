@@ -378,6 +378,18 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     }
   };
 
+  const handleDeleteFlashcard = async (id: string) => {
+    if (!window.confirm('Delete this flashcard?')) return;
+    try {
+      const { error } = await supabase.from('flashcards').delete().eq('id', id);
+      if (error) throw error;
+      setFlashcards(prev => prev.filter(card => card.id !== id));
+      showToast('Flashcard deleted', 'success');
+    } catch (err: any) {
+      showToast('Failed to delete flashcard', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -530,6 +542,22 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                           {getMasteryStars(Math.round(group.averageMastery))}
                         </div>
                       </div>
+                    </div>
+                    {/* List flashcards for this topic with delete button */}
+                    <div className="mt-4 space-y-2">
+                      {group.flashcards.map(card => (
+                        <div key={card.id} className="flex items-center justify-between bg-gray-800 rounded p-2 border border-gray-700">
+                          <div className="text-white text-sm flex-1">
+                            Q: {card.question}
+                          </div>
+                          <button
+                            className="ml-4 text-red-400 hover:text-red-600 text-xs font-semibold"
+                            onClick={() => handleDeleteFlashcard(card.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                   
@@ -716,6 +744,16 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                     </div>
                   </div>
                 </div>
+                {/* Delete button for current card */}
+                <button
+                  className="absolute top-4 right-4 text-red-400 hover:text-red-600 text-xs font-semibold bg-gray-900 bg-opacity-80 px-3 py-1 rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteFlashcard(flashcards[currentCard]?.id);
+                  }}
+                >
+                  Delete
+                </button>
               </motion.div>
             </AnimatePresence>
           </div>
