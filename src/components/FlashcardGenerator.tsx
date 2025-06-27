@@ -131,7 +131,14 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      setFlashcards(newFlashcards || []);
+      // Ensure topic is set for each flashcard
+      const flashcardsWithTopic = newFlashcards.map(card => ({
+        ...card,
+        topic: card.topic || 'General',
+      }));
+      setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
+      showToast(`Generated ${flashcardsWithTopic.length} flashcards!`, 'success');
+      setStudyMode('topics');
     } catch (error) {
       console.error('Error fetching flashcards:', error);
       showToast('Failed to load flashcards', 'error');
@@ -573,19 +580,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                         </div>
                       </div>
                     </div>
-                    {/* List flashcards for this topic with delete button */}
+                    {/* List flashcards for this topic */}
                     <div className="mt-4 space-y-2">
                       {group.flashcards.map(card => (
                         <div key={card.id} className="flex items-center justify-between bg-gray-800 rounded p-2 border border-gray-700">
                           <div className="text-white text-sm flex-1">
                             Q: {card.question}
                           </div>
-                          <button
-                            className="ml-4 text-red-400 hover:text-red-600 text-xs font-semibold"
-                            onClick={() => handleDeleteFlashcard(card.id)}
-                          >
-                            Delete
-                          </button>
                         </div>
                       ))}
                     </div>
@@ -774,16 +775,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                     </div>
                   </div>
                 </div>
-                {/* Delete button for current card */}
-                <button
-                  className="absolute top-4 right-4 text-red-400 hover:text-red-600 text-xs font-semibold bg-gray-900 bg-opacity-80 px-3 py-1 rounded"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteFlashcard(flashcards[currentCard]?.id);
-                  }}
-                >
-                  Delete
-                </button>
               </motion.div>
             </AnimatePresence>
           </div>
