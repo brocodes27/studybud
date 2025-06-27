@@ -50,7 +50,7 @@ const loadRazorpayScript = () => {
   });
 };
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
