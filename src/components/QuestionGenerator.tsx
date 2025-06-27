@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import Tesseract from 'tesseract.js';
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 /**
  * QuestionGenerator: Lets students paste notes, upload a PDF, generate practice questions using Gemini AI (via Supabase Edge Function), and review the results.

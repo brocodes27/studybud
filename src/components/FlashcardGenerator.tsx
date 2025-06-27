@@ -50,7 +50,7 @@ const loadRazorpayScript = () => {
   });
 };
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
