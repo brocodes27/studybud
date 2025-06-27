@@ -580,16 +580,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                         </div>
                       </div>
                     </div>
-                    {/* List flashcards for this topic */}
-                    <div className="mt-4 space-y-2">
-                      {group.flashcards.map(card => (
-                        <div key={card.id} className="flex items-center justify-between bg-gray-800 rounded p-2 border border-gray-700">
-                          <div className="text-white text-sm flex-1">
-                            Q: {card.question}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                   
                   <button
