@@ -189,8 +189,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      setFlashcards(prev => [...newFlashcards, ...prev]);
-      showToast(`Generated ${newFlashcards.length} flashcards!`, 'success');
+      // Ensure topic is set for each flashcard
+      const flashcardsWithTopic = newFlashcards.map(card => ({
+        ...card,
+        topic: card.topic || 'General',
+      }));
+      setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
+      showToast(`Generated ${flashcardsWithTopic.length} flashcards!`, 'success');
       setStudyMode('topics');
     } catch (error) {
       console.error('Error generating flashcards:', error);
