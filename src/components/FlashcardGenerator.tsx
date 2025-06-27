@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import Tesseract from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
 interface Flashcard {
   id: string;
@@ -48,6 +50,8 @@ const loadRazorpayScript = () => {
   });
 };
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
   const { showToast } = useToast();
@@ -65,6 +69,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [selectedTopic, setSelectedTopic] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<number | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [notesFromPdf, setNotesFromPdf] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -302,6 +310,79 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     return 'text-red-400';
   };
 
+  // PDF or image upload and OCR logic
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPdfError(null);
+    setPdfLoading(true);
+    setOcrProgress(null);
+    try {
+      const file = e.target.files?.[0];
+      if (!file) throw new Error('No file selected');
+      if (file.type === 'application/pdf') {
+        // PDF logic
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map((item: any) => item.str).join(' ');
+          text += pageText + '\n';
+        }
+        // If text is too short, try OCR
+        if (text.replace(/\s/g, '').length < 30) {
+          let ocrText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            setOcrProgress(Math.round((i - 1) / pdf.numPages * 100));
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            // @ts-ignore
+            await page.render({ canvasContext: context, viewport }).promise;
+            const dataUrl = canvas.toDataURL('image/png');
+            const { data: { text: ocrPageText } } = await Tesseract.recognize(dataUrl, 'eng', {
+              logger: m => {
+                if (m.status === 'recognizing text') {
+                  setOcrProgress(Math.round(((i - 1) + m.progress) / pdf.numPages * 100));
+                }
+              }
+            });
+            ocrText += ocrPageText + '\n';
+          }
+          setOcrProgress(100);
+          setSelectedTopic(ocrText.trim());
+        } else {
+          setSelectedTopic(text.trim());
+        }
+      } else if (file.type.startsWith('image/')) {
+        // Image logic
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const dataUrl = event.target?.result as string;
+          const { data: { text: ocrText } } = await Tesseract.recognize(dataUrl, 'eng', {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                setOcrProgress(Math.round(m.progress * 100));
+              }
+            }
+          });
+          setSelectedTopic(ocrText.trim());
+        };
+        reader.readAsDataURL(file);
+      } else {
+        throw new Error('Unsupported file type. Please upload a PDF or image.');
+      }
+    } catch (err: any) {
+      setPdfError('Failed to extract text from file. Please try another file.');
+    } finally {
+      setPdfLoading(false);
+      setOcrProgress(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -475,6 +556,22 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
           <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
           <div className="space-y-4">
+            {/* PDF/Image Upload for OCR */}
+            <div className="flex items-center gap-3 mb-2">
+              <label className="text-gray-300 font-medium">Upload PDF or Image:</label>
+              <input
+                type="file"
+                accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handleFileUpload}
+                className="text-white"
+                disabled={pdfLoading}
+              />
+              {pdfLoading && <span className="text-blue-400 ml-2">Extracting text...</span>}
+              {ocrProgress !== null && pdfLoading && (
+                <span className="text-yellow-400 ml-2">OCR Progress: {ocrProgress}%</span>
+              )}
+            </div>
+            {pdfError && <div className="text-red-400 mb-2">{pdfError}</div>}
             {/* Study Plan Selection */}
             {!planId && availablePlans.length > 0 && (
               <div>
@@ -498,29 +595,14 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             {/* Topic Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Topic/Chapter
+                Select Topic/Chapter or Paste Text
               </label>
-              {availableTopics.length > 0 ? (
-                <select
-                  value={selectedTopic}
-                  onChange={(e) => setSelectedTopic(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">Choose a topic...</option>
-                  {availableTopics.map((topic, index) => (
-                    <option key={index} value={topic}>{topic}</option>
-                  ))}
-                  <option value="all_chapters">All Chapters (Mixed)</option>
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={selectedTopic}
-                  onChange={(e) => setSelectedTopic(e.target.value)}
-                  placeholder="Enter a topic (e.g., Photosynthesis, Calculus)"
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                />
-              )}
+              <textarea
+                value={selectedTopic}
+                onChange={e => setSelectedTopic(e.target.value)}
+                placeholder="Paste topic text or extracted PDF text here..."
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none h-32"
+              />
             </div>
             {/* Plan Details Display */}
             {selectedPlanData && (
