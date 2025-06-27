@@ -17,10 +17,17 @@ import { Landing } from './pages/Landing';
 import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
 import { useOfflineStorage } from './hooks/useOfflineStorage';
+import { LiveMeetingNotes } from './components/LiveMeetingNotes';
+import { MyMeetingNotes } from './pages/MyMeetingNotes';
+import { NoteDetailPage } from './pages/NoteDetailPage';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const { isOnline } = useOfflineStorage();
+
+  // Floating Live Notes modal state
+  const [showLiveNotes, setShowLiveNotes] = useState(false);
+  const [showSuggest, setShowSuggest] = useState(false);
 
   // Register service worker for PWA
   useEffect(() => {
@@ -32,6 +39,18 @@ function AppContent() {
         .catch((registrationError) => {
           console.log('SW registration failed: ', registrationError);
         });
+    }
+  }, []);
+
+  // Detect Google Meet or Zoom in URL (simple heuristic)
+  useEffect(() => {
+    const url = window.location.href;
+    if (
+      url.includes('meet.google.com') ||
+      url.includes('zoom.us') ||
+      url.includes('web.zoom.us')
+    ) {
+      setShowSuggest(true);
     }
   }, []);
 
@@ -75,7 +94,9 @@ function AppContent() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/social" element={<Social />} />
             <Route path="/notifications" element={<Notifications />} />
-
+            <Route path="/live-notes" element={<LiveMeetingNotes />} />
+            <Route path="/my-notes" element={<MyMeetingNotes />} />
+            <Route path="/my-notes/:id" element={<NoteDetailPage />} />
             <Route path="/study/:planId" element={<StudySession />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

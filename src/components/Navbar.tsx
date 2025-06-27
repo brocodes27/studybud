@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
@@ -18,7 +18,8 @@ export function Navbar() {
     { name: 'Calendar', icon: Calendar, path: '/calendar' },
     { name: 'Social', icon: Users, path: '/social' },
     { name: 'Notifications', icon: Bell, path: '/notifications' },
-
+    { name: 'Live Meeting Notes', icon: Pencil, path: '/live-notes' },
+    { name: 'My Meeting Notes', icon: BookOpen, path: '/my-notes' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -46,7 +47,6 @@ export function Navbar() {
               {item.name}
             </Link>
           ))}
-          
         </div>
         <button
           onClick={signOut}
@@ -78,12 +78,6 @@ export function Navbar() {
               {item.name}
             </Link>
           ))}
-          <button
-            onClick={() => { signOut(); setIsOpen(false); }}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors w-full text-left"
-          >
-            Sign Out
-          </button>
         </div>
       )}
     </nav>
