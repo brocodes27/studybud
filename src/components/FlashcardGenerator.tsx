@@ -137,7 +137,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         topic: card.topic || 'General',
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
-      showToast(`Generated ${flashcardsWithTopic.length} flashcards!`, 'success');
       setStudyMode('topics');
     } catch (error) {
       console.error('Error fetching flashcards:', error);
@@ -197,9 +196,14 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         body: payload,
       });
       if (error) throw error;
-      const newFlashcards = data as Flashcard[];
-      if (!Array.isArray(newFlashcards)) {
-        throw new Error('Invalid response format: expected array of flashcards');
+      // Robustly handle both array and { flashcards: [...] } formats
+      let newFlashcards: any[] = [];
+      if (Array.isArray(data)) {
+        newFlashcards = data;
+      } else if (data && Array.isArray(data.flashcards)) {
+        newFlashcards = data.flashcards;
+      } else {
+        throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
       // Ensure topic is set for each flashcard
       const flashcardsWithTopic = newFlashcards.map(card => ({
@@ -207,7 +211,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         topic: card.topic || 'General',
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
-      showToast(`Generated ${flashcardsWithTopic.length} flashcards!`, 'success');
       setStudyMode('topics');
     } catch (error) {
       console.error('Error generating flashcards:', error);
