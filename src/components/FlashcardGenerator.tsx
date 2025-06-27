@@ -180,6 +180,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       showToast('Please select a study plan or enter notes to generate flashcards.', 'error');
       return;
     }
+    if (!topicInput.trim()) {
+      showToast('Please enter a topic for these flashcards.', 'error');
+      setIsGenerating(false);
+      return;
+    }
     const selectedPlanData = availablePlans.find(plan => plan.id === activePlanId);
     setIsGenerating(true);
     try {
