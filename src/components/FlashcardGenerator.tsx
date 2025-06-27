@@ -395,6 +395,18 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     }
   };
 
+  const handleDeleteTopic = async (topic: string) => {
+    if (!window.confirm(`Delete all flashcards for topic "${topic}"?`)) return;
+    try {
+      const { error } = await supabase.from('flashcards').delete().eq('topic', topic).eq('user_id', user?.id);
+      if (error) throw error;
+      setFlashcards(prev => prev.filter(card => card.topic !== topic));
+      showToast(`All flashcards for topic "${topic}" deleted`, 'success');
+    } catch (err: any) {
+      showToast('Failed to delete topic flashcards', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -532,7 +544,15 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                   }`}
                 >
                   <div className={viewMode === 'list' ? 'flex-grow' : ''}>
-                    <h5 className="text-lg font-semibold text-white mb-2">{group.topic}</h5>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-lg font-semibold text-white">{group.topic}</h5>
+                      <button
+                        className="text-red-400 hover:text-red-600 text-xs font-semibold ml-4"
+                        onClick={() => handleDeleteTopic(group.topic)}
+                      >
+                        Delete Topic
+                      </button>
+                    </div>
                     <div className={`${viewMode === 'list' ? 'flex items-center gap-6' : 'space-y-3'}`}>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <BookOpen className="h-4 w-4" />
