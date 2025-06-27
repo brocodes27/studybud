@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import Tesseract from 'tesseract.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js';
 
 /**
- * QuestionGenerator: Lets students paste notes, generate practice questions using Gemini AI (via Supabase Edge Function), and review the results.
+ * QuestionGenerator: Lets students paste notes, upload a PDF, generate practice questions using Gemini AI (via Supabase Edge Function), and review the results.
+ * Now supports OCR for image-based PDFs using Tesseract.js.
  */
 export function QuestionGenerator() {
   const [notes, setNotes] = useState('');
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState<number | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [saveAllStatus, setSaveAllStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [topicError, setTopicError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -66,15 +73,84 @@ export function QuestionGenerator() {
     }
   };
 
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPdfError(null);
+    setPdfLoading(true);
+    setOcrProgress(null);
+    try {
+      const file = e.target.files?.[0];
+      if (!file) throw new Error('No file selected');
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item: any) => item.str).join(' ');
+        text += pageText + '\n';
+      }
+      // If text is too short, try OCR
+      if (text.replace(/\s/g, '').length < 30) {
+        let ocrText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          setOcrProgress(Math.round((i - 1) / pdf.numPages * 100));
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          // @ts-ignore
+          await page.render({ canvasContext: context, viewport }).promise;
+          const dataUrl = canvas.toDataURL('image/png');
+          const { data: { text: ocrPageText } } = await Tesseract.recognize(dataUrl, 'eng', {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                setOcrProgress(Math.round(((i - 1) + m.progress) / pdf.numPages * 100));
+              }
+            }
+          });
+          ocrText += ocrPageText + '\n';
+        }
+        setOcrProgress(100);
+        setNotes(ocrText.trim());
+      } else {
+        setNotes(text.trim());
+      }
+    } catch (err: any) {
+      setPdfError('Failed to extract text from PDF. Please try another file.');
+    } finally {
+      setPdfLoading(false);
+      setOcrProgress(null);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-6 bg-gray-900 rounded-xl shadow-lg mt-8">
       <h2 className="text-2xl font-bold mb-4 text-white">AI-Generated Practice Questions from Notes</h2>
-      <textarea
-        className="w-full h-40 p-3 rounded-lg bg-gray-800 text-white border border-gray-700 mb-4"
-        placeholder="Paste your notes here..."
-        value={notes}
-        onChange={e => setNotes(e.target.value)}
-      />
+      <div className="mb-4 flex flex-col gap-2">
+        <textarea
+          className="w-full h-40 p-3 rounded-lg bg-gray-800 text-white border border-gray-700"
+          placeholder="Paste your notes here..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
+        <div className="flex items-center gap-3">
+          <label className="text-gray-300 font-medium">or upload PDF:</label>
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handlePdfUpload}
+            className="text-white"
+            disabled={pdfLoading}
+          />
+          {pdfLoading && <span className="text-blue-400 ml-2">Extracting text...</span>}
+          {ocrProgress !== null && pdfLoading && (
+            <span className="text-yellow-400 ml-2">OCR Progress: {ocrProgress}%</span>
+          )}
+        </div>
+        {pdfError && <div className="text-red-400">{pdfError}</div>}
+      </div>
       <input
         className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 mb-4"
         placeholder="Enter a topic for these flashcards (required)"
