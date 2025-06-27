@@ -44,6 +44,9 @@ serve(async (req) => {
     (user_id || email)
   ) {
     // Update the subscriptions table
+    const now = new Date();
+    const oneMonthLater = new Date(now);
+    oneMonthLater.setMonth(now.getMonth() + 1);
     const { error } = await supabase
       .from('subscriptions')
       .upsert([
@@ -51,7 +54,9 @@ serve(async (req) => {
           user_id: user_id,
           email: email,
           status: 'active',
-          updated_at: new Date().toISOString(),
+          updated_at: now.toISOString(),
+          subscription_start: now.toISOString(),
+          subscription_end: oneMonthLater.toISOString(),
         },
       ], { onConflict: 'user_id' });
 

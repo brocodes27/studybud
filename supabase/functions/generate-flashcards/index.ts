@@ -65,7 +65,22 @@ serve(async (req: Request) => {
     const userData = await userResponse.json();
     const userId = userData.id;
 
-    const { topic, subject, class: studentClass, chapters, count }: FlashcardRequest = await req.json();
+    // Log and parse the raw request body for debugging
+    const rawBody = await req.text();
+    console.log("Raw request body:", rawBody);
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch (e) {
+      console.error("Failed to parse body as JSON:", e);
+    }
+    console.log("Parsed body:", parsedBody);
+
+    // Use parsedBody instead of await req.json()
+    const { topic, subject, class: studentClass, chapters, count }: FlashcardRequest = parsedBody || {};
+
+    // Log incoming request for debugging
+    console.log("Flashcard request received:", { topic, subject, studentClass, chapters, count });
 
     // Prepare Gemini API request
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
@@ -104,18 +119,20 @@ Create flashcards that are:
 
 ${topic === 'all_chapters' ? 
   `Since this covers all chapters, create a mix of questions from different chapters: ${chapters}. Ensure good coverage across all topics.` :
-  `Focus specifically on the topic: ${topic}`
+  `Focus ONLY on the topic: "${topic}". Do NOT include questions from other topics or chapters.`
 }
 
 For each flashcard, provide:
 - A clear question about the topic
 - A detailed answer
 - Difficulty level (easy/medium/hard)
+- **A required 'topic' field**: For each flashcard, include a "topic" field with the topic name (e.g., "Algebra", "Trigonometry", etc.).
 
-Return the response in this exact JSON format:
+Return the response in this exact JSON format (do NOT include markdown/code fences or extra commentary):
 {
   "flashcards": [
     {
+      "topic": "Topic Name",
       "question": "Clear, specific question about the topic",
       "answer": "Comprehensive but concise answer",
       "difficulty_level": "easy|medium|hard"
@@ -170,8 +187,11 @@ Make sure questions are specific and answers are educational. Include definition
     // Save flashcards to Supabase
     const flashcardsToInsert = flashcardsData.flashcards.map((card: any) => ({
       user_id: userId,
-
-      topic: topic === 'all_chapters' ? `${subject} - All Chapters` : topic,
+      topic: card.topic && card.topic.trim()
+        ? card.topic.trim()
+        : (topic === 'all_chapters'
+            ? `${subject} - All Chapters`
+            : (topic && topic.trim() ? topic.trim() : 'General')),
       question: card.question,
       answer: card.answer,
       difficulty_level: card.difficulty_level,

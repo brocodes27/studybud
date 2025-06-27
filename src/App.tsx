@@ -22,12 +22,32 @@ import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
   const { isOnline } = useOfflineStorage();
 
   // Floating Live Notes modal state
   const [showLiveNotes, setShowLiveNotes] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
+
+  // Subscription status
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchPremiumStatus();
+    }
+  }, [user]);
+
+  const fetchPremiumStatus = async () => {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .single();
+    setIsPremium(data?.status === 'active');
+  };
 
   // Register service worker for PWA
   useEffect(() => {
@@ -54,6 +74,47 @@ function AppContent() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isPremium === false && user && user.email && session?.access_token) {
+      // Preload Razorpay script
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
+
+      // Pre-create payment link
+      setIsLoadingPayment(true);
+      fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ user_id: user.id, email: user.email }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          console.log('Razorpay subscription response:', data);
+          if (data.short_url) {
+            setPaymentUrl(data.short_url);
+          } else {
+            setPaymentUrl(null);
+            alert('Failed to get payment link. Please try again or contact support.');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching payment link:', err);
+          setPaymentUrl(null);
+          alert('Error connecting to payment server. Please try again.');
+        })
+        .finally(() => setIsLoadingPayment(false));
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, [isPremium, user, session]);
+
   if (loading) {
     return (
       <div className="min-h-screen animated-gradient flex items-center justify-center">
@@ -69,6 +130,46 @@ function AppContent() {
   // Show landing page if user is not authenticated
   if (!user) {
     return <Landing />;
+  }
+
+  // Show paywall if not subscribed
+  if (isPremium === false) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-gray-900">
+        <div className="bg-white rounded-3xl p-10 shadow-2xl text-center max-w-md w-full border border-purple-200/40 relative">
+          <div className="flex justify-center mb-6">
+            <span className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48" className="w-12 h-12 text-white"><path stroke="currentColor" strokeWidth="2" d="M24 6v36M6 24h36"/></svg>
+            </span>
+          </div>
+          <h2 className="text-3xl font-extrabold mb-2 text-gray-900">Unlock All Features</h2>
+          <p className="mb-6 text-gray-600 text-lg">Get unlimited access to all study tools, flashcards, analytics, and more.</p>
+          <div className="mb-6">
+            <ul className="text-left text-gray-700 space-y-2 mx-auto max-w-xs">
+              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Unlimited AI Flashcards</li>
+              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Practice Tests & Analytics</li>
+              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Smart Notifications</li>
+              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Study Plan Generator</li>
+              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Social & Collaboration</li>
+            </ul>
+          </div>
+          <div className="mb-8">
+            <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl font-bold px-8 py-3 rounded-2xl shadow-lg">₹199 <span className="text-base font-medium">/ month</span></span>
+          </div>
+          <button
+            onClick={() => {
+              console.log('Subscribe button clicked. paymentUrl:', paymentUrl);
+              if (paymentUrl) window.open(paymentUrl, '_blank');
+            }}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-2xl text-xl shadow-xl transition-all duration-200 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed"
+            disabled={!paymentUrl || isLoadingPayment}
+          >
+            {isLoadingPayment ? 'Loading...' : 'Subscribe Now'}
+          </button>
+          <p className="mt-6 text-gray-400 text-xs">Cancel anytime. Secure payment via Razorpay.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

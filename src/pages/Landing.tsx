@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import gsap from 'gsap';
 
 export function Landing() {
   const { signUp, signIn } = useAuth();
@@ -51,13 +52,13 @@ export function Landing() {
     {
       icon: Zap,
       title: 'Smart Flashcards',
-      description: 'AI-generated flashcards with spaced repetition algorithm to maximize retention and learning efficiency.',
+      description: 'AI-generated flashcards with spaced repetition and topic-based review for maximum retention.',
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Target,
       title: 'Practice Test Engine',
-      description: 'Unlimited AI-generated practice tests tailored to your curriculum with detailed performance analytics.',
+      description: 'Unlimited AI-generated practice tests tailored to your curriculum with instant feedback.',
       color: 'from-green-500 to-emerald-500'
     },
     {
@@ -68,8 +69,8 @@ export function Landing() {
     },
     {
       icon: Users,
-      title: 'Study Groups',
-      description: 'Join private study groups, compete on leaderboards, and collaborate with fellow students.',
+      title: 'Study Groups & Social',
+      description: 'Join private study groups, share notes, compete on leaderboards, and collaborate with friends.',
       color: 'from-indigo-500 to-purple-500'
     },
     {
@@ -77,6 +78,30 @@ export function Landing() {
       title: 'Progress Tracking',
       description: 'Comprehensive progress monitoring with streak tracking, achievements, and performance metrics.',
       color: 'from-teal-500 to-blue-500'
+    },
+    {
+      icon: BookOpen,
+      title: 'Live Meeting Notes',
+      description: 'Real-time speech-to-text note-taking with AI formatting and screenshot capture.',
+      color: 'from-pink-500 to-yellow-500'
+    },
+    {
+      icon: Sparkles,
+      title: 'Smart Notifications',
+      description: 'AI-powered reminders and motivational nudges to keep you on track.',
+      color: 'from-yellow-400 to-orange-400'
+    },
+    {
+      icon: Shield,
+      title: 'Calendar Sync',
+      description: 'Sync your study plans and deadlines with your favorite calendar apps.',
+      color: 'from-blue-400 to-green-400'
+    },
+    {
+      icon: Crown,
+      title: 'Achievements & Streaks',
+      description: 'Earn badges, track streaks, and celebrate your study milestones.',
+      color: 'from-yellow-500 to-pink-500'
     }
   ];
 
@@ -103,6 +128,30 @@ export function Landing() {
 
   const pricingFeatures: any[] = [];
 
+  // GSAP animation refs
+  const heroRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const testimonialsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (heroRef.current) {
+      gsap.fromTo(heroRef.current, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out' });
+    }
+    if (featuresRef.current) {
+      gsap.fromTo(
+        featuresRef.current!.querySelectorAll('.feature-card'),
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 1, stagger: 0.15, delay: 0.5, ease: 'power3.out' }
+      );
+    }
+    if (testimonialsRef.current) {
+      gsap.fromTo(
+        testimonialsRef.current!.querySelectorAll('.testimonial-card'),
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 1, stagger: 0.2, delay: 1, ease: 'power3.out' }
+      );
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
@@ -116,7 +165,7 @@ export function Landing() {
 
       <div className="relative z-10">
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-4 py-20">
+        <section ref={heroRef} className="min-h-screen flex items-center justify-center px-4 py-20">
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Side - Content */}
             <div className="text-center lg:text-left">
@@ -133,7 +182,7 @@ export function Landing() {
                     STUBUD
                   </h1>
                   <p className="text-blue-300 text-lg">Your AI Study Buddy</p>
-                    <p className="text-green-400 font-semibold">Free during beta</p>
+                    
                 </div>
               </div>
 
@@ -252,7 +301,7 @@ export function Landing() {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 px-4">
+        <section ref={featuresRef} className="py-20 px-4">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
@@ -267,7 +316,7 @@ export function Landing() {
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
-                  <div key={index} className="glass rounded-2xl p-8 border border-gray-700/50 card-hover">
+                  <div key={index} className="feature-card glass rounded-2xl p-8 border border-gray-700/50 card-hover">
                     <div className={`bg-gradient-to-br ${feature.color} p-4 rounded-2xl mb-6 inline-block glow-blue`}>
                       <Icon className="h-8 w-8 text-white" />
                     </div>
@@ -281,7 +330,7 @@ export function Landing() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-20 px-4 bg-gray-800/30">
+        <section ref={testimonialsRef} className="py-20 px-4 bg-gray-800/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
@@ -294,7 +343,7 @@ export function Landing() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
-                <div key={index} className="glass rounded-2xl p-6 border border-gray-700/50 card-hover">
+                <div key={index} className="testimonial-card glass rounded-2xl p-6 border border-gray-700/50 card-hover">
                   <div className="flex items-center gap-1 mb-4">
                     {Array.from({ length: testimonial.rating }, (_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />

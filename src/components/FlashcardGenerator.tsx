@@ -69,9 +69,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [selectedTopic, setSelectedTopic] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (user) {
+      fetchPremiumStatus();
       fetchFlashcards();
       fetchAvailablePlans();
     }
@@ -127,7 +129,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      setFlashcards(prev => [...newFlashcards, ...prev]);
+      setFlashcards(newFlashcards);
       setStudyMode('topics');
     } catch (error) {
       console.error('Error fetching flashcards:', error);
@@ -186,7 +188,9 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         chapters: selectedPlanData?.chapters ?? '',
         plan_id: activePlanId ?? null,
         count: 65,
+        topic: selectedTopic,
       };
+      console.log("Selected topic before sending:", selectedTopic, "Payload:", payload);
       const { data, error } = await supabase.functions.invoke('generate-flashcards', {
         body: payload,
       });
@@ -221,8 +225,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         ...card,
         topic: topicValue,
       }));
-      setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
-      setStudyMode('topics');
+      await fetchFlashcards();
     } catch (error) {
       console.error('Error generating flashcards:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate flashcards';
@@ -360,6 +363,20 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     }
   };
 
+  const fetchPremiumStatus = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .single();
+    if (error || !data) {
+      setIsPremium(false);
+      return;
+    }
+    setIsPremium(data.status === 'active');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -374,6 +391,43 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const today = new Date();
   const dueToday = flashcards.filter(card => new Date(card.next_review_at) <= today).length;
   const mastered = flashcards.filter(card => card.mastery_level >= 5).length;
+
+  // Show paywall if not subscribed
+  if (isPremium === false) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
+          <p className="mb-6 text-gray-700">Start your subscription to access all flashcard and study features.</p>
+          <button
+            onClick={async () => {
+              if (!user || !user.email) return;
+              await loadRazorpayScript();
+              // Call backend to create Razorpay subscription
+              const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({ user_id: user.id, email: user.email }),
+              });
+              const data = await response.json();
+              if (data.short_url) {
+                window.open(data.short_url, '_blank');
+              } else {
+                showToast('Failed to start payment. Try again.', 'error');
+              }
+            }}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            disabled={!user || !user.email}
+          >
+            Subscribe Now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 relative">
@@ -590,7 +644,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             )}
             <button
               onClick={generateFlashcards}
-              disabled={isGenerating || (!selectedPlan && !planId)}
+              disabled={isGenerating || (!selectedPlan && !planId) || !selectedTopic}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
