@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Brain, FileText, Zap, Target } from 'lucide-react';
 import { FlashcardGenerator } from '../components/FlashcardGenerator';
 import { PracticeTestEngine } from '../components/PracticeTestEngine';
+import { QuestionGenerator } from '../components/QuestionGenerator';
 
 export function StudyTools() {
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions'>('flashcards');
 
   const tabs = [
     {
@@ -18,6 +19,12 @@ export function StudyTools() {
       label: 'Practice Tests',
       icon: FileText,
       description: 'AI-generated practice exams'
+    },
+    {
+      id: 'ai-questions' as const,
+      label: 'AI Question Generator',
+      icon: Target,
+      description: 'AI-generated questions'
     }
   ];
 
@@ -70,6 +77,7 @@ export function StudyTools() {
       <div className="max-w-6xl mx-auto">
         {activeTab === 'flashcards' && <FlashcardGenerator />}
         {activeTab === 'tests' && <PracticeTestEngine />}
+        {activeTab === 'ai-questions' && <QuestionGenerator />}
       </div>
     </div>
   );
