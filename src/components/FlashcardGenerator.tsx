@@ -196,12 +196,20 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         body: payload,
       });
       if (error) throw error;
-      // Robustly handle both array and { flashcards: [...] } formats
+      // Robustly handle stringified JSON, array, and { flashcards: [...] } formats
       let newFlashcards: any[] = [];
-      if (Array.isArray(data)) {
-        newFlashcards = data;
-      } else if (data && Array.isArray(data.flashcards)) {
-        newFlashcards = data.flashcards;
+      let parsed = data;
+      if (typeof parsed === 'string') {
+        try {
+          parsed = JSON.parse(parsed);
+        } catch {
+          throw new Error('Gemini response is not valid JSON');
+        }
+      }
+      if (Array.isArray(parsed)) {
+        newFlashcards = parsed;
+      } else if (parsed && Array.isArray(parsed.flashcards)) {
+        newFlashcards = parsed.flashcards;
       } else {
         throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
