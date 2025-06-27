@@ -46,15 +46,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: userData
       }
     });
+    // Debug log for signUp response
+    console.log('signUp data:', data);
+    console.log('signUp error:', error);
 
-    // Insert / update user_profile row
+    // Insert / update user_profiles row
     if (data.user) {
-      const { error: profileError } = await supabase.from('user_profile').upsert({
+      // Debug log to verify values
+      console.log('Upserting user_profiles:', {
         id: data.user.id,
         full_name: userData?.full_name ?? userData?.name ?? null,
-        avatar_url: userData?.avatar_url ?? null,
+        grade: userData?.grade ?? null,
+        school: userData?.school ?? null,
+      });
+      // Upsert with all fields
+      const { error: profileError } = await supabase.from('user_profiles').upsert({
+        id: data.user.id,
+        full_name: userData?.full_name ?? userData?.name ?? null,
+        grade: userData?.grade ?? null,
+        school: userData?.school ?? null,
       });
       if (profileError) console.warn('Profile upsert failed:', profileError.message);
+    } else {
+      console.warn('No user returned from signUp, skipping profile upsert.');
     }
 
     return { data, error };
