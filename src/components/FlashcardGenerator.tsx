@@ -131,10 +131,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      // Ensure topic is set for each flashcard
+      // Ensure topic is set for each flashcard (handles null, undefined, or empty string)
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
-        topic: card.topic || 'General',
+        topic: card.topic && card.topic.trim() ? card.topic : 'General',
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
       setStudyMode('topics');
@@ -213,10 +213,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       } else {
         throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
-      // Ensure topic is set for each flashcard
+      // Ensure topic is set for each flashcard (handles null, undefined, or empty string)
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
-        topic: card.topic || 'General',
+        topic: card.topic && card.topic.trim() ? card.topic : 'General',
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
       setStudyMode('topics');
