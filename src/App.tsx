@@ -33,6 +33,8 @@ function AppContent() {
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
+  const [price, setPrice] = useState(199); // INR default
 
   useEffect(() => {
     if (user) {
@@ -72,6 +74,25 @@ function AppContent() {
     ) {
       setShowSuggest(true);
     }
+  }, []);
+
+  // Detect user country and set currency/price
+  useEffect(() => {
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.country_code === 'US') {
+          setCurrency('USD');
+          setPrice(3); // $3/month for US
+        } else {
+          setCurrency('INR');
+          setPrice(199);
+        }
+      })
+      .catch(() => {
+        setCurrency('INR');
+        setPrice(199);
+      });
   }, []);
 
   useEffect(() => {
@@ -154,7 +175,9 @@ function AppContent() {
             </ul>
           </div>
           <div className="mb-8">
-            <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl font-bold px-8 py-3 rounded-2xl shadow-lg">₹199 <span className="text-base font-medium">/ month</span></span>
+            <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl font-bold px-8 py-3 rounded-2xl shadow-lg">
+              {currency === 'USD' ? '$' : '₹'}{price} <span className="text-base font-medium">/ month</span>
+            </span>
           </div>
           <button
             onClick={() => {
