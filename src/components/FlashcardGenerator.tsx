@@ -73,6 +73,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [ocrProgress, setOcrProgress] = useState<number | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [topicInput, setTopicInput] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -131,10 +132,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      // Ensure topic is set for each flashcard (handles null, undefined, or empty string)
+      // Ensure topic is set for each flashcard (use manual input, fallback to 'General')
+      const topicValue = topicInput.trim() ? topicInput.trim() : 'General';
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
-        topic: card.topic && card.topic.trim() ? card.topic : 'General',
+        topic: topicValue,
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
       setStudyMode('topics');
@@ -220,10 +222,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       } else {
         throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
-      // Ensure topic is set for each flashcard (handles null, undefined, or empty string)
+      // Ensure topic is set for each flashcard (use manual input, fallback to 'General')
+      const topicValue = topicInput.trim() ? topicInput.trim() : 'General';
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
-        topic: card.topic && card.topic.trim() ? card.topic : 'General',
+        topic: topicValue,
       }));
       setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
       setStudyMode('topics');
@@ -674,6 +677,20 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 </p>
               </div>
             )}
+            {/* Manual Topic Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Topic <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={topicInput}
+                onChange={e => setTopicInput(e.target.value)}
+                placeholder="Enter topic for these flashcards (e.g. Algebra, Chapter 1, etc.)"
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
             <button
               onClick={generateFlashcards}
               disabled={isGenerating || (!selectedPlan && !planId && !notes)}
