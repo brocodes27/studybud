@@ -72,7 +72,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [pdfLoading, setPdfLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState<number | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [notesFromPdf, setNotesFromPdf] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -163,26 +163,21 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
   const generateFlashcards = async () => {
     const activePlanId = selectedPlan || planId;
-    if (!activePlanId && !selectedTopic) {
-      showToast('Please select a study plan or enter a topic to generate flashcards.', 'error');
+    if (!activePlanId && !notes.trim()) {
+      showToast('Please select a study plan or enter notes to generate flashcards.', 'error');
       return;
     }
     const selectedPlanData = availablePlans.find(plan => plan.id === activePlanId);
-    const topicToUse = selectedTopic || (selectedPlanData?.chapters ? selectedPlanData.chapters.split(',')[0].trim() : '');
-    if (!topicToUse) {
-      showToast('Please select or enter a topic.', 'error');
-      return;
-    }
     setIsGenerating(true);
     try {
       if (!session?.access_token) {
         throw new Error('User not authenticated. Please sign in again.');
       }
       const payload = {
-        topic: topicToUse,
+        notes: notes.trim(),
         subject: selectedPlanData?.subject ?? '',
         class: selectedPlanData?.class ?? '',
-        chapters: selectedPlanData?.chapters ?? topicToUse,
+        chapters: selectedPlanData?.chapters ?? '',
         plan_id: activePlanId ?? null,
         count: 65,
       };
@@ -353,9 +348,9 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             ocrText += ocrPageText + '\n';
           }
           setOcrProgress(100);
-          setSelectedTopic(ocrText.trim());
+          setNotes(ocrText.trim());
         } else {
-          setSelectedTopic(text.trim());
+          setNotes(text.trim());
         }
       } else if (file.type.startsWith('image/')) {
         // Image logic
@@ -369,7 +364,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               }
             }
           });
-          setSelectedTopic(ocrText.trim());
+          setNotes(ocrText.trim());
         };
         reader.readAsDataURL(file);
       } else {
@@ -572,6 +567,18 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               )}
             </div>
             {pdfError && <div className="text-red-400 mb-2">{pdfError}</div>}
+            {/* Notes textarea for review/editing */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Review/Edit Extracted Notes
+              </label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Paste or review extracted notes here..."
+                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none h-32"
+              />
+            </div>
             {/* Study Plan Selection */}
             {!planId && availablePlans.length > 0 && (
               <div>
@@ -592,38 +599,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 </select>
               </div>
             )}
-            {/* Topic Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Topic/Chapter or Paste Text
-              </label>
-              <textarea
-                value={selectedTopic}
-                onChange={e => setSelectedTopic(e.target.value)}
-                placeholder="Paste topic text or extracted PDF text here..."
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none h-32"
-              />
-            </div>
-            {/* Plan Details Display */}
-            {selectedPlanData && (
-              <div className="glass rounded-xl p-4 border border-gray-700/50 bg-blue-500/10">
-                <h5 className="font-semibold text-blue-400 mb-2">Selected Plan Details</h5>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Subject:</span>
-                    <span className="text-white ml-2">{selectedPlanData.subject}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Class:</span>
-                    <span className="text-white ml-2">{selectedPlanData.class}</span>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-gray-400">Chapters:</span>
-                    <span className="text-white ml-2">{selectedPlanData.chapters}</span>
-                  </div>
-                </div>
-              </div>
-            )}
             {/* No Plans Available Message */}
             {availablePlans.length === 0 && (
               <div className="glass rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/10">
@@ -634,7 +609,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             )}
             <button
               onClick={generateFlashcards}
-              disabled={isGenerating || (!selectedPlan && !planId && !selectedTopic)}
+              disabled={isGenerating || (!selectedPlan && !planId && !notes)}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
