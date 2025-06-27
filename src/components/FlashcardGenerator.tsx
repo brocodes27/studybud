@@ -69,11 +69,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [selectedTopic, setSelectedTopic] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [ocrProgress, setOcrProgress] = useState<number | null>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
-  const [topicInput, setTopicInput] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -132,13 +128,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
-      // Ensure topic is set for each flashcard (use manual input, fallback to 'General')
-      const topicValue = topicInput.trim() ? topicInput.trim() : 'General';
-      const flashcardsWithTopic = newFlashcards.map(card => ({
-        ...card,
-        topic: topicValue,
-      }));
-      setFlashcards(prev => [...flashcardsWithTopic, ...prev]);
+      setFlashcards(prev => [...newFlashcards, ...prev]);
       setStudyMode('topics');
     } catch (error) {
       console.error('Error fetching flashcards:', error);
@@ -180,8 +170,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       showToast('Please select a study plan or enter notes to generate flashcards.', 'error');
       return;
     }
-    if (!topicInput.trim()) {
-      showToast('Please enter a topic for these flashcards.', 'error');
+    if (!selectedTopic.trim()) {
+      showToast('Please select a topic for these flashcards.', 'error');
       setIsGenerating(false);
       return;
     }
@@ -227,8 +217,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       } else {
         throw new Error('Invalid response format: expected array or { flashcards: [...] }');
       }
-      // Ensure topic is set for each flashcard (use manual input, fallback to 'General')
-      const topicValue = topicInput.trim() ? topicInput.trim() : 'General';
+      // Ensure topic is set for each flashcard (use selected topic from dropdown, fallback to 'General')
+      const topicValue = selectedTopic.trim() ? selectedTopic.trim() : 'General';
       const flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
         topic: topicValue,
@@ -346,79 +336,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     if (mastery >= 4) return 'text-green-400';
     if (mastery >= 2) return 'text-yellow-400';
     return 'text-red-400';
-  };
-
-  // PDF or image upload and OCR logic
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPdfError(null);
-    setPdfLoading(true);
-    setOcrProgress(null);
-    try {
-      const file = e.target.files?.[0];
-      if (!file) throw new Error('No file selected');
-      if (file.type === 'application/pdf') {
-        // PDF logic
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const pageText = content.items.map((item: any) => item.str).join(' ');
-          text += pageText + '\n';
-        }
-        // If text is too short, try OCR
-        if (text.replace(/\s/g, '').length < 30) {
-          let ocrText = '';
-          for (let i = 1; i <= pdf.numPages; i++) {
-            setOcrProgress(Math.round((i - 1) / pdf.numPages * 100));
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            // @ts-ignore
-            await page.render({ canvasContext: context, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
-            const { data: { text: ocrPageText } } = await Tesseract.recognize(dataUrl, 'eng', {
-              logger: m => {
-                if (m.status === 'recognizing text') {
-                  setOcrProgress(Math.round(((i - 1) + m.progress) / pdf.numPages * 100));
-                }
-              }
-            });
-            ocrText += ocrPageText + '\n';
-          }
-          setOcrProgress(100);
-          setNotes(ocrText.trim());
-        } else {
-          setNotes(text.trim());
-        }
-      } else if (file.type.startsWith('image/')) {
-        // Image logic
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-          const dataUrl = event.target?.result as string;
-          const { data: { text: ocrText } } = await Tesseract.recognize(dataUrl, 'eng', {
-            logger: m => {
-              if (m.status === 'recognizing text') {
-                setOcrProgress(Math.round(m.progress * 100));
-              }
-            }
-          });
-          setNotes(ocrText.trim());
-        };
-        reader.readAsDataURL(file);
-      } else {
-        throw new Error('Unsupported file type. Please upload a PDF or image.');
-      }
-    } catch (err: any) {
-      setPdfError('Failed to extract text from file. Please try another file.');
-    } finally {
-      setPdfLoading(false);
-      setOcrProgress(null);
-    }
   };
 
   const handleDeleteFlashcard = async (id: string) => {
@@ -626,31 +543,15 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
           <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
           <div className="space-y-4">
-            {/* PDF/Image Upload for OCR */}
-            <div className="flex items-center gap-3 mb-2">
-              <label className="text-gray-300 font-medium">Upload PDF or Image:</label>
-              <input
-                type="file"
-                accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
-                onChange={handleFileUpload}
-                className="text-white"
-                disabled={pdfLoading}
-              />
-              {pdfLoading && <span className="text-blue-400 ml-2">Extracting text...</span>}
-              {ocrProgress !== null && pdfLoading && (
-                <span className="text-yellow-400 ml-2">OCR Progress: {ocrProgress}%</span>
-              )}
-            </div>
-            {pdfError && <div className="text-red-400 mb-2">{pdfError}</div>}
             {/* Notes textarea for review/editing */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Review/Edit Extracted Notes
+                Review/Edit Notes
               </label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                placeholder="Paste or review extracted notes here..."
+                placeholder="Enter notes for these flashcards..."
                 className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none h-32"
               />
             </div>
@@ -682,20 +583,25 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 </p>
               </div>
             )}
-            {/* Manual Topic Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Topic <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={topicInput}
-                onChange={e => setTopicInput(e.target.value)}
-                placeholder="Enter topic for these flashcards (e.g. Algebra, Chapter 1, etc.)"
-                className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
-                required
-              />
-            </div>
+            {/* Topic Dropdown Selection */}
+            {availableTopics && availableTopics.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Select Topic <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={selectedTopic}
+                  onChange={e => setSelectedTopic(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                  required
+                >
+                  <option value="">Choose a topic...</option>
+                  {availableTopics.map((topic, idx) => (
+                    <option key={idx} value={topic}>{topic}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <button
               onClick={generateFlashcards}
               disabled={isGenerating || (!selectedPlan && !planId && !notes)}
