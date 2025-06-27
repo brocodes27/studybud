@@ -200,6 +200,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       let newFlashcards: any[] = [];
       let parsed = data;
       if (typeof parsed === 'string') {
+        // Remove markdown code fences if present
+        parsed = parsed.trim();
+        if (parsed.startsWith('```json')) {
+          parsed = parsed.replace(/^```json/, '').replace(/```$/, '').trim();
+        } else if (parsed.startsWith('```')) {
+          parsed = parsed.replace(/^```/, '').replace(/```$/, '').trim();
+        }
         try {
           parsed = JSON.parse(parsed);
         } catch {
