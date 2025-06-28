@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGoogleLogin, TokenResponse } from '@react-oauth/google';
-import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar as CalendarIcon, PlusCircle, AlertCircle } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -144,31 +144,61 @@ export function CalendarSync() {
           <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
             <CalendarIcon className="h-6 w-6" /> Upcoming Events
           </h2>
-          {events.map((event) => (
-            <div key={event.id} className="glass rounded-xl border border-gray-700/50 p-4 card-hover">
-              <p className="font-semibold text-white text-lg mb-1">{event.summary || 'Untitled Event'}</p>
-              <p className="text-gray-400">
-                {event.start.dateTime
-                  ? format(new Date(event.start.dateTime), 'PPpp')
-                  : format(new Date(event.start.date || ''), 'PP')} —{' '}
-                {event.end.dateTime
-                  ? format(new Date(event.end.dateTime), 'PPpp')
-                  : format(new Date(event.end.date || ''), 'PP')}
-              </p>
+          {events.map((event) => {
+            const eventDate = event.start.dateTime || event.start.date || '';
+            const daysUntilEvent = differenceInDays(new Date(eventDate), new Date());
+            const isTooFarAway = daysUntilEvent > 30;
+            
+            return (
+              <div key={event.id} className="glass rounded-xl border border-gray-700/50 p-4 card-hover">
+                <p className="font-semibold text-white text-lg mb-1">{event.summary || 'Untitled Event'}</p>
+                <p className="text-gray-400">
+                  {event.start.dateTime
+                    ? format(new Date(event.start.dateTime), 'PPpp')
+                    : format(new Date(event.start.date || ''), 'PP')} —{' '}
+                  {event.end.dateTime
+                    ? format(new Date(event.end.dateTime), 'PPpp')
+                    : format(new Date(event.end.date || ''), 'PP')}
+                </p>
+                
+                {isTooFarAway && (
+                  <div className="mt-3 p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 text-orange-300">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">
+                        This event is {daysUntilEvent} days away. Study plans are limited to 30 days for optimal AI generation.
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
                 <button
                   onClick={() => {
                     const dateStr = event.start.dateTime || event.start.date || '';
                     const rawSummary = event.summary || '';
                     const cleanedSubject = rawSummary.replace(/exam|test|assessment|paper/ig, '').split(/[:\-]/)[0].trim();
                     const chaptersQP = event.description ? `&chapters=${encodeURIComponent(event.description)}` : '';
+                    
+                    if (isTooFarAway) {
+                      showToast('Study plans are limited to 30 days. Please select a closer date.', 'info');
+                      return;
+                    }
+                    
                     navigate(`/create?subject=${encodeURIComponent(cleanedSubject)}&exam_date=${dateStr.split('T')[0]}${chaptersQP}`);
                   }}
-                  className="mt-3 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-xl text-sm hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                  className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all duration-300 ${
+                    isTooFarAway
+                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                  }`}
+                  disabled={isTooFarAway}
                 >
-                  <PlusCircle className="h-4 w-4" /> Convert to Study Plan
+                  <PlusCircle className="h-4 w-4" /> 
+                  {isTooFarAway ? 'Too far away' : 'Convert to Study Plan'}
                 </button>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

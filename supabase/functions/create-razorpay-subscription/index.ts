@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, email } = await req.json();
+    const { user_id, email, plan_id } = await req.json();
     if (!user_id || !email) {
       return new Response(JSON.stringify({ error: 'Missing user_id or email' }), {
         status: 400,
@@ -50,9 +50,12 @@ serve(async (req) => {
       });
     }
 
+    // Use plan_id from request if provided, else default
+    const planIdToUse = plan_id || PLAN_ID;
+
     // Create Razorpay subscription
     const subPayload = {
-      plan_id: PLAN_ID,
+      plan_id: planIdToUse,
       customer_notify: 1,
       total_count: 1,
       notes: { user_id, email },

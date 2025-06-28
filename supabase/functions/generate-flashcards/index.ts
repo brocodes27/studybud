@@ -180,8 +180,18 @@ Make sure questions are specific and answers are educational. Include definition
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse Gemini response:", generatedText);
-      throw new Error("Failed to parse AI response");
+      console.error("Failed to parse Gemini response:", {
+        error: parseError.message,
+        responseLength: generatedText.length,
+        responsePreview: generatedText.substring(0, 500) + "...",
+        responseEnd: generatedText.substring(Math.max(0, generatedText.length - 200))
+      });
+      
+      if (parseError.message.includes("Unexpected end of JSON input")) {
+        throw new Error("AI response was truncated. Please try again with fewer flashcards or a more specific topic.");
+      } else {
+        throw new Error("Failed to parse AI response");
+      }
     }
 
     // Save flashcards to Supabase

@@ -36,6 +36,10 @@ function AppContent() {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const [price, setPrice] = useState(199); // INR default
 
+  // Razorpay plan IDs
+  const INR_PLAN_ID = 'YOUR_INR_PLAN_ID'; // Replace with your actual INR plan ID
+  const USD_PLAN_ID = 'YOUR_USD_PLAN_ID'; // Replace with your actual USD plan ID
+
   useEffect(() => {
     if (user) {
       fetchPremiumStatus();
@@ -105,13 +109,14 @@ function AppContent() {
 
       // Pre-create payment link
       setIsLoadingPayment(true);
+      const planId = currency === 'USD' ? USD_PLAN_ID : INR_PLAN_ID;
       fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ user_id: user.id, email: user.email }),
+        body: JSON.stringify({ user_id: user.id, email: user.email, plan_id: planId }),
       })
         .then(res => res.json())
         .then(data => {
@@ -134,7 +139,7 @@ function AppContent() {
         document.body.removeChild(script);
       };
     }
-  }, [isPremium, user, session]);
+  }, [isPremium, user, session, currency]);
 
   if (loading) {
     return (

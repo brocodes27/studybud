@@ -82,6 +82,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Limit study period to prevent overly large responses
+    if (daysUntilExam > 30) {
+      return new Response(
+        JSON.stringify({ error: "Study period cannot exceed 30 days to ensure reliable AI response generation" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Prepare Gemini API request
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     if (!geminiApiKey) {
@@ -94,7 +105,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const prompt = `Create a comprehensive personalized study plan for a Class ${studentClass} student preparing for a ${subject} exam. 
+    // Function to generate study plan with different prompt strategies
+    const generateStudyPlanWithPrompt = async (useShortPrompt = false) => {
+      const prompt = useShortPrompt 
+        ? `Create a study plan for Class ${studentClass} ${subject} exam in ${daysUntilExam} days. Cover chapters: ${chapters}. Return JSON with daily_schedule array, each day having: day, date, topic, question_type, description, and practice_questions (3 questions max). Keep it concise.`
+        : `Create a comprehensive personalized study plan for a Class ${studentClass} student preparing for a ${subject} exam. 
 
 Details:
 - Subject: ${subject}
@@ -104,16 +119,17 @@ Details:
 Generate a detailed daily study schedule that covers all chapters systematically. For each day, provide:
 
 1. **Topics to Study**: Specific concepts, formulas, theories, or chapters to focus on
-2. **Practice Questions**: 3-5 specific practice questions related to the day's topics (include the actual questions, not just question types)
+2. **Practice Questions**: 3 specific practice questions related to the day's topics (include the actual questions, not just question types)
 3. **Question Types**: Types of questions to practice (MCQs, Short Answer, Numericals, Long Answer, Case Studies, etc.)
 4. **Study Description**: Brief description of what to study and how to approach it
 
 Requirements:
-- Include actual practice questions with varying difficulty levels
+- Include exactly 3 practice questions per day with varying difficulty levels
 - Questions should be relevant to Class ${studentClass} ${subject} curriculum
 - Distribute chapters evenly across available days
 - Reserve last 2-3 days for comprehensive revision and mock tests
 - Make questions progressively challenging as exam approaches
+- Keep descriptions concise but informative
 
 Return the response in this exact JSON format:
 {
@@ -134,49 +150,113 @@ Return the response in this exact JSON format:
   ]
 }
 
-Make sure to include actual, specific practice questions that are appropriate for the subject and class level.`;
+Make sure to include actual, specific practice questions that are appropriate for the subject and class level. Keep responses concise to avoid truncation.`;
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
+      if (!geminiResponse.ok) {
+        throw new Error(`Gemini API error: ${geminiResponse.status}`);
       }
-    );
 
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
+      const geminiData = await geminiResponse.json();
+      const generatedText = geminiData.candidates[0].content.parts[0].text;
 
-    const geminiData = await geminiResponse.json();
-    const generatedText = geminiData.candidates[0].content.parts[0].text;
+      // Validate response size and content
+      if (!generatedText || generatedText.length < 50) {
+        throw new Error("Gemini response is too short or empty");
+      }
 
-    // Parse the JSON response from Gemini
+      // Check if response might be truncated (look for incomplete JSON)
+      if (generatedText.length > 10000) {
+        console.warn("Large Gemini response detected, may be truncated");
+      }
+
+      // Parse the JSON response from Gemini with improved error handling
+      let studyPlan;
+      try {
+        // First, try to extract JSON from the response
+        const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("No JSON found in response");
+        }
+
+        const jsonString = jsonMatch[0];
+        
+        // Check if JSON appears to be complete
+        const openBraces = (jsonString.match(/\{/g) || []).length;
+        const closeBraces = (jsonString.match(/\}/g) || []).length;
+        
+        if (openBraces !== closeBraces) {
+          throw new Error("JSON appears to be incomplete (unmatched braces)");
+        }
+
+        // Try to parse the JSON
+        studyPlan = JSON.parse(jsonString);
+        
+        // Validate the parsed structure
+        if (!studyPlan || typeof studyPlan !== 'object') {
+          throw new Error("Parsed response is not a valid object");
+        }
+        
+        if (!studyPlan.daily_schedule || !Array.isArray(studyPlan.daily_schedule)) {
+          throw new Error("Missing or invalid daily_schedule in response");
+        }
+
+        if (!studyPlan.days_until_exam || typeof studyPlan.days_until_exam !== 'number') {
+          throw new Error("Missing or invalid days_until_exam in response");
+        }
+
+        return studyPlan;
+
+      } catch (parseError) {
+        console.error("Failed to parse Gemini response:", {
+          error: parseError.message,
+          responseLength: generatedText.length,
+          responsePreview: generatedText.substring(0, 500) + "...",
+          responseEnd: generatedText.substring(Math.max(0, generatedText.length - 200)),
+          useShortPrompt
+        });
+        
+        throw parseError;
+      }
+    };
+
+    // Try with full prompt first, then fallback to short prompt
     let studyPlan;
     try {
-      // Extract JSON from the response (in case there's additional text)
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        studyPlan = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("No JSON found in response");
+      studyPlan = await generateStudyPlanWithPrompt(false);
+    } catch (error) {
+      console.log("Full prompt failed, trying short prompt...");
+      try {
+        studyPlan = await generateStudyPlanWithPrompt(true);
+      } catch (fallbackError) {
+        // If both attempts fail, provide a helpful error message
+        if (fallbackError.message.includes("Unexpected end of JSON input") || 
+            fallbackError.message.includes("unmatched braces")) {
+          throw new Error("AI response was truncated. Please try again with a shorter study period (max 30 days) or fewer chapters.");
+        } else {
+          throw new Error(`Failed to generate study plan: ${fallbackError.message}`);
+        }
       }
-    } catch (parseError) {
-      console.error("Failed to parse Gemini response:", generatedText);
-      throw new Error("Failed to parse AI response");
     }
 
     // Add dates to the schedule

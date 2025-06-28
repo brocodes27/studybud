@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, BookOpen, GraduationCap, FileText, Loader2, Pencil } from 'lucide-react';
+import { Calendar, BookOpen, GraduationCap, FileText, Loader2, Pencil, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface StudyPlanFormProps {
@@ -34,6 +34,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showLimitPopup, setShowLimitPopup] = useState(false);
 
   useEffect(() => {
     setShowPaywall(false); // Never show paywall
@@ -72,6 +73,15 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
       
       if (examDate <= today) {
         newErrors.exam_date = 'Exam date must be in the future';
+      } else {
+        // Check for 30-day limit
+        const timeDiff = examDate.getTime() - today.getTime();
+        const daysUntilExam = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        if (daysUntilExam > 30) {
+          setShowLimitPopup(true);
+          return false;
+        }
       }
     }
 
@@ -97,6 +107,11 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateString = minDate.toISOString().split('T')[0];
+
+  // Get maximum date (30 days from tomorrow)
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 30);
+  const maxDateString = maxDate.toISOString().split('T')[0];
 
   // Show loading spinner until user is loaded
   if (user === undefined) {
@@ -228,6 +243,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               value={formData.exam_date}
               onChange={(e) => handleInputChange('exam_date', e.target.value)}
               min={minDateString}
+              max={maxDateString}
               className={`w-full text-gray-900 placeholder-gray-500 px-4 py-3 rounded-xl border-2 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.exam_date 
                   ? 'border-red-300 bg-red-50' 
@@ -237,6 +253,9 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
             {errors.exam_date && (
               <p className="text-red-600 text-sm mt-2">{errors.exam_date}</p>
             )}
+            <p className="text-gray-500 text-sm mt-2">
+              💡 Maximum study period is 30 days to ensure reliable AI-generated plans
+            </p>
           </div>
 
           <button
@@ -255,6 +274,56 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
           </button>
         </form>
       </div>
+
+      {/* 30-Day Limit Popup */}
+      {showLimitPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowLimitPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-orange-100 p-3 rounded-full">
+                <AlertCircle className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Study Period Limit</h3>
+                <p className="text-sm text-gray-600">Maximum 30 days allowed</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              To ensure reliable AI-generated study plans, we limit the study period to a maximum of 30 days. 
+              This helps prevent response truncation and ensures you get a complete, high-quality study schedule.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLimitPopup(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Got it
+              </button>
+              <button
+                onClick={() => {
+                  setShowLimitPopup(false);
+                  // Set the exam date to 30 days from tomorrow
+                  const newDate = new Date();
+                  newDate.setDate(newDate.getDate() + 30);
+                  handleInputChange('exam_date', newDate.toISOString().split('T')[0]);
+                }}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+              >
+                Set to 30 days
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
