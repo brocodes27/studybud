@@ -107,8 +107,13 @@ Deno.serve(async (req: Request) => {
 
     // Function to generate study plan with different prompt strategies
     const generateStudyPlanWithPrompt = async (useShortPrompt = false) => {
+      // Determine number of questions based on study period length
+      const questionsPerDay = daysUntilExam <= 15 ? 10 : 3;
+      
+      console.log(`Generating study plan with ${questionsPerDay} questions per day for ${daysUntilExam} days study period`);
+      
       const prompt = useShortPrompt 
-        ? `Create a study plan for Class ${studentClass} ${subject} exam in ${daysUntilExam} days. Cover chapters: ${chapters}. Return JSON with daily_schedule array, each day having: day, date, topic, question_type, description, and practice_questions (3 questions max). Keep it concise.`
+        ? `Create a study plan for Class ${studentClass} ${subject} exam in ${daysUntilExam} days. Cover chapters: ${chapters}. Return JSON with daily_schedule array, each day having: day, date, topic, question_type, description, and practice_questions (${questionsPerDay} questions max). Keep it concise.`
         : `Create a comprehensive personalized study plan for a Class ${studentClass} student preparing for a ${subject} exam. 
 
 Details:
@@ -119,12 +124,12 @@ Details:
 Generate a detailed daily study schedule that covers all chapters systematically. For each day, provide:
 
 1. **Topics to Study**: Specific concepts, formulas, theories, or chapters to focus on
-2. **Practice Questions**: 3 specific practice questions related to the day's topics (include the actual questions, not just question types)
+2. **Practice Questions**: ${questionsPerDay} specific practice questions related to the day's topics (include the actual questions, not just question types)
 3. **Question Types**: Types of questions to practice (MCQs, Short Answer, Numericals, Long Answer, Case Studies, etc.)
 4. **Study Description**: Brief description of what to study and how to approach it
 
 Requirements:
-- Include exactly 3 practice questions per day with varying difficulty levels
+- Include exactly ${questionsPerDay} practice questions per day with varying difficulty levels
 - Questions should be relevant to Class ${studentClass} ${subject} curriculum
 - Distribute chapters evenly across available days
 - Reserve last 2-3 days for comprehensive revision and mock tests
@@ -144,7 +149,14 @@ Return the response in this exact JSON format:
       "practice_questions": [
         "Question 1: [Actual question text]",
         "Question 2: [Actual question text]",
-        "Question 3: [Actual question text]"
+        "Question 3: [Actual question text]"${questionsPerDay > 3 ? `,
+        "Question 4: [Actual question text]",
+        "Question 5: [Actual question text]",
+        "Question 6: [Actual question text]",
+        "Question 7: [Actual question text]",
+        "Question 8: [Actual question text]",
+        "Question 9: [Actual question text]",
+        "Question 10: [Actual question text]"` : ''}
       ]
     }
   ]
@@ -252,7 +264,7 @@ Make sure to include actual, specific practice questions that are appropriate fo
         // If both attempts fail, provide a helpful error message
         if (fallbackError.message.includes("Unexpected end of JSON input") || 
             fallbackError.message.includes("unmatched braces")) {
-          throw new Error("AI response was truncated. Please try again with a shorter study period (max 30 days) or fewer chapters.");
+          throw new Error("AI response was truncated. Please try again with a shorter study period (max 30 days) or fewer chapters. For longer periods, we automatically reduce questions to prevent truncation.");
         } else {
           throw new Error(`Failed to generate study plan: ${fallbackError.message}`);
         }

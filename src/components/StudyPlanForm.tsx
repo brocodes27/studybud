@@ -311,14 +311,15 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               <button
                 onClick={() => {
                   setShowLimitPopup(false);
-                  // Set the exam date to 30 days from tomorrow
+                  // Set the exam date to one month from yesterday
                   const newDate = new Date();
-                  newDate.setDate(newDate.getDate() + 30);
+                  newDate.setDate(newDate.getDate() - 1); // Yesterday
+                  newDate.setMonth(newDate.getMonth() + 1); // One month later
                   handleInputChange('exam_date', newDate.toISOString().split('T')[0]);
                 }}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-xl font-medium hover:bg-blue-700 transition-colors"
               >
-                Set to 30 days
+                Set to 1 month
               </button>
             </div>
           </div>
