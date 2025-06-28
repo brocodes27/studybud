@@ -20,6 +20,7 @@ import { useOfflineStorage } from './hooks/useOfflineStorage';
 import { LiveMeetingNotes } from './components/LiveMeetingNotes';
 import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
+import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 
 function AppContent() {
   const { user, loading, session } = useAuth();
@@ -227,6 +228,7 @@ function AppContent() {
             <Route path="/my-notes" element={<MyMeetingNotes />} />
             <Route path="/my-notes/:id" element={<NoteDetailPage />} />
             <Route path="/study/:planId" element={<StudySession />} />
+            <Route path="/ai-study-buddy" element={<AIStudyBuddyPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

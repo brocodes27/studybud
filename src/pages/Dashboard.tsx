@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Trophy } from 'lucide-react';
+import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Trophy, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
@@ -415,6 +415,16 @@ export function Dashboard() {
                   <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <span className="font-medium text-gray-300 group-hover:text-white">Track Progress</span>
+              </Link>
+
+              <Link
+                to="/ai-study-buddy"
+                className="flex items-center gap-3 p-4 rounded-xl border border-gray-700/50 hover:bg-pink-500/10 hover:border-pink-500/30 transition-all duration-300 group"
+              >
+                <div className="bg-gradient-to-br from-pink-500 to-red-500 p-2 rounded-lg group-hover:glow-pink transition-all duration-300">
+                  <MessageCircle className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-medium text-gray-300 group-hover:text-white">AI Study Buddy</span>
               </Link>
             </div>
           </div>

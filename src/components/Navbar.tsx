@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
@@ -12,6 +12,7 @@ export function Navbar() {
     { name: 'Dashboard', icon: Home, path: '/' },
     { name: 'Create Plan', icon: PlusCircle, path: '/create' },
     { name: 'Study Plans', icon: BookOpen, path: '/plans' },
+    { name: 'AI Study Buddy', icon: MessageCircle, path: '/ai-study-buddy' },
     { name: 'Progress', icon: TrendingUp, path: '/progress' },
     { name: 'Analytics', icon: BarChart2, path: '/analytics' },
     { name: 'Study Tools', icon: Compass, path: '/tools' },

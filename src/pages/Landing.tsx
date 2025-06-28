@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink } from 'lucide-react';
+import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import gsap from 'gsap';
@@ -102,6 +102,12 @@ export function Landing() {
       title: 'Achievements & Streaks',
       description: 'Earn badges, track streaks, and celebrate your study milestones.',
       color: 'from-yellow-500 to-pink-500'
+    },
+    {
+      icon: MessageCircle,
+      title: 'AI Study Buddy Chat',
+      description: 'Chat with an AI tutor for instant explanations, step-by-step solutions, and personalized study help. Integrated with your study plans and supports voice input!',
+      color: 'from-pink-500 to-red-500'
     }
   ];
 
@@ -196,10 +202,15 @@ export function Landing() {
                 Join thousands of students who've improved their grades by 40% on average.
               </p>
 
-
-
-              <div className="flex flex-col sm:flex-row gap-4">
-               
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                <a
+                  href="/ai-study-buddy"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:from-pink-700 hover:to-red-600 transition-all duration-300 text-lg"
+                >
+                  <MessageCircle className="h-6 w-6" />
+                  Try the new AI Study Buddy Chat!
+                </a>
+                <span className="text-pink-300 text-sm">Ask questions, get explanations, and more — instantly!</span>
               </div>
             </div>
 
@@ -359,8 +370,6 @@ export function Landing() {
             </div>
           </div>
         </section>
-
-
 
         {/* CTA Section */}
         <section className="py-20 px-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
