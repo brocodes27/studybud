@@ -3,6 +3,9 @@ import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shi
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export function Landing() {
   const { signUp, signIn } = useAuth();
@@ -138,23 +141,117 @@ export function Landing() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const testimonialsRef = useRef<HTMLDivElement>(null);
+  const heroHeadlineRef = useRef<HTMLHeadingElement>(null);
+  const heroSubheadlineRef = useRef<HTMLParagraphElement>(null);
+  const heroIconsRef = useRef<HTMLSpanElement>(null);
+  const bgBlob1Ref = useRef<HTMLDivElement>(null);
+  const bgBlob2Ref = useRef<HTMLDivElement>(null);
+  const bgBlob3Ref = useRef<HTMLDivElement>(null);
+  const featureCardsRef = useRef<HTMLDivElement>(null);
+  const testimonialsSectionRef = useRef<HTMLDivElement>(null);
+  const ctaSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (heroRef.current) {
-      gsap.fromTo(heroRef.current, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out' });
-    }
-    if (featuresRef.current) {
+    const tl = gsap.timeline();
+
+    // Hero headline and subheadline
+    tl.from(heroHeadlineRef.current, { opacity: 0, y: 60, duration: 1, ease: 'power4.out' })
+      .from(heroSubheadlineRef.current, { opacity: 0, y: 40, duration: 0.8, ease: 'power4.out' }, '-=0.6');
+
+    // Hero icons
+    if (heroIconsRef.current) {
       gsap.fromTo(
-        featuresRef.current!.querySelectorAll('.feature-card'),
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1, stagger: 0.15, delay: 0.5, ease: 'power3.out' }
+        (heroIconsRef.current as HTMLSpanElement).querySelectorAll('.hero-icon'),
+        { opacity: 0, scale: 0.7, y: 30 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.7, stagger: 0.15, ease: 'back.out(1.7)', delay: 0.2 }
       );
     }
-    if (testimonialsRef.current) {
+
+    // Background blobs floating
+    [bgBlob1Ref, bgBlob2Ref, bgBlob3Ref].forEach((ref, i) => {
+      if (ref.current) {
+        gsap.to(ref.current, {
+          y: i % 2 === 0 ? '+=40' : '-=40',
+          x: i === 1 ? '+=30' : '-=30',
+          repeat: -1,
+          yoyo: true,
+          duration: 6 + i * 2,
+          ease: 'sine.inOut',
+        });
+      }
+    });
+
+    // Parallax blobs on scroll
+    [bgBlob1Ref, bgBlob2Ref, bgBlob3Ref].forEach((ref, i) => {
+      if (ref.current) {
+        gsap.to(ref.current, {
+          yPercent: i === 0 ? 10 : i === 1 ? -10 : 5,
+          scrollTrigger: {
+            trigger: ref.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1,
+          },
+        });
+      }
+    });
+
+    // Feature cards 3D entrance
+    if (featureCardsRef.current) {
       gsap.fromTo(
-        testimonialsRef.current!.querySelectorAll('.testimonial-card'),
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1, stagger: 0.2, delay: 1, ease: 'power3.out' }
+        (featureCardsRef.current as HTMLDivElement).querySelectorAll('.feature-card'),
+        { opacity: 0, y: 60, rotateY: 30, scale: 0.8 },
+        {
+          opacity: 1,
+          y: 0,
+          rotateY: 0,
+          scale: 1,
+          duration: 1,
+          stagger: 0.15,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: featureCardsRef.current,
+            start: 'top 80%',
+          },
+        }
+      );
+    }
+
+    // Testimonials fade/slide on scroll
+    if (testimonialsSectionRef.current) {
+      gsap.fromTo(
+        (testimonialsSectionRef.current as HTMLDivElement).querySelectorAll('.testimonial-card'),
+        { opacity: 0, y: 60, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 1,
+          stagger: 0.2,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: testimonialsSectionRef.current,
+            start: 'top 80%',
+          },
+        }
+      );
+    }
+
+    // CTA section entrance
+    if (ctaSectionRef.current) {
+      gsap.fromTo(
+        ctaSectionRef.current,
+        { opacity: 0, y: 60 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: ctaSectionRef.current,
+            start: 'top 90%',
+          },
+        }
       );
     }
   }, []);
@@ -184,17 +281,16 @@ export function Landing() {
                   <Star className="absolute -bottom-1 -left-1 h-6 w-6 text-cyan-400 animate-pulse" />
                 </div>
                 <div>
-                  <h1 className="text-5xl lg:text-6xl font-bold gradient-text">
+                  <h1 ref={heroHeadlineRef} className="text-5xl lg:text-6xl font-bold gradient-text">
                     STUBUD
                   </h1>
-                  <p className="text-blue-300 text-lg">Your AI Study Buddy</p>
-                    
+                  <p ref={heroSubheadlineRef} className="text-blue-300 text-lg">Your AI Study Buddy</p>
                 </div>
               </div>
 
               <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
                 Transform Your Study Experience with{' '}
-                <span className="gradient-text">AI Intelligence</span>
+                <span ref={heroIconsRef} className="gradient-text">AI Intelligence</span>
               </h2>
 
               <p className="text-xl text-gray-300 mb-8 leading-relaxed">
@@ -323,7 +419,7 @@ export function Landing() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div ref={featureCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
@@ -352,7 +448,7 @@ export function Landing() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div ref={testimonialsSectionRef} className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {testimonials.map((testimonial, index) => (
                 <div key={index} className="testimonial-card glass rounded-2xl p-6 border border-gray-700/50 card-hover">
                   <div className="flex items-center gap-1 mb-4">
@@ -372,7 +468,7 @@ export function Landing() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
+        <section ref={ctaSectionRef} className="py-20 px-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
               Ready to Transform Your Studies?
