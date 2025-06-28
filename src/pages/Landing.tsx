@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink, MessageCircle } from 'lucide-react';
+import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink, MessageCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
+import { supabase } from '../lib/supabase';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -40,6 +41,19 @@ export function Landing() {
       }
     } catch (error: any) {
       showToast(error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) throw error;
+      // Supabase will redirect on success
+    } catch (error: any) {
+      showToast(error.message || 'Google sign-in failed', 'error');
     } finally {
       setLoading(false);
     }
@@ -370,6 +384,28 @@ export function Landing() {
                   placeholder="Password"
                   minLength={6}
                 />
+
+                <div className="mt-6 flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3 px-6 rounded-xl border border-gray-300 shadow hover:bg-gray-50 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <span className="inline-block h-6 w-6">
+                      <svg viewBox="0 0 48 48" width="24" height="24">
+                        <g>
+                          <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.53 7.82 2.81l5.77-5.77C34.13 3.36 29.54 1 24 1 14.82 1 6.98 6.98 3.69 15.09l6.91 5.36C12.13 14.36 17.56 9.5 24 9.5z"/>
+                          <path fill="#34A853" d="M46.1 24.5c0-1.64-.15-3.22-.43-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.66 7.01l7.19 5.6C43.98 37.02 46.1 31.25 46.1 24.5z"/>
+                          <path fill="#FBBC05" d="M10.6 28.45c-1.04-3.09-1.04-6.41 0-9.5l-6.91-5.36C1.64 17.36 0 20.54 0 24c0 3.46 1.64 6.64 3.69 9.41l6.91-5.36z"/>
+                          <path fill="#EA4335" d="M24 46.5c5.54 0 10.13-1.82 13.44-4.97l-7.19-5.6c-2.01 1.35-4.59 2.14-7.25 2.14-6.44 0-11.87-4.86-13.4-11.36l-6.91 5.36C6.98 41.02 14.82 46.5 24 46.5z"/>
+                          <path fill="none" d="M0 0h48v48H0z"/>
+                        </g>
+                      </svg>
+                    </span>
+                    {loading ? 'Signing in...' : 'Sign in with Google'}
+                  </button>
+                </div>
 
                 <button
                   type="submit"
