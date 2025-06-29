@@ -96,66 +96,6 @@ function AppContent() {
     return <Landing />;
   }
 
-  // Show paywall if not subscribed
-  if (isPremium === false) {
-    const getCurrencySymbol = (currency: string) => {
-      switch (currency) {
-        case 'USD': return '$';
-        case 'EUR': return '€';
-        case 'GBP': return '£';
-        default: return '₹';
-      }
-    };
-
-    const getPaymentProviderText = (provider: string) => {
-      return provider === 'paypal' ? 'PayPal' : 'Razorpay';
-    };
-
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-gray-900">
-        <div className="bg-white rounded-3xl p-10 shadow-2xl text-center max-w-md w-full border border-purple-200/40 relative">
-          <div className="flex justify-center mb-6">
-            <span className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48" className="w-12 h-12 text-white"><path stroke="currentColor" strokeWidth="2" d="M24 6v36M6 24h36"/></svg>
-            </span>
-          </div>
-          <h2 className="text-3xl font-extrabold mb-2 text-gray-900">Unlock All Features</h2>
-          <p className="mb-6 text-gray-600 text-lg">Get unlimited access to all study tools, flashcards, analytics, and more.</p>
-          <div className="mb-6">
-            <ul className="text-left text-gray-700 space-y-2 mx-auto max-w-xs">
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Unlimited AI Flashcards</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Practice Tests & Analytics</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Smart Notifications</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Study Plan Generator</li>
-              <li className="flex items-center gap-2"><span className="text-green-500">✔</span> Social & Collaboration</li>
-            </ul>
-          </div>
-          <div className="mb-8">
-            <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl font-bold px-8 py-3 rounded-2xl shadow-lg">
-              {getCurrencySymbol(paymentData.currency)}{paymentData.price} <span className="text-base font-medium">/ month</span>
-            </span>
-          </div>
-          <button
-            onClick={initiatePayment}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-2xl text-xl shadow-xl transition-all duration-200 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed"
-            disabled={isLoadingPayment}
-          >
-            {isLoadingPayment ? 'Loading...' : 'Subscribe Now'}
-          </button>
-          <p className="mt-6 text-gray-400 text-xs">
-            Cancel anytime. Secure payment via {getPaymentProviderText(paymentData.paymentProvider)}.
-            {!paymentData.isIndia && (
-              <span className="block mt-1 text-xs">
-                💳 PayPal available for international users
-              </span>
-            )}
-          </p>
-          <FeatureComparison />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="animated-gradient fixed inset-0 opacity-10"></div>
