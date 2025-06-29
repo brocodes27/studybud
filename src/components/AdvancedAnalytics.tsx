@@ -4,6 +4,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, subDays, startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
+import { useToast } from '../hooks/useToast';
+import { usePayment } from '../hooks/usePayment';
 
 interface AnalyticsData {
   studyPatterns: Array<{
@@ -56,9 +58,11 @@ const loadRazorpayScript = () => {
 };
 
 export function AdvancedAnalytics() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const { showToast } = useToast();
+  const { paymentData, initiatePayment } = usePayment();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
@@ -72,7 +76,7 @@ export function AdvancedAnalytics() {
 
   const fetchAnalyticsData = async () => {
     try {
-      setLoading(true);
+      setLoadingData(true);
       
       // Calculate date range
       const endDate = new Date();
@@ -186,7 +190,7 @@ export function AdvancedAnalytics() {
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   };
 
@@ -359,30 +363,17 @@ export function AdvancedAnalytics() {
   };
 
   const handleSubscribe = async () => {
-    console.log('user:', user);
-    if (!user?.id || !user?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: user.id, email: user.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
+    try {
+      await initiatePayment();
+    } catch (error) {
+      console.error('Payment error:', error);
+      showToast('Failed to start payment. Please try again.', 'error');
     }
   };
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-  if (loading) {
+  if (loadingData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="relative">

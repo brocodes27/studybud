@@ -1,3 +1,5 @@
+import { isUserPremium } from '../_utils_subscription.ts';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -103,6 +105,48 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Check free vs premium tier
+    const { premium } = await isUserPremium(userId);
+    if (!premium) {
+      // 1. Check if user already generated 7 days of plans this month
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
+      const plansResponse = await fetch(`${supabaseUrl}/rest/v1/exam_plans?user_id=eq.${userId}&created_at=gte.${firstDayOfMonth}&created_at=lte.${lastDayOfMonth}`, {
+        headers: {
+          'apikey': supabaseServiceKey,
+          'Authorization': `Bearer ${supabaseServiceKey}`
+        }
+      });
+      const plans = await plansResponse.json();
+      let totalDays = 0;
+      for (const plan of plans) {
+        totalDays += plan.plan?.days_until_exam || 0;
+      }
+      if (totalDays >= 7) {
+        return new Response(
+          JSON.stringify({ error: 'Free tier limit reached: Upgrade to premium for unlimited plans.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      // 2. Only 1 subject allowed (subject is a string, so just check if user has other plans with different subject)
+      const uniqueSubjects = new Set(plans.map(p => p.subject));
+      uniqueSubjects.add(subject);
+      if (uniqueSubjects.size > 1) {
+        return new Response(
+          JSON.stringify({ error: 'Free tier: Only 1 subject allowed. Upgrade for multiple subjects.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      // 3. Only MCQ and short-answer allowed (enforced in frontend, but double check here if question types are passed)
+      // If you add question types to the request, check here as well
     }
 
     // Function to generate study plan with different prompt strategies

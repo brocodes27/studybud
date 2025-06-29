@@ -1,19 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Calendar, Clock, Target, Settings, X, Check, AlertCircle, CheckCircle } from 'lucide-react';
+import { Bell, Calendar, Clock, Target, Settings, X, Check, AlertCircle, CheckCircle, XCircle, TrendingUp, Brain, Zap } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
+import { usePayment } from '../hooks/usePayment';
+
+interface Notification {
+  id: string;
+  user_id: string;
+  type: 'reminder' | 'achievement' | 'suggestion' | 'system';
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  action_url?: string;
+  priority: 'low' | 'medium' | 'high';
+}
 
 interface NotificationSettings {
-  studyReminders: boolean;
-  examAlerts: boolean;
-  achievementNotifications: boolean;
-  socialUpdates: boolean;
-  dailyGoals: boolean;
-  weeklyReports: boolean;
-  reminderTime: string;
-  examReminderDays: number[];
+  email_notifications: boolean;
+  push_notifications: boolean;
+  study_reminders: boolean;
+  achievement_notifications: boolean;
+  smart_suggestions: boolean;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
 }
 
 interface ScheduledNotification {
@@ -36,8 +48,9 @@ const loadRazorpayScript = () => {
 };
 
 export function SmartNotifications() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { showToast } = useToast();
+  const { paymentData, initiatePayment } = usePayment();
   const { 
     permission, 
     isSupported, 
@@ -48,25 +61,25 @@ export function SmartNotifications() {
     scheduleDailyReminder
   } = useNotifications();
   
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>({
-    studyReminders: true,
-    examAlerts: true,
-    achievementNotifications: true,
-    socialUpdates: false,
-    dailyGoals: true,
-    weeklyReports: true,
-    reminderTime: '09:00',
-    examReminderDays: [7, 3, 1]
+    email_notifications: true,
+    push_notifications: true,
+    study_reminders: true,
+    achievement_notifications: true,
+    smart_suggestions: true,
+    quiet_hours_start: '22:00',
+    quiet_hours_end: '08:00'
   });
   const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
   const [showSettings, setShowSettings] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
 
   useEffect(() => {
     if (user) {
-      loadNotificationSettings();
+      fetchNotifications();
+      fetchSettings();
     }
   }, [user]);
 
@@ -80,67 +93,153 @@ export function SmartNotifications() {
     setShowPaywall(false); // Never show paywall
   }, []);
 
-  const loadNotificationSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('notification_settings')
-        .eq('id', user?.id)
-        .single();
+  const fetchNotifications = async () => {
+    if (!user) return;
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
-      }
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-      if (data?.notification_settings) {
-        setSettings({ ...settings, ...data.notification_settings });
-      }
-    } catch (error) {
-      console.error('Error loading notification settings:', error);
-    } finally {
-      setLoading(false);
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return;
+    }
+
+    setNotifications(data || []);
+  };
+
+  const fetchSettings = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notification_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching settings:', error);
+      return;
+    }
+
+    if (data) {
+      setSettings(data);
     }
   };
 
-  const saveNotificationSettings = async (newSettings: NotificationSettings) => {
+  const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      return;
+    }
+
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, is_read: true } : notif
+      )
+    );
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return;
+    }
+
+    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
+    showToast('Notification deleted', 'success');
+  };
+
+  const updateSettings = async (newSettings: Partial<NotificationSettings>) => {
+    if (!user) return;
+
+    const updatedSettings = { ...settings, ...newSettings };
+    
+    const { error } = await supabase
+      .from('notification_settings')
+      .upsert({
+        user_id: user.id,
+        ...updatedSettings
+      });
+
+    if (error) {
+      console.error('Error updating settings:', error);
+      showToast('Failed to update settings', 'error');
+      return;
+    }
+
+    setSettings(updatedSettings);
+    showToast('Settings updated successfully', 'success');
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'reminder':
+        return <Clock className="h-5 w-5 text-blue-500" />;
+      case 'achievement':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'suggestion':
+        return <Brain className="h-5 w-5 text-purple-500" />;
+      case 'system':
+        return <Zap className="h-5 w-5 text-yellow-500" />;
+      default:
+        return <Bell className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'border-l-red-500 bg-red-50';
+      case 'medium':
+        return 'border-l-yellow-500 bg-yellow-50';
+      case 'low':
+        return 'border-l-green-500 bg-green-50';
+      default:
+        return 'border-l-gray-500 bg-gray-50';
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor(diffInHours * 60);
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const handleSubscribe = async () => {
     try {
-      // First ensure user profile exists
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('id', user?.id)
-        .single();
-
-      if (!existingProfile) {
-        // Create profile if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: user?.id,
-            notification_settings: newSettings
-          });
-
-        if (insertError) throw insertError;
-      } else {
-        // Update existing profile
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update({ notification_settings: newSettings })
-          .eq('id', user?.id);
-
-        if (updateError) throw updateError;
-      }
-
-      setSettings(newSettings);
-      showToast('Notification settings saved!', 'success');
-      
-      // Re-setup notifications with new settings
-      if (permission === 'granted') {
-        setupAutomaticNotifications();
-      }
+      await initiatePayment();
     } catch (error) {
-      console.error('Error saving notification settings:', error);
-      showToast('Failed to save notification settings', 'error');
+      console.error('Payment error:', error);
+      showToast('Failed to start payment. Please try again.', 'error');
     }
   };
 
@@ -158,51 +257,23 @@ export function SmartNotifications() {
       if (error) throw error;
 
       // Schedule exam reminders
-      if (settings.examAlerts && examPlans) {
+      if (settings.study_reminders && examPlans) {
         examPlans.forEach(plan => {
           const examDate = new Date(plan.exam_date);
-          scheduleExamReminder(examDate, plan.subject, settings.examReminderDays);
+          scheduleStudyReminder(examDate, plan.subject);
         });
       }
 
       // Schedule daily study reminders
-      if (settings.studyReminders) {
+      if (settings.study_reminders) {
         scheduleDailyReminder(
-          settings.reminderTime, 
+          '09:00', 
           'Time for your daily study session! Keep up the great work! 📚'
         );
       }
 
-      // Schedule weekly progress reports
-      if (settings.weeklyReports) {
-        scheduleWeeklyReport();
-      }
-
     } catch (error) {
       console.error('Error setting up automatic notifications:', error);
-    }
-  };
-
-  const scheduleWeeklyReport = () => {
-    const now = new Date();
-    const nextSunday = new Date(now);
-    nextSunday.setDate(now.getDate() + (7 - now.getDay()));
-    nextSunday.setHours(18, 0, 0, 0); // 6 PM on Sunday
-
-    const timeUntilReport = nextSunday.getTime() - now.getTime();
-
-    if (timeUntilReport > 0 && timeUntilReport < 7 * 24 * 60 * 60 * 1000) { // Within a week
-      setTimeout(() => {
-        showNotification({
-          title: '📊 Weekly Progress Report',
-          body: 'Your weekly study summary is ready! Check your progress and achievements.',
-          tag: 'weekly-report',
-          requireInteraction: true
-        });
-        
-        // Schedule next week's report
-        scheduleWeeklyReport();
-      }, timeUntilReport);
     }
   };
 
@@ -239,7 +310,7 @@ export function SmartNotifications() {
       }
     }
 
-    if (!settings.achievementNotifications) {
+    if (!settings.achievement_notifications) {
       showToast('Achievement notifications are disabled in settings', 'info');
       return;
     }
@@ -262,7 +333,7 @@ export function SmartNotifications() {
       }
     }
 
-    if (!settings.dailyGoals) {
+    if (!settings.study_reminders) {
       showToast('Daily goal notifications are disabled in settings', 'info');
       return;
     }
@@ -286,28 +357,6 @@ export function SmartNotifications() {
   const permissionStatus = getPermissionStatus();
   const StatusIcon = permissionStatus.icon;
 
-  const handleSubscribe = async () => {
-    console.log('user:', user);
-    if (!user?.id || !user?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: user.id, email: user.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -318,17 +367,21 @@ export function SmartNotifications() {
 
   return (
     <div className="space-y-6 relative">
-      {/* Razorpay Paywall Overlay */}
+      {/* PayPal/Razorpay Paywall Overlay */}
       {showPaywall && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
           <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
+            <p className="mb-6 text-gray-700">
+              Subscribe for <span className="font-bold">
+                {paymentData.currency === 'USD' ? '$' : paymentData.currency === 'EUR' ? '€' : '₹'}{paymentData.price}
+              </span> to access all features.
+            </p>
             <button
               onClick={handleSubscribe}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
-              Go to Subscription
+              Subscribe Now
             </button>
           </div>
         </div>
@@ -371,7 +424,7 @@ export function SmartNotifications() {
               <span className="font-semibold text-white">Study Reminders</span>
             </div>
             <p className="text-sm text-blue-400">
-              {settings.studyReminders ? 'Active' : 'Inactive'}
+              {settings.study_reminders ? 'Active' : 'Inactive'}
             </p>
           </div>
 
@@ -381,7 +434,7 @@ export function SmartNotifications() {
               <span className="font-semibold text-white">Exam Alerts</span>
             </div>
             <p className="text-sm text-purple-400">
-              {settings.examAlerts ? 'Active' : 'Inactive'}
+              {settings.study_reminders ? 'Active' : 'Inactive'}
             </p>
           </div>
         </div>
@@ -421,109 +474,193 @@ export function SmartNotifications() {
           <div className="space-y-6">
             {/* Toggle Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries({
-                studyReminders: 'Daily Study Reminders',
-                examAlerts: 'Exam Alerts',
-                achievementNotifications: 'Achievement Notifications',
-                socialUpdates: 'Social Updates',
-                dailyGoals: 'Daily Goal Reminders',
-                weeklyReports: 'Weekly Progress Reports'
-              }).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                  <span className="text-white font-medium">{label}</span>
-                  <button
-                    onClick={() => {
-                      const newSettings = { ...settings, [key]: !settings[key as keyof NotificationSettings] };
-                      saveNotificationSettings(newSettings);
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                      settings[key as keyof NotificationSettings] ? 'bg-blue-600' : 'bg-gray-600'
+              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <span className="text-white font-medium">Email Notifications</span>
+                <button
+                  onClick={() => updateSettings({ email_notifications: !settings.email_notifications })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.email_notifications ? 'bg-blue-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.email_notifications ? 'translate-x-6' : 'translate-x-1'
                     }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                        settings[key as keyof NotificationSettings] ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              ))}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <span className="text-white font-medium">Push Notifications</span>
+                <button
+                  onClick={() => updateSettings({ push_notifications: !settings.push_notifications })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.push_notifications ? 'bg-blue-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.push_notifications ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <span className="text-white font-medium">Study Reminders</span>
+                <button
+                  onClick={() => updateSettings({ study_reminders: !settings.study_reminders })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.study_reminders ? 'bg-blue-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.study_reminders ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <span className="text-white font-medium">Achievement Notifications</span>
+                <button
+                  onClick={() => updateSettings({ achievement_notifications: !settings.achievement_notifications })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.achievement_notifications ? 'bg-blue-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.achievement_notifications ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                <span className="text-white font-medium">Smart Suggestions</span>
+                <button
+                  onClick={() => updateSettings({ smart_suggestions: !settings.smart_suggestions })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.smart_suggestions ? 'bg-blue-600' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.smart_suggestions ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Time Settings */}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Daily Reminder Time
+                  Quiet Hours Start
                 </label>
                 <input
                   type="time"
-                  value={settings.reminderTime}
-                  onChange={(e) => {
-                    const newSettings = { ...settings, reminderTime: e.target.value };
-                    saveNotificationSettings(newSettings);
-                  }}
+                  value={settings.quiet_hours_start}
+                  onChange={(e) => updateSettings({ quiet_hours_start: e.target.value })}
                   className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Exam Reminder Days (days before exam)
+                  Quiet Hours End
                 </label>
-                <div className="flex gap-2">
-                  {[1, 3, 7, 14].map(day => (
-                    <button
-                      key={day}
-                      onClick={() => {
-                        const newDays = settings.examReminderDays.includes(day)
-                          ? settings.examReminderDays.filter(d => d !== day)
-                          : [...settings.examReminderDays, day].sort((a, b) => b - a);
-                        const newSettings = { ...settings, examReminderDays: newDays };
-                        saveNotificationSettings(newSettings);
-                      }}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                        settings.examReminderDays.includes(day)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      }`}
-                    >
-                      {day} day{day > 1 ? 's' : ''}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="time"
+                  value={settings.quiet_hours_end}
+                  onChange={(e) => updateSettings({ quiet_hours_end: e.target.value })}
+                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                />
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="glass rounded-2xl p-6 border border-gray-700/50">
-        <h4 className="text-lg font-bold text-white mb-4">Quick Actions</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={() => triggerAchievementNotification('Flashcard Master - Created 50+ flashcards!')}
-            className="p-4 bg-yellow-600/20 border border-yellow-500/30 rounded-lg text-left hover:bg-yellow-600/30 transition-colors duration-200"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">🏆</span>
-              <span className="font-semibold text-white">Test Achievement</span>
+      {/* Notifications List */}
+      <div className="space-y-3">
+        {notifications.length === 0 ? (
+          <div className="text-center py-12">
+            <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Notifications</h3>
+            <p className="text-gray-400">You're all caught up! New notifications will appear here.</p>
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`bg-gray-800 rounded-xl p-4 border-l-4 transition-all duration-200 hover:bg-gray-750 ${
+                getPriorityColor(notification.priority)
+              } ${notification.is_read ? 'opacity-60' : ''}`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  {getNotificationIcon(notification.type)}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-white">{notification.title}</h4>
+                      {!notification.is_read && (
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      )}
+                    </div>
+                    <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <span>{formatTime(notification.created_at)}</span>
+                      <span className="capitalize">{notification.priority} priority</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!notification.is_read && (
+                    <button
+                      onClick={() => markAsRead(notification.id)}
+                      className="p-1 hover:bg-gray-700 rounded transition-colors"
+                      title="Mark as read"
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteNotification(notification.id)}
+                    className="p-1 hover:bg-gray-700 rounded transition-colors"
+                    title="Delete notification"
+                  >
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-300 text-sm">Trigger a sample achievement notification</p>
-          </button>
+          ))
+        )}
+      </div>
 
-          <button
-            onClick={() => triggerGoalNotification('Complete 3 study sessions today', false)}
-            className="p-4 bg-blue-600/20 border border-blue-500/30 rounded-lg text-left hover:bg-blue-600/30 transition-colors duration-200"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">🎯</span>
-              <span className="font-semibold text-white">Test Goal Reminder</span>
-            </div>
-            <p className="text-gray-300 text-sm">Trigger a sample goal reminder notification</p>
-          </button>
+      {/* Smart Insights */}
+      <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl p-6 border border-purple-500/30">
+        <div className="flex items-center gap-3 mb-4">
+          <TrendingUp className="h-6 w-6 text-purple-400" />
+          <h4 className="text-lg font-semibold text-white">Smart Insights</h4>
+        </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Notification engagement</span>
+            <span className="text-green-400 font-semibold">85%</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Response time</span>
+            <span className="text-blue-400 font-semibold">2.3 min</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Study sessions triggered</span>
+            <span className="text-purple-400 font-semibold">12 this week</span>
+          </div>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import Tesseract from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import { usePayment } from '../hooks/usePayment';
 
 interface Flashcard {
   id: string;
@@ -55,6 +56,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
   const { showToast } = useToast();
+  const { paymentData, initiatePayment } = usePayment();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [topicGroups, setTopicGroups] = useState<TopicGroup[]>([]);
   const [currentCard, setCurrentCard] = useState(0);
@@ -401,22 +403,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           <p className="mb-6 text-gray-700">Start your subscription to access all flashcard and study features.</p>
           <button
             onClick={async () => {
-              if (!user || !user.email) return;
-              await loadRazorpayScript();
-              // Call backend to create Razorpay subscription
-              const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({ user_id: user.id, email: user.email }),
-              });
-              const data = await response.json();
-              if (data.short_url) {
-                window.open(data.short_url, '_blank');
-              } else {
-                showToast('Failed to start payment. Try again.', 'error');
+              try {
+                await initiatePayment();
+              } catch (error) {
+                console.error('Payment error:', error);
+                showToast('Failed to start payment. Please try again.', 'error');
               }
             }}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"

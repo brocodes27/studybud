@@ -3,6 +3,7 @@ import { Users, Trophy, MessageCircle, UserPlus, Crown, Star, Target, BookOpen, 
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { usePayment } from '../hooks/usePayment';
 import { format } from 'date-fns';
 
 interface StudyGroup {
@@ -59,6 +60,7 @@ interface Achievement {
 export function SocialFeatures() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { paymentData, initiatePayment } = usePayment();
   const [activeTab, setActiveTab] = useState<'groups' | 'leaderboard' | 'achievements'>('groups');
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -590,24 +592,11 @@ export function SocialFeatures() {
   };
 
   const handleSubscribe = async () => {
-    console.log('user:', user);
-    if (!user?.id || !user?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: user.id, email: user.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
+    try {
+      await initiatePayment();
+    } catch (error) {
+      console.error('Payment error:', error);
+      showToast('Failed to start payment. Please try again.', 'error');
     }
   };
 

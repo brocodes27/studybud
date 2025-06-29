@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Clock, CheckCircle, X, RotateCcw, Trophy, Target } from 'lucide-react';
+import { FileText, Clock, CheckCircle, X, RotateCcw, Trophy, Target, Play, Pause, XCircle, BarChart3, Brain, Zap, Plus, Settings, Users, Calendar, TrendingUp, BookOpen, Star, Award, Copy, Share2, Download, Eye, EyeOff, Filter, Search, SortAsc, SortDesc, ChevronLeft, ChevronRight, Home, Book, Clock as ClockIcon, Target as TargetIcon, TrendingUp as TrendingUpIcon, BarChart3 as BarChart3Icon, Users as UsersIcon, Trophy as TrophyIcon, Calendar as CalendarIcon, Star as StarIcon, Award as AwardIcon, Copy as CopyIcon, Share2 as Share2Icon, Download as DownloadIcon, Eye as EyeIcon, EyeOff as EyeOffIcon, Filter as FilterIcon, Search as SearchIcon, SortAsc as SortAscIcon, SortDesc as SortDescIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Home as HomeIcon, Book as BookIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { usePayment } from '../hooks/usePayment';
 
 interface Question {
   id: string;
@@ -46,6 +47,7 @@ interface PracticeTestEngineProps {
 export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps) {
   const { user, session } = useAuth();
   const { showToast } = useToast();
+  const { paymentData, initiatePayment } = usePayment();
   const [tests, setTests] = useState<PracticeTest[]>([]);
   const [currentTest, setCurrentTest] = useState<PracticeTest | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -308,24 +310,11 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   };
 
   const handleSubscribe = async () => {
-    console.log('user:', user);
-    if (!user?.id || !user?.email) {
-      alert('User not found! Are you logged in?');
-      return;
-    }
-    const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0Mzg1NzcsImV4cCI6MjA2NjAxNDU3N30.Pu_uzP2h19NsJTR5q36EQ8hYTT7QzTvb2O0aa4gv7ao'
-      },
-      body: JSON.stringify({ user_id: user.id, email: user.email }),
-    });
-    const data = await response.json();
-    if (data.short_url) {
-      window.open(data.short_url, '_blank');
-    } else {
-      // Optionally show error
+    try {
+      await initiatePayment();
+    } catch (error) {
+      console.error('Payment error:', error);
+      showToast('Failed to start payment. Please try again.', 'error');
     }
   };
 

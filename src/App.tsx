@@ -21,10 +21,14 @@ import { LiveMeetingNotes } from './components/LiveMeetingNotes';
 import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
+import { usePayment } from './hooks/usePayment';
+import { Profile } from './pages/Profile';
+import { FeatureComparison } from './components/FeatureComparison';
 
 function AppContent() {
   const { user, loading, session } = useAuth();
   const { isOnline } = useOfflineStorage();
+  const { paymentData, isLoadingPayment, initiatePayment } = usePayment();
 
   // Floating Live Notes modal state
   const [showLiveNotes, setShowLiveNotes] = useState(false);
@@ -32,14 +36,6 @@ function AppContent() {
 
   // Subscription status
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
-  const [isLoadingPayment, setIsLoadingPayment] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
-  const [price, setPrice] = useState(199); // INR default
-
-  // Razorpay plan IDs
-  const INR_PLAN_ID = 'YOUR_INR_PLAN_ID'; // Replace with your actual INR plan ID
-  const USD_PLAN_ID = 'YOUR_USD_PLAN_ID'; // Replace with your actual USD plan ID
 
   useEffect(() => {
     if (user) {
@@ -48,6 +44,8 @@ function AppContent() {
   }, [user]);
 
   const fetchPremiumStatus = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from('subscriptions')
       .select('status')
@@ -81,67 +79,6 @@ function AppContent() {
     }
   }, []);
 
-  // Detect user country and set currency/price
-  useEffect(() => {
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.country_code === 'US') {
-          setCurrency('USD');
-          setPrice(3); // $3/month for US
-        } else {
-          setCurrency('INR');
-          setPrice(199);
-        }
-      })
-      .catch(() => {
-        setCurrency('INR');
-        setPrice(199);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (isPremium === false && user && user.email && session?.access_token) {
-      // Preload Razorpay script
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      document.body.appendChild(script);
-
-      // Pre-create payment link
-      setIsLoadingPayment(true);
-      const planId = currency === 'USD' ? USD_PLAN_ID : INR_PLAN_ID;
-      fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ user_id: user.id, email: user.email, plan_id: planId }),
-      })
-        .then(res => res.json())
-        .then(data => {
-          console.log('Razorpay subscription response:', data);
-          if (data.short_url) {
-            setPaymentUrl(data.short_url);
-          } else {
-            setPaymentUrl(null);
-            alert('Failed to get payment link. Please try again or contact support.');
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching payment link:', err);
-          setPaymentUrl(null);
-          alert('Error connecting to payment server. Please try again.');
-        })
-        .finally(() => setIsLoadingPayment(false));
-
-      return () => {
-        document.body.removeChild(script);
-      };
-    }
-  }, [isPremium, user, session, currency]);
-
   if (loading) {
     return (
       <div className="min-h-screen animated-gradient flex items-center justify-center">
@@ -161,6 +98,19 @@ function AppContent() {
 
   // Show paywall if not subscribed
   if (isPremium === false) {
+    const getCurrencySymbol = (currency: string) => {
+      switch (currency) {
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return '₹';
+      }
+    };
+
+    const getPaymentProviderText = (provider: string) => {
+      return provider === 'paypal' ? 'PayPal' : 'Razorpay';
+    };
+
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-gray-900">
         <div className="bg-white rounded-3xl p-10 shadow-2xl text-center max-w-md w-full border border-purple-200/40 relative">
@@ -182,20 +132,25 @@ function AppContent() {
           </div>
           <div className="mb-8">
             <span className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white text-2xl font-bold px-8 py-3 rounded-2xl shadow-lg">
-              {currency === 'USD' ? '$' : '₹'}{price} <span className="text-base font-medium">/ month</span>
+              {getCurrencySymbol(paymentData.currency)}{paymentData.price} <span className="text-base font-medium">/ month</span>
             </span>
           </div>
           <button
-            onClick={() => {
-              console.log('Subscribe button clicked. paymentUrl:', paymentUrl);
-              if (paymentUrl) window.open(paymentUrl, '_blank');
-            }}
+            onClick={initiatePayment}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-2xl text-xl shadow-xl transition-all duration-200 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed"
-            disabled={!paymentUrl || isLoadingPayment}
+            disabled={isLoadingPayment}
           >
             {isLoadingPayment ? 'Loading...' : 'Subscribe Now'}
           </button>
-          <p className="mt-6 text-gray-400 text-xs">Cancel anytime. Secure payment via Razorpay.</p>
+          <p className="mt-6 text-gray-400 text-xs">
+            Cancel anytime. Secure payment via {getPaymentProviderText(paymentData.paymentProvider)}.
+            {!paymentData.isIndia && (
+              <span className="block mt-1 text-xs">
+                💳 PayPal available for international users
+              </span>
+            )}
+          </p>
+          <FeatureComparison />
         </div>
       </div>
     );
@@ -229,6 +184,8 @@ function AppContent() {
             <Route path="/my-notes/:id" element={<NoteDetailPage />} />
             <Route path="/study/:planId" element={<StudySession />} />
             <Route path="/ai-study-buddy" element={<AIStudyBuddyPage />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/pricing" element={<FeatureComparison />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

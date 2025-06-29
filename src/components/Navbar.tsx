@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil, MessageCircle } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil, MessageCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
@@ -21,6 +21,7 @@ export function Navbar() {
     { name: 'Notifications', icon: Bell, path: '/notifications' },
     { name: 'Live Meeting Notes', icon: Pencil, path: '/live-notes' },
     { name: 'My Meeting Notes', icon: BookOpen, path: '/my-notes' },
+    { name: 'Profile', icon: User, path: '/profile' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
