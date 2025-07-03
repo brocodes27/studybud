@@ -15,6 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log('AuthProvider mounted'); // Debug log
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('getSession resolved:', session); // Debug log
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('onAuthStateChange:', event, session); // Debug log
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -44,6 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (user && loading) {
+      setLoading(false);
+    }
+  }, [user, loading]);
 
   const syncProfileEmail = async (user: User) => {
     if (!user?.email) return;

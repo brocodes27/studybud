@@ -21,14 +21,12 @@ import { LiveMeetingNotes } from './components/LiveMeetingNotes';
 import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
-import { usePayment } from './hooks/usePayment';
 import { Profile } from './pages/Profile';
 import { FeatureComparison } from './components/FeatureComparison';
 
 function AppContent() {
   const { user, loading, session } = useAuth();
   const { isOnline } = useOfflineStorage();
-  const { paymentData, isLoadingPayment, initiatePayment } = usePayment();
 
   // Floating Live Notes modal state
   const [showLiveNotes, setShowLiveNotes] = useState(false);
@@ -78,6 +76,10 @@ function AppContent() {
       setShowSuggest(true);
     }
   }, []);
+
+  // Debug logs for loading and user
+  console.log('AppContent loading state:', loading);
+  console.log('AppContent user:', user);
 
   if (loading) {
     return (
@@ -140,7 +142,7 @@ function AppContent() {
 export function App() {
   return (
     <Router>
-      <AuthProvider>
+      <AuthProvider key="auth-provider">
         <AppContent />
       </AuthProvider>
     </Router>

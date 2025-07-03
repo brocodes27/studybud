@@ -6,10 +6,9 @@ import './index.css';
 import './sw-update';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-
-    <App />
-      </GoogleOAuthProvider>
-  </StrictMode>
+      <App />
+    </GoogleOAuthProvider>
+  // </StrictMode>
 );
