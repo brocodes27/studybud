@@ -49,22 +49,19 @@ export function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       console.log('Fetching dashboard data for user:', user?.id);
-      
-      const { data: plans, error } = await supabase
+      const { data, error } = await supabase
         .from('exam_plans')
         .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user?.id);
 
       if (error) {
         console.error('Error fetching plans:', error);
-        throw error;
+      } else {
+        console.log('Fetched plans:', data);
+        setStudyPlans(data || []);
+        calculateStats(data || []);
+        extractTodaysTasks(data || []);
       }
-
-      console.log('Fetched plans:', plans);
-      setStudyPlans(plans || []);
-      calculateStats(plans || []);
-      extractTodaysTasks(plans || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

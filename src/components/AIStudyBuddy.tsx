@@ -123,8 +123,17 @@ Current Study Context:
     setIsLoading(true);
 
     try {
-      const context = getCurrentStudyContext();
-      
+      let context = getCurrentStudyContext();
+      if (!context || context.trim() === '') {
+        context = 'General study context.';
+      }
+      const selectedPlanObj = studyPlans.find(p => p.id === selectedPlan);
+      const subject = selectedPlanObj?.subject || 'General';
+      let classValue = selectedPlanObj?.class || '';
+      if (!classValue || classValue.trim() === '') {
+        classValue = '10'; // Default to class 10 or another sensible default
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-study-buddy`, {
         method: 'POST',
         headers: {
@@ -134,8 +143,8 @@ Current Study Context:
         body: JSON.stringify({
           message: content.trim(),
           studyContext: context,
-          subject: studyPlans.find(p => p.id === selectedPlan)?.subject || 'General',
-          class: studyPlans.find(p => p.id === selectedPlan)?.class || '',
+          subject,
+          class: classValue,
         }),
       });
 
