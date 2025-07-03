@@ -41,14 +41,18 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Dashboard useEffect: user =', user);
     if (user) {
       fetchDashboardData();
     }
   }, [user]);
 
   const fetchDashboardData = async () => {
+    console.log('fetchDashboardData called');
+    console.log('supabase client:', supabase);
+    console.log('supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.log('supabase ANON KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'present' : 'missing');
     try {
-      console.log('Fetching dashboard data for user:', user?.id);
       const { data, error } = await supabase
         .from('exam_plans')
         .select('*')

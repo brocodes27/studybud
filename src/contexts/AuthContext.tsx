@@ -21,31 +21,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('getSession resolved:', session); // Debug log
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('onAuthStateChange:', event, session); // Debug log
+    const restoreSession = async () => {
+      console.log('AuthProvider: restoring session...');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Sync profile email when user changes
-        if (session?.user) {
-          await syncProfileEmail(session.user);
-        }
-        
+        setLoading(false);
+      } catch (err) {
+        if (!mounted) return;
+        console.error('Error during getSession:', err);
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
