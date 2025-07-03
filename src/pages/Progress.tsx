@@ -189,7 +189,6 @@ export function Progress() {
         subjectProgress
       });
     } catch (error) {
-      console.error('Error fetching progress data:', error);
       // Set default values on error
       setProgressData({
         totalStudyTime: 0,

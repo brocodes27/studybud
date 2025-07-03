@@ -10,21 +10,23 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   updateProfile: (updates: any) => Promise<any>;
+  trialStart: Date | null;
+  trialActive: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  console.log('AuthProvider mounted'); // Debug log
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trialStart, setTrialStart] = useState<Date | null>(null);
+  const [trialActive, setTrialActive] = useState<boolean>(true);
 
   useEffect(() => {
     let mounted = true;
 
     const restoreSession = async () => {
-      console.log('AuthProvider: restoring session...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!mounted) return;
@@ -33,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       } catch (err) {
         if (!mounted) return;
-        console.error('Error during getSession:', err);
         setLoading(false);
       }
     };
@@ -60,6 +61,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   }, [user, loading]);
+
+  // Fetch trial info after session/user is set
+  useEffect(() => {
+    const fetchTrialInfo = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('trial_start, trial_active')
+        .eq('id', user.id)
+        .single();
+      if (data) {
+        setTrialStart(data.trial_start ? new Date(data.trial_start) : null);
+        setTrialActive(data.trial_active !== false);
+      }
+    };
+    fetchTrialInfo();
+  }, [user]);
 
   const syncProfileEmail = async (user: User) => {
     if (!user?.email) return;
@@ -110,6 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         grade: userData?.grade ?? null,
         school: userData?.school ?? null,
         email: email, // Explicitly include email
+        trial_start: new Date().toISOString(),
+        trial_active: true,
       });
       if (profileError) console.warn('Profile upsert failed:', profileError.message);
     } else {
@@ -160,7 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signIn,
       signOut,
-      updateProfile
+      updateProfile,
+      trialStart,
+      trialActive
     }}>
       {children}
     </AuthContext.Provider>

@@ -43,7 +43,6 @@ export function ProfileSettings() {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
         showToast('Failed to load profile', 'error');
         return;
       }
@@ -55,7 +54,6 @@ export function ProfileSettings() {
         school: data?.school || ''
       });
     } catch (error) {
-      console.error('Error fetching profile:', error);
       showToast('Failed to load profile', 'error');
     } finally {
       setLoading(false);
@@ -77,7 +75,6 @@ export function ProfileSettings() {
       setEditing(false);
       showToast('Profile updated successfully!', 'success');
     } catch (error: any) {
-      console.error('Error updating profile:', error);
       showToast(error.message || 'Failed to update profile', 'error');
     } finally {
       setSaving(false);

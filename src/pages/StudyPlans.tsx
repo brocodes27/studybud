@@ -47,7 +47,6 @@ export function StudyPlans() {
       if (error) throw error;
       setStudyPlans(data || []);
     } catch (error) {
-      console.error('Error fetching study plans:', error);
       showToast('Failed to load study plans', 'error');
     } finally {
       setLoading(false);
@@ -80,7 +79,6 @@ export function StudyPlans() {
       try {
         await unlinkResources();
       } catch (linkErr) {
-        console.warn((linkErr as Error).message);
         showToast('Failed to unlink flashcards or practice tests; deletion cancelled', 'error');
         return;
       }
@@ -101,7 +99,6 @@ export function StudyPlans() {
           if (attemptsErr) throw attemptsErr;
         }
       } catch (nestedErr) {
-        console.warn('Unable to delete practice_test_attempts:', (nestedErr as Error).message);
       }
 
       // Step 2: remove other dependent records directly referencing the plan
@@ -111,9 +108,6 @@ export function StudyPlans() {
           .from(table)
           .delete()
           .eq('plan_id', planId);
-        if (childErr) {
-          console.warn(`Unable to delete from ${table}:`, childErr.message);
-        }
       }
 
       // Now delete the actual plan. Use `select()` so Supabase returns the deleted row(s).
@@ -146,10 +140,9 @@ export function StudyPlans() {
       fetchStudyPlans();
       showToast('Study plan deleted and resources unlinked successfully', 'success');
     } catch (error) {
-      console.error('Error deleting study plan:', error);
       showToast('Failed to delete study plan', 'error');
     }
-    };
+  };
 
   const startEditingPlan = (plan: StudyPlan) => {
     setEditingPlanId(plan.id);
@@ -172,7 +165,6 @@ export function StudyPlans() {
       fetchStudyPlans();
       showToast('Plan name updated', 'success');
     } catch (e) {
-      console.error('savePlanName error', e);
       showToast('Failed to update plan name', 'error');
     }
   };

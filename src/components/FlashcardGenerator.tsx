@@ -192,7 +192,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         count: 65,
         topic: selectedTopic,
       };
-      console.log("Selected topic before sending:", selectedTopic, "Payload:", payload);
       const { data, error } = await supabase.functions.invoke('generate-flashcards', {
         body: payload,
       });

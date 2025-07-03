@@ -283,162 +283,171 @@ export function Landing() {
       <div className="relative z-10">
         {/* Hero Section */}
         <section ref={heroRef} className="min-h-screen flex items-center justify-center px-4 py-20">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Content */}
-            <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-                <div className="relative">
-                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl glow-blue">
-                    <Brain className="h-12 w-12 text-white" />
-                  </div>
-                  <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-yellow-400 animate-bounce" />
-                  <Star className="absolute -bottom-1 -left-1 h-6 w-6 text-cyan-400 animate-pulse" />
-                </div>
-                <div>
-                  <h1 ref={heroHeadlineRef} className="text-5xl lg:text-6xl font-bold gradient-text">
-                    STUBUD
-                  </h1>
-                  <p ref={heroSubheadlineRef} className="text-blue-300 text-lg">Your AI Study Buddy</p>
-                </div>
-              </div>
-
-              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
-                Transform Your Study Experience with{' '}
-                <span ref={heroIconsRef} className="gradient-text">AI Intelligence</span>
-              </h2>
-
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-                Get personalized study plans, AI-generated flashcards, practice tests, and advanced analytics. 
-                Join thousands of students who've improved their grades by 40% on average.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <a
-                  href="/ai-study-buddy"
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:from-pink-700 hover:to-red-600 transition-all duration-300 text-lg"
-                >
-                  <MessageCircle className="h-6 w-6" />
-                  Try the new AI Study Buddy Chat!
-                </a>
-                <span className="text-pink-300 text-sm">Ask questions, get explanations, and more — instantly!</span>
-              </div>
+          <div className="w-full max-w-3xl mx-auto bg-white/10 rounded-3xl shadow-2xl p-8 flex flex-col items-center">
+            {/* 7-day free badge */}
+            <div className="mb-6 flex flex-col items-center">
+              <span className="inline-block bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold px-5 py-2 rounded-full text-lg shadow-lg mb-2 animate-bounce">
+                🎉 7 Days Free – No Credit Card Required
+              </span>
+              <span className="text-blue-200 text-sm">Try all premium features for 7 days, risk-free!</span>
             </div>
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left Side - Content */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
+                  <div className="relative">
+                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl glow-blue">
+                      <Brain className="h-12 w-12 text-white" />
+                    </div>
+                    <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-yellow-400 animate-bounce" />
+                    <Star className="absolute -bottom-1 -left-1 h-6 w-6 text-cyan-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h1 ref={heroHeadlineRef} className="text-5xl lg:text-6xl font-bold gradient-text">
+                      STUBUD
+                    </h1>
+                    <p ref={heroSubheadlineRef} className="text-blue-300 text-lg">Your AI Study Buddy</p>
+                  </div>
+                </div>
 
-            {/* Right Side - Auth Form */}
-            <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  {isSignUp ? 'Join STUBUD Today' : 'Welcome Back'}
-                </h3>
-                <p className="text-gray-400">
-                  {isSignUp ? 'Start your AI-powered learning journey' : 'Continue your learning journey'}
+                <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                  Transform Your Study Experience with{' '}
+                  <span ref={heroIconsRef} className="gradient-text">AI Intelligence</span>
+                </h2>
+
+                <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                  Get personalized study plans, AI-generated flashcards, practice tests, and advanced analytics. 
+                  Join thousands of students who've improved their grades by 40% on average.
                 </p>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                  <a
+                    href="/ai-study-buddy"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-red-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:from-pink-700 hover:to-red-600 transition-all duration-300 text-lg"
+                  >
+                    <MessageCircle className="h-6 w-6" />
+                    Try the new AI Study Buddy Chat!
+                  </a>
+                  <span className="text-pink-300 text-sm">Ask questions, get explanations, and more — instantly!</span>
+                </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {isSignUp && (
-                  <>
-                    <input
-                      type="text"
-                      required
-                      value={formData.full_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                      placeholder="Full Name"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
+              {/* Right Side - Auth Form */}
+              <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    {isSignUp ? 'Join STUBUD Today' : 'Welcome Back'}
+                  </h3>
+                  <p className="text-gray-400">
+                    {isSignUp ? 'Start your AI-powered learning journey' : 'Continue your learning journey'}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {isSignUp && (
+                    <>
                       <input
                         type="text"
                         required
-                        value={formData.grade}
-                        onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                        value={formData.full_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                         className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                        placeholder="Grade/Class"
+                        placeholder="Full Name"
                       />
-                      <input
-                        type="text"
-                        value={formData.school}
-                        onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                        placeholder="School"
-                      />
-                    </div>
-                  </>
-                )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <input
+                          type="text"
+                          required
+                          value={formData.grade}
+                          onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                          placeholder="Grade/Class"
+                        />
+                        <input
+                          type="text"
+                          value={formData.school}
+                          onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                          placeholder="School"
+                        />
+                      </div>
+                    </>
+                  )}
 
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                  placeholder="Email Address"
-                />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                    placeholder="Email Address"
+                  />
 
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                  placeholder="Password"
-                  minLength={6}
-                />
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                    placeholder="Password"
+                    minLength={6}
+                  />
 
-                <div className="mt-6 flex flex-col gap-3">
+                  <div className="mt-6 flex flex-col gap-3">
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignIn}
+                      disabled={loading}
+                      className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3 px-6 rounded-xl border border-gray-300 shadow hover:bg-gray-50 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <span className="inline-block h-6 w-6">
+                        <svg viewBox="0 0 48 48" width="24" height="24">
+                          <g>
+                            <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.53 7.82 2.81l5.77-5.77C34.13 3.36 29.54 1 24 1 14.82 1 6.98 6.98 3.69 15.09l6.91 5.36C12.13 14.36 17.56 9.5 24 9.5z"/>
+                            <path fill="#34A853" d="M46.1 24.5c0-1.64-.15-3.22-.43-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.66 7.01l7.19 5.6C43.98 37.02 46.1 31.25 46.1 24.5z"/>
+                            <path fill="#FBBC05" d="M10.6 28.45c-1.04-3.09-1.04-6.41 0-9.5l-6.91-5.36C1.64 17.36 0 20.54 0 24c0 3.46 1.64 6.64 3.69 9.41l6.91-5.36z"/>
+                            <path fill="#EA4335" d="M24 46.5c5.54 0 10.13-1.82 13.44-4.97l-7.19-5.6c-2.01 1.35-4.59 2.14-7.25 2.14-6.44 0-11.87-4.86-13.4-11.36l-6.91 5.36C6.98 41.02 14.82 46.5 24 46.5z"/>
+                            <path fill="none" d="M0 0h48v48H0z"/>
+                          </g>
+                        </svg>
+                      </span>
+                      {loading ? 'Signing in...' : 'Sign in with Google'}
+                    </button>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
+                    type="submit"
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3 px-6 rounded-xl border border-gray-300 shadow hover:bg-gray-50 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 disabled:cursor-not-allowed"
                   >
-                    <span className="inline-block h-6 w-6">
-                      <svg viewBox="0 0 48 48" width="24" height="24">
-                        <g>
-                          <path fill="#4285F4" d="M24 9.5c3.54 0 6.36 1.53 7.82 2.81l5.77-5.77C34.13 3.36 29.54 1 24 1 14.82 1 6.98 6.98 3.69 15.09l6.91 5.36C12.13 14.36 17.56 9.5 24 9.5z"/>
-                          <path fill="#34A853" d="M46.1 24.5c0-1.64-.15-3.22-.43-4.74H24v9.01h12.42c-.54 2.9-2.18 5.36-4.66 7.01l7.19 5.6C43.98 37.02 46.1 31.25 46.1 24.5z"/>
-                          <path fill="#FBBC05" d="M10.6 28.45c-1.04-3.09-1.04-6.41 0-9.5l-6.91-5.36C1.64 17.36 0 20.54 0 24c0 3.46 1.64 6.64 3.69 9.41l6.91-5.36z"/>
-                          <path fill="#EA4335" d="M24 46.5c5.54 0 10.13-1.82 13.44-4.97l-7.19-5.6c-2.01 1.35-4.59 2.14-7.25 2.14-6.44 0-11.87-4.86-13.4-11.36l-6.91 5.36C6.98 41.02 14.82 46.5 24 46.5z"/>
-                          <path fill="none" d="M0 0h48v48H0z"/>
-                        </g>
-                      </svg>
-                    </span>
-                    {loading ? 'Signing in...' : 'Sign in with Google'}
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Please wait...
+                      </div>
+                    ) : (
+                      isSignUp ? 'Create Account' : 'Sign In'
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
+                  >
+                    {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Join STUBUD"}
                   </button>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Please wait...
-                    </div>
-                  ) : (
-                    isSignUp ? 'Create Account' : 'Sign In'
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
-                >
-                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Join STUBUD"}
-                </button>
+                {isSignUp && (
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-gray-500">
+                      By signing up, you agree to our Terms of Service and Privacy Policy
+                    </p>
+                  </div>
+                )}
               </div>
-
-              {isSignUp && (
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-gray-500">
-                    By signing up, you agree to our Terms of Service and Privacy Policy
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </section>

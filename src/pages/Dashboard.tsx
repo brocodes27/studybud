@@ -29,7 +29,7 @@ interface StudyStats {
 }
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, trialStart, trialActive } = useAuth();
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [stats, setStats] = useState<StudyStats>({
     totalPlans: 0,
@@ -39,19 +39,59 @@ export function Dashboard() {
   });
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
+
+  // Calculate trial days left
+  let trialDaysLeft = null;
+  if (trialStart && trialActive) {
+    const now = new Date();
+    const diff = now.getTime() - trialStart.getTime();
+    const daysUsed = Math.floor(diff / (1000 * 60 * 60 * 24));
+    trialDaysLeft = Math.max(0, 7 - daysUsed);
+  }
 
   useEffect(() => {
-    console.log('Dashboard useEffect: user =', user);
     if (user) {
+      fetchPremiumStatus();
       fetchDashboardData();
+      fetchUsageThisMonth();
     }
   }, [user]);
 
+  const fetchPremiumStatus = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .single();
+    setIsPremium(data?.status === 'active');
+  };
+
+  const fetchUsageThisMonth = async () => {
+    if (!user) return;
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const { data, error } = await supabase
+      .from('exam_plans')
+      .select('plan,created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', firstDay.toISOString())
+      .lte('created_at', lastDay.toISOString());
+    if (error) {
+      setUsageDaysThisMonth(0);
+      return;
+    }
+    let totalDays = 0;
+    for (const plan of data || []) {
+      totalDays += plan.plan?.days_until_exam || 0;
+    }
+    setUsageDaysThisMonth(totalDays);
+  };
+
   const fetchDashboardData = async () => {
-    console.log('fetchDashboardData called');
-    console.log('supabase client:', supabase);
-    console.log('supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('supabase ANON KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'present' : 'missing');
     try {
       const { data, error } = await supabase
         .from('exam_plans')
@@ -59,15 +99,12 @@ export function Dashboard() {
         .eq('user_id', user?.id);
 
       if (error) {
-        console.error('Error fetching plans:', error);
       } else {
-        console.log('Fetched plans:', data);
         setStudyPlans(data || []);
         calculateStats(data || []);
         extractTodaysTasks(data || []);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -98,7 +135,6 @@ export function Dashboard() {
         upcomingExams: upcomingExams.length
       });
     } catch (error) {
-      console.error('Error fetching task completions:', error);
       setStats({
         totalPlans: plans.length,
         activePlans: activePlans.length,
@@ -152,10 +188,8 @@ export function Dashboard() {
         }
       });
 
-      console.log('Today\'s tasks:', tasks);
       setTodaysTasks(tasks);
     } catch (error) {
-      console.error('Error fetching task completions:', error);
       // Still show tasks even if we can't check completion status
       plans.forEach(plan => {
         const planCreatedDate = new Date(plan.created_at);
@@ -212,6 +246,13 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Trial Days Left Banner */}
+      {trialDaysLeft !== null && trialDaysLeft > 0 && (
+        <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-xl px-6 py-4 flex items-center gap-4 shadow-md">
+          <span className="font-semibold text-lg">🎁 {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'} left in your free trial!</span>
+          <span className="ml-auto text-white/80 text-sm">Enjoy all premium features, no credit card required.</span>
+        </div>
+      )}
       {/* Welcome Header */}
       <div className="glass rounded-2xl p-8 border border-gray-700/50 card-hover">
         <div className="flex items-center justify-between">
@@ -231,6 +272,20 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+      {/* Usage Left Banner */}
+      {isPremium === false && (
+        <div className="bg-blue-900/80 border border-blue-500/40 text-blue-200 rounded-xl px-6 py-4 flex items-center gap-4 shadow-md">
+          <Star className="h-6 w-6 text-yellow-400" />
+          <span className="font-semibold">{usageDaysThisMonth} of 7 free study plan days used this month.</span>
+          <span className="ml-auto text-blue-300 text-sm">Upgrade to premium for unlimited plans!</span>
+        </div>
+      )}
+      {isPremium === true && (
+        <div className="bg-green-900/80 border border-green-500/40 text-green-200 rounded-xl px-6 py-4 flex items-center gap-4 shadow-md">
+          <CheckCircle className="h-6 w-6 text-green-400" />
+          <span className="font-semibold">Unlimited study plan usage this month.</span>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
