@@ -282,8 +282,8 @@ export function Landing() {
 
       <div className="relative z-10">
         {/* Hero Section */}
-        <section ref={heroRef} className="min-h-screen flex items-center justify-center px-4 py-20">
-          <div className="w-full max-w-3xl mx-auto bg-white/10 rounded-3xl shadow-2xl p-8 flex flex-col items-center">
+        <section ref={heroRef} className="min-h-screen flex items-center justify-center px-0 py-20">
+          <div className="w-full bg-white/10 rounded-3xl shadow-2xl p-4 sm:p-8 flex flex-col items-center">
             {/* 7-day free badge */}
             <div className="mb-6 flex flex-col items-center">
               <span className="inline-block bg-gradient-to-r from-green-400 to-blue-500 text-white font-bold px-5 py-2 rounded-full text-lg shadow-lg mb-2 animate-bounce">

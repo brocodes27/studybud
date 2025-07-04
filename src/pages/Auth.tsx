@@ -51,7 +51,7 @@ export function Auth() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
       </div>
 
-      <div className="max-w-md w-full relative z-10">
+      <div className="w-full relative z-10 px-0 sm:px-8 md:px-16 lg:px-32 xl:px-64">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-6">
