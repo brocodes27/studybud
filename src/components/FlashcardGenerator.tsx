@@ -14,10 +14,6 @@ interface Flashcard {
   question: string;
   answer: string;
   difficulty_level: 'easy' | 'medium' | 'hard';
-  mastery_level: number;
-  next_review_at: string;
-  review_count: number;
-  correct_count: number;
 }
 
 interface StudyPlan {
@@ -32,7 +28,6 @@ interface TopicGroup {
   topic: string;
   flashcards: Flashcard[];
   totalCards: number;
-  averageMastery: number;
 }
 
 interface FlashcardGeneratorProps {
@@ -56,7 +51,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
   const { user, session } = useAuth();
   const { showToast } = useToast();
-  const { paymentData, initiatePayment } = usePayment();
+  const { initiatePayment } = usePayment();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [topicGroups, setTopicGroups] = useState<TopicGroup[]>([]);
   const [currentCard, setCurrentCard] = useState(0);
@@ -72,6 +67,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
   const [showPaywall, setShowPaywall] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
+  const [allFlashcards, setAllFlashcards] = useState<Flashcard[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -131,6 +127,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       if (!Array.isArray(newFlashcards)) {
         throw new Error('Invalid response format: expected array of flashcards');
       }
+      setAllFlashcards(newFlashcards);
       setFlashcards(newFlashcards);
       setStudyMode('topics');
     } catch (error) {
@@ -152,15 +149,11 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       topicMap.get(topic)!.push(card);
     });
 
-    const groups: TopicGroup[] = Array.from(topicMap.entries()).map(([topic, cards]) => {
-      const averageMastery = cards.reduce((sum, card) => sum + card.mastery_level, 0) / cards.length;
-      return {
-        topic,
-        flashcards: cards,
-        totalCards: cards.length,
-        averageMastery: Math.round(averageMastery * 10) / 10
-      };
-    });
+    const groups: TopicGroup[] = Array.from(topicMap.entries()).map(([topic, cards]) => ({
+      topic,
+      flashcards: cards,
+      totalCards: cards.length
+    }));
 
     // Sort by topic name
     groups.sort((a, b) => a.topic.localeCompare(b.topic));
@@ -237,81 +230,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   };
 
   const startTopicReview = (topic: string) => {
-    const topicCards = flashcards.filter(card => card.topic === topic);
+    const topicCards = allFlashcards.filter(card => card.topic === topic);
     if (topicCards.length === 0) return;
-    
     setFlashcards(topicCards);
     setCurrentCard(0);
     setIsFlipped(false);
     setActiveTopicFilter(topic);
     setStudyMode('review');
-  };
-
-  const getNextReviewDate = (masteryLevel: number) => {
-    // Days for each mastery level
-    const days = [1, 2, 4, 7, 15, 30];
-    const idx = Math.max(0, Math.min(masteryLevel, days.length - 1));
-    const now = new Date();
-    now.setDate(now.getDate() + days[idx]);
-    return now.toISOString();
-  };
-
-  const handleCardResponse = async (correct: boolean) => {
-    const card = flashcards[currentCard];
-    if (!card) return;
-
-    try {
-      let newMasteryLevel = card.mastery_level;
-      if (correct) {
-        newMasteryLevel = Math.min(card.mastery_level + 1, 5);
-      } else {
-        newMasteryLevel = Math.max(card.mastery_level - 1, 0);
-      }
-
-      const nextReviewAt = getNextReviewDate(newMasteryLevel);
-
-      const { error } = await supabase
-        .from('flashcards')
-        .update({
-          mastery_level: newMasteryLevel,
-          review_count: card.review_count + 1,
-          correct_count: correct ? card.correct_count + 1 : card.correct_count,
-          last_reviewed_at: new Date().toISOString(),
-          next_review_at: nextReviewAt,
-        })
-        .eq('id', card.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setFlashcards(prev => prev.map(fc =>
-        fc.id === card.id
-          ? {
-              ...fc,
-              mastery_level: newMasteryLevel,
-              review_count: fc.review_count + 1,
-              correct_count: correct ? fc.correct_count + 1 : fc.correct_count,
-              next_review_at: nextReviewAt,
-            }
-          : fc
-      ));
-
-      // Move to next card
-      nextCard();
-    } catch (error) {
-      console.error('Error updating flashcard:', error);
-      showToast('Failed to update progress', 'error');
-    }
-  };
-
-  const nextCard = () => {
-    setIsFlipped(false);
-    setCurrentCard(prev => (prev + 1) % flashcards.length);
-  };
-
-  const previousCard = () => {
-    setIsFlipped(false);
-    setCurrentCard(prev => (prev - 1 + flashcards.length) % flashcards.length);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -321,23 +246,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       case 'hard': return 'text-red-400 bg-red-500/20';
       default: return 'text-gray-400 bg-gray-500/20';
     }
-  };
-
-  const getMasteryStars = (level: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`h-4 w-4 ${
-          i < level ? 'text-yellow-400 fill-current' : 'text-gray-600'
-        }`}
-      />
-    ));
-  };
-
-  const getMasteryColor = (mastery: number) => {
-    if (mastery >= 4) return 'text-green-400';
-    if (mastery >= 2) return 'text-yellow-400';
-    return 'text-red-400';
   };
 
   const handleDeleteFlashcard = async (id: string) => {
@@ -389,9 +297,24 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const selectedPlanData = availablePlans.find(plan => plan.id === (selectedPlan || planId));
   const availableTopics = selectedPlanData ? selectedPlanData.chapters.split(',').map(c => c.trim()) : topics;
 
-  const today = new Date();
-  const dueToday = flashcards.filter(card => new Date(card.next_review_at) <= today).length;
-  const mastered = flashcards.filter(card => card.mastery_level >= 5).length;
+  if (studyMode === 'topics' ? topicGroups.length === 0 : flashcards.length === 0) {
+    return (
+      <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
+        <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
+          <BookOpen className="h-16 w-16 text-gray-400 mx-auto" />
+        </div>
+        <h4 className="text-xl font-semibold text-white mb-2">No Flashcards Yet</h4>
+        <p className="text-gray-400 mb-6">Generate AI-powered flashcards from your study plans</p>
+        <button
+          onClick={() => setStudyMode(studyMode === 'topics' ? 'generate' : 'topics')}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+        >
+          <Plus className="h-5 w-5 inline mr-2" />
+          {studyMode === 'topics' ? 'Generate Flashcards' : 'Back to Topics'}
+        </button>
+      </div>
+    );
+  }
 
   // Show paywall if not subscribed
   if (isPremium === false) {
@@ -399,20 +322,12 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-          <p className="mb-6 text-gray-700">Start your subscription to access all flashcard and study features.</p>
+          <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
           <button
-            onClick={async () => {
-              try {
-                await initiatePayment();
-              } catch (error) {
-                console.error('Payment error:', error);
-                showToast('Failed to start payment. Please try again.', 'error');
-              }
-            }}
+            onClick={() => setShowPaywall(false)}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-            disabled={!user || !user.email}
           >
-            Subscribe Now
+            Close
           </button>
         </div>
       </div>
@@ -471,8 +386,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           </button>
           <button
             onClick={() => {
-              // Reset to all flashcards for review
-              fetchFlashcards();
+              setFlashcards(allFlashcards);
               setStudyMode('review');
             }}
             className={`px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -481,7 +395,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Review All ({flashcards.length})
+            Review All ({allFlashcards.length})
           </button>
         </div>
       </div>
@@ -554,15 +468,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                       <div className="flex items-center gap-2 text-sm text-gray-400">
                         <BookOpen className="h-4 w-4" />
                         {group.totalCards} cards
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-400">Mastery:</span>
-                        <span className={`font-semibold ${getMasteryColor(group.averageMastery)}`}>
-                          {group.averageMastery}/5
-                        </span>
-                        <div className="flex">
-                          {getMasteryStars(Math.round(group.averageMastery))}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -678,25 +583,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               </h4>
               <p className="text-gray-400">Card {currentCard + 1} of {flashcards.length}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">Mastery:</span>
-              {getMasteryStars(flashcards[currentCard]?.mastery_level || 0)}
-            </div>
           </div>
-
-          {/* Progress Stats Bar */}
-          <div className="flex gap-4 mb-4">
-            <div className="bg-blue-700 text-white px-4 py-2 rounded-lg">
-              Due Today: {dueToday}
-            </div>
-            <div className="bg-green-700 text-white px-4 py-2 rounded-lg">
-              Mastered: {mastered}
-            </div>
-            <div className="bg-gray-700 text-white px-4 py-2 rounded-lg">
-              Total: {flashcards.length}
-            </div>
-          </div>
-
           {/* Flashcard */}
           <div className="relative h-80">
             <AnimatePresence mode="wait">
@@ -730,7 +617,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
                       <p className="text-gray-400">Click to reveal answer</p>
                     </div>
                   </div>
-
                   <div className={`h-full flex flex-col justify-center ${isFlipped ? 'block' : 'hidden'}`}>
                     {/* Back - Answer */}
                     <div className="text-center space-y-4">
@@ -744,47 +630,34 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               </motion.div>
             </AnimatePresence>
           </div>
-
           {/* Controls */}
           <div className="flex items-center justify-between">
             <button
-              onClick={previousCard}
+              onClick={() => {
+                setIsFlipped(false);
+                setCurrentCard(prev => (prev - 1 + flashcards.length) % flashcards.length);
+              }}
               className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-xl transition-colors duration-200"
             >
               <RotateCcw className="h-5 w-5" />
             </button>
-
-            {isFlipped && (
-              <div className="flex gap-4">
-                <button
-                  onClick={() => handleCardResponse(false)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2"
-                >
-                  <X className="h-5 w-5" />
-                  Incorrect
-                </button>
-                <button
-                  onClick={() => handleCardResponse(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl transition-colors duration-200 flex items-center gap-2"
-                >
-                  <Check className="h-5 w-5" />
-                  Correct
-                </button>
-              </div>
-            )}
-
             <button
-              onClick={nextCard}
+              onClick={() => {
+                setIsFlipped(false);
+                setCurrentCard(prev => (prev + 1) % flashcards.length);
+              }}
               className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-xl transition-colors duration-200"
             >
               <RotateCcw className="h-5 w-5 rotate-180" />
             </button>
           </div>
-
           {/* Back to Topics */}
           <div className="text-center">
             <button
-              onClick={() => setStudyMode('topics')}
+              onClick={() => {
+                setFlashcards(allFlashcards);
+                setStudyMode('topics');
+              }}
               className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-xl transition-colors duration-200"
             >
               Back to Topics

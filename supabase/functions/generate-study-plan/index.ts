@@ -1,9 +1,10 @@
-import { isUserPremium } from '../_utils_subscription.ts';
+import { isUserPremium } from './_utils_subscription.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Vary": "Origin"
 };
 
 interface StudyPlanRequest {
