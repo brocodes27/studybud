@@ -84,6 +84,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchProfileInfo();
   }, [user]);
 
+  // Ensure user_profiles row exists for every user (including OAuth)
+  useEffect(() => {
+    const ensureUserProfile = async () => {
+      if (!user) return;
+      await supabase.from('user_profiles').upsert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    };
+    ensureUserProfile();
+  }, [user]);
+
   const syncProfileEmail = async (user: User) => {
     if (!user?.email) return;
     
