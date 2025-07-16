@@ -12,6 +12,7 @@ interface AuthContextType {
   updateProfile: (updates: any) => Promise<any>;
   trialStart: Date | null;
   trialActive: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [trialStart, setTrialStart] = useState<Date | null>(null);
   const [trialActive, setTrialActive] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -62,21 +64,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading]);
 
-  // Fetch trial info after session/user is set
+  // Fetch trial info and is_admin after session/user is set
   useEffect(() => {
-    const fetchTrialInfo = async () => {
+    const fetchProfileInfo = async () => {
       if (!user) return;
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('trial_start, trial_active')
+        .select('trial_start, trial_active, is_admin')
         .eq('id', user.id)
         .single();
       if (data) {
         setTrialStart(data.trial_start ? new Date(data.trial_start) : null);
         setTrialActive(data.trial_active !== false);
+        setIsAdmin(!!data.is_admin);
+      } else {
+        setIsAdmin(false);
       }
     };
-    fetchTrialInfo();
+    fetchProfileInfo();
   }, [user]);
 
   const syncProfileEmail = async (user: User) => {
@@ -182,7 +187,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       updateProfile,
       trialStart,
-      trialActive
+      trialActive,
+      isAdmin
     }}>
       {children}
     </AuthContext.Provider>

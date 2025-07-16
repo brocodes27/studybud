@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil, MessageCircle, User } from 'lucide-react';
+import { Home, PlusCircle, BookOpen, BarChart2, Users, Bell, Menu, X, Compass, TrendingUp, Brain, Calendar, Pencil, MessageCircle, User, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,6 +22,7 @@ export function Navbar() {
     { name: 'Live Meeting Notes', icon: Pencil, path: '/live-notes' },
     { name: 'My Meeting Notes', icon: BookOpen, path: '/my-notes' },
     { name: 'Profile', icon: User, path: '/profile' },
+    ...(isAdmin ? [{ name: 'Admin Panel', icon: Shield, path: '/admin' }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;

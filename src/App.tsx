@@ -24,6 +24,7 @@ import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import { Profile } from './pages/Profile';
 import { FeatureComparison } from './components/FeatureComparison';
 import { usePayment } from './hooks/usePayment';
+import { AdminPanel } from './pages/AdminPanel';
 
 function AppContent() {
   const { user, loading, session, trialStart, trialActive } = useAuth();
@@ -209,6 +210,7 @@ function AppContent() {
             <Route path="/study/:planId" element={<StudySession />} />
             <Route path="/ai-study-buddy" element={<AIStudyBuddyPage />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="/pricing" element={<FeatureComparison />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
