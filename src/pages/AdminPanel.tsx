@@ -10,26 +10,30 @@ export function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
+  const [emailExtensions, setEmailExtensions] = useState<string[]>([]);
+  const [newExtension, setNewExtension] = useState('');
+  const [extLoading, setExtLoading] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
       fetchAdminStats();
+      fetchEmailExtensions();
     }
   }, [isAdmin]);
 
   const fetchAdminStats = async () => {
     setLoading(true);
     // Fetch user count
-    const { count: userCount, error: userError } = await supabase
+    const { count: userCount } = await supabase
       .from('user_profiles')
       .select('id', { count: 'exact', head: true });
     // Fetch study plan count
-    const { count: planCount, error: planError } = await supabase
+    const { count: planCount } = await supabase
       .from('exam_plans')
       .select('id', { count: 'exact', head: true });
     // Fetch recent users
-    const { data: recentUsers, error: recentUsersError } = await supabase
+    const { data: recentUsers } = await supabase
       .from('user_profiles')
       .select('id, full_name, email, created_at, is_admin')
       .order('created_at', { ascending: false })
@@ -38,6 +42,29 @@ export function AdminPanel() {
     setPlanCount(planCount ?? null);
     setRecentUsers(recentUsers ?? []);
     setLoading(false);
+  };
+
+  // Fetch allowed email extensions
+  const fetchEmailExtensions = async () => {
+    setExtLoading(true);
+    const { data, error } = await supabase
+      .from('premium_email_extensions')
+      .select('extension')
+      .order('extension', { ascending: true });
+    setEmailExtensions(data ? data.map((row: any) => row.extension) : []);
+    setExtLoading(false);
+  };
+
+  // Add a new email extension
+  const handleAddExtension = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExtension.trim()) return;
+    setExtLoading(true);
+    const ext = newExtension.trim();
+    await supabase.from('premium_email_extensions').insert({ extension: ext });
+    setNewExtension('');
+    fetchEmailExtensions();
+    setExtLoading(false);
   };
 
   // Debounced search effect
@@ -97,6 +124,36 @@ export function AdminPanel() {
             className="px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 w-full md:w-80"
             disabled={searching}
           />
+        </div>
+        <div className="bg-gray-800/70 rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">Allowed Email Extensions for Premium Access</h2>
+          <form onSubmit={handleAddExtension} className="flex flex-col md:flex-row gap-2 mb-4">
+            <input
+              type="text"
+              value={newExtension}
+              onChange={e => setNewExtension(e.target.value)}
+              placeholder="e.g. *.stteresaschool.in"
+              className="px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 w-full md:w-80"
+              disabled={extLoading}
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
+              disabled={extLoading || !newExtension.trim()}
+            >
+              Add Extension
+            </button>
+          </form>
+          {extLoading ? (
+            <div className="text-gray-300">Loading...</div>
+          ) : (
+            <ul className="list-disc list-inside text-gray-200">
+              {emailExtensions.length === 0 && <li>No extensions added yet.</li>}
+              {emailExtensions.map((ext, idx) => (
+                <li key={idx}>{ext}</li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="bg-gray-800/70 rounded-xl p-6">
           <h2 className="text-xl font-bold text-white mb-4">Recent Users</h2>
