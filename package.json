@@ -24,6 +24,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.21.1",
     "recharts": "^2.10.3",
+    "split-type": "^0.3.4",
     "supabase": "^2.26.9",
     "tesseract.js": "^5.1.1",
     "workbox-window": "^7.0.0"

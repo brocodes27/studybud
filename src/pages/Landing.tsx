@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Brain, Check, Star, Zap, Users, BarChart3, Crown, ArrowRight, Play, Shield, Sparkles, Target, BookOpen, TrendingUp, ExternalLink, MessageCircle, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -7,6 +7,59 @@ import ScrollTrigger from 'gsap/ScrollTrigger';
 import { supabase } from '../lib/supabase';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// --- NEW: Particle background canvas ---
+const ParticleBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let particles = Array.from({ length: 60 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 2 + 1,
+      dx: (Math.random() - 0.5) * 0.5,
+      dy: (Math.random() - 0.5) * 0.5,
+      alpha: Math.random() * 0.5 + 0.2
+    }));
+    let animationId: number;
+    const resize = () => {
+      if (!canvas) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const draw = () => {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.restore();
+        p.x += p.dx;
+        p.y += p.dy;
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+      }
+      animationId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full z-0 pointer-events-none" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }} />;
+};
 
 export function Landing() {
   const { signUp, signIn } = useAuth();
@@ -158,83 +211,111 @@ export function Landing() {
   const heroHeadlineRef = useRef<HTMLHeadingElement>(null);
   const heroSubheadlineRef = useRef<HTMLParagraphElement>(null);
   const heroIconsRef = useRef<HTMLSpanElement>(null);
-  const bgBlob1Ref = useRef<HTMLDivElement>(null);
-  const bgBlob2Ref = useRef<HTMLDivElement>(null);
-  const bgBlob3Ref = useRef<HTMLDivElement>(null);
+  const bgBlob1Ref = useRef<SVGSVGElement>(null);
+  const bgBlob2Ref = useRef<SVGSVGElement>(null);
+  const bgBlob3Ref = useRef<SVGSVGElement>(null);
   const featureCardsRef = useRef<HTMLDivElement>(null);
   const testimonialsSectionRef = useRef<HTMLDivElement>(null);
   const ctaSectionRef = useRef<HTMLDivElement>(null);
 
+  // --- NEW: More refs for advanced animation ---
+  const heroIconsParallaxRef = useRef<HTMLDivElement>(null);
+  const featureCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Sparkle refs only for testimonials if needed
+  // const sparkleRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // --- HERO ANIMATION ---
   useEffect(() => {
     const tl = gsap.timeline();
+    // Hero headline, subheadline, icons
+    tl.from(heroHeadlineRef.current, { opacity: 0, y: 80, scale: 0.8, duration: 1.2, ease: 'expo.out' })
+      .from(heroSubheadlineRef.current, { opacity: 0, y: 40, duration: 1, ease: 'expo.out' }, '-=0.8')
+      .from(heroIconsRef.current, { opacity: 0, scale: 0.5, duration: 1, ease: 'back.out(1.7)' }, '-=0.7');
+    // Parallax on mouse move
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!heroIconsParallaxRef.current) return;
+      const x = (e.clientX / window.innerWidth - 0.5) * 40;
+      const y = (e.clientY / window.innerHeight - 0.5) * 40;
+      gsap.to(heroIconsParallaxRef.current, { x, y, duration: 0.5, ease: 'power3.out' });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
-    // Hero headline and subheadline
-    tl.from(heroHeadlineRef.current, { opacity: 0, y: 60, duration: 1, ease: 'power4.out' })
-      .from(heroSubheadlineRef.current, { opacity: 0, y: 40, duration: 0.8, ease: 'power4.out' }, '-=0.6');
-
-    // Hero icons
-    if (heroIconsRef.current) {
-      gsap.fromTo(
-        (heroIconsRef.current as HTMLSpanElement).querySelectorAll('.hero-icon'),
-        { opacity: 0, scale: 0.7, y: 30 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.7, stagger: 0.15, ease: 'back.out(1.7)', delay: 0.2 }
-      );
-    }
-
-    // Background blobs floating
+  // --- HERO BLOBS ANIMATION ---
+  useEffect(() => {
     [bgBlob1Ref, bgBlob2Ref, bgBlob3Ref].forEach((ref, i) => {
       if (ref.current) {
         gsap.to(ref.current, {
-          y: i % 2 === 0 ? '+=40' : '-=40',
-          x: i === 1 ? '+=30' : '-=30',
+          y: i % 2 === 0 ? '+=60' : '-=60',
+          x: i === 1 ? '+=40' : '-=40',
+          scale: 1.1 + i * 0.1,
           repeat: -1,
           yoyo: true,
-          duration: 6 + i * 2,
+          duration: 8 + i * 2,
           ease: 'sine.inOut',
         });
       }
     });
+  }, []);
 
-    // Parallax blobs on scroll
-    [bgBlob1Ref, bgBlob2Ref, bgBlob3Ref].forEach((ref, i) => {
-      if (ref.current) {
-        gsap.to(ref.current, {
-          yPercent: i === 0 ? 10 : i === 1 ? -10 : 5,
-          scrollTrigger: {
-            trigger: ref.current,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 1,
-          },
-        });
-      }
-    });
-
-    // Feature cards 3D entrance
-    if (featureCardsRef.current) {
-      gsap.fromTo(
-        (featureCardsRef.current as HTMLDivElement).querySelectorAll('.feature-card'),
-        { opacity: 0, y: 60, rotateY: 30, scale: 0.8 },
-        {
+  // --- FEATURE CARDS ENTRANCE & HOVER ---
+  // Remove the old useEffect for feature cards animation and replace with useLayoutEffect using gsap.context and ScrollTrigger.batch
+  useLayoutEffect(() => {
+    let ctx = gsap.context(() => {
+      // Batch entrance animation for all feature cards
+      ScrollTrigger.batch('.feature-card', {
+        onEnter: batch => gsap.to(batch, {
           opacity: 1,
           y: 0,
           rotateY: 0,
           scale: 1,
-          duration: 1,
-          stagger: 0.15,
+          stagger: 0.12,
+          duration: 1.2,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: featureCardsRef.current,
-            start: 'top 80%',
-          },
-        }
-      );
-    }
+        }),
+        onLeaveBack: batch => gsap.set(batch, { opacity: 0, y: 80, rotateY: 30, scale: 0.8 }),
+        start: 'top 80%',
+        once: false,
+      });
+    }, featureCardsRef);
+    return () => ctx.revert();
+  }, []);
+  // 3D hover tilt for each card (keep this part as is)
+  useEffect(() => {
+    featureCardRefs.current.forEach((card) => {
+      if (!card) return;
+      const handleMove = (e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        gsap.to(card, {
+          rotateY: x / 10,
+          rotateX: -y / 10,
+          scale: 1.05,
+          boxShadow: '0 8px 32px 0 rgba(0,0,0,0.25)',
+          duration: 0.3,
+          ease: 'power2.out',
+        });
+      };
+      const handleLeave = () => {
+        gsap.to(card, { rotateY: 0, rotateX: 0, scale: 1, boxShadow: '0 2px 8px 0 rgba(0,0,0,0.10)', duration: 0.4, ease: 'power2.out' });
+      };
+      card.addEventListener('mousemove', handleMove);
+      card.addEventListener('mouseleave', handleLeave);
+      // Cleanup
+      return () => {
+        card.removeEventListener('mousemove', handleMove);
+        card.removeEventListener('mouseleave', handleLeave);
+      };
+    });
+  }, [features.length]);
 
-    // Testimonials fade/slide on scroll
+  // --- TESTIMONIALS FLOATING & SPARKLES ---
+  useEffect(() => {
     if (testimonialsSectionRef.current) {
       gsap.fromTo(
-        (testimonialsSectionRef.current as HTMLDivElement).querySelectorAll('.testimonial-card'),
+        testimonialsSectionRef.current.querySelectorAll('.testimonial-card'),
         { opacity: 0, y: 60, scale: 0.95 },
         {
           opacity: 1,
@@ -250,16 +331,32 @@ export function Landing() {
         }
       );
     }
+    // Sparkle animation
+    // sparkleRefs.current.forEach((sparkle, i) => {
+    //   if (!sparkle) return;
+    //   gsap.to(sparkle, {
+    //     y: '+=10',
+    //     opacity: 0.7 + 0.3 * Math.random(),
+    //     repeat: -1,
+    //     yoyo: true,
+    //     duration: 1.5 + Math.random(),
+    //     delay: i * 0.2,
+    //     ease: 'sine.inOut',
+    //   });
+    // });
+  }, [testimonials.length]);
 
-    // CTA section entrance
+  // --- CTA SECTION ANIMATION ---
+  useEffect(() => {
     if (ctaSectionRef.current) {
       gsap.fromTo(
         ctaSectionRef.current,
-        { opacity: 0, y: 60 },
+        { opacity: 0, y: 60, scale: 0.95 },
         {
           opacity: 1,
           y: 0,
-          duration: 1,
+          scale: 1,
+          duration: 1.2,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: ctaSectionRef.current,
@@ -267,18 +364,25 @@ export function Landing() {
           },
         }
       );
+      // Pulse effect
+      gsap.to(ctaSectionRef.current, {
+        boxShadow: '0 0 32px 8px #00e6ff44',
+        repeat: -1,
+        yoyo: true,
+        duration: 2.5,
+        ease: 'sine.inOut',
+      });
     }
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
-      {/* Animated Background */}
-      <div className="animated-gradient fixed inset-0 opacity-20"></div>
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
-      </div>
+      {/* Particle Background */}
+      <ParticleBackground />
+      {/* Animated SVG Blobs */}
+      <svg ref={bgBlob1Ref} className="absolute top-20 left-20 w-72 h-72 z-0" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#3b82f6" d="M44.8,-67.2C57.2,-59.2,65.7,-44.2,70.2,-28.7C74.7,-13.2,75.2,2.8,70.2,16.7C65.2,30.6,54.7,42.4,41.2,51.2C27.7,60,11.2,65.8,-4.7,68.2C-20.6,70.6,-41.2,69.6,-54.2,59.2C-67.2,48.8,-72.7,29,-71.2,11.2C-69.7,-6.7,-61.2,-22.5,-50.2,-31.7C-39.2,-40.9,-25.6,-43.5,-11.7,-51.2C2.2,-58.9,17.4,-71.2,32.7,-73.2C48,-75.2,64.7,-67.2,44.8,-67.2Z" transform="translate(100 100)" /></svg>
+      <svg ref={bgBlob2Ref} className="absolute bottom-20 right-20 w-96 h-96 z-0" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#a21caf" d="M44.8,-67.2C57.2,-59.2,65.7,-44.2,70.2,-28.7C74.7,-13.2,75.2,2.8,70.2,16.7C65.2,30.6,54.7,42.4,41.2,51.2C27.7,60,11.2,65.8,-4.7,68.2C-20.6,70.6,-41.2,69.6,-54.2,59.2C-67.2,48.8,-72.7,29,-71.2,11.2C-69.7,-6.7,-61.2,-22.5,-50.2,-31.7C-39.2,-40.9,-25.6,-43.5,-11.7,-51.2C2.2,-58.9,17.4,-71.2,32.7,-73.2C48,-75.2,64.7,-67.2,44.8,-67.2Z" transform="translate(100 100)" /></svg>
+      <svg ref={bgBlob3Ref} className="absolute top-1/2 left-1/2 w-64 h-64 z-0" style={{ transform: 'translate(-50%, -50%)' }} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#06b6d4" d="M44.8,-67.2C57.2,-59.2,65.7,-44.2,70.2,-28.7C74.7,-13.2,75.2,2.8,70.2,16.7C65.2,30.6,54.7,42.4,41.2,51.2C27.7,60,11.2,65.8,-4.7,68.2C-20.6,70.6,-41.2,69.6,-54.2,59.2C-67.2,48.8,-72.7,29,-71.2,11.2C-69.7,-6.7,-61.2,-22.5,-50.2,-31.7C-39.2,-40.9,-25.6,-43.5,-11.7,-51.2C2.2,-58.9,17.4,-71.2,32.7,-73.2C48,-75.2,64.7,-67.2,44.8,-67.2Z" transform="translate(100 100)" /></svg>
 
       <div className="relative z-10">
         {/* Hero Section */}
@@ -474,7 +578,7 @@ export function Landing() {
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
-                  <div key={index} className="feature-card glass rounded-2xl p-8 border border-gray-700/50 card-hover">
+                  <div key={index} className="feature-card glass rounded-2xl p-8 border border-gray-700/50 card-hover relative" ref={el => featureCardRefs.current[index] = el}>
                     <div className={`bg-gradient-to-br ${feature.color} p-4 rounded-2xl mb-6 inline-block glow-blue`}>
                       <Icon className="h-8 w-8 text-white" />
                     </div>
