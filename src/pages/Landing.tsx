@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import { supabase } from '../lib/supabase';
+import { Navigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -61,11 +62,21 @@ const ParticleBackground = () => {
   return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full z-0 pointer-events-none" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }} />;
 };
 
-export function Landing() {
-  const { signUp, signIn } = useAuth();
+const Landing: React.FC = () => {
+  const { role, loading, signUp, signIn } = useAuth() as any;
   const { showToast } = useToast();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  if (role === 'teacher') {
+    return <Navigate to="/teacher" replace />;
+  }
   const [isSignUp, setIsSignUp] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -73,17 +84,19 @@ export function Landing() {
     grade: '',
     school: ''
   });
+  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
 
     try {
       if (isSignUp) {
         const { error } = await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
-          grade: formData.grade,
-          school: formData.school
+          grade: selectedRole === 'student' ? formData.grade : null,
+          school: formData.school,
+          role: selectedRole
         });
         if (error) throw error;
         showToast('Account created! Welcome to STUBUD!', 'success');
@@ -95,12 +108,12 @@ export function Landing() {
     } catch (error: any) {
       showToast(error.message, 'error');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
+    setFormLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
       if (error) throw error;
@@ -108,7 +121,7 @@ export function Landing() {
     } catch (error: any) {
       showToast(error.message || 'Google sign-in failed', 'error');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -453,36 +466,62 @@ export function Landing() {
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Role selection radio */}
                   {isSignUp && (
-                    <>
-                      <input
-                        type="text"
-                        required
-                        value={formData.full_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                        placeholder="Full Name"
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <input
-                          type="text"
-                          required
-                          value={formData.grade}
-                          onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                          placeholder="Grade/Class"
-                        />
-                        <input
-                          type="text"
-                          value={formData.school}
-                          onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                          className="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                          placeholder="School"
-                        />
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
+                        Role
+                      </label>
+                      <div className="flex gap-6 mb-2">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="role"
+                            value="student"
+                            checked={selectedRole === 'student'}
+                            onChange={() => setSelectedRole('student')}
+                          />
+                          Student
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="role"
+                            value="teacher"
+                            checked={selectedRole === 'teacher'}
+                            onChange={() => setSelectedRole('teacher')}
+                          />
+                          Teacher
+                        </label>
                       </div>
-                    </>
+                    </div>
                   )}
+                  <div className="flex gap-4">
+                    <input
+                      className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                      placeholder="Full Name"
+                      value={formData.full_name}
+                      onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      required
+                    />
+                    {/* Only show and require grade field if student is selected */}
+                    {selectedRole === 'student' && (
+                      <input
+                        className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                        placeholder="Grade/Class"
+                        value={formData.grade}
+                        onChange={e => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                        required
+                      />
+                    )}
+                  <input
+                    className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                    placeholder="School"
+                    value={formData.school}
+                    onChange={e => setFormData(prev => ({ ...prev, school: e.target.value }))}
+                  />
+                </div>
 
                   <input
                     type="email"
@@ -507,7 +546,7 @@ export function Landing() {
                     <button
                       type="button"
                       onClick={handleGoogleSignIn}
-                      disabled={loading}
+                      disabled={formLoading}
                       className="w-full flex items-center justify-center gap-3 bg-white text-gray-800 font-semibold py-3 px-6 rounded-xl border border-gray-300 shadow hover:bg-gray-50 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <span className="inline-block h-6 w-6">
@@ -521,16 +560,16 @@ export function Landing() {
                           </g>
                         </svg>
                       </span>
-                      {loading ? 'Signing in...' : 'Sign in with Google'}
+                      {formLoading ? 'Signing in...' : 'Sign in with Google'}
                     </button>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={formLoading}
                     className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
+                    {formLoading ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         Please wait...
@@ -653,3 +692,5 @@ export function Landing() {
     </div>
   );
 }
+
+export default Landing;

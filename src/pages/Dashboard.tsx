@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Trophy, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,7 +29,17 @@ interface StudyStats {
 }
 
 export function Dashboard() {
-  const { user, trialStart, trialActive } = useAuth();
+  const { user, role, loading } = useAuth() as any;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  if (role === 'teacher') {
+    return <Navigate to="/teacher" replace />;
+  }
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [stats, setStats] = useState<StudyStats>({
     totalPlans: 0,
@@ -38,15 +48,15 @@ export function Dashboard() {
     upcomingExams: 0
   });
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
 
   // Calculate trial days left
   let trialDaysLeft = null;
-  if (trialStart && trialActive) {
+  if (user?.trial_start && user?.trial_active) {
     const now = new Date();
-    const diff = now.getTime() - trialStart.getTime();
+    const diff = now.getTime() - user.trial_start.getTime();
     const daysUsed = Math.floor(diff / (1000 * 60 * 60 * 24));
     trialDaysLeft = Math.max(0, 7 - daysUsed);
   }
@@ -106,7 +116,7 @@ export function Dashboard() {
       }
     } catch (error) {
     } finally {
-      setLoading(false);
+      setDashboardLoading(false);
     }
   };
 
@@ -231,7 +241,7 @@ export function Dashboard() {
     return upcoming;
   };
 
-  if (loading) {
+  if (dashboardLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="relative">

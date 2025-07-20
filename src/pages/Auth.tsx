@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Brain, Mail, Lock, User, GraduationCap, Sparkles, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { supabase } from '../lib/supabase';
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,9 +14,17 @@ export function Auth() {
     grade: '',
     school: ''
   });
+  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
 
   const { signIn, signUp } = useAuth();
   const { showToast } = useToast();
+
+  // Debug: log when the role selector should appear
+  React.useEffect(() => {
+    if (false) { // Removed showRoleSelect from here
+      console.log('Role selection modal should be visible');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,13 +32,15 @@ export function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(formData.email, formData.password, {
+        const { data, error } = await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
-          grade: formData.grade,
-          school: formData.school
+          grade: selectedRole === 'student' ? formData.grade : null,
+          school: formData.school,
+          role: selectedRole
         });
         if (error) throw error;
         showToast('Account created successfully!', 'success');
+        // Optionally, redirect or refresh context here
       } else {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
@@ -41,6 +52,8 @@ export function Auth() {
       setLoading(false);
     }
   };
+
+  // Remove handleRoleSelect and showRoleSelect logic
 
   return (
     <div className="min-h-screen animated-gradient flex items-center justify-center p-4 relative overflow-hidden">
@@ -75,10 +88,39 @@ export function Auth() {
         </div>
 
         {/* Form */}
+        {!false && ( // Removed showRoleSelect &&
         <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
           <form onSubmit={handleSubmit} className="space-y-6">
             {isSignUp && (
               <>
+                {/* Role selection radio */}
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
+                    Role
+                  </label>
+                  <div className="flex gap-6 mb-2">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="student"
+                        checked={selectedRole === 'student'}
+                        onChange={() => setSelectedRole('student')}
+                      />
+                      Student
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="role"
+                        value="teacher"
+                        checked={selectedRole === 'teacher'}
+                        onChange={() => setSelectedRole('teacher')}
+                      />
+                      Teacher
+                    </label>
+                  </div>
+                </div>
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
                     <User className="h-4 w-4" />
@@ -94,7 +136,8 @@ export function Auth() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Only show and require grade field if student is selected */}
+                {selectedRole === 'student' && (
                   <div>
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
                       <GraduationCap className="h-4 w-4" />
@@ -109,18 +152,18 @@ export function Auth() {
                       placeholder="e.g., 12"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-semibold text-gray-300 mb-3 block">
-                      School
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.school}
-                      onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                      className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                      placeholder="School name"
-                    />
-                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-semibold text-gray-300 mb-3 block">
+                    School
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.school}
+                    onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
+                    className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                    placeholder="School name"
+                  />
                 </div>
               </>
             )}
@@ -181,6 +224,7 @@ export function Auth() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Features */}
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Navbar } from './components/Navbar';
+import Navbar from './components/Navbar';
 import { Dashboard } from './pages/Dashboard';
 import { CreatePlan } from './pages/CreatePlan';
 import { StudyPlans } from './pages/StudyPlans';
@@ -13,7 +13,7 @@ import { CalendarSync } from './pages/CalendarSync';
 import { Social } from './pages/Social';
 import { Notifications } from './pages/Notifications';
 import { Auth } from './pages/Auth';
-import { Landing } from './pages/Landing';
+import Landing from './pages/Landing';
 import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
 import { useOfflineStorage } from './hooks/useOfflineStorage';
@@ -25,6 +25,11 @@ import { Profile } from './pages/Profile';
 import { FeatureComparison } from './components/FeatureComparison';
 import { usePayment } from './hooks/usePayment';
 import { AdminPanel } from './pages/AdminPanel';
+import TeacherPortal from './pages/TeacherPortal';
+import TeacherPanel from './pages/TeacherPanel';
+import MyClasses from './pages/MyClasses';
+import ClassPage from './pages/ClassPage';
+import TeacherClassDashboard from './pages/TeacherClassDashboard';
 
 function AppContent() {
   const { user, loading, session, trialStart, trialActive } = useAuth();
@@ -212,6 +217,13 @@ function AppContent() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/pricing" element={<FeatureComparison />} />
+            <Route path="/teacher" element={<TeacherPortal />}>
+              <Route index element={<TeacherPanel />} />
+              <Route path="class/:id" element={<TeacherClassDashboard />} />
+              {/* Future teacher-only routes: <Route path="class/:id" element={<TeacherClassDashboard />} /> */}
+            </Route>
+            <Route path="/my-classes" element={<MyClasses />} />
+            <Route path="/class/:id" element={<ClassPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
