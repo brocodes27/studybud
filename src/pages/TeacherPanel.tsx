@@ -21,7 +21,28 @@ const TeacherPanel: React.FC = () => {
         .from('classes')
         .select('id, name, teacher_id')
         .eq('teacher_id', user.id);
-      if (!error) setClasses(data);
+      
+      if (error) {
+        setLoadingClasses(false);
+        return;
+      }
+
+      // Fetch member count for each class
+      const classesWithCounts = await Promise.all(
+        data.map(async (cls) => {
+          const { count, error: countError } = await supabase
+            .from('class_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('class_id', cls.id);
+          
+          return {
+            ...cls,
+            student_count: countError ? 0 : count,
+          };
+        })
+      );
+      
+      setClasses(classesWithCounts);
       setLoadingClasses(false);
     };
     if (role === 'teacher') fetchClasses();
@@ -128,7 +149,10 @@ const TeacherPanel: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-semibold text-blue-300">{cls.name}</span>
-                  <span className="text-xs text-gray-400">Code: <span className="font-mono text-blue-400 select-all">{cls.id}</span></span>
+                  <div className="text-right">
+                    <span className="text-xs text-gray-400">Code: <span className="font-mono text-blue-400 select-all">{cls.id}</span></span>
+                    <div className="text-sm text-gray-300 mt-1">{cls.student_count} student(s)</div>
+                  </div>
                 </div>
               </div>
             ))}

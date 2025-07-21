@@ -29,7 +29,7 @@ interface StudyStats {
 }
 
 export function Dashboard() {
-  const { user, role, loading } = useAuth() as any;
+  const { user, role, loading, isPremium } = useAuth() as any;
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -49,7 +49,6 @@ export function Dashboard() {
   });
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
 
   // Calculate trial days left
@@ -63,25 +62,10 @@ export function Dashboard() {
 
   useEffect(() => {
     if (user) {
-      fetchPremiumStatus();
       fetchDashboardData();
       fetchUsageThisMonth();
     }
   }, [user]);
-
-  const fetchPremiumStatus = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id);
-
-    if (error || !data || data.length === 0) {
-      setIsPremium(false);
-      return;
-    }
-    setIsPremium(data[0].status === 'active');
-  };
 
   const fetchUsageThisMonth = async () => {
     if (!user) return;

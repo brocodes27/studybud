@@ -94,7 +94,7 @@ const Landing: React.FC = () => {
       if (isSignUp) {
         const { error } = await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
-          grade: selectedRole === 'student' ? formData.grade : null,
+          grade: selectedRole === 'student' ? formData.grade : undefined,
           school: formData.school,
           role: selectedRole
         });

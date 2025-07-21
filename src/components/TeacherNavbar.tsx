@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  LayoutDashboard,
-  CalendarPlus,
-  BookOpen,
-  Wrench,
-  LineChart,
-  BarChart2,
-  Calendar,
   Users,
-  Bell,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -17,35 +9,15 @@ import {
   Menu,
   X,
   BookUser,
-  PlusCircle,
-  Mic,
-  Shield,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const navLinks = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/create', label: 'Create Plan', icon: CalendarPlus },
-  { href: '/plans', label: 'Study Plans', icon: BookOpen },
-  { href: '/tools', label: 'Study Tools', icon: Wrench },
-  { href: '/progress', label: 'Progress', icon: LineChart },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { href: '/calendar', label: 'Calendar Sync', icon: Calendar },
-  { href: '/social', label: 'Social', icon: Users },
-  { href: '/notifications', label: 'Notifications', icon: Bell },
-  { href: '/live-notes', label: 'Live Meeting Notes', icon: Mic },
+  { href: '/teacher', label: 'Teacher Panel', icon: BookUser },
 ];
 
-const studentNavLinks = [
-  { href: '/my-classes', label: 'My Classes', icon: BookUser },
-];
-
-const adminNavLinks = [
-  { href: '/admin', label: 'Admin Panel', icon: Shield },
-];
-
-const Navbar = () => {
-  const { user, role, signOut, loading, isAdmin, fullName } = useAuth() as any;
+const TeacherNavbar = () => {
+  const { user, signOut, loading, fullName } = useAuth() as any;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -96,7 +68,7 @@ const Navbar = () => {
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          {!isCollapsed && <span className="text-2xl font-bold">StuBud</span>}
+          {!isCollapsed && <span className="text-2xl font-bold">StuBud Teacher</span>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-full hover:bg-gray-700">
             {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
           </button>
@@ -106,24 +78,6 @@ const Navbar = () => {
           {navLinks.map((link) => (
             <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
           ))}
-
-          {role === 'student' && (
-            <>
-              <hr className="my-4 border-gray-700" />
-              {studentNavLinks.map((link) => (
-                <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
-              ))}
-            </>
-          )}
-
-          {isAdmin && (
-            <>
-              <hr className="my-4 border-gray-700" />
-              {adminNavLinks.map((link) => (
-                <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
-              ))}
-            </>
-          )}
         </nav>
 
         <div className="p-4 border-t border-gray-700">
@@ -149,7 +103,7 @@ const Navbar = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 w-full bg-gray-800 text-white p-4 z-50 flex items-center justify-between">
-         <span className="text-2xl font-bold">StudyBud</span>
+         <span className="text-2xl font-bold">StuBud Teacher</span>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
@@ -160,7 +114,7 @@ const Navbar = () => {
         <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
           <nav className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-6 animate-slide-in">
              <div className="flex justify-between items-center mb-6">
-                <span className="text-2xl font-bold">StudyBud</span>
+                <span className="text-2xl font-bold">StuBud Teacher</span>
                 <button onClick={() => setIsMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>
@@ -170,22 +124,6 @@ const Navbar = () => {
               {navLinks.map((link) => (
                 <MobileNavItem key={link.href} link={link} />
               ))}
-              {role === 'student' && (
-                <>
-                  <hr className="my-4 border-gray-700" />
-                  {studentNavLinks.map((link) => (
-                    <MobileNavItem key={link.href} link={link} />
-                  ))}
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <hr className="my-4 border-gray-700" />
-                  {adminNavLinks.map((link) => (
-                    <MobileNavItem key={link.href} link={link} />
-                  ))}
-                </>
-              )}
             </div>
 
             <div className="mt-auto">
@@ -212,4 +150,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default TeacherNavbar; 

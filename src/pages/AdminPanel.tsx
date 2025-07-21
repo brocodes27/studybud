@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export function AdminPanel() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user } = useAuth() as any;
   const [userCount, setUserCount] = useState<number | null>(null);
   const [planCount, setPlanCount] = useState<number | null>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);

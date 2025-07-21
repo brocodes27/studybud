@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { supabase } from './lib/supabase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import TeacherNavbar from './components/TeacherNavbar';
 import { Dashboard } from './pages/Dashboard';
 import { CreatePlan } from './pages/CreatePlan';
 import { StudyPlans } from './pages/StudyPlans';
@@ -32,7 +33,7 @@ import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 
 function AppContent() {
-  const { user, loading, session, trialStart, trialActive } = useAuth() as any;
+  const { user, role, loading, session, trialStart, trialActive, isPremium } = useAuth() as any;
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
 
@@ -40,31 +41,8 @@ function AppContent() {
   const [showLiveNotes, setShowLiveNotes] = useState(false);
   const [showSuggest, setShowSuggest] = useState(false);
 
-  // Subscription status
-  const [isPremium, setIsPremium] = useState<boolean | null>(null);
   // Dismissible subscribe banner
   const [showSubscribeBanner, setShowSubscribeBanner] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchPremiumStatus();
-    }
-  }, [user]);
-
-  const fetchPremiumStatus = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id);
-
-    if (error || !data || data.length === 0) {
-      setIsPremium(false);
-      return;
-    }
-
-    setIsPremium(data[0].status === 'active');
-  };
 
   // Register service worker for PWA
   useEffect(() => {
@@ -94,6 +72,7 @@ function AppContent() {
   // Debug logs for loading and user
   console.log('AppContent loading state:', loading);
   console.log('AppContent user:', user);
+  console.log('AppContent isPremium:', isPremium);
 
   // Calculate if trial expired
   let trialExpired = false;
@@ -202,7 +181,7 @@ function AppContent() {
             </div>
           </div>
         )}
-        <Navbar />
+        {role === 'teacher' ? <TeacherNavbar /> : <Navbar />}
         <main className="w-full px-6 py-8 md:pl-72">
           <Routes>
             <Route path="/calendar" element={<CalendarSync />} />

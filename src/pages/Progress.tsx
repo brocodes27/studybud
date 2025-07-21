@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, CheckCircle, Clock, Target, Award } from 'lucide-react';
+import { TrendingUp, Calendar, CheckCircle, Clock, Target, Award, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,7 @@ interface ProgressData {
 }
 
 export function Progress() {
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
   const [progressData, setProgressData] = useState<ProgressData>({
     totalStudyTime: 0,
     completedTasks: 0,
@@ -168,17 +168,30 @@ export function Progress() {
         };
       });
 
-      // Calculate subject progress with real data
-      const subjectProgress = plans?.map(plan => {
+      // Calculate subject progress with real data, aggregating subjects
+      const subjectMap = new Map<string, { completed: number; total: number }>();
+      plans?.forEach(plan => {
+        if (!plan.subject) return; // Ignore plans without a subject
+        const subjectName = plan.subject.trim().toLowerCase();
         const planCompletions = completions?.filter(c => c.plan_id === plan.id).length || 0;
         const totalPlanTasks = plan.plan?.daily_schedule?.length || 0;
         
-        return {
-          subject: plan.subject,
-          completed: planCompletions,
-          total: totalPlanTasks
-        };
-      }).filter(subject => subject.total > 0) || []; // Only show subjects with tasks
+        if (subjectMap.has(subjectName)) {
+          const existing = subjectMap.get(subjectName)!;
+          existing.completed += planCompletions;
+          existing.total += totalPlanTasks;
+        } else {
+          subjectMap.set(subjectName, {
+            completed: planCompletions,
+            total: totalPlanTasks,
+          });
+        }
+      });
+
+      const subjectProgress = Array.from(subjectMap.entries()).map(([subject, data]) => ({
+        subject: subject.charAt(0).toUpperCase() + subject.slice(1),
+        ...data,
+      })).filter(subject => subject.total > 0);
 
       setProgressData({
         totalStudyTime,
