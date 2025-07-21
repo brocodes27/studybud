@@ -42,7 +42,8 @@ export function FeatureComparison() {
   return (
     <div className="max-w-2xl mx-auto my-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
       <h2 className="text-3xl font-extrabold mb-6 text-center text-gray-900">Compare Plans</h2>
-      <div className="overflow-x-auto">
+      {/* Table for md+ screens */}
+      <div className="overflow-x-auto hidden md:block">
         <table className="w-full text-center border-separate border-spacing-y-1">
           <thead>
             <tr>
@@ -81,6 +82,42 @@ export function FeatureComparison() {
             ))}
           </tbody>
         </table>
+      </div>
+      {/* Cards for mobile screens */}
+      <div className="md:hidden flex flex-col gap-4">
+        {rows.map((row) => (
+          <div key={row.label} className="bg-gray-50 rounded-lg shadow p-4 flex flex-col gap-2 border border-gray-200">
+            <div className="font-semibold text-gray-800 text-base mb-1">{row.label}</div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-bold text-blue-700">Free:</span>
+              <span>
+                {typeof row.free === 'boolean' ? (
+                  row.free ? (
+                    <span className="text-green-600 text-xl" title="Included">✔️</span>
+                  ) : (
+                    <span className="text-red-400 text-xl" title="Not included">❌</span>
+                  )
+                ) : (
+                  <span className="text-gray-700">{row.free}</span>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-bold text-yellow-700">Premium:</span>
+              <span>
+                {typeof row.premium === 'boolean' ? (
+                  row.premium ? (
+                    <span className="text-green-600 text-xl" title="Included">✔️</span>
+                  ) : (
+                    <span className="text-red-400 text-xl" title="Not included">❌</span>
+                  )
+                ) : (
+                  <span className="text-yellow-700 font-bold">{row.premium}</span>
+                )}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

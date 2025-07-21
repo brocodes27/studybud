@@ -14,17 +14,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserAndRole = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.auth.getUser();
-        if (data?.user) {
-          if (isMounted) setUser(data.user);
+        const { data, error } = await supabase.auth.getSession();
+        if (data?.session) {
+          if (isMounted) {
+            setUser(data.session.user);
+            setSession(data.session);
+          }
           // Fetch role from user_profiles
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('role')
-            .eq('id', data.user.id)
-            .single();
+            .eq('id', data.session.user.id);
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+          }
           console.log('Fetched profile for AuthContext:', profile, 'Error:', profileError);
-          if (isMounted) setRole(profile?.role || 'student');
+          if (isMounted) setRole(profile?.[0]?.role || 'student');
         } else {
           if (isMounted) {
             setUser(null);
@@ -44,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
       if (session?.user) {
         setUser(session.user);
         // Optionally re-fetch role here if needed
@@ -51,8 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('user_profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single()
-          .then(({ data: profile }) => setRole(profile?.role || 'student'));
+          .then(({ data: profile, error }) => {
+            if (error) {
+              console.error('Error re-fetching profile:', error);
+            }
+            setRole(profile?.[0]?.role || 'student')
+          });
       } else {
         setUser(null);
         setRole(null);
@@ -78,8 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const signOut = async () => {
+    return await supabase.auth.signOut();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, role, signIn, signUp }}>
+    <AuthContext.Provider value={{ user, session, loading, role, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

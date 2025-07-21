@@ -74,9 +74,13 @@ export function Dashboard() {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('status')
-      .eq('user_id', user.id)
-      .single();
-    setIsPremium(data?.status === 'active');
+      .eq('user_id', user.id);
+
+    if (error || !data || data.length === 0) {
+      setIsPremium(false);
+      return;
+    }
+    setIsPremium(data[0].status === 'active');
   };
 
   const fetchUsageThisMonth = async () => {

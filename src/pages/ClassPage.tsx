@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 
 const TABS = ['Resources', 'Announcements', 'Assignments', 'Students'];
 
-const ClassPage: React.FC = () => {
+export const ClassPage: React.FC = () => {
   const { id } = useParams();
   const { user, role, loading } = useAuth() as any;
   const [classInfo, setClassInfo] = useState<any>(null);
@@ -347,6 +347,4 @@ const ClassPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default ClassPage; 
+}; 

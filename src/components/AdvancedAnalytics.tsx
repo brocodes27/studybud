@@ -58,7 +58,7 @@ const loadRazorpayScript = () => {
 };
 
 export function AdvancedAnalytics() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth() as { user: any; loading: boolean };
   const { showToast } = useToast();
   const { paymentData, initiatePayment } = usePayment();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
@@ -133,13 +133,13 @@ export function AdvancedAnalytics() {
       // Leaderboard rank & total users
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('leaderboard_view')
-        .select('id, rank')
+        .select('user_id, rank')
         .order('rank', { ascending: true });
 
       if (leaderboardError) throw leaderboardError;
 
       const totalUsers = leaderboardData?.length || 0;
-      const userEntry = leaderboardData?.find((row) => row.id === user?.id);
+      const userEntry = leaderboardData?.find((row) => row.user_id === user?.id);
       const rank = userEntry ? userEntry.rank : totalUsers;
 
       // Achievements count
@@ -442,39 +442,51 @@ export function AdvancedAnalytics() {
             AI-Powered Insights
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {analyticsData.aiInsights.map((insight, index) => (
-              <div
-                key={index}
-                className={`glass rounded-xl p-4 border ${
-                  insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
-                  insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
-                  'border-green-500/30 bg-green-500/10'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    insight.type === 'strength' ? 'bg-green-500/20' :
-                    insight.type === 'weakness' ? 'bg-red-500/20' :
-                    insight.type === 'achievement' ? 'bg-purple-500/20' :
-                    'bg-blue-500/20'
-                  }`}>
-                    {insight.type === 'strength' && <Star className="h-5 w-5 text-green-400" />}
-                    {insight.type === 'weakness' && <Target className="h-5 w-5 text-red-400" />}
-                    {insight.type === 'achievement' && <Award className="h-5 w-5 text-purple-400" />}
-                    {insight.type === 'recommendation' && <Zap className="h-5 w-5 text-blue-400" />}
-                  </div>
-                  <div className="flex-grow">
-                    <h4 className="font-semibold text-white mb-1">{insight.title}</h4>
-                    <p className="text-gray-300 text-sm mb-2">{insight.description}</p>
-                    <ul className="text-xs text-gray-400 space-y-1">
-                      {insight.actionItems.map((item, i) => (
-                        <li key={i}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
+            {analyticsData.aiInsights.length === 0 ? (
+              <div className="col-span-1 md:col-span-2 text-center py-8">
+                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 inline-block">
+                  <Brain className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                  <h4 className="text-lg font-semibold text-white">No insights yet!</h4>
+                  <p className="text-gray-400 max-w-sm mx-auto">
+                    Start creating study plans, generating flashcards, and taking practice tests to receive personalized AI-powered feedback.
+                  </p>
                 </div>
               </div>
-            ))}
+            ) : (
+              analyticsData.aiInsights.map((insight, index) => (
+                <div
+                  key={index}
+                  className={`glass rounded-xl p-4 border ${
+                    insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
+                    insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
+                    'border-green-500/30 bg-green-500/10'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${
+                      insight.type === 'strength' ? 'bg-green-500/20' :
+                      insight.type === 'weakness' ? 'bg-red-500/20' :
+                      insight.type === 'achievement' ? 'bg-purple-500/20' :
+                      'bg-blue-500/20'
+                    }`}>
+                      {insight.type === 'strength' && <Star className="h-5 w-5 text-green-400" />}
+                      {insight.type === 'weakness' && <Target className="h-5 w-5 text-red-400" />}
+                      {insight.type === 'achievement' && <Award className="h-5 w-5 text-purple-400" />}
+                      {insight.type === 'recommendation' && <Zap className="h-5 w-5 text-blue-400" />}
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="font-semibold text-white mb-1">{insight.title}</h4>
+                      <p className="text-gray-300 text-sm mb-2">{insight.description}</p>
+                      <ul className="text-xs text-gray-400 space-y-1">
+                        {insight.actionItems.map((item, i) => (
+                          <li key={i}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

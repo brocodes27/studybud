@@ -467,61 +467,62 @@ const Landing: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Role selection radio */}
-                  {isSignUp && (
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
-                        Role
-                      </label>
-                      <div className="flex gap-6 mb-2">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="role"
-                            value="student"
-                            checked={selectedRole === 'student'}
-                            onChange={() => setSelectedRole('student')}
-                          />
-                          Student
+                  {isSignUp ? (
+                    <>
+                      {/* Role selection radio */}
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
+                          Role
                         </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="role"
-                            value="teacher"
-                            checked={selectedRole === 'teacher'}
-                            onChange={() => setSelectedRole('teacher')}
-                          />
-                          Teacher
-                        </label>
+                        <div className="flex gap-6 mb-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="role"
+                              value="student"
+                              checked={selectedRole === 'student'}
+                              onChange={() => setSelectedRole('student')}
+                            />
+                            Student
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="role"
+                              value="teacher"
+                              checked={selectedRole === 'teacher'}
+                              onChange={() => setSelectedRole('teacher')}
+                            />
+                            Teacher
+                          </label>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="flex gap-4">
-                    <input
-                      className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                      placeholder="Full Name"
-                      value={formData.full_name}
-                      onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                      required
-                    />
-                    {/* Only show and require grade field if student is selected */}
-                    {selectedRole === 'student' && (
+                      <div className="flex gap-4">
+                        <input
+                          className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                          placeholder="Full Name"
+                          value={formData.full_name}
+                          onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                          required
+                        />
+                        {selectedRole === 'student' && (
+                          <input
+                            className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
+                            placeholder="Grade/Class"
+                            value={formData.grade}
+                            onChange={e => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                            required
+                          />
+                        )}
+                      </div>
                       <input
                         className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                        placeholder="Grade/Class"
-                        value={formData.grade}
-                        onChange={e => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                        required
+                        placeholder="School"
+                        value={formData.school}
+                        onChange={e => setFormData(prev => ({ ...prev, school: e.target.value }))}
                       />
-                    )}
-                  <input
-                    className="w-full p-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                    placeholder="School"
-                    value={formData.school}
-                    onChange={e => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                  />
-                </div>
+                    </>
+                  ) : null}
 
                   <input
                     type="email"

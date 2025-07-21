@@ -28,11 +28,11 @@ import { AdminPanel } from './pages/AdminPanel';
 import TeacherPortal from './pages/TeacherPortal';
 import TeacherPanel from './pages/TeacherPanel';
 import MyClasses from './pages/MyClasses';
-import ClassPage from './pages/ClassPage';
+import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 
 function AppContent() {
-  const { user, loading, session, trialStart, trialActive } = useAuth();
+  const { user, loading, session, trialStart, trialActive } = useAuth() as any;
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
 
@@ -56,9 +56,14 @@ function AppContent() {
     const { data, error } = await supabase
       .from('subscriptions')
       .select('status')
-      .eq('user_id', user.id)
-      .single();
-    setIsPremium(data?.status === 'active');
+      .eq('user_id', user.id);
+
+    if (error || !data || data.length === 0) {
+      setIsPremium(false);
+      return;
+    }
+
+    setIsPremium(data[0].status === 'active');
   };
 
   // Register service worker for PWA

@@ -49,7 +49,7 @@ const loadRazorpayScript = () => {
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
-  const { user, session } = useAuth();
+  const { user, session } = useAuth() as any;
   const { showToast } = useToast();
   const { initiatePayment } = usePayment();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
@@ -277,13 +277,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     const { data, error } = await supabase
       .from('subscriptions')
       .select('status')
-      .eq('user_id', user.id)
-      .single();
-    if (error || !data) {
+      .eq('user_id', user.id);
+
+    if (error || !data || data.length === 0) {
       setIsPremium(false);
       return;
     }
-    setIsPremium(data.status === 'active');
+    setIsPremium(data[0].status === 'active');
   };
 
   if (loading) {
