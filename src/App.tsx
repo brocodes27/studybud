@@ -29,7 +29,7 @@ import { AdminPanel } from './pages/AdminPanel';
 import TeacherPortal from './pages/TeacherPortal';
 import TeacherPanel from './pages/TeacherPanel';
 import MyClasses from './pages/MyClasses';
-import { ClassPage } from './pages/ClassPage';
+import ClassPage  from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 
 function AppContent() {

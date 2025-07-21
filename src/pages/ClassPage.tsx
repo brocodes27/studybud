@@ -1,350 +1,215 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, FormEvent, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
-const TABS = ['Resources', 'Announcements', 'Assignments', 'Students'];
+interface ClassInfo {
+    id: string;
+    teacher_id: string;
+    class_name: string;
+    class_code: string;
+    created_at: string;
+}
 
-export const ClassPage: React.FC = () => {
-  const { id } = useParams();
-  const { user, role, loading } = useAuth() as any;
-  const [classInfo, setClassInfo] = useState<any>(null);
-  const [teacher, setTeacher] = useState<any>(null);
-  const [students, setStudents] = useState<any[]>([]);
-  const [resources, setResources] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [tab, setTab] = useState('Resources');
-  const [loadingData, setLoadingData] = useState(true);
-  // Resource upload state
-  const [resourceTitle, setResourceTitle] = useState('');
-  const [resourceUrl, setResourceUrl] = useState('');
-  const [resourceType, setResourceType] = useState('link');
-  const [uploadingResource, setUploadingResource] = useState(false);
-  const [resourceFile, setResourceFile] = useState<File | null>(null);
-  // Announcement state
-  const [announcementMsg, setAnnouncementMsg] = useState('');
-  const [postingAnnouncement, setPostingAnnouncement] = useState(false);
-  // Assignment state
-  const [assignmentTitle, setAssignmentTitle] = useState('');
-  const [assignmentDesc, setAssignmentDesc] = useState('');
-  const [assignmentDue, setAssignmentDue] = useState('');
-  const [postingAssignment, setPostingAssignment] = useState(false);
+interface Assignment {
+    id: string;
+    class_id: string;
+    title: string;
+    description: string | null;
+    due_date: string | null;
+    file_url: string | null;
+    created_at: string;
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoadingData(true);
-      // Class info
-      const { data: classData } = await supabase.from('classes').select('*').eq('id', id).single();
-      setClassInfo(classData);
-      // Teacher
-      if (classData?.teacher_id) {
-        const { data: teacherData } = await supabase.from('user_profiles').select('full_name, email').eq('id', classData.teacher_id).single();
-        setTeacher(teacherData);
-      }
-      // Students
-      const { data: memberData } = await supabase.from('class_members').select('user_id').eq('class_id', id);
-      if (memberData && memberData.length > 0) {
-        const userIds = memberData.map((m: any) => m.user_id);
-        const { data: studentProfiles } = await supabase.from('user_profiles').select('full_name, email').in('id', userIds);
-        setStudents(studentProfiles || []);
-      } else {
-        setStudents([]);
-      }
-      // Resources
-      const { data: resourceData } = await supabase.from('class_resources').select('*').eq('class_id', id).order('created_at', { ascending: false });
-      setResources(resourceData || []);
-      // Announcements
-      const { data: announcementData } = await supabase.from('class_announcements').select('*').eq('class_id', id).order('created_at', { ascending: false });
-      setAnnouncements(announcementData || []);
-      // Assignments
-      const { data: assignmentData } = await supabase.from('class_assignments').select('*').eq('class_id', id).order('created_at', { ascending: false });
-      setAssignments(assignmentData || []);
-      setLoadingData(false);
+interface Announcement {
+    id: string;
+    class_id: string;
+    content: string;
+    created_at: string;
+}
+
+const ClassPage = () => {
+    const { id } = useParams<{ id: string }>();
+    const { user, role } = useAuth();
+    const navigate = useNavigate();
+    const [classInfo, setClassInfo] = useState<ClassInfo | null>(null);
+    const [assignments, setAssignments] = useState<Assignment[]>([]);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // New state for forms
+    const [assignmentTitle, setAssignmentTitle] = useState('');
+    const [assignmentDesc, setAssignmentDesc] = useState('');
+    const [assignmentDueDate, setAssignmentDueDate] = useState('');
+    const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
+    const [announcementContent, setAnnouncementContent] = useState('');
+    const [formError, setFormError] = useState('');
+
+    const fetchClassData = useCallback(async () => {
+        if (!user || !id) return;
+
+        setLoading(true);
+
+        // Fetch class details
+        const { data: classData, error: classError } = await supabase
+            .from('classes')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (classError || !classData) {
+            console.error('Error fetching class data:', classError);
+            navigate('/my-classes');
+            return;
+        }
+        setClassInfo(classData);
+
+        // Fetch assignments
+        const { data: assignmentsData, error: assignmentsError } = await supabase
+            .from('assignments')
+            .select('*')
+            .eq('class_id', id)
+            .order('created_at', { ascending: false });
+        
+        if(assignmentsError) console.error('Error fetching assignments:', assignmentsError);
+        else setAssignments(assignmentsData);
+
+        // Fetch announcements
+        const { data: announcementsData, error: announcementsError } = await supabase
+            .from('announcements')
+            .select('*')
+            .eq('class_id', id)
+            .order('created_at', { ascending: false });
+
+        if(announcementsError) console.error('Error fetching announcements:', announcementsError);
+        else setAnnouncements(announcementsData);
+
+        setLoading(false);
+    }, [id, user, navigate]);
+
+    useEffect(() => {
+        fetchClassData();
+    }, [fetchClassData]);
+
+    const handleCreateAssignment = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!assignmentTitle.trim() || !user || !id) return;
+
+        let fileUrl: string | null = null;
+        if (assignmentFile) {
+            const filePath = `${user.id}/${id}/${Date.now()}_${assignmentFile.name}`;
+            const { data, error: uploadError } = await supabase.storage
+                .from('assignments')
+                .upload(filePath, assignmentFile);
+            
+            if (uploadError) {
+                setFormError('Error uploading file.');
+                console.error(uploadError);
+                return;
+            }
+
+            const { data: publicURLData } = supabase.storage.from('assignments').getPublicUrl(filePath);
+            fileUrl = publicURLData.publicUrl;
+        }
+
+        const { error } = await supabase.from('assignments').insert({
+            class_id: id,
+            title: assignmentTitle,
+            description: assignmentDesc,
+            due_date: assignmentDueDate || null,
+            file_url: fileUrl,
+        });
+
+        if (error) {
+            setFormError('Failed to create assignment.');
+            console.error('Error creating assignment:', error);
+        } else {
+            setAssignmentTitle('');
+            setAssignmentDesc('');
+            setAssignmentDueDate('');
+            setAssignmentFile(null);
+            setFormError('');
+            fetchClassData(); // Refresh list
+        }
     };
-    fetchData();
-  }, [id]);
 
-  // Resource upload handler (teacher only)
-  const handleResourceUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUploadingResource(true);
-    let fileUrl = '';
-    let type = resourceType;
-    if (resourceType === 'file' && resourceFile) {
-      // Upload file to Supabase Storage
-      const ext = resourceFile.name.split('.').pop();
-      const filePath = `${id}/${Date.now()}_${resourceFile.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('class-resources')
-        .upload(filePath, resourceFile);
-      if (uploadError) {
-        setUploadingResource(false);
-        alert('File upload failed: ' + uploadError.message);
-        return;
-      }
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('class-resources')
-        .getPublicUrl(filePath);
-      fileUrl = publicUrlData.publicUrl;
-      type = ext?.toLowerCase() === 'pdf' ? 'pdf' : ['jpg','jpeg','png','gif','webp','bmp'].includes(ext?.toLowerCase() || '') ? 'image' : 'file';
+    const handleCreateAnnouncement = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!announcementContent.trim() || !id) return;
+
+        const { error } = await supabase.from('announcements').insert({
+            class_id: id,
+            content: announcementContent,
+        });
+
+        if (error) {
+            setFormError('Failed to post announcement.');
+        } else {
+            setAnnouncementContent('');
+            setFormError('');
+            fetchClassData(); // Refresh list
+        }
+    };
+
+    if (loading) {
+        return <div>Loading class data...</div>;
     }
-    await supabase.from('class_resources').insert({
-      class_id: id,
-      title: resourceTitle,
-      url: resourceType === 'link' ? resourceUrl : null,
-      file_url: resourceType === 'file' ? fileUrl : null,
-      type,
-      uploaded_by: user.id
-    });
-    setResourceTitle('');
-    setResourceUrl('');
-    setResourceType('link');
-    setResourceFile(null);
-    setUploadingResource(false);
-    // Refresh
-    const { data: resourceData } = await supabase.from('class_resources').select('*').eq('class_id', id).order('created_at', { ascending: false });
-    setResources(resourceData || []);
-  };
 
-  // Announcement post handler (teacher only)
-  const handleAnnouncementPost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPostingAnnouncement(true);
-    await supabase.from('class_announcements').insert({
-      class_id: id,
-      message: announcementMsg,
-      posted_by: user.id
-    });
-    setAnnouncementMsg('');
-    setPostingAnnouncement(false);
-    // Refresh
-    const { data: announcementData } = await supabase.from('class_announcements').select('*').eq('class_id', id).order('created_at', { ascending: false });
-    setAnnouncements(announcementData || []);
-  };
+    if (!classInfo) {
+        return <div>Class not found.</div>;
+    }
 
-  // Assignment post handler (teacher only)
-  const handleAssignmentPost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPostingAssignment(true);
-    await supabase.from('class_assignments').insert({
-      class_id: id,
-      title: assignmentTitle,
-      description: assignmentDesc,
-      due_date: assignmentDue ? new Date(assignmentDue).toISOString() : null,
-      posted_by: user.id
-    });
-    setAssignmentTitle('');
-    setAssignmentDesc('');
-    setAssignmentDue('');
-    setPostingAssignment(false);
-    // Refresh
-    const { data: assignmentData } = await supabase.from('class_assignments').select('*').eq('class_id', id).order('created_at', { ascending: false });
-    setAssignments(assignmentData || []);
-  };
-
-  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  if (role === 'teacher') {
-    return <Navigate to="/teacher" replace />;
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-900 p-6 text-gray-100">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-400 mb-2">{classInfo?.name || 'Class'}</h1>
-        <div className="mb-4 text-gray-400 text-sm">Class Code: <span className="font-mono text-blue-400 select-all">{classInfo?.id}</span></div>
-        <div className="mb-6 text-gray-300">Teacher: {teacher?.full_name || 'Unknown'} ({teacher?.email})</div>
-        <div className="mb-6 flex gap-4">
-          {TABS.map(t => (
-            <button
-              key={t}
-              className={`px-4 py-2 rounded ${tab === t ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-300'} font-semibold`}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        {/* Resources Tab */}
-        {tab === 'Resources' && (
-          <div>
-            {role === 'teacher' && (
-              <form onSubmit={handleResourceUpload} className="mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-                <div className="mb-2 font-semibold text-gray-200">Upload/Share Resource</div>
-                <input
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  placeholder="Title"
-                  value={resourceTitle}
-                  onChange={e => setResourceTitle(e.target.value)}
-                  required
-                />
-                <select
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  value={resourceType}
-                  onChange={e => setResourceType(e.target.value)}
-                >
-                  <option value="link">Link</option>
-                  <option value="file">File Upload</option>
-                </select>
-                {resourceType === 'link' ? (
-                  <input
-                    className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                    placeholder="Paste link here"
-                    value={resourceUrl}
-                    onChange={e => setResourceUrl(e.target.value)}
-                    required
-                  />
-                ) : (
-                  <input
-                    type="file"
-                    className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                    accept="*"
-                    onChange={e => setResourceFile(e.target.files?.[0] || null)}
-                    required
-                  />
-                )}
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  disabled={uploadingResource}
-                >
-                  {uploadingResource ? 'Uploading...' : 'Add Resource'}
-                </button>
-              </form>
-            )}
-            <div className="space-y-4">
-              {resources.length === 0 ? (
-                <div className="text-gray-400">No resources yet.</div>
-              ) : (
-                resources.map(r => (
-                  <div key={r.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="font-semibold text-blue-300">{r.title}</div>
-                      <div className="text-sm text-gray-400">
-                        {r.type === 'link' && <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">{r.url}</a>}
-                        {r.type === 'pdf' && <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">PDF File</a>}
-                        {r.type === 'image' && <a href={r.file_url} target="_blank" rel="noopener noreferrer"><img src={r.file_url} alt={r.title} className="max-h-32 rounded mt-2" /></a>}
-                        {r.type === 'file' && <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">Download File</a>}
-                      </div>
+        <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-4">{classInfo.class_name}</h1>
+            <p className="mb-4">Class Code: <code>{classInfo.class_code}</code></p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h2 className="text-xl font-semibold mb-2">Assignments</h2>
+                    {role === 'teacher' && (
+                        <form onSubmit={handleCreateAssignment} className="mb-6 p-4 bg-gray-100 rounded-lg">
+                            <h3 className="font-bold mb-2">Create New Assignment</h3>
+                            {formError && <p className="text-red-500">{formError}</p>}
+                            <input type="text" placeholder="Title" value={assignmentTitle} onChange={e => setAssignmentTitle(e.target.value)} required className="w-full p-2 mb-2 border rounded" />
+                            <textarea placeholder="Description" value={assignmentDesc} onChange={e => setAssignmentDesc(e.target.value)} className="w-full p-2 mb-2 border rounded" />
+                            <input type="date" value={assignmentDueDate} onChange={e => setAssignmentDueDate(e.target.value)} className="w-full p-2 mb-2 border rounded" />
+                            <input type="file" onChange={e => setAssignmentFile(e.target.files ? e.target.files[0] : null)} className="w-full p-2 mb-2 border rounded" />
+                            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Assignment</button>
+                        </form>
+                    )}
+                    <div className="space-y-4">
+                        {assignments.map(a => (
+                            <div key={a.id} className="p-4 bg-white rounded-lg shadow">
+                                <h4 className="font-bold">{a.title}</h4>
+                                <p>{a.description}</p>
+                                {a.due_date && <p className="text-sm text-gray-600">Due: {new Date(a.due_date).toLocaleDateString()}</p>}
+                                {a.file_url && <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download File</a>}
+                            </div>
+                        ))}
                     </div>
-                    <div className="text-xs text-gray-500 mt-2 md:mt-0">{r.file_url ? r.file_url.split('/').pop() : ''}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-        {/* Announcements Tab */}
-        {tab === 'Announcements' && (
-          <div>
-            {role === 'teacher' && (
-              <form onSubmit={handleAnnouncementPost} className="mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-                <div className="mb-2 font-semibold text-gray-200">Post Announcement</div>
-                <textarea
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  placeholder="Type your announcement..."
-                  value={announcementMsg}
-                  onChange={e => setAnnouncementMsg(e.target.value)}
-                  required
-                />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  disabled={postingAnnouncement}
-                >
-                  {postingAnnouncement ? 'Posting...' : 'Post Announcement'}
-                </button>
-              </form>
-            )}
-            <div className="space-y-4">
-              {announcements.length === 0 ? (
-                <div className="text-gray-400">No announcements yet.</div>
-              ) : (
-                announcements.map(a => (
-                  <div key={a.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                    <div className="text-gray-200">{a.message}</div>
-                    <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-        {/* Assignments Tab */}
-        {tab === 'Assignments' && (
-          <div>
-            {role === 'teacher' && (
-              <form onSubmit={handleAssignmentPost} className="mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-                <div className="mb-2 font-semibold text-gray-200">Add Assignment</div>
-                <input
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  placeholder="Title"
-                  value={assignmentTitle}
-                  onChange={e => setAssignmentTitle(e.target.value)}
-                  required
-                />
-                <textarea
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  placeholder="Description"
-                  value={assignmentDesc}
-                  onChange={e => setAssignmentDesc(e.target.value)}
-                />
-                <input
-                  type="date"
-                  className="w-full p-2 mb-2 rounded bg-gray-900 text-gray-100 border border-gray-700"
-                  value={assignmentDue}
-                  onChange={e => setAssignmentDue(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  disabled={postingAssignment}
-                >
-                  {postingAssignment ? 'Posting...' : 'Add Assignment'}
-                </button>
-              </form>
-            )}
-            <div className="space-y-4">
-              {assignments.length === 0 ? (
-                <div className="text-gray-400">No assignments yet.</div>
-              ) : (
-                assignments.map(a => (
-                  <div key={a.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700">
-                    <div className="font-semibold text-blue-300">{a.title}</div>
-                    <div className="text-gray-200 mb-2">{a.description}</div>
-                    {a.due_date && <div className="text-xs text-yellow-400">Due: {new Date(a.due_date).toLocaleDateString()}</div>}
-                    <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-        {/* Students Tab */}
-        {tab === 'Students' && (
-          <div className="space-y-4">
-            {students.length === 0 ? (
-              <div className="text-gray-400">No students in this class yet.</div>
-            ) : (
-              students.map((s, i) => (
-                <div key={i} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="font-semibold text-blue-300">{s.full_name}</div>
-                    <div className="text-sm text-gray-400">{s.email}</div>
-                  </div>
                 </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}; 
+                <div>
+                    <h2 className="text-xl font-semibold mb-2">Announcements</h2>
+                    {role === 'teacher' && (
+                        <form onSubmit={handleCreateAnnouncement} className="mb-6 p-4 bg-gray-100 rounded-lg">
+                             <h3 className="font-bold mb-2">Post New Announcement</h3>
+                            <textarea placeholder="Type your announcement..." value={announcementContent} onChange={e => setAnnouncementContent(e.target.value)} required className="w-full p-2 mb-2 border rounded" />
+                            <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Post</button>
+                        </form>
+                    )}
+                    <div className="space-y-4">
+                        {announcements.map(a => (
+                            <div key={a.id} className="p-4 bg-white rounded-lg shadow">
+                                <p>{a.content}</p>
+                                <p className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ClassPage; 

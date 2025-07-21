@@ -1,148 +1,145 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const MyClasses: React.FC = () => {
-  const { user, role, loading } = useAuth() as any;
-  const [classes, setClasses] = useState<any[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(true);
-  // Join class state
-  const [classCode, setClassCode] = useState('');
-  const [joining, setJoining] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface Class {
+    id: string;
+    class_name: string;
+    class_code: string;
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  if (role === 'teacher') {
-    return <Navigate to="/teacher" replace />;
-  }
+const MyClasses = () => {
+    const { user, role } = useAuth();
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [className, setClassName] = useState('');
+    const [classCode, setClassCode] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
+        fetchClasses();
+    }, [user, role]);
+
     const fetchClasses = async () => {
-      setLoadingClasses(true);
-      if (!user) return;
-      if (role === 'teacher') {
-        setLoadingClasses(false);
-        return;
-      }
-      if (role === 'student') {
-        // Fetch classes user has joined
-        const { data: memberData, error: memberError } = await supabase
-          .from('class_members')
-          .select('class_id');
-        if (!memberError && memberData.length > 0) {
-          const classIds = memberData.map((m: any) => m.class_id);
-          const { data: classData, error: classError } = await supabase
-            .from('classes')
-            .select('id, name, teacher_id')
-            .in('id', classIds);
-          if (!classError) setClasses(classData);
+        if (!user) return;
+        setLoading(true);
+
+        let query;
+        if (role === 'teacher') {
+            query = supabase.from('classes').select('*').eq('teacher_id', user.id);
+        } else {
+            query = supabase
+                .from('class_members')
+                .select('classes(*)')
+                .eq('student_id', user.id);
         }
-      }
-      setLoadingClasses(false);
+
+        const { data, error } = await query;
+
+        if (error) {
+            setError('Failed to fetch classes.');
+            console.error(error);
+        } else {
+            if (role === 'teacher') {
+                setClasses(data as Class[]);
+            } else {
+                // When fetching through class_members, the classes are nested
+                const studentClasses = data.map((item: any) => item.classes).filter(Boolean);
+                setClasses(studentClasses as Class[]);
+            }
+        }
+        setLoading(false);
     };
-    fetchClasses();
-  }, [user, role, success]);
 
-  // Join class handler (for students)
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setJoining(true);
-    setSuccess(null);
-    setError(null);
-    if (!classCode.trim()) {
-      setError('Class code is required.');
-      setJoining(false);
-      return;
-    }
-    // Check if class exists
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('id, name')
-      .eq('id', classCode.trim())
-      .single();
-    if (classError || !classData) {
-      setError('Class not found. Please check the code.');
-      setJoining(false);
-      return;
-    }
-    // Check if already a member
-    const { data: memberData } = await supabase
-      .from('class_members')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .eq('class_id', classCode.trim());
-    if (memberData && memberData.length > 0) {
-      setError('You are already a member of this class.');
-      setJoining(false);
-      return;
-    }
-    // Join class
-    const { error: joinError } = await supabase
-      .from('class_members')
-      .insert([{ class_id: classCode.trim(), user_id: user.id }]);
-    if (joinError) {
-      setError(joinError.message);
-    } else {
-      setSuccess(`Successfully joined class: ${classData.name}`);
-      setClassCode('');
-    }
-    setJoining(false);
-  };
+    const handleCreateClass = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!className.trim()) {
+            setError('Class name is required.');
+            return;
+        }
 
-  return (
-    <div className="min-h-screen bg-gray-900 p-6">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-400 mb-8">My Classes</h1>
-        {role === 'student' && (
-          <form onSubmit={handleJoin} className="mb-8 bg-gray-800 rounded-xl shadow p-6 border border-gray-700">
-            <h2 className="text-xl font-semibold text-blue-300 mb-4">Join a Class</h2>
-            <input
-              className="w-full p-2 border rounded mb-4 bg-gray-900 text-gray-100 border-gray-700"
-              placeholder="Enter Class Code"
-              value={classCode}
-              onChange={e => setClassCode(e.target.value)}
-              disabled={joining}
-            />
-            {error && <div className="text-red-400 mb-2">{error}</div>}
-            {success && <div className="text-green-400 mb-2">{success}</div>}
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition w-full"
-              disabled={joining}
-            >
-              {joining ? 'Joining...' : 'Join Class'}
-            </button>
-          </form>
-        )}
-        {classes.length === 0 ? (
-          <div className="text-gray-400 text-center py-16">No classes found.</div>
-        ) : (
-          <div className="grid gap-6">
-            {classes.map(cls => (
-              <Link
-                to={`/class/${cls.id}`}
-                key={cls.id}
-                className="block bg-gray-800 rounded-xl shadow p-6 border border-gray-700 hover:border-blue-500 transition text-gray-100"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-semibold text-blue-300">{cls.name}</span>
-                </div>
-                <div className="mt-2 text-sm text-gray-400">Class Code: <span className="font-mono text-blue-400 select-all">{cls.id}</span></div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        const { data, error } = await supabase.rpc('create_class', { class_name: className });
+
+        if (error) {
+            setError('Failed to create class.');
+            console.error(error);
+        } else {
+            setClassName('');
+            fetchClasses(); // Refresh list
+        }
+    };
+
+    const handleJoinClass = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!classCode.trim()) {
+            setError('Class code is required.');
+            return;
+        }
+
+        const { error } = await supabase.rpc('join_class', { class_code: classCode });
+
+        if (error) {
+            setError('Failed to join class. Check the code and try again.');
+            console.error(error);
+        } else {
+            setClassCode('');
+            fetchClasses(); // Refresh list
+        }
+    };
+
+    return (
+        <div className="container mx-auto p-4">
+            <h1 className="text-2xl font-bold mb-4">My Classes</h1>
+
+            {error && <p className="text-red-500 bg-red-100 p-3 rounded mb-4">{error}</p>}
+
+            {role === 'teacher' && (
+                <form onSubmit={handleCreateClass} className="mb-6 p-4 bg-gray-100 rounded-lg">
+                    <h2 className="text-xl font-semibold mb-2">Create a New Class</h2>
+                    <input
+                        type="text"
+                        placeholder="Class Name"
+                        value={className}
+                        onChange={(e) => setClassName(e.target.value)}
+                        className="w-full p-2 border rounded mb-2"
+                    />
+                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Create Class
+                    </button>
+                </form>
+            )}
+
+            {role === 'student' && (
+                <form onSubmit={handleJoinClass} className="mb-6 p-4 bg-gray-100 rounded-lg">
+                    <h2 className="text-xl font-semibold mb-2">Join a Class</h2>
+                    <input
+                        type="text"
+                        placeholder="Enter Class Code"
+                        value={classCode}
+                        onChange={(e) => setClassCode(e.target.value)}
+                        className="w-full p-2 border rounded mb-2"
+                    />
+                    <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                        Join Class
+                    </button>
+                </form>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {loading ? (
+                    <p>Loading classes...</p>
+                ) : (
+                    classes.map((c) => (
+                        <Link to={`/class/${c.id}`} key={c.id} className="block p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+                            <h3 className="text-lg font-bold">{c.class_name}</h3>
+                            {role === 'teacher' && <p className="text-sm text-gray-600">Code: {c.class_code}</p>}
+                        </Link>
+                    ))
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default MyClasses; 
