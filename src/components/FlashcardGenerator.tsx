@@ -49,7 +49,7 @@ const loadRazorpayScript = () => {
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
-  const { user, session } = useAuth() as any;
+  const { user, session, isPremium } = useAuth() as any;
   const { showToast } = useToast();
   const { initiatePayment } = usePayment();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
@@ -64,14 +64,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const [allFlashcards, setAllFlashcards] = useState<Flashcard[]>([]);
 
   useEffect(() => {
     if (user) {
-      fetchPremiumStatus();
       fetchFlashcards();
       fetchAvailablePlans();
     }
@@ -80,10 +76,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   useEffect(() => {
     organizeFlashcardsByTopic();
   }, [flashcards]);
-
-  useEffect(() => {
-    setShowPaywall(false); // Never show paywall
-  }, []);
 
   const fetchAvailablePlans = async () => {
     try {
@@ -272,20 +264,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     }
   };
 
-  const fetchPremiumStatus = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id);
-
-    if (error || !data || data.length === 0) {
-      setIsPremium(false);
-      return;
-    }
-    setIsPremium(data[0].status === 'active');
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -305,10 +283,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
           <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
           <button
-            onClick={() => setShowPaywall(false)}
+            onClick={() => initiatePayment()}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
           >
-            Close
+            Subscribe Now
           </button>
         </div>
       </div>
@@ -317,21 +295,6 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
   return (
     <div className="space-y-6 relative">
-      {/* Razorpay Paywall Overlay */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
-            <button
-              onClick={() => setShowPaywall(false)}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

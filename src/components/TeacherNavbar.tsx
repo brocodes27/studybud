@@ -9,11 +9,15 @@ import {
   Menu,
   X,
   BookUser,
+  FileText,
+  Mic,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const navLinks = [
   { href: '/teacher', label: 'Teacher Panel', icon: BookUser },
+  { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText },
+  { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Mic },
 ];
 
 const TeacherNavbar = () => {

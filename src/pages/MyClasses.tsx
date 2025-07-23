@@ -5,17 +5,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface Class {
     id: string;
-    class_name: string;
-    class_code: string;
+    name?: string;
+    class_code?: string;
 }
 
 const MyClasses = () => {
-    const { user, role } = useAuth();
+    const { user, role } = useAuth() as any;
     const [classes, setClasses] = useState<Class[]>([]);
     const [className, setClassName] = useState('');
-    const [classCode, setClassCode] = useState('');
+    const [classId, setClassId] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [showJoinModal, setShowJoinModal] = useState(false);
 
     useEffect(() => {
         fetchClasses();
@@ -32,7 +33,7 @@ const MyClasses = () => {
             query = supabase
                 .from('class_members')
                 .select('classes(*)')
-                .eq('student_id', user.id);
+                .eq('user_id', user.id);
         }
 
         const { data, error } = await query;
@@ -72,18 +73,18 @@ const MyClasses = () => {
 
     const handleJoinClass = async (e: FormEvent) => {
         e.preventDefault();
-        if (!classCode.trim()) {
-            setError('Class code is required.');
+        if (!classId.trim()) {
+            setError('Class ID is required.');
             return;
         }
 
-        const { error } = await supabase.rpc('join_class', { class_code: classCode });
+        const { error } = await supabase.rpc('join_class', { class_id: classId });
 
         if (error) {
-            setError('Failed to join class. Check the code and try again.');
+            setError('Failed to join class. Check the ID and try again.');
             console.error(error);
         } else {
-            setClassCode('');
+            setClassId('');
             fetchClasses(); // Refresh list
         }
     };
@@ -111,29 +112,53 @@ const MyClasses = () => {
             )}
 
             {role === 'student' && (
-                <form onSubmit={handleJoinClass} className="mb-6 p-4 bg-gray-100 rounded-lg">
-                    <h2 className="text-xl font-semibold mb-2">Join a Class</h2>
-                    <input
-                        type="text"
-                        placeholder="Enter Class Code"
-                        value={classCode}
-                        onChange={(e) => setClassCode(e.target.value)}
-                        className="w-full p-2 border rounded mb-2"
-                    />
-                    <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                <>
+                    <button
+                        className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 mb-6"
+                        onClick={() => setShowJoinModal(true)}
+                    >
                         Join Class
                     </button>
-                </form>
+                    {showJoinModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+                            <div className="relative bg-black rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto">
+                                <button
+                                    className="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl font-bold"
+                                    onClick={() => setShowJoinModal(false)}
+                                    aria-label="Close"
+                                >
+                                    &times;
+                                </button>
+                                <form onSubmit={handleJoinClass}>
+                                    <h2 className="text-xl font-semibold mb-4 text-white">Join a Class</h2>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter Class ID"
+                                        value={classId}
+                                        onChange={(e) => setClassId(e.target.value)}
+                                        className="w-full p-3 border border-gray-700 rounded mb-4 bg-gray-900 text-white placeholder-gray-400"
+                                    />
+                                    <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full font-semibold">
+                                        Join Class
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
                     <p>Loading classes...</p>
                 ) : (
+                    // Debug: log the classes array
+                    console.log('Classes:', classes),
                     classes.map((c) => (
-                        <Link to={`/class/${c.id}`} key={c.id} className="block p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-                            <h3 className="text-lg font-bold">{c.class_name}</h3>
-                            {role === 'teacher' && <p className="text-sm text-gray-600">Code: {c.class_code}</p>}
+                        <Link to={`/class/${c.id}`} key={c.id} className="block p-4 bg-gray-900 rounded-lg shadow hover:shadow-md transition-shadow">
+                            <h3 className="text-lg font-bold text-white">{c.name || 'Unnamed Class'}</h3>
+                            {!c.name && <p className="text-xs text-gray-400">ID: {c.id}</p>}
+                            {role === 'teacher' && c.class_code && <p className="text-sm text-gray-400">Code: {c.class_code}</p>}
                         </Link>
                     ))
                 )}

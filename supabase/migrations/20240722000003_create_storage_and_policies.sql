@@ -1,24 +1,20 @@
--- Create a bucket for assignments with public access
+-- Create the assignments bucket if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('assignments', 'assignments', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Policies for 'assignments' bucket
--- Allow teachers to upload files to their class folder
-CREATE POLICY "Allow teachers to upload assignments"
-ON storage.objects FOR INSERT
-WITH CHECK (
-    bucket_id = 'assignments' AND
-    auth.uid() = (
-        SELECT teacher_id
-        FROM public.classes
-        WHERE id = (string_to_array(name, '/'))[2]::uuid
-    )
+-- Allow anyone (public) to read files from assignments bucket
+CREATE POLICY "Allow public to view assignments"
+ON storage.objects FOR SELECT
+TO public
+USING (
+    bucket_id = 'assignments'
 );
 
--- Allow authenticated users to view assignments
-CREATE POLICY "Allow authenticated users to view assignments"
-ON storage.objects FOR SELECT
-USING (
+-- Allow authenticated users to upload files to assignments bucket
+CREATE POLICY "Allow authenticated upload to assignments"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
     bucket_id = 'assignments'
 ); 

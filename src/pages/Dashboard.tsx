@@ -51,6 +51,12 @@ export function Dashboard() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
 
+  // CBSE Exam Progress State
+  const [examAttempts, setExamAttempts] = useState<any[]>([]);
+  const [examLoading, setExamLoading] = useState(true);
+  const [examError, setExamError] = useState<string | null>(null);
+  const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
+
   // Calculate trial days left
   let trialDaysLeft = null;
   if (user?.trial_start && user?.trial_active) {
@@ -65,6 +71,27 @@ export function Dashboard() {
       fetchDashboardData();
       fetchUsageThisMonth();
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchAttempts = async () => {
+      setExamLoading(true);
+      setExamError(null);
+      try {
+        const { data, error } = await supabase
+          .from('cbse_exam_attempts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('exam_date', { ascending: true });
+        if (error) throw error;
+        setExamAttempts(data || []);
+      } catch (err: any) {
+        setExamError(err.message || 'Failed to fetch exam attempts');
+      }
+      setExamLoading(false);
+    };
+    fetchAttempts();
   }, [user]);
 
   const fetchUsageThisMonth = async () => {
@@ -495,6 +522,77 @@ export function Dashboard() {
             <p className="text-yellow-400 text-sm mt-2">- Winston Churchill</p>
           </div>
         </div>
+      </div>
+
+      {/* CBSE Exam Progress Section */}
+      <div className="mt-12 p-6 bg-gray-900 rounded-xl border border-blue-800">
+        <h2 className="text-2xl font-bold text-blue-400 mb-4">CBSE Exam Progress</h2>
+        {examLoading && <div className="text-blue-400">Loading...</div>}
+        {examError && <div className="text-red-400">{examError}</div>}
+        {!examLoading && examAttempts.length === 0 && <div className="text-gray-400">No CBSE exam attempts yet.</div>}
+        {!examLoading && examAttempts.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left text-gray-300 mb-4">
+              <thead className="bg-blue-900 text-blue-200">
+                <tr>
+                  <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">Score</th>
+                  <th className="px-3 py-2">Sheet</th>
+                  <th className="px-3 py-2">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examAttempts.map((a, i) => (
+                  <tr key={a.id || i} className="border-b border-blue-800 hover:bg-blue-950 cursor-pointer">
+                    <td className="px-3 py-2">{a.exam_date ? new Date(a.exam_date).toLocaleString() : ''}</td>
+                    <td className="px-3 py-2">{a.total_score} / {a.max_score}</td>
+                    <td className="px-3 py-2">{a.answer_sheet_url && <a href={a.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">View</a>}</td>
+                    <td className="px-3 py-2">
+                      <button className="bg-green-700 hover:bg-green-800 text-white px-3 py-1 rounded" onClick={() => setSelectedAttempt(a)}>View</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Simple trend: line of scores */}
+            <div className="mt-6">
+              <h4 className="text-lg font-semibold text-blue-300 mb-2">Score Trend</h4>
+              <div className="flex gap-2 items-end h-32">
+                {examAttempts.map((a, i) => {
+                  const pct = a.max_score ? (a.total_score / a.max_score) : 0;
+                  return (
+                    <div key={i} className="flex flex-col items-center justify-end" style={{ height: '100%' }}>
+                      <div style={{ height: `${pct * 100}%` }} className="w-6 bg-blue-500 rounded-t" title={`Score: ${a.total_score}/${a.max_score}`}></div>
+                      <span className="text-xs text-gray-400 mt-1">{i + 1}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Modal for details */}
+        {selectedAttempt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+            <div className="bg-gray-900 rounded-xl border border-blue-800 p-8 max-w-2xl w-full relative">
+              <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setSelectedAttempt(null)}>&times;</button>
+              <h3 className="text-xl font-bold text-blue-300 mb-2">Exam Report</h3>
+              <div className="mb-2 text-gray-300"><b>Date:</b> {selectedAttempt.exam_date ? new Date(selectedAttempt.exam_date).toLocaleString() : ''}</div>
+              <div className="mb-2 text-gray-300"><b>Score:</b> {selectedAttempt.total_score} / {selectedAttempt.max_score}</div>
+              <div className="mb-2 text-gray-300"><b>Sheet:</b> {selectedAttempt.answer_sheet_url && <a href={selectedAttempt.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">View</a>}</div>
+              <div className="mb-4">
+                <h4 className="text-lg font-semibold text-green-300 mb-1">AI Feedback</h4>
+                <textarea className="w-full p-3 rounded bg-gray-800 text-white border border-green-700 mb-2" rows={8} value={selectedAttempt.ai_feedback || ''} readOnly />
+              </div>
+              {selectedAttempt.improvement_plan && (
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold text-purple-300 mb-1">Improvement Plan</h4>
+                  <textarea className="w-full p-3 rounded bg-gray-800 text-white border border-purple-700" rows={6} value={selectedAttempt.improvement_plan} readOnly />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

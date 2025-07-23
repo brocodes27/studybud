@@ -156,3 +156,10 @@
 .animate-fade-in {
   animation: fade-in 0.2s ease;
 }
+
+.question-math {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: block;
+  white-space: pre-line;
+}

@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { Bell } from 'lucide-react';
+import { marked } from 'marked';
 
-const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Analytics', 'AI Insights'];
+const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Analytics', 'AI Insights', 'Notifications'];
 
 const TeacherClassDashboard: React.FC = () => {
   const { id } = useParams();
@@ -26,7 +28,42 @@ const TeacherClassDashboard: React.FC = () => {
   const [uploadingResource, setUploadingResource] = useState(false);
   const [resourceFile, setResourceFile] = useState<File | null>(null);
 
+  // Add state for forms above component
+  const [announcementContent, setAnnouncementContent] = useState('');
+  const [announcementError, setAnnouncementError] = useState('');
+  const [postingAnnouncement, setPostingAnnouncement] = useState(false);
+
+  const [assignmentTitle, setAssignmentTitle] = useState('');
+  const [assignmentDesc, setAssignmentDesc] = useState('');
+  const [assignmentDueDate, setAssignmentDueDate] = useState('');
+  const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
+  const [assignmentError, setAssignmentError] = useState('');
+  const [postingAssignment, setPostingAssignment] = useState(false);
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [notifModalContent, setNotifModalContent] = useState<string>('');
+  const [notifModalTitle, setNotifModalTitle] = useState<string>('');
+
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.attempt_id) return;
+    // Fetch weaknesses for this attempt
+    const { data } = await supabase
+      .from('cbse_exam_attempts')
+      .select('student_weaknesses')
+      .eq('id', notif.attempt_id)
+      .single();
+    setNotifModalTitle(notif.title);
+    setNotifModalContent(data?.student_weaknesses || 'No weaknesses found.');
+    setShowNotifModal(true);
+  };
+
   useEffect(() => {
+    if (!user || !id) {
+      console.log('On page load: user or id not ready', { user, id });
+      return;
+    }
     const fetchData = async () => {
       setLoadingData(true);
       // Class info
@@ -48,12 +85,33 @@ const TeacherClassDashboard: React.FC = () => {
       const { data: announcementData } = await supabase.from('class_announcements').select('*').eq('class_id', id);
       setAnnouncements(announcementData || []);
       // Assignments
-      const { data: assignmentData } = await supabase.from('class_assignments').select('*').eq('class_id', id);
+      const { data: assignmentData, error } = await supabase.from('assignments').select('*').eq('class_id', id);
+      console.log('On page load: fetched assignments:', assignmentData, 'Error:', error, { user, id });
       setAssignments(assignmentData || []);
       setLoadingData(false);
     };
     fetchData();
-  }, [id]);
+  }, [user, id]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user || !id) return;
+      setLoadingNotifications(true);
+      // Fetch notifications for this teacher and this class (if class_id is stored in notification)
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('class_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      // Optionally filter by class_id if you store it in notifications
+      // .eq('class_id', id)
+      setNotifications(data || []);
+      setLoadingNotifications(false);
+    };
+    if (role === 'teacher') fetchNotifications();
+  }, [user, role, id]);
 
   // AI Insights: Call Supabase Edge Function for Gemini
   const fetchAiSummary = async () => {
@@ -148,6 +206,77 @@ const TeacherClassDashboard: React.FC = () => {
       console.log('Resource upload form rendered');
     }
   }, [role, tab]);
+
+  const handlePostAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementContent.trim()) {
+      setAnnouncementError('Announcement cannot be empty.');
+      return;
+    }
+    setPostingAnnouncement(true);
+    setAnnouncementError('');
+    const { error } = await supabase.from('class_announcements').insert({
+      class_id: id,
+      message: announcementContent,
+    });
+    if (error) {
+      setAnnouncementError('Failed to post announcement.');
+    } else {
+      setAnnouncementContent('');
+      // Refresh announcements
+      const { data: announcementData } = await supabase.from('class_announcements').select('*').eq('class_id', id);
+      setAnnouncements(announcementData || []);
+    }
+    setPostingAnnouncement(false);
+  };
+
+  const handlePostAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignmentTitle.trim()) {
+      setAssignmentError('Title is required.');
+      return;
+    }
+    setPostingAssignment(true);
+    setAssignmentError('');
+    let fileUrl: string | null = null;
+    if (assignmentFile) {
+      const filePath = `${user.id}/${id}/${Date.now()}_${assignmentFile.name}`;
+      console.log("Uploading to bucket: assignments, path:", filePath);
+      const { data, error: uploadError } = await supabase.storage.from('assignments').upload(filePath, assignmentFile);
+      if (uploadError) {
+        setAssignmentError('Error uploading file: ' + uploadError.message);
+        setPostingAssignment(false);
+        // Log the full error object for diagnosis
+        console.error("Supabase upload error:", uploadError);
+        alert("Upload error: " + JSON.stringify(uploadError, null, 2));
+        return;
+      }
+      const { data: publicURLData } = supabase.storage.from('assignments').getPublicUrl(filePath);
+      fileUrl = publicURLData.publicUrl;
+    }
+    const { error } = await supabase.from('assignments').insert({
+      class_id: id,
+      title: assignmentTitle,
+      description: assignmentDesc,
+      due_date: assignmentDueDate || null,
+      file_url: fileUrl,
+    });
+    if (error) {
+      setAssignmentError('Failed to create assignment: ' + error.message);
+      console.error('Insert error:', error);
+      alert('Insert error: ' + JSON.stringify(error, null, 2));
+    } else {
+      setAssignmentTitle('');
+      setAssignmentDesc('');
+      setAssignmentDueDate('');
+      setAssignmentFile(null);
+      // Refresh assignments
+      const { data: assignmentData, error } = await supabase.from('assignments').select('*').eq('class_id', id);
+      console.log('Fetched assignments:', assignmentData, 'Error:', error);
+      setAssignments(assignmentData || []);
+    }
+    setPostingAssignment(false);
+  };
 
   if (loading || loadingData) {
     return (
@@ -283,6 +412,26 @@ const TeacherClassDashboard: React.FC = () => {
         {/* Announcements Tab */}
         {tab === 'Announcements' && (
           <div className="space-y-4">
+            {role === 'teacher' && (
+              <form onSubmit={handlePostAnnouncement} className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                <h3 className="font-bold mb-2 text-blue-300">Post New Announcement</h3>
+                {announcementError && <p className="text-red-500 mb-2">{announcementError}</p>}
+                <textarea
+                  placeholder="Type your announcement..."
+                  value={announcementContent}
+                  onChange={e => setAnnouncementContent(e.target.value)}
+                  required
+                  className="w-full p-2 mb-2 border rounded bg-gray-800 text-gray-100 border-gray-700"
+                />
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                  disabled={postingAnnouncement}
+                >
+                  {postingAnnouncement ? 'Posting...' : 'Post Announcement'}
+                </button>
+              </form>
+            )}
             {announcements.length === 0 ? (
               <div className="text-gray-400">No announcements yet.</div>
             ) : (
@@ -298,6 +447,45 @@ const TeacherClassDashboard: React.FC = () => {
         {/* Assignments Tab */}
         {tab === 'Assignments' && (
           <div className="space-y-4">
+            {console.log('Assignments state:', assignments)}
+            {role === 'teacher' && (
+              <form onSubmit={handlePostAssignment} className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
+                <h3 className="font-bold mb-2 text-blue-300">Create New Assignment</h3>
+                {assignmentError && <p className="text-red-500 mb-2">{assignmentError}</p>}
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={assignmentTitle}
+                  onChange={e => setAssignmentTitle(e.target.value)}
+                  required
+                  className="w-full p-2 mb-2 border rounded bg-gray-800 text-gray-100 border-gray-700"
+                />
+                <textarea
+                  placeholder="Description"
+                  value={assignmentDesc}
+                  onChange={e => setAssignmentDesc(e.target.value)}
+                  className="w-full p-2 mb-2 border rounded bg-gray-800 text-gray-100 border-gray-700"
+                />
+                <input
+                  type="date"
+                  value={assignmentDueDate}
+                  onChange={e => setAssignmentDueDate(e.target.value)}
+                  className="w-full p-2 mb-2 border rounded bg-gray-800 text-gray-100 border-gray-700"
+                />
+                <input
+                  type="file"
+                  onChange={e => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
+                  className="w-full p-2 mb-2 border rounded bg-gray-800 text-gray-100 border-gray-700"
+                />
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                  disabled={postingAssignment}
+                >
+                  {postingAssignment ? 'Posting...' : 'Add Assignment'}
+                </button>
+              </form>
+            )}
             {assignments.length === 0 ? (
               <div className="text-gray-400">No assignments yet.</div>
             ) : (
@@ -306,6 +494,26 @@ const TeacherClassDashboard: React.FC = () => {
                   <div className="font-semibold text-blue-300">{a.title}</div>
                   <div className="text-gray-200 mb-2">{a.description}</div>
                   {a.due_date && <div className="text-xs text-yellow-400">Due: {new Date(a.due_date).toLocaleDateString()}</div>}
+                  {/* Show image preview if file_url is an image, else show download link */}
+                  {a.file_url && (
+                    a.file_url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
+                      <img
+                        src={a.file_url}
+                        alt={a.title}
+                        className="max-h-48 rounded mt-2"
+                        style={{ maxWidth: '100%' }}
+                      />
+                    ) : (
+                      <a
+                        href={a.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        Download File
+                      </a>
+                    )
+                  )}
                   <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
                 </div>
               ))
@@ -332,6 +540,41 @@ const TeacherClassDashboard: React.FC = () => {
             ) : (
               <div className="text-gray-200 whitespace-pre-line">{aiSummary}</div>
             )}
+          </div>
+        )}
+        {/* Notifications Tab */}
+        {tab === 'Notifications' && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-blue-400 flex items-center gap-2 mb-2"><Bell className="w-6 h-6" /> Notifications</h2>
+            {loadingNotifications ? (
+              <div className="text-blue-400">Loading notifications...</div>
+            ) : notifications.length === 0 ? (
+              <div className="text-gray-400">No notifications yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {notifications.map((notif, i) => (
+                  <div
+                    key={notif.id || i}
+                    className={`p-4 rounded-lg border ${notif.is_read ? 'border-gray-700 bg-gray-800 opacity-60' : 'border-blue-700 bg-blue-950'} transition-all cursor-pointer`}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className="font-semibold text-white mb-1">{notif.title}</div>
+                    <div className="text-gray-300 mb-1">{notif.message}</div>
+                    <div className="text-xs text-gray-400">{notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+           {/* Modal for weaknesses */}
+           {showNotifModal && (
+             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+               <div className="bg-gray-900 rounded-xl border border-blue-800 p-8 max-w-2xl w-full relative">
+                 <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setShowNotifModal(false)}>&times;</button>
+                 <h3 className="text-xl font-bold text-blue-300 mb-2">{notifModalTitle}</h3>
+                 <div className="mb-4 text-white prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: marked(notifModalContent) as string }} />
+               </div>
+             </div>
+           )}
           </div>
         )}
       </div>

@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Mic,
   Shield,
+  FileText,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
@@ -34,6 +35,8 @@ const navLinks = [
   { href: '/social', label: 'Social', icon: Users },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/live-notes', label: 'Live Meeting Notes', icon: Mic },
+  { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText },
+  { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Mic },
 ];
 
 const studentNavLinks = [

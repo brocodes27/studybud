@@ -26,21 +26,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function for a student to join a class using a code
-CREATE OR REPLACE FUNCTION join_class(class_code TEXT)
+-- Replace the join_class function to use class_id instead of class_code
+CREATE OR REPLACE FUNCTION join_class(class_id uuid)
 RETURNS void AS $$
-DECLARE
-    target_class_id UUID;
 BEGIN
-    -- Find the class ID from the code
-    SELECT id INTO target_class_id FROM classes WHERE classes.class_code = join_class.class_code;
-
-    -- If class exists, insert the student as a member
-    IF target_class_id IS NOT NULL THEN
-        INSERT INTO class_members (class_id, student_id)
-        VALUES (target_class_id, auth.uid());
-    ELSE
-        RAISE EXCEPTION 'Class not found';
-    END IF;
+  INSERT INTO class_members (class_id, user_id)
+  VALUES (class_id, auth.uid())
+  ON CONFLICT DO NOTHING;
 END;
-$$ LANGUAGE plpgsql; 
+$$ LANGUAGE plpgsql SECURITY DEFINER; 
