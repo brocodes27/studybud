@@ -526,10 +526,42 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               </button>
             </div>
           ) : (
-            <>
-              {/* Flashcard Review UI (unchanged) */}
-              {/* ... existing review mode content ... */}
-            </>
+            <div className="flex flex-col items-center justify-center min-h-[300px]">
+              <div
+                className={`glass rounded-2xl p-8 border border-blue-700/50 text-center max-w-xl w-full cursor-pointer transition-transform duration-300 ${isFlipped ? 'bg-blue-900' : 'bg-gray-800'}`}
+                onClick={() => setIsFlipped(f => !f)}
+                style={{ minHeight: '180px' }}
+              >
+                <div className="text-lg font-bold text-white mb-4">
+                  {flashcards[currentCard].question}
+                </div>
+                <div className="text-gray-300 mb-6">
+                  {isFlipped ? flashcards[currentCard].answer : <span className="italic">Click to reveal answer</span>}
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); setIsFlipped(f => !f); }}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold mt-2"
+                >
+                  {isFlipped ? 'Hide Answer' : 'Show Answer'}
+                </button>
+              </div>
+              <div className="flex justify-between w-full max-w-xl mt-6">
+                <button
+                  onClick={() => { setCurrentCard(c => Math.max(0, c - 1)); setIsFlipped(false); }}
+                  disabled={currentCard === 0}
+                  className="text-gray-400 hover:text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => { setCurrentCard(c => Math.min(flashcards.length - 1, c + 1)); setIsFlipped(false); }}
+                  disabled={currentCard === flashcards.length - 1}
+                  className="text-gray-400 hover:text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           )}
         </div>
       ) : null}
