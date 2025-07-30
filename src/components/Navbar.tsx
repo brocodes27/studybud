@@ -28,6 +28,7 @@ const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/create', label: 'Create Plan', icon: CalendarPlus },
   { href: '/plans', label: 'Study Plans', icon: BookOpen },
+  { href: '/duolingo-learning', label: 'Learning Path', icon: BookOpen },
   { href: '/tools', label: 'Study Tools', icon: Wrench },
   { href: '/progress', label: 'Progress', icon: LineChart },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },

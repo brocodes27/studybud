@@ -33,6 +33,11 @@ import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 import CBSEExamSimulator from './pages/CBSEExamSimulator';
 import CBSEExamSession from './pages/CBSEExamSession';
+import DuolingoStyleLearning from './pages/DuolingoStyleLearning';
+import VAPITestComponent from './components/VAPITestComponent';
+import VAPISetupTest from './components/VAPISetupTest';
+import VoiceSelector from './components/VoiceSelector';
+import ElliotVoiceTest from './components/ElliotVoiceTest';
 
 function AppContent() {
   const { user, role, loading, session, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -203,8 +208,13 @@ function AppContent() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/pricing" element={<FeatureComparison />} />
-            <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
-            <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
+                            <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
+                <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
+                <Route path="/duolingo-learning" element={<DuolingoStyleLearning />} />
+                <Route path="/vapi-test" element={<VAPITestComponent />} />
+                <Route path="/vapi-setup" element={<VAPISetupTest />} />
+                <Route path="/voice-selector" element={<VoiceSelector />} />
+                <Route path="/elliot-test" element={<ElliotVoiceTest />} />
             <Route path="/teacher" element={<TeacherPortal />}>
               <Route index element={<TeacherPanel />} />
               <Route path="class/:id" element={<TeacherClassDashboard />} />
