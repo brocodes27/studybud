@@ -33,7 +33,6 @@ import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 import CBSEExamSimulator from './pages/CBSEExamSimulator';
 import CBSEExamSession from './pages/CBSEExamSession';
-import DuolingoStyleLearning from './pages/DuolingoStyleLearning';
 import VAPITestComponent from './components/VAPITestComponent';
 import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
@@ -210,7 +209,6 @@ function AppContent() {
             <Route path="/pricing" element={<FeatureComparison />} />
                             <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
                 <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
-                <Route path="/duolingo-learning" element={<DuolingoStyleLearning />} />
                 <Route path="/vapi-test" element={<VAPITestComponent />} />
                 <Route path="/vapi-setup" element={<VAPISetupTest />} />
                 <Route path="/voice-selector" element={<VoiceSelector />} />

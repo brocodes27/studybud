@@ -373,6 +373,13 @@ const CBSEExamSession: React.FC = () => {
           if (showToast) showToast('Results saved!', 'success');
 
           // Send notification to each teacher only after attemptId is available
+          console.log('Notification creation debug:', {
+            classMemberships,
+            studentWeaknesses: !!studentWeaknesses,
+            attemptId,
+            selectedSubject
+          });
+          
           if (Array.isArray(classMemberships)) {
             for (const membership of classMemberships) {
               const { data: classInfo } = await supabase
@@ -380,15 +387,24 @@ const CBSEExamSession: React.FC = () => {
                 .select('teacher_id, subject')
                 .eq('id', membership.class_id)
                 .single();
+              
+              console.log('Class info for notification:', classInfo);
+              console.log('Subject comparison:', {
+                classSubject: classInfo?.subject,
+                selectedSubject,
+                matches: classInfo?.subject?.toLowerCase() === selectedSubject.toLowerCase()
+              });
+              
               if (
                 classInfo &&
                 classInfo.teacher_id &&
-                weaknesses &&
+                studentWeaknesses &&
                 attemptId &&
                 classInfo.subject &&
                 classInfo.subject.toLowerCase() === selectedSubject.toLowerCase()
               ) {
-                await supabase.from('notifications').insert({
+                console.log('Creating notification for teacher:', classInfo.teacher_id);
+                const { error: notificationError } = await supabase.from('notifications').insert({
                   user_id: classInfo.teacher_id,
                   class_id: membership.class_id,
                   type: 'system',
@@ -399,6 +415,12 @@ const CBSEExamSession: React.FC = () => {
                   priority: 'high',
                   is_read: false
                 });
+                
+                if (notificationError) {
+                  console.error('Notification creation error:', notificationError);
+                } else {
+                  console.log('Notification created successfully');
+                }
                 showNotification && showNotification({
                   title: 'Student Weaknesses Identified',
                   body: `${studentName} has these weaknesses, click to view`,

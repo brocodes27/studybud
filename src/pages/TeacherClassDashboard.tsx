@@ -97,6 +97,8 @@ const TeacherClassDashboard: React.FC = () => {
     const fetchNotifications = async () => {
       if (!user || !id) return;
       setLoadingNotifications(true);
+      console.log('Fetching notifications for teacher:', user.id, 'class:', id);
+      
       // Fetch notifications for this teacher and this class (if class_id is stored in notification)
       const { data, error } = await supabase
         .from('notifications')
@@ -105,8 +107,9 @@ const TeacherClassDashboard: React.FC = () => {
         .eq('class_id', id)
         .order('created_at', { ascending: false })
         .limit(20);
-      // Optionally filter by class_id if you store it in notifications
-      // .eq('class_id', id)
+      
+      console.log('Notifications fetch result:', { data, error });
+      
       setNotifications(data || []);
       setLoadingNotifications(false);
     };
@@ -447,7 +450,6 @@ const TeacherClassDashboard: React.FC = () => {
         {/* Assignments Tab */}
         {tab === 'Assignments' && (
           <div className="space-y-4">
-            {console.log('Assignments state:', assignments)}
             {role === 'teacher' && (
               <form onSubmit={handlePostAssignment} className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
                 <h3 className="font-bold mb-2 text-blue-300">Create New Assignment</h3>
