@@ -69,8 +69,8 @@ importers:
         specifier: ^0.3.4
         version: 0.3.4
       supabase:
-        specifier: ^2.26.9
-        version: 2.31.8
+        specifier: ^2.33.5
+        version: 2.33.7
       tesseract.js:
         specifier: ^5.1.1
         version: 5.1.1
@@ -2946,6 +2946,7 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+    deprecated: The work that was done in this beta branch won't be included in future versions
 
   sourcemap-codec@1.4.8:
     resolution: {integrity: sha512-9NykojV5Uih4lgo5So5dtw+f0JgJX30KCNI8gwhz2J9A15wD0Ml6tjHKwf6fTSa6fAdVBdZeNOs9eJ71qCk8vA==}
@@ -3023,8 +3024,8 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
-  supabase@2.31.8:
-    resolution: {integrity: sha512-AsALbB9qKqUhu5A8gZK5VMR2SPo2DPP7W544MBk7JKfLo3Pi8YoAxGxx5skarfeqDtHkzEREU/seFIaYP/bl3A==}
+  supabase@2.33.7:
+    resolution: {integrity: sha512-hsGj299gLFoaSRd2mh2FZ0RwXnf7vTtCsr1/F0Rv8m/rXm1Bohlsfiv0l/oYLfLh8eNXcMzROwRE/5FyAVTDDQ==}
     engines: {npm: '>=8'}
     hasBin: true
 
@@ -6677,7 +6678,7 @@ snapshots:
       pirates: 4.0.7
       ts-interface-checker: 0.1.13
 
-  supabase@2.31.8:
+  supabase@2.33.7:
     dependencies:
       bin-links: 5.0.0
       https-proxy-agent: 7.0.6
