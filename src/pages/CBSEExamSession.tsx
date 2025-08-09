@@ -9,6 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 import { useToast } from '../hooks/useToast';
 import { marked } from 'marked';
 import { useNotifications } from '../hooks/useNotifications';
+import { SUBJECT_TOTAL_MARKS } from './CBSEExamSimulator';
 
 const EXAM_DURATION = 3 * 60 * 60; // 3 hours in seconds
 
@@ -40,7 +41,7 @@ const CBSEExamSession: React.FC = () => {
   // Helper to parse AI feedback JSON
   let parsedFeedback: any[] = [];
   let totalScore = 0;
-  const maxScore = 80;
+  const maxScore = questions.reduce((sum, q) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
   if (aiFeedback) {
     let clean = aiFeedback.trim();
     clean = clean.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
@@ -253,7 +254,24 @@ const CBSEExamSession: React.FC = () => {
     try {
       // New: Provide both questions and answers to Gemini for evaluation
       const questionsList = questions.map((q: any, idx: number) => `${idx + 1}. ${q.question}`).join("\n");
-      const prompt = `You are a strict CBSE board examiner. Below is a list of exam questions and a student's handwritten answers (extracted as plain text). The answers may be separated by question numbers like Q1:, Q2:, 1., 2., or may be in order.\n\nYour tasks:\n1. For each question, find the corresponding answer from the student's text (by question number or order).\n2. Evaluate each answer according to the latest CBSE marking scheme and rubrics.\n3. For each question, provide: question_number, marks_awarded, max_marks.\n\nReturn ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JSON in any Markdown or code block.\n\nQuestions:\n${questionsList}\n\nStudent's answers:\n${extractedText}`;
+      const prompt = `You are a strict CBSE board examiner. Below is a list of exam questions and a student's handwritten answers (extracted as plain text). The answers may be separated by question numbers like Q1:, Q2:, 1., 2., or may be in order.
+
+Your tasks:
+1. For each question, find the corresponding answer from the student's text (by question number or order).
+2. Evaluate each answer according to the latest CBSE marking scheme and rubrics.
+3. For each question, provide:
+   - question_number
+   - marks_awarded
+   - max_marks
+   - feedback (detailed, constructive feedback for the answer)
+
+Return ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JSON in any Markdown or code block.
+
+Questions:
+${questionsList}
+
+Student's answers:
+${extractedText}`;
       const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
       const body = {
         contents: [{ parts: [{ text: prompt }] }]
@@ -282,7 +300,22 @@ const CBSEExamSession: React.FC = () => {
     setPlanError(null);
     setImprovementPlan(null);
     try {
-      const prompt = `You are an expert CBSE teacher and exam coach. Based on the following student's answers and the detailed AI evaluation, generate a personalized improvement plan and performance analysis.\n\nYou must:\n- Carefully analyze all questions that were answered incorrectly or only partially correct.\n- Spot the student's weaknesses based on these incorrect/partial answers.\n- Base the improvement plan and recommendations on these weaknesses.\n\nFirst, state the student's total marks out of 80 (e.g., 'Total Marks: 56/80').\n\nThe plan should then include: (1) key strengths, (2) specific weaknesses (with reference to the questions answered incorrectly), (3) actionable steps to improve, (4) recommended resources or study strategies, and (5) a motivational message.\n\nFormat your response in Markdown.\n\nStudent's answers:\n${extractedText}\n\nAI Evaluation (JSON):\n${aiFeedback}`;
+      // In handleGenerateImprovementPlan, use parsedFeedback as the main input for weaknesses and recommendations
+      const prompt = `You are an expert CBSE teacher and exam coach. Based on the following student's answers and the detailed AI evaluation, generate a personalized improvement plan and performance analysis.
+
+You must:
+- Carefully analyze all questions that were answered incorrectly or only partially correct, using the detailed feedback for each answer below.
+- Spot the student's weaknesses based on these incorrect/partial answers and the feedback provided.
+- Base the improvement plan and recommendations on these weaknesses and the feedback array.
+
+First, state the student's total marks out of ${maxScore} (e.g., 'Total Marks: 56/${maxScore}').
+
+The plan should then include: (1) key strengths, (2) specific weaknesses (with reference to the questions answered incorrectly), (3) actionable steps to improve, (4) recommended resources or study strategies, and (5) a motivational message.
+
+Format your response in Markdown.
+
+Detailed AI Feedback (JSON array):
+${JSON.stringify(parsedFeedback, null, 2)}`;
       const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
       const body = {
         contents: [{ parts: [{ text: prompt }] }]
@@ -513,6 +546,7 @@ const CBSEExamSession: React.FC = () => {
                     <tr>
                       <th className="px-3 py-2">Q#</th>
                       <th className="px-3 py-2">Marks</th>
+                      <th className="px-3 py-2">Feedback</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -520,6 +554,7 @@ const CBSEExamSession: React.FC = () => {
                       <tr key={i} className="border-b border-green-800">
                         <td className="px-3 py-2 font-bold">{q.question_number || i + 1}</td>
                         <td className="px-3 py-2">{q.marks_awarded} / {q.max_marks}</td>
+                        <td className="px-3 py-2 whitespace-pre-line">{q.feedback || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
