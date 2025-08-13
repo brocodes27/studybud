@@ -140,7 +140,7 @@ export class VAPIService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: 'StudyBud AI Tutor',
+          name: 'elevenfolks AI Tutor',
           model: {
             provider: 'openai',
             model: 'gpt-4o-mini', // VAPI will route to Gemini 2.5 Flash

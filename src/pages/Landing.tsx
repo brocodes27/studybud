@@ -99,11 +99,11 @@ const Landing: React.FC = () => {
           role: selectedRole
         });
         if (error) throw error;
-        showToast('Account created! Welcome to STUBUD!', 'success');
+        showToast('Account created! Welcome to elevenfolks!', 'success');
       } else {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
-        showToast('Welcome back to STUBUD!', 'success');
+        showToast('Welcome back to elevenfolks!', 'success');
       }
     } catch (error: any) {
       showToast(error.message, 'error');
@@ -198,7 +198,7 @@ const Landing: React.FC = () => {
     {
       name: 'Priya Sharma',
       grade: 'Class 12',
-      text: 'STUBUD helped me improve my JEE preparation by 40%. The personalized study plans are incredible!',
+      text: 'elevenfolks helped me improve my JEE preparation by 40%. The personalized study plans are incredible!',
       rating: 5
     },
     {
@@ -403,8 +403,8 @@ const Landing: React.FC = () => {
           <div className="w-full bg-white/10 rounded-3xl shadow-2xl p-4 sm:p-8 flex flex-col items-center">
             {/* Product Hunt Badge */}
             <div className="mb-6 flex flex-col items-center">
-              <a href="https://www.producthunt.com/products/stubud?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-stubud" target="_blank" rel="noopener noreferrer">
-                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=988142&theme=light&t=1751630754967" alt="STUBUD - Turn your syllabus into smart daily question sets using AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" />
+              <a href="https://www.producthunt.com/products/elevenfolks?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-elevenfolks" target="_blank" rel="noopener noreferrer">
+                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=88142&theme=light&t=1751630754967" alt="elevenfolks - Turn your syllabus into smart daily question sets using AI | Product Hunt" style={{ width: '250px', height: '54px' }} width="250" height="54" />
               </a>
             </div>
             {/* 7-day free badge */}
@@ -427,7 +427,7 @@ const Landing: React.FC = () => {
                   </div>
                   <div>
                     <h1 ref={heroHeadlineRef} className="text-5xl lg:text-6xl font-bold gradient-text">
-                      STUBUD
+                      elevenfolks
                     </h1>
                     <p ref={heroSubheadlineRef} className="text-blue-300 text-lg">Your AI Study Buddy</p>
                   </div>
@@ -459,7 +459,7 @@ const Landing: React.FC = () => {
               <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold text-white mb-2">
-                    {isSignUp ? 'Join STUBUD Today' : 'Welcome Back'}
+                    {isSignUp ? 'Join elevenfolks Today' : 'Welcome Back'}
                   </h3>
                   <p className="text-gray-400">
                     {isSignUp ? 'Start your AI-powered learning journey' : 'Continue your learning journey'}
@@ -586,7 +586,7 @@ const Landing: React.FC = () => {
                     onClick={() => setIsSignUp(!isSignUp)}
                     className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
                   >
-                    {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Join STUBUD"}
+                    {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Join elevenfolks"}
                   </button>
                 </div>
 
@@ -639,7 +639,7 @@ const Landing: React.FC = () => {
                 Loved by <span className="gradient-text">Students Everywhere</span>
               </h2>
               <p className="text-xl text-gray-400">
-                See what students are saying about their success with STUBUD
+                See what students are saying about their success with elevenfolks
               </p>
             </div>
 
@@ -669,7 +669,7 @@ const Landing: React.FC = () => {
               Ready to Transform Your Studies?
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Join thousands of students who've improved their grades with STUBUD
+              Join thousands of students who've improved their grades with elevenfolks
             </p>
             
           </div>
@@ -682,10 +682,10 @@ const Landing: React.FC = () => {
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
                 <Brain className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text">STUBUD</span>
+              <span className="text-xl font-bold gradient-text">elevenfolks</span>
             </div>
             <p className="text-center text-gray-400">
-              © 2025 STUBUD. All rights reserved. Empowering students with AI-powered learning.
+              © 2025 elevenfolks. All rights reserved. Empowering students with AI-powered learning.
             </p>
           </div>
         </footer>

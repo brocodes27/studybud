@@ -99,7 +99,7 @@ const Navbar = () => {
         }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          {!isCollapsed && <span className="text-2xl font-bold">StuBud</span>}
+          {!isCollapsed && <span className="text-2xl font-bold">elevenfolks</span>}
           <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-full hover:bg-gray-700">
             {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
           </button>
@@ -152,7 +152,7 @@ const Navbar = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 w-full bg-gray-800 text-white p-4 z-50 flex items-center justify-between">
-         <span className="text-2xl font-bold">StudyBud</span>
+         <span className="text-2xl font-bold">elevenfolks</span>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
@@ -163,7 +163,7 @@ const Navbar = () => {
         <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
           <nav className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-6 animate-slide-in">
              <div className="flex justify-between items-center mb-6">
-                <span className="text-2xl font-bold">StudyBud</span>
+                <span className="text-2xl font-bold">elevenfolks</span>
                 <button onClick={() => setIsMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>

@@ -11,8 +11,8 @@ export default defineConfig({
       devOptions: { enabled: false },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'STUBUD',
-        short_name: 'STUBUD',
+        name: 'elevenfolks',
+        short_name: 'elevenfolks',
         description: 'AI-powered study companion for personalized learning',
         theme_color: '#3B82F6',
         background_color: '#1F2937',

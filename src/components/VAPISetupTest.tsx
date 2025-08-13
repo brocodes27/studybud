@@ -103,7 +103,7 @@ const VAPISetupTest: React.FC = () => {
         <div className="bg-gray-700 p-4 rounded-lg">
           <h3 className="text-lg font-semibold text-white mb-2">Setup Instructions</h3>
           <ol className="text-gray-300 text-sm space-y-1">
-            <li>1. Create a .env file in the studybud directory</li>
+            <li>1. Create a .env file in the elevenfolks directory</li>
             <li>2. Add your VAPI API key: VITE_VAPI_API_KEY=your_actual_key</li>
             <li>3. Restart the development server</li>
             <li>4. Test the connection</li>

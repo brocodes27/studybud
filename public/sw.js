@@ -1,6 +1,6 @@
-// Service Worker for STUBUD PWA
+// Service Worker for elevenfolks PWA
 
-const CACHE_NAME = 'stubud-cache-v1';
+const CACHE_NAME = 'elevenfolks-cache-v1';
 const OFFLINE_URL = '/index.html';
 
 // Assets to cache on install

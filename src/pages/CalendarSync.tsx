@@ -128,7 +128,7 @@ export function CalendarSync() {
           <h1 className="text-3xl md:text-4xl font-bold gradient-text">Calendar Sync</h1>
         </div>
         <p className="text-gray-300 max-w-xl mx-auto mb-6">
-          Connect your Google Calendar to automatically import exam dates and deadlines into STUBUD.
+          Connect your Google Calendar to automatically import exam dates and deadlines into elevenfolks.
         </p>
         <button
           onClick={() => login()}

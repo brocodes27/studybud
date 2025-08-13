@@ -299,7 +299,7 @@ function parseMathInline(text: string) {
   });
 }
 
-const TABS = ['Exam Simulator', 'Saved Results', 'Dev'];
+const TABS = ['Exam Simulator', 'Saved Results'];
 
 const CBSEExamSimulator: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -330,21 +330,7 @@ const CBSEExamSimulator: React.FC = () => {
   const [resultsLoading, setResultsLoading] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
   
-  // Dev tab state
-  const [devSubject, setDevSubject] = useState('');
-  const [devClass, setDevClass] = useState('');
-  const [devStream, setDevStream] = useState<keyof typeof CLASS12_SUBJECTS>('Science');
-  const [devSyllabus, setDevSyllabus] = useState<any[]>([]);
-  const [devLoading, setDevLoading] = useState(false);
-  const [devError, setDevError] = useState<string | null>(null);
-  const [devSuccess, setDevSuccess] = useState<string | null>(null);
-  const [savedSyllabi, setSavedSyllabi] = useState<any[]>([]);
-  const [syllabiLoading, setSyllabiLoading] = useState(false);
-  
-  // Manual syllabus entry state
-  const [manualSyllabusText, setManualSyllabusText] = useState('');
-  const [manualSyllabusLoading, setManualSyllabusLoading] = useState(false);
-  const [showManualEntry, setShowManualEntry] = useState(false);
+
 
   useEffect(() => {
     if (activeTab === 'Saved Results' && user) {
@@ -363,31 +349,7 @@ const CBSEExamSimulator: React.FC = () => {
     }
   }, [activeTab, user]);
 
-  // Load saved syllabi for dev tab
-  useEffect(() => {
-    if (activeTab === 'Dev') {
-      setSyllabiLoading(true);
-      supabase
-        .from('cbse_syllabi')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (error) console.error('Error loading syllabi:', error);
-          else setSavedSyllabi(data || []);
-          setSyllabiLoading(false);
-        });
-    } else {
-      // Clear dev tab state when switching away
-      setDevSubject('');
-      setDevClass('');
-      setDevStream('Science');
-      setDevSyllabus([]);
-      setDevError(null);
-      setDevSuccess(null);
-      setManualSyllabusText('');
-      setShowManualEntry(false);
-    }
-  }, [activeTab]);
+
 
   const handleExportPDF = async () => {
     if (!previewRef.current) return;
@@ -563,18 +525,18 @@ const CBSEExamSimulator: React.FC = () => {
                 {unit.chapters && unit.chapters.length > 0 && (
                   <div className="space-y-1 ml-4">
                     {unit.chapters.map(ch => (
-                      <label key={ch.name} className="flex items-center gap-2 bg-gray-800 rounded p-2 cursor-pointer hover:bg-blue-900 transition">
-                        <input
-                          type="checkbox"
-                          checked={selectedChapters.includes(ch.name)}
-                          onChange={e => {
-                            if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
-                            else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
-                          }}
-                        />
-                        <span className="font-semibold text-white">{ch.name}</span>
-                        <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
-                      </label>
+              <label key={ch.name} className="flex items-center gap-2 bg-gray-800 rounded p-2 cursor-pointer hover:bg-blue-900 transition">
+                <input
+                  type="checkbox"
+                  checked={selectedChapters.includes(ch.name)}
+                  onChange={e => {
+                    if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
+                    else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
+                  }}
+                />
+                <span className="font-semibold text-white">{ch.name}</span>
+                <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
+              </label>
                     ))}
                   </div>
                 )}
@@ -737,173 +699,42 @@ const CBSEExamSimulator: React.FC = () => {
   );
 
   function adjustToTotalMarks(questions: any[], totalMarks: number) {
-    let sum = 0;
-    const result = [];
-    for (const q of questions) {
+              let sum = 0;
+              const result = [];
+              for (const q of questions) {
       if (sum + q.marks < totalMarks) {
-        result.push(q);
-        sum += q.marks;
+                  result.push(q);
+                  sum += q.marks;
       } else if (sum + q.marks === totalMarks) {
         result.push(q);
         sum += q.marks;
         break;
-      } else {
+                } else {
         // Optionally, add a partial question to reach exactly totalMarks
         const remaining = totalMarks - sum;
-        if (remaining > 0) {
-          result.push({ ...q, marks: remaining });
+                    if (remaining > 0) {
+                      result.push({ ...q, marks: remaining });
           sum += remaining;
-        }
-        break;
-      }
-    }
+                  }
+                  break;
+                }
+              }
     if (sum !== totalMarks) {
       alert(`AI did not generate questions summing to exactly ${totalMarks} marks. Please try again.`);
     }
-    return result;
-  }
+              return result;
+            }
 
-  // Dev tab functions
-  const handleFetchSyllabus = async () => {
-    if (!devSubject || !devClass) return;
-    setDevLoading(true);
-    setDevError(null);
-    setDevSuccess(null);
-    try {
-      const syllabus = await fetchChaptersWithAI(devSubject, devClass);
-      setDevSyllabus(syllabus);
-      setDevSuccess('Syllabus fetched successfully!');
-    } catch (error: any) {
-      setDevError(error.message || 'Failed to fetch syllabus');
-      setDevSuccess(null);
-    }
-    setDevLoading(false);
-  };
 
-  const handleSaveSyllabus = async () => {
-    if (!devSyllabus.length || !devSubject || !devClass) return;
-    try {
-      const totalMarks = SUBJECT_TOTAL_MARKS[`${devClass} ${devSubject}`] || 80;
-      const { error } = await supabase
-        .from('cbse_syllabi')
-        .upsert({
-          subject: devSubject,
-          class_level: devClass,
-          syllabus_data: devSyllabus,
-          total_marks: totalMarks,
-          units_count: devSyllabus.length
-        }, {
-          onConflict: 'subject,class_level'
-        });
-      if (error) throw error;
-      // Refresh saved syllabi
-      const { data } = await supabase
-        .from('cbse_syllabi')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setSavedSyllabi(data || []);
-      setDevSuccess('Syllabus saved successfully!');
-      setDevError(null);
-    } catch (error: any) {
-      setDevError('Failed to save syllabus: ' + error.message);
-      setDevSuccess(null);
-    }
-  };
 
-  const handleLoadSyllabus = async (syllabus: any) => {
-    setDevSubject(syllabus.subject);
-    setDevClass(syllabus.class_level);
-    // Set the stream for Class 12 subjects
-    if (syllabus.class_level === '12') {
-      // Find which stream this subject belongs to
-      for (const [stream, subjects] of Object.entries(CLASS12_SUBJECTS)) {
-        if (subjects.includes(syllabus.subject)) {
-          setDevStream(stream as keyof typeof CLASS12_SUBJECTS);
-          break;
-        }
-      }
-    }
-    setDevSyllabus(syllabus.syllabus_data);
-    setDevSuccess(`Loaded syllabus for ${syllabus.subject} - Class ${syllabus.class_level}`);
-    setDevError(null);
-  };
 
-  const handleDeleteSyllabus = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this syllabus?')) return;
-    try {
-      const { error } = await supabase
-        .from('cbse_syllabi')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-      setSavedSyllabi(savedSyllabi.filter(s => s.id !== id));
-      setDevSuccess('Syllabus deleted successfully!');
-      setDevError(null);
-    } catch (error: any) {
-      setDevError('Failed to delete syllabus: ' + error.message);
-      setDevSuccess(null);
-    }
-  };
 
-  const handleParseManualSyllabus = async () => {
-    if (!manualSyllabusText.trim() || !devSubject || !devClass) return;
-    
-    setManualSyllabusLoading(true);
-    setDevError(null);
-    setDevSuccess(null);
-    
-    try {
-      const officialTotalMarks = SUBJECT_TOTAL_MARKS[`${devClass} ${devSubject}`] || 80;
-      const expectedUnits = SUBJECT_EXPECTED_UNITS[`${devClass} ${devSubject}`] || { min: 4, max: 8 };
-      
-      const prompt = `Parse the following CBSE syllabus text for Class ${devClass} ${devSubject} and convert it into a structured JSON format.
 
-Syllabus Text:
-${manualSyllabusText}
 
-Instructions:
-1. Extract all units and their weightage from the provided text
-2. For each unit, identify all chapters and their learning outcomes
-3. Ensure the sum of all unit weightages equals ${officialTotalMarks}
-4. Follow the exact format: unit name, weightage, and chapters with name and clo
-5. Do not invent or add any information not present in the text
-6. If weightage is not mentioned, estimate based on CBSE patterns
 
-Return ONLY a valid JSON array with this structure:
-[
-  {
-    "unit": "Unit–I [Unit Name]",
-    "weightage": [number],
-    "chapters": [
-      {
-        "name": "Chapter–1: [Chapter Name]",
-        "clo": "[Learning Outcome]"
-      }
-    ]
-  }
-]
 
-Return ONLY the JSON array, no explanation or extra text.`;
-      
-      const openai = OpenAIService.getInstance();
-      const text = await openai.generateChatCompletion(prompt);
-      const parsedSyllabus = JSON.parse(text);
-      
-      if (Array.isArray(parsedSyllabus)) {
-        setDevSyllabus(parsedSyllabus);
-        setDevSuccess('Manual syllabus parsed successfully!');
-        setShowManualEntry(false);
-        setManualSyllabusText('');
-      } else {
-        throw new Error('Invalid syllabus format returned by AI');
-      }
-    } catch (error: any) {
-      setDevError('Failed to parse manual syllabus: ' + error.message);
-      setDevSuccess(null);
-    } finally {
-      setManualSyllabusLoading(false);
-    }
-  };
+
+
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 flex flex-col items-center justify-center relative">
@@ -970,211 +801,6 @@ Return ONLY the JSON array, no explanation or extra text.`;
                         <td className="px-3 py-2">{r.class_level || '-'}</td>
                         <td className="px-3 py-2">{r.total_score} / {r.max_score}</td>
                         <td className="px-3 py-2">{r.answer_sheet_url && <a href={r.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">View</a>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === 'Dev' && (
-          <div className="space-y-6 animate-fade-in">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4">CBSE Syllabus Dev</h2>
-            <div className="bg-blue-950 border border-blue-800 rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-blue-300 mb-2">📚 Syllabus Management</h3>
-              <p className="text-blue-200 text-sm">
-                This dev tab allows you to fetch and save syllabi to the database. Once saved, syllabi will be automatically loaded 
-                from the database instead of being fetched from AI every time, making the process faster and more reliable.
-              </p>
-              <p className="text-purple-200 text-sm mt-2">
-                💡 <strong>Manual Entry:</strong> If AI doesn't fetch complete syllabi, you can paste syllabus text manually and have AI parse it into the correct format.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block mb-1 font-semibold">Class</label>
-                <select
-                  className="w-full p-2 rounded border bg-gray-900 text-white"
-                  value={devClass}
-                  onChange={e => {
-                    setDevClass(e.target.value);
-                    setDevSubject('');
-                  }}
-                >
-                  <option value="">Select Class</option>
-                  {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              {devClass === '12' && (
-                <div>
-                  <label className="block mb-1 font-semibold">Stream</label>
-                  <select
-                    className="w-full p-2 rounded border bg-gray-900 text-white"
-                    value={devStream}
-                    onChange={e => {
-                      setDevStream(e.target.value as keyof typeof CLASS12_SUBJECTS);
-                      setDevSubject('');
-                    }}
-                  >
-                    {Object.keys(CLASS12_SUBJECTS).map(stream => (
-                      <option key={stream} value={stream}>{stream}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block mb-1 font-semibold">Subject</label>
-                <select
-                  className="w-full p-2 rounded border bg-gray-900 text-white"
-                  value={devSubject}
-                  onChange={e => setDevSubject(e.target.value)}
-                  disabled={!devClass || (devClass === '12' && !devStream)}
-                >
-                  <option value="">Select Subject</option>
-                  {devClass === '10' && CLASS10_SUBJECTS.map((s: string) => <option key={s} value={s}>{s}</option>)}
-                  {devClass === '12' && devStream && CLASS12_SUBJECTS[devStream] && CLASS12_SUBJECTS[devStream].map((s: string) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
-                  onClick={handleFetchSyllabus}
-                  disabled={!devSubject || !devClass || devLoading}
-                >
-                  {devLoading ? 'Fetching...' : 'Fetch Syllabus'}
-                </button>
-                <button
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow transition"
-                  onClick={() => setShowManualEntry(!showManualEntry)}
-                  disabled={!devSubject || !devClass}
-                >
-                  {showManualEntry ? 'Hide Manual Entry' : 'Manual Entry'}
-                </button>
-              </div>
-              <div>
-                <button
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
-                  onClick={handleSaveSyllabus}
-                  disabled={!devSyllabus.length || !devSubject || !devClass || devLoading}
-                >
-                  {devLoading ? 'Saving...' : 'Save Syllabus'}
-                </button>
-              </div>
-            </div>
-            
-            {/* Manual Syllabus Entry */}
-            {showManualEntry && (
-              <div className="bg-gray-800 rounded-lg border border-purple-900 p-4 mt-4">
-                <h3 className="text-lg font-semibold text-purple-400 mb-3">📝 Manual Syllabus Entry</h3>
-                <p className="text-gray-300 text-sm mb-4">
-                  Paste the CBSE syllabus text here. The AI will parse it and extract units, chapters, and weightage.
-                </p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block mb-2 font-semibold text-gray-300">Syllabus Text</label>
-                    <textarea
-                      className="w-full h-48 p-3 rounded border bg-gray-900 text-white resize-none"
-                      placeholder="Paste the CBSE syllabus text here...&#10;&#10;Example:&#10;Unit–I: Electrostatics (16 marks)&#10;Chapter–1: Electric Charges and Fields&#10;Chapter–2: Electrostatic Potential and Capacitance&#10;&#10;Unit–II: Current Electricity (10 marks)&#10;Chapter–3: Current Electricity"
-                      value={manualSyllabusText}
-                      onChange={e => setManualSyllabusText(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
-                      onClick={handleParseManualSyllabus}
-                      disabled={!manualSyllabusText.trim() || !devSubject || !devClass || manualSyllabusLoading}
-                    >
-                      {manualSyllabusLoading ? 'Parsing...' : 'Parse with AI'}
-                    </button>
-                    <button
-                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded shadow transition"
-                      onClick={() => {
-                        setManualSyllabusText('');
-                        setShowManualEntry(false);
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            {devLoading && <div className="text-blue-400">Loading syllabus...</div>}
-            {devError && <div className="text-red-400">{devError}</div>}
-            {devSuccess && <div className="text-green-400">{devSuccess}</div>}
-            {!devLoading && devSyllabus.length > 0 && (
-              <div className="bg-gray-800 rounded-lg border border-blue-900 p-4">
-                <h3 className="text-xl font-bold text-blue-400 mb-2">Loaded Syllabus for {devSubject} - Class {devClass}</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm text-left text-gray-300">
-                    <thead className="bg-blue-900 text-blue-200">
-                      <tr>
-                        <th className="px-3 py-2">Unit</th>
-                        <th className="px-3 py-2">Weightage</th>
-                        <th className="px-3 py-2">Chapters</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {devSyllabus.map((unit, index) => (
-                        <tr key={index} className="border-b border-blue-800">
-                          <td className="px-3 py-2 font-semibold text-blue-400">{unit.unit}</td>
-                          <td className="px-3 py-2 text-yellow-400 font-bold">{unit.weightage} marks</td>
-                          <td className="px-3 py-2">
-                            {unit.chapters && unit.chapters.length > 0 ? (
-                              <ul className="list-disc list-inside text-white">
-                                {unit.chapters.map((ch: { name: string; clo: string }) => (
-                                  <li key={ch.name}>{ch.name} ({ch.clo})</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              'No chapters defined for this unit.'
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-            <h3 className="text-xl font-bold text-blue-400 mb-2">Saved Syllabi</h3>
-            {syllabiLoading ? (
-              <div className="text-blue-400">Loading saved syllabi...</div>
-            ) : savedSyllabi.length === 0 ? (
-              <div className="text-gray-400">No saved syllabi found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-left text-gray-300">
-                  <thead className="bg-blue-900 text-blue-200">
-                    <tr>
-                      <th className="px-3 py-2">Subject</th>
-                      <th className="px-3 py-2">Class</th>
-                      <th className="px-3 py-2">Units</th>
-                      <th className="px-3 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savedSyllabi.map(s => (
-                      <tr key={s.id} className="border-b border-blue-800">
-                        <td className="px-3 py-2">{s.subject}</td>
-                        <td className="px-3 py-2">{s.class_level}</td>
-                        <td className="px-3 py-2">{s.units_count}</td>
-                        <td className="px-3 py-2">
-                          <button
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs mr-2"
-                            onClick={() => handleLoadSyllabus(s)}
-                          >
-                            Load
-                          </button>
-                          <button
-                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                            onClick={() => handleDeleteSyllabus(s.id)}
-                          >
-                            Delete
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
