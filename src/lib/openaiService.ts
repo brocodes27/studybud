@@ -1,16 +1,15 @@
 // src/lib/openaiService.ts
+import { supabase } from './supabase';
 
 export class OpenAIService {
   private static instance: OpenAIService;
-  private apiKey: string;
-  private apiUrl: string = 'https://api.openai.com/v1/chat/completions';
+  private proxyUrl: string;
   private model: string = 'gpt-4.1';
 
   private constructor() {
-    this.apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-    if (!this.apiKey) {
-      console.warn('OpenAI API key is missing. Please set VITE_OPENAI_API_KEY in your .env file');
-    }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) throw new Error('VITE_SUPABASE_URL is not set');
+    this.proxyUrl = `${supabaseUrl}/functions/v1/openai-proxy`;
   }
 
   static getInstance(): OpenAIService {
@@ -20,8 +19,31 @@ export class OpenAIService {
     return OpenAIService.instance;
   }
 
+  private async authorizedFetch(body: any): Promise<any> {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data?.session?.access_token;
+    if (!accessToken) throw new Error('Not authenticated');
+
+    const res = await fetch(this.proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`OpenAI proxy error: ${res.status} ${text}`);
+    }
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
   async generateChatCompletion(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.apiKey) throw new Error('OpenAI API key not set');
     const messages = [
       ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
       { role: 'user', content: prompt },
@@ -32,31 +54,15 @@ export class OpenAIService {
       max_tokens: 2048,
       temperature: 0.7,
     };
-    const response = await fetch(this.apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error('OpenAI API error: ' + response.status + ' ' + errorText);
-    }
-    const data = await response.json();
+    const data = await this.authorizedFetch(body);
     const text = data?.choices?.[0]?.message?.content || '';
     return text;
   }
 
   /**
-   * Analyze images with GPT-4 Vision for handwriting detection/recognition.
-   * images: array of data URLs (e.g., from PDF pages rendered to canvas)
-   * prompt: optional instruction (defaults to extracting handwritten text faithfully)
-   * model: optional override (e.g., 'gpt-4o' or 'gpt-4.1')
+   * Analyze images with GPT-4 Vision / multimodal models
    */
   async analyzeImagesWithVision(images: string[], prompt?: string, model?: string): Promise<string> {
-    if (!this.apiKey) throw new Error('OpenAI API key not set');
     if (!images || images.length === 0) throw new Error('No images provided');
 
     const content: any[] = [];
@@ -74,19 +80,7 @@ export class OpenAIService {
       temperature: 0.2,
     } as any;
 
-    const response = await fetch(this.apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error('OpenAI API error: ' + response.status + ' ' + errorText);
-    }
-    const data = await response.json();
+    const data = await this.authorizedFetch(body);
     return data?.choices?.[0]?.message?.content || '';
   }
 }
