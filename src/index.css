@@ -33,6 +33,26 @@
   }
 }
 
+/* Global mobile scaling: make the whole UI slightly smaller on small screens */
+@media (max-width: 640px) {
+  html {
+    /* ~14px base so paddings, margins, text (in rem) shrink uniformly */
+    font-size: 14px;
+  }
+  body {
+    /* Offset fixed mobile header from Navbar.tsx (approx 64px), include safe-area for notches */
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Extra-small devices */
+@media (max-width: 360px) {
+  html {
+    /* ~12.5px base to keep layouts fitting on very narrow phones */
+    font-size: 12.5px;
+  }
+}
+
 @layer base {
   * {
     border-color: hsl(var(--border));
@@ -40,6 +60,8 @@
   
   html {
     scroll-behavior: smooth;
+    /* Base desktop font size (affects all rem-based Tailwind spacing/typography) */
+    font-size: 16px;
   }
   
   body {
