@@ -1,90 +1,112 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, X, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 interface Toast {
   id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
   message: string;
-  type: 'success' | 'error' | 'info';
+  duration?: number;
 }
 
-let toastQueue: Toast[] = [];
-let setToasts: React.Dispatch<React.SetStateAction<Toast[]>> | null = null;
+interface ToasterProps {
+  toasts?: Toast[];
+  removeToast?: (id: string) => void;
+}
 
-export function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-  const toast: Toast = {
-    id: Math.random().toString(36).substr(2, 9),
-    message,
-    type
-  };
-  
-  toastQueue.push(toast);
-  
-  if (setToasts) {
-    setToasts([...toastQueue]);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      removeToast(toast.id);
-    }, 5000);
+const toastIcons = {
+  success: CheckCircle,
+  error: XCircle,
+  warning: AlertCircle,
+  info: Info,
+};
+
+const toastStyles = {
+  success: 'bg-success-500/10 border-success-500/20 text-success-100',
+  error: 'bg-destructive/10 border-destructive/20 text-red-100',
+  warning: 'bg-warning-500/10 border-warning-500/20 text-warning-100',
+  info: 'bg-primary-500/10 border-primary-500/20 text-primary-100',
+};
+
+const iconStyles = {
+  success: 'text-success-400',
+  error: 'text-red-400',
+  warning: 'text-warning-400',
+  info: 'text-primary-400',
+};
+
+export const Toaster: React.FC<ToasterProps> = ({ toasts = [], removeToast = () => {} }) => {
+  // Don't render if no toasts
+  if (!toasts || toasts.length === 0) {
+    return null;
   }
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-3">
+      {toasts.map((toast) => {
+        const Icon = toastIcons[toast.type];
+        return (
+          <Toast
+            key={toast.id}
+            toast={toast}
+            icon={Icon}
+            onRemove={removeToast}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+interface ToastProps {
+  toast: Toast;
+  icon: React.ComponentType<{ className?: string }>;
+  onRemove: (id: string) => void;
 }
 
-function removeToast(id: string) {
-  toastQueue = toastQueue.filter(toast => toast.id !== id);
-  if (setToasts) {
-    setToasts([...toastQueue]);
-  }
-}
-
-export function Toaster() {
-  const [toasts, setToastsState] = useState<Toast[]>([]);
+const Toast: React.FC<ToastProps> = ({ toast, icon: Icon, onRemove }) => {
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setToasts = setToastsState;
-    return () => {
-      setToasts = null;
-    };
+    // Animate in
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  const getToastIcon = (type: string) => {
-    switch (type) {
-      case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-400" />;
-      case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-400" />;
-      default:
-        return <Info className="h-5 w-5 text-blue-400" />;
+  useEffect(() => {
+    if (toast.duration) {
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(() => onRemove(toast.id), 300);
+      }, toast.duration);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [toast.id, toast.duration, onRemove]);
 
-  const getToastStyles = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'glass border-green-500/30 glow-green';
-      case 'error':
-        return 'glass border-red-500/30';
-      default:
-        return 'glass border-blue-500/30 glow-blue';
-    }
+  const handleRemove = () => {
+    setIsVisible(false);
+    setTimeout(() => onRemove(toast.id), 300);
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`flex items-center gap-3 p-4 rounded-xl border shadow-2xl max-w-sm animate-in slide-in-from-right ${getToastStyles(toast.type)}`}
-        >
-          {getToastIcon(toast.type)}
-          <p className="flex-grow text-sm font-medium text-white">{toast.message}</p>
-          <button
-            onClick={() => removeToast(toast.id)}
-            className="flex-shrink-0 hover:opacity-70 transition-opacity duration-200 text-gray-400 hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <div
+      className={`transform transition-all duration-300 ease-out ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      }`}
+    >
+      <div className={`flex items-center p-4 rounded-2xl border backdrop-blur-xl shadow-2xl min-w-80 max-w-md ${toastStyles[toast.type]}`}>
+        <div className={`flex-shrink-0 ${iconStyles[toast.type]}`}>
+          <Icon className="w-5 h-5" />
         </div>
-      ))}
+        <div className="ml-3 flex-1">
+          <p className="text-sm font-medium">{toast.message}</p>
+        </div>
+        <button
+          onClick={handleRemove}
+          className="ml-4 flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors duration-200 focus-ring"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
-}
+};

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, ChevronRight, CheckCircle, FileText, Zap } from 'lucide-react';
+import { BookOpen, ChevronRight, FileText, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { BlockMath, InlineMath } from 'react-katex';
+import { InlineMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import OpenAIService from '../lib/openaiService';
+import { pdfFileToImageDataUrls } from '../lib/pdfToImages';
 
 const CLASS10_SUBJECTS = [
   'Mathematics',
@@ -210,19 +211,41 @@ interface GeminiQuestionGenParams {
 }
 
 // Add Gemini-based question generation
-async function generateQuestionsWithGemini({ subject, classLevel, chapters, examType, difficulty, sectionTypes }: Omit<GeminiQuestionGenParams, 'numQuestions'>) {
-  const totalMarks = SUBJECT_TOTAL_MARKS[`${classLevel} ${subject}`] || 80;
+async function generateQuestionsWithGemini({ subject, classLevel, chapters, examType, difficulty, sectionTypes, totalMarks }: Omit<GeminiQuestionGenParams, 'numQuestions'> & { totalMarks: number }) {
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  
+  // Calculate appropriate number of questions based on total marks
+  // For CBSE pattern: typically 1-5 marks per question, so we'll aim for reasonable distribution
+  const defaultMarks = SUBJECT_TOTAL_MARKS[`${classLevel} ${subject}`] || 80;
+  const defaultQuestions = 35; // Typical CBSE paper has ~35 questions
+  const questionRatio = totalMarks / defaultMarks;
+  const targetQuestions = Math.max(5, Math.min(50, Math.round(defaultQuestions * questionRatio)));
+  
   const prompt = `Refer to the official CBSE previous year question papers and the latest syllabus for the academic year 2025-26 at https://cbseacademic.nic.in/curriculum_2026.html for Class ${classLevel} ${subject}.
 Search for the typical number and distribution of each question type (e.g., how many MCQs, short answer, long answer, etc.) in real CBSE board papers for this subject/class. Match the real CBSE pattern for the number of each question type and their marks, using the latest available data from previous year papers and the official CBSE pattern.
 
-The total number of questions MUST be between 33 and 37, as per the latest CBSE board exam pattern for this subject. Do not generate fewer than 33 or more than 37 questions.
+Generate approximately ${targetQuestions} questions for a total of ${totalMarks} marks. The number of questions should be reasonable for the total marks - typically between 5 and 50 questions depending on the total marks.
 
 Generate a CBSE-style question paper for Class ${classLevel} ${subject} (${examType} Exam), following the latest CBSE syllabus and matching the real distribution of marks, question types, and chapter weightage as seen in actual CBSE board exams.
 
 The total marks for the paper MUST be exactly ${totalMarks}. The sum of all question marks must be exactly ${totalMarks} and must NOT exceed ${totalMarks} under any circumstances.
 
-Use only these chapters: ${chapters.join(", ")}. Distribute questions across these section types: ${sectionTypes.join(", ")}. For each question, provide: section, type, marks, and question text. Return ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JSON in any Markdown or code block. Each item should have fields: section, type, marks, question.`;
+Use only these chapters: ${chapters.join(", ")}. Distribute questions across these section types: ${sectionTypes.join(", ")}. 
+
+For each question, provide: section, type, marks, and question text. 
+For MCQ questions (type: "mcq"), also include an "options" field as an array with exactly 4 options (A, B, C, D) and a "correct_answer" field (A, B, C, or D).
+
+Example MCQ format:
+{
+  "section": "A",
+  "type": "mcq",
+  "marks": 1,
+  "question": "What is 2+2?",
+  "options": ["3", "4", "5", "6"],
+  "correct_answer": "B"
+}
+
+Return ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JSON in any Markdown or code block. Each item should have fields: section, type, marks, question, and for MCQs: options (array), correct_answer.`;
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
   const body = {
     contents: [{ parts: [{ text: prompt }] }]
@@ -239,8 +262,8 @@ Use only these chapters: ${chapters.join(", ")}. Distribute questions across the
   cleanText = cleanText.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
   try {
     const questions = JSON.parse(cleanText);
-    if (Array.isArray(questions) && (questions.length < 33 || questions.length > 37)) {
-      alert('AI did not generate the correct number of questions (33-37). Please try again.');
+    if (Array.isArray(questions) && questions.length === 0) {
+      alert('AI did not generate any questions. Please try again.');
     }
     return questions;
   } catch (e) {
@@ -248,8 +271,8 @@ Use only these chapters: ${chapters.join(", ")}. Distribute questions across the
     if (match) {
       try {
         const questions = JSON.parse(match[0]);
-        if (Array.isArray(questions) && (questions.length < 33 || questions.length > 37)) {
-          alert('AI did not generate the correct number of questions (33-37). Please try again.');
+        if (Array.isArray(questions) && questions.length === 0) {
+          alert('AI did not generate any questions. Please try again.');
         }
         return questions;
       } catch {}
@@ -314,6 +337,8 @@ const CBSEExamSimulator: React.FC = () => {
   const [questions, setQuestions] = useState<any[]>([]);
   const navigate = useNavigate();
   const [selectedStream, setSelectedStream] = useState<keyof typeof CLASS12_SUBJECTS>('Science');
+  const [useCustomMarks, setUseCustomMarks] = useState(false);
+  const [customMarks, setCustomMarks] = useState(80);
   // Update aiChapters state type for 3-level hierarchy
   const [aiChapters, setAiChapters] = useState<{
     unit: string;
@@ -326,10 +351,34 @@ const CBSEExamSimulator: React.FC = () => {
   const previewRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth() as any;
   const [activeTab, setActiveTab] = useState('Exam Simulator');
+  // Vision (handwriting from PDF) states
+  const [visionLoading, setVisionLoading] = useState(false);
+  const [visionText, setVisionText] = useState('');
+  const [visionError, setVisionError] = useState<string | null>(null);
+
+  const handleExtractHandwritingFromPdf = async (file: File) => {
+    try {
+      setVisionLoading(true);
+      setVisionError(null);
+      setVisionText('');
+      const images = await pdfFileToImageDataUrls(file, 1400, 'image/jpeg', 0.85);
+      const limited = images.slice(0, 6);
+      const openai = OpenAIService.getInstance();
+      const text = await openai.analyzeImagesWithVision(
+        limited,
+        'Extract all handwritten answers accurately. Preserve question numbering and line breaks. If any part is unreadable, mark as [illegible]. Return plain text.'
+      );
+      setVisionText(text);
+    } catch (e: any) {
+      setVisionError(e.message || 'Failed to extract handwriting');
+    } finally {
+      setVisionLoading(false);
+    }
+  };
   const [savedResults, setSavedResults] = useState<any[]>([]);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
-  
+
 
 
   useEffect(() => {
@@ -399,12 +448,23 @@ const CBSEExamSimulator: React.FC = () => {
       .finally(() => setChaptersLoading(false));
   }, [selectedSubject, selectedClass]);
 
+  // Reset custom marks when subject/class changes
+  useEffect(() => {
+    if (selectedSubject && selectedClass) {
+      const defaultMarks = SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
+      setCustomMarks(defaultMarks);
+      setUseCustomMarks(false);
+    }
+  }, [selectedSubject, selectedClass]);
+
   const renderProgress = () => (
     <div className="flex items-center justify-center mb-8">
       {STEPS.map((stepObj, idx) => (
         <div key={stepObj.label} className="flex items-center">
-          <div className={`flex flex-col items-center ${step > idx + 1 ? 'text-green-400' : step === idx + 1 ? 'text-blue-500' : 'text-gray-400'}`}>
-            <stepObj.icon className="w-7 h-7 mb-1" />
+          <div className={`flex flex-col items-center ${step > idx + 1 ? 'text-success-400' : step === idx + 1 ? 'text-primary-500' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step > idx + 1 ? 'bg-success-500/20 border-success-500' : step === idx + 1 ? 'bg-primary-500/20 border-primary-500' : 'bg-gray-700/20 border-gray-600'} border-2`}>
+              <stepObj.icon className="w-5 h-5" />
+            </div>
             <span className="text-xs font-semibold">{stepObj.label}</span>
           </div>
           {idx < STEPS.length - 1 && (
@@ -418,114 +478,124 @@ const CBSEExamSimulator: React.FC = () => {
   // Step 1: Select subject, class, exam type
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-2xl font-bold text-blue-500 mb-2">CBSE Exam Simulator</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <label className="block mb-1 font-semibold">Class</label>
-          <select
-            className="w-full p-2 rounded border bg-gray-900 text-white"
-            value={selectedClass}
-            onChange={e => {
-              setSelectedClass(e.target.value);
-              setSelectedSubject('');
-            }}
-          >
-            <option value="">Select Class</option>
-            {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        {selectedClass === '12' && (
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Exam Configuration</h2>
+        <p className="text-gray-300">Select your exam details to get started</p>
+      </div>
+      <div className="card-elevated">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block mb-1 font-semibold">Stream</label>
+            <label className="block mb-2 font-semibold text-white">Class</label>
             <select
-              className="w-full p-2 rounded border bg-gray-900 text-white"
-              value={selectedStream}
+              className="form-input w-full"
+              value={selectedClass}
               onChange={e => {
-                setSelectedStream(e.target.value as keyof typeof CLASS12_SUBJECTS);
+                setSelectedClass(e.target.value);
                 setSelectedSubject('');
               }}
             >
-              {Object.keys(CLASS12_SUBJECTS).map(stream => (
-                <option key={stream} value={stream}>{stream}</option>
-              ))}
+              <option value="">Select Class</option>
+              {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-        )}
-        <div>
-          <label className="block mb-1 font-semibold">Subject</label>
-          <select
-            className="w-full p-2 rounded border bg-gray-900 text-white"
-            value={selectedSubject}
-            onChange={e => setSelectedSubject(e.target.value)}
-            disabled={!selectedClass || (selectedClass === '12' && !selectedStream)}
-          >
-            <option value="">Select Subject</option>
-            {selectedClass === '10' && CLASS10_SUBJECTS.map((s: string) => <option key={s} value={s}>{s}</option>)}
-            {selectedClass === '12' && selectedStream && CLASS12_SUBJECTS[selectedStream] && CLASS12_SUBJECTS[selectedStream].map((s: string) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          {selectedClass === '12' && (
+            <div>
+              <label className="block mb-2 font-semibold text-white">Stream</label>
+              <select
+                className="form-input w-full"
+                value={selectedStream}
+                onChange={e => {
+                  setSelectedStream(e.target.value as keyof typeof CLASS12_SUBJECTS);
+                  setSelectedSubject('');
+                }}
+              >
+                {Object.keys(CLASS12_SUBJECTS).map(stream => (
+                  <option key={stream} value={stream}>{stream}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="block mb-2 font-semibold text-white">Subject</label>
+            <select
+              className="form-input w-full"
+              value={selectedSubject}
+              onChange={e => setSelectedSubject(e.target.value)}
+              disabled={!selectedClass || (selectedClass === '12' && !selectedStream)}
+            >
+              <option value="">Select Subject</option>
+              {selectedClass === '10' && CLASS10_SUBJECTS.map((s: string) => <option key={s} value={s}>{s}</option>)}
+              {selectedClass === '12' && selectedStream && CLASS12_SUBJECTS[selectedStream] && CLASS12_SUBJECTS[selectedStream].map((s: string) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2 font-semibold text-white">Exam Type</label>
+            <select
+              className="form-input w-full"
+              value={examType}
+              onChange={e => setExamType(e.target.value)}
+            >
+              <option value="">Select Type</option>
+              {EXAM_TYPES.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="block mb-1 font-semibold">Exam Type</label>
-          <select
-            className="w-full p-2 rounded border bg-gray-900 text-white"
-            value={examType}
-            onChange={e => setExamType(e.target.value)}
+        <div className="mt-6 flex justify-center">
+          <button
+            className="btn-primary px-8 py-3"
+            disabled={!selectedSubject || !selectedClass || !examType}
+            onClick={() => setStep(2)}
           >
-            <option value="">Select Type</option>
-            {EXAM_TYPES.map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
+            Next: Choose Chapters
+          </button>
         </div>
       </div>
-      <button
-        className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
-        disabled={!selectedSubject || !selectedClass || !examType}
-        onClick={() => setStep(2)}
-      >
-        Next: Choose Chapters
-      </button>
     </div>
   );
 
   // Step 2: Select chapters, difficulty, sections, number of questions
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-xl font-bold text-blue-400 mb-2">Select Chapters & Exam Settings</h2>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Chapter Selection & Settings</h2>
+        <p className="text-gray-300">Choose chapters and configure exam parameters</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block mb-1 font-semibold">Chapters (with weightage)</label>
+        <div className="card-elevated">
+          <h3 className="text-lg font-bold text-white mb-4">Chapters (with weightage)</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
             {aiChapters.length > 0 && (
-              <label className="flex items-center gap-2 bg-blue-950 rounded p-2 cursor-pointer mb-2 border border-blue-800">
+              <label className="flex items-center gap-2 bg-primary-500/10 rounded-lg p-3 cursor-pointer mb-2 border border-primary-500/30">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={e => handleSelectAllChapters(e.target.checked)}
+                  className="text-primary-500"
                 />
-                <span className="font-semibold text-blue-200">Select All Chapters</span>
+                <span className="font-semibold text-primary-300">Select All Chapters</span>
               </label>
             )}
             {aiChapters.length > 0 && (
-              <div className="text-xs text-blue-300 mb-2">
+              <div className="text-xs text-primary-300 mb-2 p-2 bg-primary-500/5 rounded">
                 <span>Note: Only group/unit weightage is official. Chapter weightage is not provided by CBSE.</span><br />
-                <span className="text-yellow-300">This simulator generates the theory paper only. Practical/Internal Assessment marks are not included.</span>
+                <span className="text-warning-300">This simulator generates the theory paper only. Practical/Internal Assessment marks are not included.</span>
               </div>
             )}
-            {chaptersLoading && <div className="text-blue-400">Loading chapters...</div>}
+            {chaptersLoading && <div className="text-primary-400 flex items-center gap-2"><div className="loading-spinner w-4 h-4"></div>Loading chapters...</div>}
             {chaptersError && <div className="text-red-400">{chaptersError}</div>}
             {!chaptersLoading && !chaptersError && aiChapters.length === 0 && (
               <div className="text-gray-400">Select a subject and class to load chapters.</div>
             )}
             {aiChapters.map(unit => (
-              <div key={unit.unit} className="mb-3 bg-gray-900 rounded-lg border border-blue-900 p-2">
-                <div className="flex items-center mb-1">
-                  <span className="font-bold text-blue-400 text-base mr-2">{unit.unit}</span>
-                  {/* Weightage removed */}
+              <div key={unit.unit} className="mb-3 bg-gray-800/50 rounded-lg border border-primary-500/20 p-3">
+                <div className="flex items-center mb-2">
+                  <span className="font-bold text-primary-400 text-base mr-2">{unit.unit}</span>
                 </div>
                 {/* Chapters directly under unit */}
                 {unit.chapters && unit.chapters.length > 0 && (
                   <div className="space-y-1 ml-4">
                     {unit.chapters.map(ch => (
-              <label key={ch.name} className="flex items-center gap-2 bg-gray-800 rounded p-2 cursor-pointer hover:bg-blue-900 transition">
+              <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
                 <input
                   type="checkbox"
                   checked={selectedChapters.includes(ch.name)}
@@ -533,6 +603,7 @@ const CBSEExamSimulator: React.FC = () => {
                     if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
                     else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
                   }}
+                  className="text-primary-500"
                 />
                 <span className="font-semibold text-white">{ch.name}</span>
                 <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
@@ -545,10 +616,10 @@ const CBSEExamSimulator: React.FC = () => {
                   <div className="ml-4">
                     {unit.subunits.map(su => (
                       <div key={su.subunit} className="mb-2">
-                        <div className="font-semibold text-blue-300 mb-1">{su.subunit}</div>
+                        <div className="font-semibold text-primary-300 mb-1">{su.subunit}</div>
                         <div className="space-y-1 ml-4">
                           {su.chapters.map(ch => (
-              <label key={ch.name} className="flex items-center gap-2 bg-gray-800 rounded p-2 cursor-pointer hover:bg-blue-900 transition">
+              <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
                 <input
                   type="checkbox"
                   checked={selectedChapters.includes(ch.name)}
@@ -556,6 +627,7 @@ const CBSEExamSimulator: React.FC = () => {
                     if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
                     else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
                   }}
+                  className="text-primary-500"
                 />
                 <span className="font-semibold text-white">{ch.name}</span>
                 <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
@@ -571,48 +643,102 @@ const CBSEExamSimulator: React.FC = () => {
           </div>
         </div>
         <div className="space-y-4">
-          <div>
-            <label className="block mb-1 font-semibold">Difficulty</label>
-            <select
-              className="w-full p-2 rounded border bg-gray-900 text-white"
-              value={difficulty}
-              onChange={e => setDifficulty(e.target.value)}
-            >
-              <option>Easy</option>
-              <option>Medium</option>
-              <option>Hard</option>
-            </select>
-          </div>
-          {/* Number of Questions input removed: AI will decide based on CBSE pattern and 80 marks */}
-          <div>
-            <label className="block mb-1 font-semibold">Section Types</label>
-            <div className="flex gap-4">
-              {SECTION_TYPES.map(s => (
-                <label key={s.value} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedSections.includes(s.value)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedSections([...selectedSections, s.value]);
-                      else setSelectedSections(selectedSections.filter(sec => sec !== s.value));
-                    }}
-                  />
-                  <span>{s.label}</span>
-                </label>
-              ))}
+          <div className="card-elevated">
+            <h3 className="text-lg font-bold text-white mb-4">Exam Settings</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2 font-semibold text-white">Difficulty</label>
+                <select
+                  className="form-input w-full"
+                  value={difficulty}
+                  onChange={e => setDifficulty(e.target.value)}
+                >
+                  <option>Easy</option>
+                  <option>Medium</option>
+                  <option>Hard</option>
+                </select>
+              </div>
+              <div>
+                <label className="block mb-2 font-semibold text-white">Section Types</label>
+                <div className="flex gap-4">
+                  {SECTION_TYPES.map(s => (
+                    <label key={s.value} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedSections.includes(s.value)}
+                        onChange={e => {
+                          if (e.target.checked) setSelectedSections([...selectedSections, s.value]);
+                          else setSelectedSections(selectedSections.filter(sec => sec !== s.value));
+                        }}
+                        className="text-primary-500"
+                      />
+                      <span className="text-white">{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block mb-2 font-semibold text-white">Total Marks</label>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-gray-800 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!useCustomMarks}
+                      onChange={() => setUseCustomMarks(false)}
+                      className="text-primary-500"
+                    />
+                    <span className={!useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-300"}>
+                      Use Default ({SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80} marks)
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 p-2 rounded hover:bg-gray-800 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={useCustomMarks}
+                      onChange={() => setUseCustomMarks(true)}
+                      className="text-primary-500"
+                    />
+                    <span className={useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-300"}>
+                      Custom Marks
+                    </span>
+                  </label>
+                  {useCustomMarks && (
+                    <div className="ml-6 p-3 bg-primary-500/10 rounded-lg border border-primary-500/30">
+                      <input
+                        type="number"
+                        min="1"
+                        max="200"
+                        value={customMarks}
+                        onChange={(e) => setCustomMarks(parseInt(e.target.value) || 80)}
+                        className="form-input w-full"
+                        placeholder="Enter custom marks"
+                      />
+                      <div className="text-xs text-primary-300 mt-1">
+                        Enter the total marks for your custom paper (1-200). The AI will generate fewer questions for lower marks and more questions for higher marks.
+                      </div>
+                      {selectedSubject && selectedClass && (
+                        <div className="text-xs text-warning-300 mt-2">
+                          Estimated questions: ~{Math.max(5, Math.min(50, Math.round(35 * (customMarks / (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)))))} 
+                          (vs {SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80} marks default)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div className="flex gap-4 mt-6">
+      <div className="flex gap-4 mt-6 justify-center">
         <button
-          className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded shadow transition"
+          className="btn-secondary px-6 py-3"
           onClick={() => setStep(1)}
         >
           Back
         </button>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
+          className="btn-primary px-6 py-3"
           disabled={selectedChapters.length === 0}
           onClick={() => setStep(3)}
         >
@@ -625,25 +751,49 @@ const CBSEExamSimulator: React.FC = () => {
   // Step 3: Generate and preview paper
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-xl font-bold text-blue-400 mb-2">Preview Question Paper</h2>
-      <div ref={previewRef} className="bg-gray-800 rounded-xl p-6 shadow-lg border border-blue-700">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Preview Question Paper</h2>
+        <p className="text-gray-300">Review and generate your CBSE-style exam paper</p>
+      </div>
+      <div ref={previewRef} className="card-elevated">
         <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-lg font-semibold text-white">{selectedSubject} - Class {selectedClass} ({examType} Exam)</div>
             <div className="text-sm text-gray-400">Chapters: {selectedChapters.join(', ')}</div>
-            <div className="text-sm text-gray-400">Difficulty: {difficulty} | Sections: {selectedSections.join(', ')} | Total Questions: {questions.length}</div>
+            <div className="text-sm text-gray-400">
+              Difficulty: {difficulty} | Sections: {selectedSections.join(', ')} | Total Questions: {questions.length} | 
+              Total Marks: {useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)}
+              {useCustomMarks && (
+                <span className="text-warning-400"> (Custom - ~{Math.max(5, Math.min(50, Math.round(35 * (customMarks / (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)))))} questions)</span>
+              )}
+            </div>
           </div>
         </div>
         {questions.length > 0 ? questions.map((q, i) => (
-          <div key={i} className="py-6 px-2 bg-gradient-to-r from-blue-950 via-gray-900 to-black rounded-xl mb-4 shadow-md animate-fade-in">
+          <div key={i} className="py-6 px-4 bg-gradient-to-r from-primary-500/5 via-gray-800/50 to-primary-500/5 rounded-xl mb-4 border border-primary-500/20 animate-fade-in">
             <div className="flex items-center gap-4 mb-2">
-              <span className="bg-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
-              <span className="bg-gray-700 text-blue-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
-              <span className="ml-auto text-yellow-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
+              <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
+              <span className="bg-gray-700 text-primary-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
+              <span className="ml-auto text-warning-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
             </div>
-            <div className="text-white text-lg font-medium pl-2 border-l-4 border-blue-600 question-math">
+            <div className="text-white text-lg font-medium pl-2 border-l-4 border-primary-600 question-math">
               {i + 1}. {parseMathInline(q.question)}
             </div>
+            {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
+              <div className="mt-4 ml-6 space-y-2">
+                {q.options.map((option: string, optIndex: number) => (
+                  <div key={optIndex} className="flex items-center gap-3 text-gray-300">
+                    <span className="font-bold text-primary-400 w-6">({String.fromCharCode(65 + optIndex)})</span>
+                    <span>{parseMathInline(option)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {q.type === 'mcq' && (!q.options || !Array.isArray(q.options)) && (
+              <div className="mt-4 ml-6 text-warning-400 text-sm">
+                ⚠️ MCQ options not properly generated. Please regenerate the paper.
+              </div>
+            )}
           </div>
         )) : (
           <div className="text-center text-gray-400 py-8">
@@ -651,165 +801,220 @@ const CBSEExamSimulator: React.FC = () => {
           </div>
         )}
       </div>
-      <button
-        className="mt-4 md:mt-0 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition"
-        onClick={handleExportPDF}
-      >
-        Export as PDF
-      </button>
-      <button
-        className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded shadow transition"
-        onClick={() => setStep(2)}
-      >
-        Back
-      </button>
-      <button
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition"
-        onClick={async () => {
-          setGenerating(true);
-          setQuestions([]);
-          try {
-            const aiQuestions = await generateQuestionsWithGemini({
-              subject: selectedSubject,
-              classLevel: selectedClass,
-              chapters: selectedChapters,
-              examType,
-              difficulty,
-              sectionTypes: selectedSections,
+      <div className="flex flex-wrap gap-4 justify-center">
+        <button
+          className="btn-secondary px-4 py-2"
+          onClick={handleExportPDF}
+        >
+          Export as PDF
+        </button>
+        <button
+          className="btn-secondary px-6 py-2"
+          onClick={() => setStep(2)}
+        >
+          Back
+        </button>
+        <button
+          className="btn-primary px-6 py-2"
+          onClick={async () => {
+            setGenerating(true);
+            setQuestions([]);
+            try {
+              const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
+              const aiQuestions = await generateQuestionsWithGemini({
+                subject: selectedSubject,
+                classLevel: selectedClass,
+                chapters: selectedChapters,
+                examType,
+                difficulty,
+                sectionTypes: selectedSections,
+                totalMarks,
+              });
+              setQuestions(aiQuestions);
+            } catch (err) {
+              alert('AI generation failed: ' + err);
+            }
+            setGenerating(false);
+          }}
+          disabled={generating}
+        >
+          {generating ? (
+            <div className="flex items-center gap-2">
+              <div className="loading-spinner w-4 h-4"></div>
+              Generating...
+            </div>
+          ) : (
+            'Generate with AI'
+          )}
+        </button>
+        <button
+          className="btn-accent px-6 py-2"
+          onClick={() => {
+            const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
+            navigate('/cbse-exam-session', { 
+              state: { 
+                questions,
+                selectedSubject,
+                totalMarks,
+                useCustomMarks
+              } 
             });
-            const totalMarks = SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
-            setQuestions(adjustToTotalMarks(aiQuestions, totalMarks));
-          } catch (err) {
-            alert('AI generation failed: ' + err);
-          }
-          setGenerating(false);
-        }}
-        disabled={generating}
-      >
-        {generating ? 'Generating...' : 'Generate with AI'}
-      </button>
-      <button
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition"
-        onClick={() => navigate('/cbse-exam-session', { state: { questions } })}
-        disabled={questions.length === 0}
-      >
-        Start Exam
-      </button>
+          }}
+          disabled={questions.length === 0}
+        >
+          Start Exam
+        </button>
+      </div>
     </div>
   );
 
-  function adjustToTotalMarks(questions: any[], totalMarks: number) {
-              let sum = 0;
-              const result = [];
-              for (const q of questions) {
-      if (sum + q.marks < totalMarks) {
-                  result.push(q);
-                  sum += q.marks;
-      } else if (sum + q.marks === totalMarks) {
-        result.push(q);
-        sum += q.marks;
-        break;
-                } else {
-        // Optionally, add a partial question to reach exactly totalMarks
-        const remaining = totalMarks - sum;
-                    if (remaining > 0) {
-                      result.push({ ...q, marks: remaining });
-          sum += remaining;
-                  }
-                  break;
-                }
-              }
-    if (sum !== totalMarks) {
-      alert(`AI did not generate questions summing to exactly ${totalMarks} marks. Please try again.`);
-    }
-              return result;
-            }
-
-
-
-
-
-
-
-
-
-
-
-
   return (
-    <div className="min-h-screen bg-gray-900 p-6 flex flex-col items-center justify-center relative">
-      <div className="w-full max-w-4xl mx-auto bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 animate-fade-in">
-        {/* Official CBSE Syllabus Link */}
-        <div className="mb-6 flex flex-col items-center">
-          <a
-            href="https://cbseacademic.nic.in/curriculum_2026.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-blue-700 hover:bg-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow transition mb-2"
-          >
-            📄 View the Latest Official CBSE Syllabus (2025-26)
-          </a>
-          <span className="text-xs text-blue-300">Always refer to the official CBSE website for the most accurate and up-to-date syllabus.</span>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
+            <BookOpen className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white">
+            CBSE <span className="gradient-text">Exam Simulator</span>
+          </h1>
         </div>
+        <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          Generate authentic CBSE-style question papers with AI-powered questions that follow the latest syllabus and marking schemes.
+        </p>
+      </div>
+
+
+
+      {/* Official CBSE Syllabus Link */}
+      <div className="text-center mb-8">
+        <a
+          href="https://cbseacademic.nic.in/curriculum_2026.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
+        >
+          📄 View the Latest Official CBSE Syllabus (2025-26)
+        </a>
+        <p className="text-xs text-primary-300 mt-2">Always refer to the official CBSE website for the most accurate and up-to-date syllabus.</p>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto">
         {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-blue-800">
+        <div className="flex gap-4 mb-8 border-b border-gray-700">
           {TABS.map(tab => (
             <button
               key={tab}
-              className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-primary-500 text-primary-400' : 'text-gray-400 hover:text-white'}`}
               onClick={() => setActiveTab(tab)}
             >
               {tab}
             </button>
           ))}
         </div>
-        {/* Tab Content */}
-        {activeTab === 'Exam Simulator' && (
-          <>
-            {renderProgress()}
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
-          </>
-        )}
-        {activeTab === 'Saved Results' && (
-          <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4">Saved Results</h2>
-            {resultsLoading ? (
-              <div className="text-blue-400">Loading...</div>
-            ) : resultsError ? (
-              <div className="text-red-400">{resultsError}</div>
-            ) : savedResults.length === 0 ? (
-              <div className="text-gray-400">No saved results found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-left text-gray-300 mb-4">
-                  <thead className="bg-blue-900 text-blue-200">
-                    <tr>
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Subject</th>
-                      <th className="px-3 py-2">Class</th>
-                      <th className="px-3 py-2">Score</th>
-                      <th className="px-3 py-2">Sheet</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savedResults.map((r, i) => (
-                      <tr key={r.id || i} className="border-b border-blue-800">
-                        <td className="px-3 py-2">{r.exam_date ? new Date(r.exam_date).toLocaleString() : ''}</td>
-                        <td className="px-3 py-2">{r.subject || '-'}</td>
-                        <td className="px-3 py-2">{r.class_level || '-'}</td>
-                        <td className="px-3 py-2">{r.total_score} / {r.max_score}</td>
-                        <td className="px-3 py-2">{r.answer_sheet_url && <a href={r.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-400">View</a>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+      {/* Tab Content */}
+      {activeTab === 'Exam Simulator' && (
+        <div className="card-elevated">
+          {renderProgress()}
+          {step === 1 && renderStep1()}
+          {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
+        </div>
+      )}
+
+      {activeTab === 'Saved Results' && (
+        <div className="card-elevated animate-fade-in">
+          <h2 className="text-2xl font-bold text-white mb-6">Saved Results</h2>
+          {/* Handwriting extraction with GPT-4 Vision */}
+          <div className="mb-8 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
+            <h3 className="text-lg font-semibold text-white mb-3">Extract Handwritten Answers from PDF</h3>
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleExtractHandwritingFromPdf(f);
+                }}
+                className="form-input"
+              />
+              {visionLoading && (
+                <div className="flex items-center gap-2 text-gray-300">
+                  <div className="loading-spinner w-4 h-4" /> Processing PDF with GPT‑4 Vision…
+                </div>
+              )}
+            </div>
+            {visionError && (
+              <div className="mt-3 text-red-400 text-sm">{visionError}</div>
+            )}
+            {visionText && (
+              <div className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-gray-200 bg-gray-900/60 p-3 rounded-lg text-sm">
+                {visionText}
               </div>
             )}
+            {!visionText && !visionLoading && (
+              <p className="mt-2 text-xs text-gray-400">Tip: Large PDFs can be slow and costly. We process up to 6 pages by default.</p>
+            )}
           </div>
-        )}
+          {resultsLoading ? (
+            <div className="text-center py-8">
+              <div className="loading-spinner w-8 h-8 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading results...</p>
+            </div>
+          ) : resultsError ? (
+            <div className="text-red-400 text-center py-8">{resultsError}</div>
+          ) : savedResults.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-400">No saved results found.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-left text-gray-300">
+                <thead className="bg-primary-500/20 text-primary-200">
+                  <tr>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Subject</th>
+                    <th className="px-4 py-3">Class</th>
+                    <th className="px-4 py-3">Score</th>
+                    <th className="px-4 py-3">Sheet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savedResults.map((r, i) => (
+                    <tr key={r.id || i} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
+                      <td className="px-4 py-3">{r.exam_date ? new Date(r.exam_date).toLocaleString() : ''}</td>
+                      <td className="px-4 py-3">{r.subject || '-'}</td>
+                      <td className="px-4 py-3">{r.class_level || '-'}</td>
+                      <td className="px-4 py-3">{r.total_score} / {r.max_score}</td>
+                      <td className="px-4 py-3">
+                        {r.answer_sheet_url && (
+                          <a 
+                            href={r.answer_sheet_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-primary-400 hover:text-primary-300 underline transition-colors"
+                          >
+                            View
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
       </div>
+
+      
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Brain, FileText, Zap, Target } from 'lucide-react';
+
 import { FlashcardGenerator } from '../components/FlashcardGenerator';
 import { PracticeTestEngine } from '../components/PracticeTestEngine';
 import { QuestionGenerator } from '../components/QuestionGenerator';
@@ -12,42 +13,49 @@ export function StudyTools() {
       id: 'flashcards' as const,
       label: 'AI Flashcards',
       icon: Brain,
-      description: 'Smart spaced repetition learning'
+      description: 'Smart spaced repetition learning',
+      color: 'from-primary-500 to-primary-600'
     },
     {
       id: 'tests' as const,
       label: 'Practice Tests',
       icon: FileText,
-      description: 'AI-generated practice exams'
+      description: 'AI-generated practice exams',
+      color: 'from-success-500 to-success-600'
     },
     {
       id: 'ai-questions' as const,
       label: 'AI Question Generator',
       icon: Target,
-      description: 'AI-generated questions'
+      description: 'AI-generated questions',
+      color: 'from-accent-500 to-accent-600'
     }
   ];
 
+
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-4 rounded-2xl shadow-lg glow-purple">
-            <Zap className="h-8 w-8 text-white" />
+      <div className="text-center mb-12">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
+            <Zap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text">
-            AI Study Tools
+          <h1 className="text-4xl md:text-5xl font-bold text-white">
+            AI <span className="gradient-text">Study Tools</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-          Supercharge your learning with AI-powered flashcards and practice tests
+        <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          Supercharge your learning with AI-powered flashcards, practice tests, and question generators designed to maximize your academic success.
         </p>
       </div>
 
+
+
       {/* Tab Navigation */}
-      <div className="flex justify-center">
-        <div className="glass rounded-2xl p-2 border border-gray-700/50">
+      <div className="flex justify-center mb-8">
+        <div className="card-elevated p-2">
           <div className="flex gap-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -55,16 +63,16 @@ export function StudyTools() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 ${
                     activeTab === tab.id
-                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 font-semibold glow-blue'
-                      : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                      ? `bg-gradient-to-r ${tab.color} text-white font-semibold shadow-lg`
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="w-5 h-5" />
                   <div className="text-left">
-                    <div>{tab.label}</div>
-                    <div className="text-xs opacity-70">{tab.description}</div>
+                    <div className="font-medium">{tab.label}</div>
+                    <div className="text-xs opacity-80">{tab.description}</div>
                   </div>
                 </button>
               );
@@ -75,9 +83,11 @@ export function StudyTools() {
 
       {/* Tab Content */}
       <div className="max-w-6xl mx-auto">
-        {activeTab === 'flashcards' && <FlashcardGenerator />}
-        {activeTab === 'tests' && <PracticeTestEngine />}
-        {activeTab === 'ai-questions' && <QuestionGenerator />}
+        <div className="card-elevated">
+          {activeTab === 'flashcards' && <FlashcardGenerator />}
+          {activeTab === 'tests' && <PracticeTestEngine />}
+          {activeTab === 'ai-questions' && <QuestionGenerator />}
+        </div>
       </div>
     </div>
   );

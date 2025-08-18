@@ -1,23 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, CheckCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import Tesseract from 'tesseract.js';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 import { useToast } from '../hooks/useToast';
 import { marked } from 'marked';
 import { useNotifications } from '../hooks/useNotifications';
 import { SUBJECT_TOTAL_MARKS } from './CBSEExamSimulator';
+import { InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import { pdfFileToImageDataUrls } from '../lib/pdfToImages';
+import OpenAIService from '../lib/openaiService';
 
 const EXAM_DURATION = 3 * 60 * 60; // 3 hours in seconds
+
+// Helper to render mixed text and math (delimited by $...$)
+function parseMathInline(text: string) {
+  const parts = text.split(/(\$[^$]+\$)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('$') && part.endsWith('$')) {
+      return <InlineMath key={idx} math={part.slice(1, -1)} errorColor="#cc0000" />;
+    }
+    return <span key={idx}>{part}</span>;
+  });
+}
 
 const CBSEExamSession: React.FC = () => {
   const location = useLocation();
   const questions = (location.state && location.state.questions) || [];
   // Get the subject of the attempted paper
   const selectedSubject = (location.state && location.state.selectedSubject) || questions[0]?.subject || '';
+  const totalMarks = (location.state && location.state.totalMarks) || 80;
+  const useCustomMarks = (location.state && location.state.useCustomMarks) || false;
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
@@ -41,7 +55,7 @@ const CBSEExamSession: React.FC = () => {
   // Helper to parse AI feedback JSON
   let parsedFeedback: any[] = [];
   let totalScore = 0;
-  const maxScore = questions.reduce((sum, q) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
+  const maxScore = totalMarks || questions.reduce((sum, q) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
   if (aiFeedback) {
     let clean = aiFeedback.trim();
     clean = clean.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
@@ -162,53 +176,24 @@ const CBSEExamSession: React.FC = () => {
     setOcrProgress(null);
     setExtractedText(null);
     try {
-      if (file.type.startsWith('image/')) {
-        // Image OCR
-        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
-          logger: m => {
-            if (m.status === 'recognizing text') setOcrProgress(Math.round(m.progress * 100));
-          }
+      const openai = OpenAIService.getInstance();
+      const defaultPrompt =
+        'Extract all handwritten answers as clean, plain text in reading order. Preserve question numbers if visible (e.g., Q1, 1., (a)). Remove headers/footers and ignore non-answer artifacts.';
+
+      if (file.type === 'application/pdf') {
+        const allImages = await pdfFileToImageDataUrls(file, 1800, 'image/jpeg', 0.85);
+        const images = allImages.slice(0, 6);
+        const visionText = await openai.analyzeImagesWithVision(images, defaultPrompt);
+        setExtractedText((visionText || '').trim());
+      } else if (file.type.startsWith('image/')) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
         });
-        setExtractedText(text.trim());
-      } else if (file.type === 'application/pdf') {
-        // PDF: try text extraction, fallback to OCR
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const pageText = content.items.map((item: any) => item.str).join(' ');
-          text += pageText + '\n';
-        }
-        if (text.replace(/\s/g, '').length < 30) {
-          // Fallback to OCR for image-based PDFs
-          let ocrText = '';
-          for (let i = 1; i <= pdf.numPages; i++) {
-            setOcrProgress(Math.round((i - 1) / pdf.numPages * 100));
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            // @ts-ignore
-            await page.render({ canvasContext: context, viewport }).promise;
-            const dataUrl = canvas.toDataURL('image/png');
-            const { data: { text: ocrPageText } } = await Tesseract.recognize(dataUrl, 'eng', {
-              logger: m => {
-                if (m.status === 'recognizing text') {
-                  setOcrProgress(Math.round(((i - 1) + m.progress) / pdf.numPages * 100));
-                }
-              }
-            });
-            ocrText += ocrPageText + '\n';
-          }
-          setOcrProgress(100);
-          setExtractedText(ocrText.trim());
-        } else {
-          setExtractedText(text.trim());
-        }
+        const visionText = await openai.analyzeImagesWithVision([dataUrl], defaultPrompt);
+        setExtractedText((visionText || '').trim());
       }
     } catch (err: any) {
       setExtractedText('Failed to extract text. Please try another file.');
@@ -614,6 +599,14 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
       <div className="w-full max-w-2xl bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 animate-fade-in relative">
+        {/* Exam Header */}
+        <div className="mb-6 text-center">
+          <h2 className="text-xl font-bold text-blue-400 mb-2">CBSE Exam Session</h2>
+          <div className="text-sm text-gray-400">
+            Subject: {selectedSubject} | Total Marks: {maxScore}
+            {useCustomMarks && <span className="text-yellow-400"> (Custom)</span>}
+          </div>
+        </div>
         {/* Timer */}
         <div className="absolute top-6 right-8 flex items-center gap-2 text-yellow-300 font-mono text-lg">
           <Clock className="w-5 h-5" /> {formatTime(timeLeft)}
@@ -629,7 +622,22 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
             <span className="bg-gray-700 text-blue-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
             <span className="ml-auto text-yellow-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
           </div>
-          <div className="text-white text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{q.question}</div>
+          <div className="text-white text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{parseMathInline(q.question)}</div>
+          {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
+            <div className="mt-4 space-y-2">
+              {q.options.map((option: string, optIndex: number) => (
+                <div key={optIndex} className="flex items-center gap-3 text-gray-300">
+                  <span className="font-bold text-blue-400 w-6">({String.fromCharCode(65 + optIndex)})</span>
+                  <span>{parseMathInline(option)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {q.type === 'mcq' && (!q.options || !Array.isArray(q.options)) && (
+            <div className="mt-4 text-yellow-400 text-sm">
+              ⚠️ MCQ options not properly generated. Please regenerate the paper.
+            </div>
+          )}
           {/* Answer Input Removed: Only use uploaded answer sheets */}
         </div>
         {/* Navigation Buttons Restored */}

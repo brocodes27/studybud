@@ -18,6 +18,7 @@ import Landing from './pages/Landing';
 import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
 import { useOfflineStorage } from './hooks/useOfflineStorage';
+import { useToast } from './hooks/useToast';
 import { LiveMeetingNotes } from './components/LiveMeetingNotes';
 import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
@@ -37,11 +38,13 @@ import VAPITestComponent from './components/VAPITestComponent';
 import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
+import { Sparkles, Crown, X, Zap } from 'lucide-react';
 
 function AppContent() {
   const { user, role, loading, session, trialStart, trialActive, isPremium } = useAuth() as any;
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
+  const { toasts, removeToast } = useToast();
 
   // Floating Live Notes modal state
   const [showLiveNotes, setShowLiveNotes] = useState(false);
@@ -102,9 +105,17 @@ function AppContent() {
     return (
       <div className="min-h-screen animated-gradient flex items-center justify-center">
         <div className="relative">
-          <div className="w-32 h-32 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-32 h-32 border-4 border-purple-500/20 border-b-purple-500 rounded-full animate-spin animation-delay-150"></div>
-          <div className="absolute inset-4 w-24 h-24 border-4 border-cyan-500/20 border-r-cyan-500 rounded-full animate-spin animation-delay-300"></div>
+          <div className="w-16 h-16 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-accent-500/20 border-b-accent-500 rounded-full animate-spin animation-delay-150"></div>
+          <div className="absolute inset-4 w-12 h-12 border-4 border-success-500/20 border-r-success-500 rounded-full animate-spin animation-delay-300"></div>
+          <div className="absolute inset-8 w-8 h-8 border-4 border-warning-500/20 border-l-warning-500 rounded-full animate-spin animation-delay-500"></div>
+        </div>
+        <div className="absolute bottom-8 text-center">
+          <div className="flex items-center justify-center space-x-2 text-white/80">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+            <span className="text-lg font-semibold">ElevenFolks</span>
+          </div>
+          <p className="text-white/60 text-sm mt-2">Loading your study experience...</p>
         </div>
       </div>
     );
@@ -118,29 +129,31 @@ function AppContent() {
   // Block access if trial expired and not premium
   if (trialExpired && isPremium === false) {
     return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
+      <div className="min-h-screen animated-gradient flex flex-col items-center justify-center p-4">
         {/* Subscribe Banner */}
         <div className="w-full flex justify-center sticky top-0 z-50 mb-8">
           <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-2">
             <button
               onClick={async (e) => { e.preventDefault(); await initiatePayment(); }}
-              className="flex items-center gap-3 px-6 py-3 rounded-full font-bold text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 shadow-xl hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 text-lg border-2 border-yellow-300/60 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ textDecoration: 'none', boxShadow: '0 4px 24px 0 rgba(255, 193, 7, 0.15)' }}
+              className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-warning-400 via-warning-500 to-warning-600 shadow-2xl hover:from-warning-500 hover:to-warning-700 transition-all duration-300 text-lg border-2 border-warning-300/60 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-warning-400/30 disabled:opacity-60 disabled:cursor-not-allowed glow-yellow"
+              style={{ textDecoration: 'none' }}
               disabled={isLoadingPayment}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7 text-white drop-shadow">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a1.5 1.5 0 012.68 0l2.09 4.23a1.5 1.5 0 001.13.82l4.66.68a1.5 1.5 0 01.83 2.56l-3.37 3.29a1.5 1.5 0 00-.43 1.33l.8 4.65a1.5 1.5 0 01-2.18 1.58l-4.18-2.2a1.5 1.5 0 00-1.4 0l-4.18 2.2a1.5 1.5 0 01-2.18-1.58l.8-4.65a1.5 1.5 0 00-.43-1.33l-3.37-3.29a1.5 1.5 0 01.83-2.56l4.66-.68a1.5 1.5 0 001.13-.82l2.09-4.23z" />
-              </svg>
+              <Crown className="w-6 h-6 text-white drop-shadow" />
               <span>{isLoadingPayment ? 'Redirecting to Payment...' : 'Subscribe to Continue'}</span>
+              <Zap className="w-5 h-5 text-white drop-shadow" />
             </button>
           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-lg w-full text-center">
-          <h2 className="text-3xl font-bold mb-4 text-gray-900">Your Free Trial Has Ended</h2>
-          <p className="text-gray-700 mb-6">Your 7-day free access to all features has expired. Please subscribe to continue using the app and unlock premium features.</p>
+        <div className="card-elevated max-w-lg w-full text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Crown className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 text-white">Your Free Trial Has Ended</h2>
+          <p className="text-gray-300 mb-8 text-lg leading-relaxed">Your 7-day free access to all features has expired. Subscribe now to continue your learning journey with premium features.</p>
           <button
             onClick={async (e) => { e.preventDefault(); await initiatePayment(); }}
-            className="w-full bg-gradient-to-r from-yellow-500 to-yellow-700 hover:from-yellow-600 hover:to-yellow-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full btn-primary text-lg py-4 disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={isLoadingPayment}
           >
             {isLoadingPayment ? 'Redirecting to Payment...' : 'Subscribe Now'}
@@ -156,39 +169,38 @@ function AppContent() {
       <div className="relative z-10">
         {/* Offline Indicator */}
         {!isOnline && (
-          <div className="bg-yellow-600 text-white text-center py-2 text-sm">
+          <div className="bg-warning-600 text-white text-center py-3 text-sm font-medium shadow-lg">
             📱 You're offline. Some features may be limited.
           </div>
         )}
+        
         {/* Improved Subscribe Button for Free Users */}
         {isPremium === false && showSubscribeBanner && (
           <div className="w-full flex justify-center sticky top-0 z-50">
-            <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-2">
+            <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-4">
               <button
                 onClick={handleSubscribeClick}
-                className="flex items-center gap-3 px-6 py-3 rounded-full font-bold text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 shadow-xl hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 text-lg border-2 border-yellow-300/60 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ textDecoration: 'none', boxShadow: '0 4px 24px 0 rgba(255, 193, 7, 0.15)' }}
+                className="flex items-center gap-3 px-6 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-warning-400 via-warning-500 to-warning-600 shadow-xl hover:from-warning-500 hover:to-warning-700 transition-all duration-300 text-base border-2 border-warning-300/60 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-warning-400/30 disabled:opacity-60 disabled:cursor-not-allowed glow-yellow"
+                style={{ textDecoration: 'none' }}
                 disabled={isLoadingPayment}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7 text-white drop-shadow">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a1.5 1.5 0 012.68 0l2.09 4.23a1.5 1.5 0 001.13.82l4.66.68a1.5 1.5 0 01.83 2.56l-3.37 3.29a1.5 1.5 0 00-.43 1.33l.8 4.65a1.5 1.5 0 01-2.18 1.58l-4.18-2.2a1.5 1.5 0 00-1.4 0l-4.18 2.2a1.5 1.5 0 01-2.18-1.58l.8-4.65a1.5 1.5 0 00-.43-1.33l-3.37-3.29a1.5 1.5 0 01.83-2.56l4.66-.68a1.5 1.5 0 001.13-.82l2.09-4.23z" />
-                </svg>
+                <Crown className="w-5 h-5 text-white drop-shadow" />
                 <span>{isLoadingPayment ? 'Redirecting to Payment...' : 'Unlock Premium Features'}</span>
+                <Zap className="w-4 h-4 text-white drop-shadow" />
               </button>
               <button
                 onClick={() => setShowSubscribeBanner(false)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-yellow-200/60 transition-colors text-yellow-900 focus:outline-none"
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-warning-200/20 transition-colors text-warning-100 focus:outline-none focus:ring-2 focus:ring-warning-400/50"
                 aria-label="Close subscribe banner"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
+        
         {role === 'teacher' ? <TeacherNavbar /> : <Navbar />}
-        <main className="w-full px-6 py-8 md:pl-72">
+        <main className="w-full px-6 py-8 page-with-sidebar">
           <Routes>
             <Route path="/calendar" element={<CalendarSync />} />
             <Route path="/" element={<Dashboard />} />
@@ -207,16 +219,15 @@ function AppContent() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/pricing" element={<FeatureComparison />} />
-                            <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
-                <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
-                <Route path="/vapi-test" element={<VAPITestComponent />} />
-                <Route path="/vapi-setup" element={<VAPISetupTest />} />
-                <Route path="/voice-selector" element={<VoiceSelector />} />
-                <Route path="/elliot-test" element={<ElliotVoiceTest />} />
+            <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
+            <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
+            <Route path="/vapi-test" element={<VAPITestComponent />} />
+            <Route path="/vapi-setup" element={<VAPISetupTest />} />
+            <Route path="/voice-selector" element={<VoiceSelector />} />
+            <Route path="/elliot-test" element={<ElliotVoiceTest />} />
             <Route path="/teacher" element={<TeacherPortal />}>
               <Route index element={<TeacherPanel />} />
               <Route path="class/:id" element={<TeacherClassDashboard />} />
-              {/* Future teacher-only routes: <Route path="class/:id" element={<TeacherClassDashboard />} /> */}
             </Route>
             <Route path="/my-classes" element={<MyClasses />} />
             <Route path="/class/:id" element={<ClassPage />} />
@@ -226,7 +237,7 @@ function AppContent() {
       </div>
       
       {/* Global Components */}
-      <Toaster />
+      <Toaster toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

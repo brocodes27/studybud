@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Users,
@@ -25,6 +25,21 @@ const TeacherNavbar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  // Sync collapsed state to document for global layout adjustments
+  useEffect(() => {
+    try {
+      const width = isCollapsed ? '5rem' : '16rem'; // w-20 vs w-64
+      document.documentElement.style.setProperty('--sidebar-width', width);
+      document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    } catch {}
+    return () => {
+      try {
+        document.documentElement.style.setProperty('--sidebar-width', '18rem'); // reset to app default
+        document.body.classList.remove('sidebar-collapsed');
+      } catch {}
+    };
+  }, [isCollapsed]);
 
   const handleSignOut = async () => {
     await signOut();

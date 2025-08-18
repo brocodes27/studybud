@@ -33,7 +33,9 @@ export function CreatePlan() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { session } = useAuth();
+  const { session } = useAuth() as any;
+
+
 
   const handleFormSubmit = async (data: FormData) => {
     setLoading(true);
@@ -110,31 +112,34 @@ export function CreatePlan() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-4 rounded-2xl shadow-lg">
-            <Brain className="h-8 w-8 text-white" />
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
+            <Brain className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Create Study Plan
+          <h1 className="text-4xl md:text-5xl font-bold text-white">
+            Create <span className="gradient-text">Study Plan</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Generate a personalized AI-powered study schedule with practice questions
+        <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          Generate a personalized AI-powered study schedule with practice questions tailored to your learning style and exam dates.
         </p>
-        
       </div>
+
+
 
       {/* Error Display */}
       {error && (
         <div className="max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-red-800">Error</h3>
-              <p className="text-red-700">{error}</p>
+          <div className="card-elevated bg-red-500/10 border-red-500/20">
+            <div className="flex items-center gap-3 p-4">
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-red-300">Error</h3>
+                <p className="text-red-200">{error}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -143,10 +148,11 @@ export function CreatePlan() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto">
         {!studyPlan ? (
-          <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
+          <div className="card-elevated">
+            <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
+          </div>
         ) : (
           <div className="space-y-6">
-            {/* TODO: Add save functionality */}
             <StudyPlanDisplay 
               plan={studyPlan} 
               formData={formData!} 
@@ -155,6 +161,7 @@ export function CreatePlan() {
           </div>
         )}
       </div>
+
     </div>
   );
 }
