@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, MessageCircle, Sparkles, Crown, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Trophy, MessageCircle, Sparkles, Crown, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { format, differenceInDays } from 'date-fns';
+import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { Button } from '../components/Button';
 
 interface StudyPlan {
@@ -52,7 +52,11 @@ export function Dashboard() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
 
-  // CBSE Exam Progress State (removed unused state)
+  // CBSE Exam Progress State
+  const [examAttempts, setExamAttempts] = useState<any[]>([]);
+  const [examLoading, setExamLoading] = useState(true);
+  const [examError, setExamError] = useState<string | null>(null);
+  const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
 
   // Calculate trial days left
   let trialDaysLeft = null;
@@ -68,6 +72,27 @@ export function Dashboard() {
       fetchDashboardData();
       fetchUsageThisMonth();
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchAttempts = async () => {
+      setExamLoading(true);
+      setExamError(null);
+      try {
+        const { data, error } = await supabase
+          .from('cbse_exam_attempts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('exam_date', { ascending: true });
+        if (error) throw error;
+        setExamAttempts(data || []);
+      } catch (err: any) {
+        setExamError(err.message || 'Failed to fetch exam attempts');
+      }
+      setExamLoading(false);
+    };
+    fetchAttempts();
   }, [user]);
 
   const fetchUsageThisMonth = async () => {
@@ -217,10 +242,10 @@ export function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+        <h1 className="text-4xl font-bold text-white mb-4">
           Welcome back, <span className="gradient-text-primary">{displayName}!</span>
         </h1>
-        <p className="text-gray-400 text-base sm:text-lg">Ready to continue your learning journey?</p>
+        <p className="text-gray-400 text-lg">Ready to continue your learning journey?</p>
       </div>
 
       {/* Trial Days Left Banner */}
@@ -278,7 +303,7 @@ export function Dashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card-elevated">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center glow-blue">
@@ -332,15 +357,15 @@ export function Dashboard() {
         {/* Today's Tasks */}
         <div className="lg:col-span-2">
           <div className="card-elevated">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
                 Today's Study Tasks
               </h3>
               {todaysTasks.length > 0 && (
-                <span className="bg-gradient-to-r from-primary-500/20 to-accent-500/20 text-primary-300 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border border-primary-500/30">
+                <span className="bg-gradient-to-r from-primary-500/20 to-accent-500/20 text-primary-300 px-4 py-2 rounded-full text-sm font-medium border border-primary-500/30">
                   {todaysTasks.length} tasks
                 </span>
               )}
@@ -360,27 +385,26 @@ export function Dashboard() {
               <div className="space-y-4">
                 {todaysTasks.map((task, index) => (
                   <div key={index} className="card-hover-subtle bg-gray-800/30 border border-gray-700/50 rounded-xl p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="flex-grow min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-grow">
                         <div className="flex items-center gap-3 mb-3">
-                          <h4 className="font-semibold text-white text-base sm:text-lg truncate">{task.topic}</h4>
+                          <h4 className="font-semibold text-white text-lg">{task.topic}</h4>
                           {task.completed && (
                             <div className="w-6 h-6 bg-gradient-to-r from-success-500 to-success-600 rounded-full flex items-center justify-center">
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                           )}
                         </div>
-                        <p className="text-gray-300 mb-3 truncate">{task.subject}</p>
+                        <p className="text-gray-300 mb-3">{task.subject}</p>
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Clock className="w-4 h-4" />
                           Day {task.day} of study plan
                         </div>
                       </div>
-                      <Link to={`/study/${task.planId}`} className="sm:self-start">
+                      <Link to={`/study/${task.planId}`}>
                         <Button
                           variant={task.completed ? "success" : "primary"}
                           size="md"
-                          className="w-full sm:w-auto"
                           icon={task.completed ? <CheckCircle className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
                         >
                           {task.completed ? 'Completed' : 'Start Study'}

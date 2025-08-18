@@ -55,11 +55,7 @@ const CBSEExamSession: React.FC = () => {
   // Helper to parse AI feedback JSON
   let parsedFeedback: any[] = [];
   let totalScore = 0;
-  const maxScore =
-    totalMarks ||
-    questions.reduce((sum: number, q: any) => sum + (q.marks || q.max_marks || 0), 0) ||
-    SUBJECT_TOTAL_MARKS[`${selectedSubject}`] ||
-    80;
+  const maxScore = totalMarks || questions.reduce((sum, q) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
   if (aiFeedback) {
     let clean = aiFeedback.trim();
     clean = clean.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
@@ -327,7 +323,16 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         .trim();
       setImprovementPlan(cleanedText);
 
-      // (Removed unused local 'weaknesses' extraction block)
+      // Extract weaknesses section from the improvement plan (markdown)
+      let weaknesses = '';
+      const match = cleanedText.match(/specific weaknesses[\s\S]*?(?=(\n\n|$))/i);
+      if (match) {
+        weaknesses = match[0]
+          .replace(/specific weaknesses[:\s]*/i, '')
+          .replace(/\n/g, ', ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
       // Get student name (fallback to email)
       const studentName = user?.full_name || user?.email?.split('@')[0] || 'Student';
       // Get all classes for the student
@@ -457,12 +462,12 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
   if (showSummary) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-4 sm:p-6">
-        <div className="bg-gray-900 rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-blue-800 w-full max-w-2xl animate-fade-in">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
+        <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 w-full max-w-2xl animate-fade-in">
           <h2 className="text-2xl font-bold text-blue-400 mb-4 flex items-center gap-2"><CheckCircle className="w-6 h-6 text-green-400" /> Exam Submitted!</h2>
           <div className="mb-4 text-gray-300">Thank you for completing the exam. Your answers have been saved.</div>
           {/* Answer Sheet Upload */}
-          <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-800 rounded-xl border border-blue-700">
+          <div className="mt-8 p-6 bg-gray-800 rounded-xl border border-blue-700">
             <h3 className="text-lg font-bold text-blue-300 mb-2">Upload Your Handwritten Answer Sheet</h3>
             <p className="text-gray-400 mb-4">Scan or take clear photos of your answer sheets, combine them into a single PDF, and upload the PDF file here. <span className="text-yellow-400 font-semibold">Only PDF files are allowed.</span> This will be used for AI evaluation.</p>
             <input
@@ -482,7 +487,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           </div>
           {/* OCR Extracted Text */}
           {uploadedFileUrl && (
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
               <h3 className="text-lg font-bold text-blue-200 mb-2">Extracted Text from Answer Sheet</h3>
               {extracting && (
                 <div className="text-blue-400 mb-2">Extracting text... {ocrProgress !== null ? `(${ocrProgress}%)` : ''}</div>
@@ -502,7 +507,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* AI Evaluation Button and Feedback */}
           {uploadedFileUrl && extractedText && (
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
               <h3 className="text-lg font-bold text-blue-200 mb-2">AI Evaluation</h3>
               <button
                 className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition mb-4"
@@ -517,7 +522,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* Structured AI Feedback Report */}
           {aiFeedback && parsedFeedback.length > 0 && (
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-900 rounded-xl border border-green-800">
+            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-green-800">
               <h3 className="text-lg font-bold text-green-300 mb-2">CBSE-Style Report Card</h3>
               <div className="mb-4 text-white font-semibold">Total Score: <span className="text-green-400">{totalScore} / {maxScore}</span></div>
               <div className="overflow-x-auto">
@@ -553,7 +558,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* Personalized Improvement Plan */}
           {aiFeedback && (
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
               <h3 className="text-lg font-bold text-blue-200 mb-2">Personalized Improvement Plan</h3>
               <button
                 className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow transition mb-4"
@@ -571,7 +576,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
               )}
             </div>
           )}
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition mt-6 sm:mt-8" onClick={() => setShowSummary(false)}>Review Answers</button>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition mt-8" onClick={() => setShowSummary(false)}>Review Answers</button>
         </div>
       </div>
     );
@@ -592,8 +597,8 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
   const q = questions[current];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-4 sm:p-6">
-      <div className="w-full max-w-2xl bg-gray-900 rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-blue-800 animate-fade-in relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
+      <div className="w-full max-w-2xl bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 animate-fade-in relative">
         {/* Exam Header */}
         <div className="mb-6 text-center">
           <h2 className="text-xl font-bold text-blue-400 mb-2">CBSE Exam Session</h2>
@@ -603,7 +608,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           </div>
         </div>
         {/* Timer */}
-        <div className="md:absolute md:top-6 md:right-8 flex items-center justify-center md:justify-end gap-2 text-yellow-300 font-mono text-base md:text-lg mt-2 md:mt-0">
+        <div className="absolute top-6 right-8 flex items-center gap-2 text-yellow-300 font-mono text-lg">
           <Clock className="w-5 h-5" /> {formatTime(timeLeft)}
         </div>
         {/* Progress */}
@@ -611,13 +616,13 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           Question {current + 1} of {questions.length}
         </div>
         {/* Question Card */}
-        <div className="bg-gradient-to-r from-blue-950 via-gray-900 to-black rounded-xl p-4 sm:p-6 shadow mb-6 animate-fade-in">
-          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2">
+        <div className="bg-gradient-to-r from-blue-950 via-gray-900 to-black rounded-xl p-6 shadow mb-6 animate-fade-in">
+          <div className="flex items-center gap-4 mb-2">
             <span className="bg-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
             <span className="bg-gray-700 text-blue-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
-            <span className="md:ml-auto text-yellow-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
+            <span className="ml-auto text-yellow-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
           </div>
-          <div className="text-white text-base sm:text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{parseMathInline(q.question)}</div>
+          <div className="text-white text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{parseMathInline(q.question)}</div>
           {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
             <div className="mt-4 space-y-2">
               {q.options.map((option: string, optIndex: number) => (
@@ -636,9 +641,9 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           {/* Answer Input Removed: Only use uploaded answer sheets */}
         </div>
         {/* Navigation Buttons Restored */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-4">
+        <div className="flex justify-between items-center mt-4">
           <button
-            className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded shadow transition disabled:opacity-50 w-full sm:w-auto"
+            className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
             onClick={prev}
             disabled={current === 0}
           >
@@ -646,14 +651,14 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           </button>
           {current < questions.length - 1 ? (
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition w-full sm:w-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition"
               onClick={next}
             >
               Next <ArrowRight className="w-5 h-5 inline ml-2" />
             </button>
           ) : (
             <button
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition w-full sm:w-auto"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition"
               onClick={handleSubmit}
             >
               Submit <CheckCircle className="w-5 h-5 inline ml-2" />
@@ -665,4 +670,4 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
   );
 };
 
-export default CBSEExamSession;
+export default CBSEExamSession; 

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  Users,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -11,7 +12,7 @@ import {
   FileText,
   Mic,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const navLinks = [
   { href: '/teacher', label: 'Teacher Panel', icon: BookUser },
@@ -23,6 +24,7 @@ const TeacherNavbar = () => {
   const { user, signOut, loading, fullName } = useAuth() as any;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   // Sync collapsed state to document for global layout adjustments
   useEffect(() => {
@@ -38,20 +40,6 @@ const TeacherNavbar = () => {
       } catch {}
     };
   }, [isCollapsed]);
-
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    try {
-      if (isMobileMenuOpen) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    } catch {}
-    return () => {
-      try { document.body.style.overflow = ''; } catch {}
-    };
-  }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -133,9 +121,9 @@ const TeacherNavbar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 w-full bg-gray-800 text-white p-4 z-50 flex items-center justify-between safe-top safe-x">
+      <header className="md:hidden fixed top-0 left-0 w-full bg-gray-800 text-white p-4 z-50 flex items-center justify-between">
          <span className="text-2xl font-bold">elevenfolks Teacher</span>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Toggle menu" aria-expanded={isMobileMenuOpen} aria-controls="teacher-mobile-menu">
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </header>
@@ -143,10 +131,10 @@ const TeacherNavbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <nav id="teacher-mobile-menu" className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-6 animate-slide-in safe-top safe-x safe-bottom" onClick={(e) => e.stopPropagation()}>
+          <nav className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-6 animate-slide-in">
              <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold">elevenfolks Teacher</span>
-                <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu">
+                <button onClick={() => setIsMobileMenuOpen(false)}>
                   <X size={24} />
                 </button>
               </div>

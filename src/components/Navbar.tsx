@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -18,13 +18,14 @@ import {
   Menu,
   X,
   BookUser,
+  PlusCircle,
   Mic,
   Shield,
   FileText,
   Sparkles,
   Crown,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'from-blue-500 to-blue-600' },
@@ -53,6 +54,7 @@ const Navbar = () => {
   const { user, role, signOut, loading, isAdmin, fullName, isPremium } = useAuth() as any;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   // Sync collapsed state to document for global layout adjustments
   useEffect(() => {
@@ -68,20 +70,6 @@ const Navbar = () => {
       } catch {}
     };
   }, [isCollapsed]);
-
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    try {
-      if (isMobileMenuOpen) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    } catch {}
-    return () => {
-      try { document.body.style.overflow = ''; } catch {}
-    };
-  }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -232,7 +220,7 @@ const Navbar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/50 safe-top safe-x">
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/50">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
@@ -244,8 +232,6 @@ const Navbar = () => {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 focus-ring"
             aria-label="Toggle menu"
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="student-mobile-menu"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -255,7 +241,7 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-sm z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <nav id="student-mobile-menu" className="fixed top-0 left-0 h-full w-80 bg-gray-800/95 backdrop-blur-xl text-white p-6 animate-slide-in-right safe-top safe-x safe-bottom" onClick={(e) => e.stopPropagation()}>
+          <nav className="fixed top-0 left-0 h-full w-80 bg-gray-800/95 backdrop-blur-xl text-white p-6 animate-slide-in-right">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
