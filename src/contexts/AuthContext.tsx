@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext, ReactNode } from 'react';
+import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!user || !isMounted) return;
 
       // 1. Check for subscription
-      const { data: subData, error: subError } = await supabase
+      const { data: subData } = await supabase
         .from('subscriptions')
         .select('status')
         .eq('user_id', user.id);
@@ -35,8 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const { data: extData, error: extError } = await supabase.from('premium_email_extensions').select('extension');
-      if (extError || !extData) {
+      const { data: extData } = await supabase.from('premium_email_extensions').select('extension');
+      if (!extData) {
         if (isMounted) setIsPremium(false);
         return;
       }
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserAndRole = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data } = await supabase.auth.getSession();
         if (data?.session) {
           if (isMounted) {
             setUser(data.session.user);
@@ -82,9 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error('Error fetching profile:', profileError);
           }
           if (isMounted) {
-            setRole(profile?.[0]?.role || 'student');
-            setIsAdmin(profile?.[0]?.is_admin || false);
-            setFullName(profile?.[0]?.full_name || null);
+            const hasProfile = Array.isArray(profile) && profile.length > 0;
+            setRole(hasProfile ? (profile?.[0]?.role ?? null) : null);
+            setIsAdmin(hasProfile ? (profile?.[0]?.is_admin ?? false) : false);
+            setFullName(hasProfile ? (profile?.[0]?.full_name ?? null) : null);
           }
         } else {
           if (isMounted) {
@@ -124,9 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (error) {
               console.error('Error re-fetching profile:', error);
             }
-            setRole(profile?.[0]?.role || 'student');
-            setIsAdmin(profile?.[0]?.is_admin || false);
-            setFullName(profile?.[0]?.full_name || null);
+            const hasProfile = Array.isArray(profile) && profile.length > 0;
+            setRole(hasProfile ? (profile?.[0]?.role ?? null) : null);
+            setIsAdmin(hasProfile ? (profile?.[0]?.is_admin ?? false) : false);
+            setFullName(hasProfile ? (profile?.[0]?.full_name ?? null) : null);
           });
       } else {
         setUser(null);
@@ -160,8 +162,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return await supabase.auth.signOut();
   };
 
+  // Google OAuth sign-in
+  const signInWithGoogle = async () => {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, role, isPremium, isAdmin, fullName, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, role, isPremium, isAdmin, fullName, signIn, signUp, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,6 +24,7 @@ import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import { Profile } from './pages/Profile';
+import Onboarding from './pages/Onboarding';
 import { FeatureComparison } from './components/FeatureComparison';
 import { usePayment } from './hooks/usePayment';
 import { AdminPanel } from './pages/AdminPanel';
@@ -124,6 +125,11 @@ function AppContent() {
   // Show landing page if user is not authenticated
   if (!user) {
     return <Landing />;
+  }
+
+  // If authenticated but no role yet, show onboarding flow
+  if (role === null) {
+    return <Onboarding />;
   }
 
   // Block access if trial expired and not premium
