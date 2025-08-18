@@ -396,3 +396,45 @@
 body.sidebar-collapsed {
   --sidebar-width: 5rem; /* matches w-20 */
 }
+
+/* Safe-area utilities for devices with notches (iOS Safari) */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Global responsive media elements */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Prevent long words/URLs from overflowing */
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Utility: responsive container padding */
+.container-responsive {
+  @apply px-4 sm:px-6;
+}
+
+/* Utility: responsive button text and padding */
+.btn-responsive {
+  @apply text-sm sm:text-base px-3 py-2 sm:px-4 sm:py-2.5;
+}
+
+/* Utility: responsive headings */
+.heading-responsive {
+  @apply text-2xl sm:text-3xl md:text-4xl;
+}

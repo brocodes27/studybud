@@ -378,8 +378,8 @@ const Landing: React.FC = () => {
 
       <div className="relative z-10">
         {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/50">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/50 safe-top safe-x">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
@@ -397,7 +397,7 @@ const Landing: React.FC = () => {
         </nav>
 
         {/* Hero Section */}
-        <section ref={heroRef} className="pt-32 pb-20 px-6">
+        <section ref={heroRef} className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto text-center">
             <div ref={heroIconsParallaxRef} className="flex justify-center mb-8">
               <div ref={heroIconsRef} className="flex items-center space-x-4">
@@ -413,12 +413,12 @@ const Landing: React.FC = () => {
               </div>
             </div>
             
-            <h1 ref={heroHeadlineRef} className="text-6xl md:text-7xl font-bold text-white mb-6">
+            <h1 ref={heroHeadlineRef} className="text-4xl sm:text-6xl md:text-7xl font-bold text-white mb-6">
               Master Your Studies with{' '}
               <span className="gradient-text">AI-Powered</span> Learning
             </h1>
             
-            <p ref={heroSubheadlineRef} className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p ref={heroSubheadlineRef} className="text-base sm:text-xl md:text-2xl text-gray-300 mb-10 sm:mb-12 max-w-3xl mx-auto leading-relaxed">
               Personalized study plans, smart progress tracking, and AI-powered tools to help you excel in your academic journey.
             </p>
             
@@ -434,14 +434,14 @@ const Landing: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-4xl mx-auto">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center">
                   <div className="flex items-center justify-center mb-2">
                     <stat.icon className="w-6 h-6 text-primary-400 mr-2" />
-                    <span className="text-3xl font-bold text-white">{stat.number}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-white">{stat.number}</span>
                   </div>
-                  <p className="text-gray-400 text-sm">{stat.label}</p>
+                  <p className="text-gray-400 text-xs sm:text-sm">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -449,11 +449,11 @@ const Landing: React.FC = () => {
         </section>
 
         {/* Auth Form */}
-        <section id="auth" className="py-20 px-6 bg-gray-800/30">
+        <section id="auth" className="py-16 sm:py-20 px-4 sm:px-6 bg-gray-800/30">
           <div className="max-w-md mx-auto">
             <div className="card-elevated">
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                   {isSignUp ? 'Join ElevenFolks Today' : 'Welcome Back'}
                 </h2>
                 <p className="text-gray-400">
@@ -565,19 +565,19 @@ const Landing: React.FC = () => {
         </section>
 
         {/* Features Section */}
-        <section id="features" ref={featuresRef} className="py-20 px-6">
+        <section id="features" ref={featuresRef} className="py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
                 Powerful Features for{' '}
                 <span className="gradient-text">Modern Learning</span>
               </h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              <p className="text-base sm:text-xl text-gray-300 max-w-3xl mx-auto">
                 Everything you need to excel in your studies, powered by cutting-edge AI technology.
               </p>
             </div>
 
-            <div ref={featureCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div ref={featureCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {features.map((feature, index) => (
                 <div
                   key={index}
@@ -596,14 +596,14 @@ const Landing: React.FC = () => {
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" ref={testimonialsSectionRef} className="py-20 px-6 bg-gray-800/30">
+        <section id="testimonials" ref={testimonialsSectionRef} className="py-16 sm:py-20 px-4 sm:px-6 bg-gray-800/30">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
                 Loved by{' '}
                 <span className="gradient-text">Students Worldwide</span>
               </h2>
-              <p className="text-xl text-gray-300">
+              <p className="text-base sm:text-xl text-gray-300">
                 Join thousands of students who have transformed their learning experience.
               </p>
             </div>
@@ -633,16 +633,16 @@ const Landing: React.FC = () => {
         </section>
 
         {/* CTA Section */}
-        <section ref={ctaSectionRef} className="py-20 px-6">
+        <section ref={ctaSectionRef} className="py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <div className="card-elevated bg-gradient-to-r from-primary-500/10 to-accent-500/10 border-primary-500/30">
               <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center mx-auto mb-8">
                 <Rocket className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
                 Ready to Transform Your Learning?
               </h2>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+              <p className="text-base sm:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
                 Join thousands of students who are already achieving their academic goals with ElevenFolks.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -660,7 +660,7 @@ const Landing: React.FC = () => {
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-6 border-t border-gray-800/50">
+        <footer className="py-12 px-4 sm:px-6 border-t border-gray-800/50 safe-bottom">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center space-x-3 mb-4 md:mb-0">

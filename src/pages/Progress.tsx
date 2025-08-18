@@ -204,16 +204,16 @@ export function Progress() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
           Your <span className="gradient-text-primary">Progress</span>
         </h1>
-        <p className="text-gray-400 text-lg">Track your learning journey and celebrate your achievements</p>
+        <p className="text-gray-400 text-base sm:text-lg">Track your learning journey and celebrate your achievements</p>
       </div>
 
 
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
         {/* Weekly Progress Chart */}
         <div className="card-elevated">
           <div className="flex items-center gap-3 mb-6">
@@ -222,37 +222,39 @@ export function Progress() {
             </div>
             <h3 className="text-xl font-bold text-white">Weekly Study Activity</h3>
           </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={progressData.weeklyProgress}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#9ca3af"
-                  fontSize={12}
-                />
-                <YAxis 
-                  stroke="#9ca3af"
-                  fontSize={12}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#1f2937',
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#f9fafb'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="minutes" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-80 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="min-w-[560px] h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={progressData.weeklyProgress}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#9ca3af"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#f9fafb'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="minutes" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
@@ -264,43 +266,45 @@ export function Progress() {
             </div>
             <h3 className="text-xl font-bold text-white">Subject Progress</h3>
           </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={progressData.subjectProgress}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="subject" 
-                  stroke="#9ca3af"
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  stroke="#9ca3af"
-                  fontSize={12}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#1f2937',
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#f9fafb'
-                  }}
-                />
-                <Bar 
-                  dataKey="completed" 
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar 
-                  dataKey="total" 
-                  fill="#374151"
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.3}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-80 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="min-w-[600px] h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={progressData.subjectProgress}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="subject" 
+                    stroke="#9ca3af"
+                    fontSize={12}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#f9fafb'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="completed" 
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="total" 
+                    fill="#374151"
+                    radius={[4, 4, 0, 0]}
+                    opacity={0.3}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>

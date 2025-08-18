@@ -200,7 +200,7 @@ function AppContent() {
         )}
         
         {role === 'teacher' ? <TeacherNavbar /> : <Navbar />}
-        <main className="w-full px-6 py-8 page-with-sidebar">
+        <main className="w-full px-4 sm:px-6 py-6 sm:py-8 page-with-sidebar safe-bottom">
           <Routes>
             <Route path="/calendar" element={<CalendarSync />} />
             <Route path="/" element={<Dashboard />} />
