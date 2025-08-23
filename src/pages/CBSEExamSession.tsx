@@ -55,13 +55,13 @@ const CBSEExamSession: React.FC = () => {
   // Helper to parse AI feedback JSON
   let parsedFeedback: any[] = [];
   let totalScore = 0;
-  const maxScore = totalMarks || questions.reduce((sum, q) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
+  const maxScore = totalMarks || questions.reduce((sum: number, q: any) => sum + (q.marks || q.max_marks || 0), 0) || SUBJECT_TOTAL_MARKS[`${selectedSubject}`] || 80;
   if (aiFeedback) {
     let clean = aiFeedback.trim();
     clean = clean.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
     try {
       parsedFeedback = JSON.parse(clean);
-      totalScore = parsedFeedback.reduce((sum, q) => sum + (q.marks_awarded || 0), 0);
+      totalScore = parsedFeedback.reduce((sum: number, q: any) => sum + (q.marks_awarded || 0), 0);
     } catch (e) {
       parsedFeedback = [];
     }
@@ -362,18 +362,8 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         setSaveStatus('saving');
         setSaveError(null);
         try {
-          let studentWeaknesses = '';
-          if (improvementPlan) {
-            console.log('Improvement plan:', improvementPlan);
-            const match = improvementPlan.match(/specific weaknesses[\s\S]*?(?:\n\n|$)/i);
-            console.log('Regex match:', match);
-            if (match) {
-              studentWeaknesses = match[0].replace(/specific weaknesses[:\s]*/i, '').trim();
-            } else {
-              // Fallback: save the whole improvement plan or a default message
-              studentWeaknesses = 'No specific weaknesses section found. Full plan:\n' + improvementPlan;
-            }
-          }
+          // Use locally extracted weaknesses to avoid state update race conditions
+          const studentWeaknesses = weaknesses || 'No specific weaknesses section found.';
           const { data: attemptInsert, error } = await supabase.from('cbse_exam_attempts').insert({
             user_id: user.id,
             exam_date: new Date().toISOString(),
@@ -416,9 +406,9 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
               if (
                 classInfo &&
                 classInfo.teacher_id &&
-                studentWeaknesses &&
                 attemptId &&
                 classInfo.subject &&
+                selectedSubject &&
                 classInfo.subject.toLowerCase() === selectedSubject.toLowerCase()
               ) {
                 console.log('Creating notification for teacher:', classInfo.teacher_id);

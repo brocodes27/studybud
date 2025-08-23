@@ -40,6 +40,7 @@ import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
 import { Sparkles, Crown, X, Zap } from 'lucide-react';
+import VoiceLesson from './pages/VoiceLesson';
 
 function AppContent() {
   const { user, role, loading, session, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -231,6 +232,7 @@ function AppContent() {
             <Route path="/vapi-setup" element={<VAPISetupTest />} />
             <Route path="/voice-selector" element={<VoiceSelector />} />
             <Route path="/elliot-test" element={<ElliotVoiceTest />} />
+            <Route path="/voice-lesson" element={<VoiceLesson />} />
             <Route path="/teacher" element={<TeacherPortal />}>
               <Route index element={<TeacherPanel />} />
               <Route path="class/:id" element={<TeacherClassDashboard />} />

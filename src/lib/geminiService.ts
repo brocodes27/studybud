@@ -22,9 +22,11 @@ export interface LearningInsights {
 export class GeminiService {
   private static instance: GeminiService;
   private apiKey: string;
+  private sttModel: string;
 
   constructor() {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    this.sttModel = import.meta.env.VITE_GEMINI_STT_MODEL || 'gemini-1.5-flash';
   }
 
   static getInstance(): GeminiService {
@@ -175,7 +177,7 @@ export class GeminiService {
     }
   }
 
-  async generateLearningInsights(userId: string, conversationHistory: any[]): Promise<LearningInsights> {
+  async generateLearningInsights(_userId: string, conversationHistory: any[]): Promise<LearningInsights> {
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`, {
         method: 'POST',
@@ -376,6 +378,52 @@ export class GeminiService {
       return 'engaged';
     }
   }
+
+  async transcribeAudio(audioBase64: string, mimeType: string = 'audio/webm'): Promise<string> {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.sttModel}:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: 'Transcribe the following audio verbatim as plain text.'
+                },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: audioBase64
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.0,
+            maxOutputTokens: 4096
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to transcribe audio with Gemini');
+      }
+
+      const data = await response.json();
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        throw new Error('Invalid response from Gemini');
+      }
+      const transcript = data.candidates[0].content.parts?.[0]?.text || '';
+      return transcript.trim();
+    } catch (error) {
+      console.error('Error transcribing audio with Gemini:', error);
+      return 'Transcription failed';
+    }
+  }
 }
 
-export default GeminiService; 
+export default GeminiService;
