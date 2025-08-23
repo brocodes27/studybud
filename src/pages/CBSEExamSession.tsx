@@ -25,6 +25,61 @@ function parseMathInline(text: string) {
   });
 }
 
+// Robustly extract the Weaknesses section from a Markdown plan
+function extractWeaknessesSection(md: string): string {
+  if (!md) return '';
+  const text = md.replace(/\r\n?/g, '\n');
+  // 1) Heading-style sections
+  const headingTitles = [
+    'Specific\\s+Weaknesses',
+    'Key\\s+Weaknesses',
+    'Weaknesses',
+    'Areas\\s+of\\s+Improvement',
+    'Areas\\s+for\\s+Improvement',
+    'Needs\\s+Improvement',
+    'Gaps\\s+in\\s+Understanding',
+    'Common\\s+Errors',
+    'Mistakes'
+  ].join('|');
+  const stopTitles = [
+    'Key\\s+Strengths',
+    'Strengths',
+    'Actionable\\s+Steps',
+    'Recommendations',
+    'Recommended\\s+Resources',
+    'Study\\s+Plan',
+    'Motivational\\s+Message',
+    'Conclusion',
+    'Summary',
+    'Next\\s+Steps'
+  ].join('|');
+
+  const patterns: RegExp[] = [
+    // # Weaknesses\n... until next heading/section
+    new RegExp(String.raw`(?:^|\n)\s*(?:#{1,6}\s*)?(?:${headingTitles})\s*:?[\t ]*\n+([\s\S]*?)(?=\n\s*(?:#{1,6}\s*|(?:${stopTitles})\b)|$)`, 'i'),
+    // **Weaknesses:** inline label then list/paragraphs
+    new RegExp(String.raw`(?:\*\*|__)?(?:${headingTitles})(?:\*\*|__)?:?\s*(?:\n+|\s+)([\s\S]*?)(?=\n\s*(?:#{1,6}\s*|(?:${stopTitles})\b|\*\*|__)|$)`, 'i'),
+    // Plain label: Weaknesses: ... (same line or next)
+    new RegExp(String.raw`(?:^|\n)\s*(?:${headingTitles})\s*:\s*([\s\S]*?)(?=\n\s*(?:#{1,6}\s*|(?:${stopTitles})\b)|$)`, 'i'),
+  ];
+
+  for (const rx of patterns) {
+    const m = text.match(rx);
+    if (m && m[1]) {
+      console.debug('[Weaknesses][match]', { pattern: rx.toString(), raw: m[1].slice(0, 300) });
+      const body = m[1]
+        .replace(/^[-*+]\s+/gm, '') // list bullets
+        .replace(/^\d+\.?\s+/gm, '') // numbered lists
+        .replace(/\n+/g, ', ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (body) return body;
+    }
+  }
+  console.debug('[Weaknesses] No section matched.');
+  return '';
+}
+
 const CBSEExamSession: React.FC = () => {
   const location = useLocation();
   const questions = (location.state && location.state.questions) || [];
@@ -77,15 +132,8 @@ const CBSEExamSession: React.FC = () => {
     setSaveStatus('saving');
     setSaveError(null);
     try {
-      // Extract 'specific weaknesses' from the improvement plan (markdown)
-      let studentWeaknesses = '';
-      if (improvementPlan) {
-        // Try to extract the section after 'Specific Weaknesses' or similar
-        const match = improvementPlan.match(/specific weaknesses[\s\S]*?(?:\n\n|$)/i);
-        if (match) {
-          studentWeaknesses = match[0].replace(/specific weaknesses[:\s]*/i, '').trim();
-        }
-      }
+      // Extract weaknesses using robust extractor
+      const studentWeaknesses = improvementPlan ? extractWeaknessesSection(improvementPlan) : '';
       const { error } = await supabase.from('cbse_exam_attempts').insert({
         user_id: user.id,
         exam_date: new Date().toISOString(),
@@ -323,15 +371,22 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         .trim();
       setImprovementPlan(cleanedText);
 
-      // Extract weaknesses section from the improvement plan (markdown)
-      let weaknesses = '';
-      const match = cleanedText.match(/specific weaknesses[\s\S]*?(?=(\n\n|$))/i);
-      if (match) {
-        weaknesses = match[0]
-          .replace(/specific weaknesses[:\s]*/i, '')
-          .replace(/\n/g, ', ')
-          .replace(/\s+/g, ' ')
-          .trim();
+      // Extract weaknesses section using robust extractor, with fallback from parsedFeedback
+      let weaknesses = extractWeaknessesSection(cleanedText);
+      if (!weaknesses) {
+        const fallback = (parsedFeedback || [])
+          .filter((q: any) => (q?.marks_awarded ?? 0) < (q?.max_marks ?? 0))
+          .map((q: any, i: number) => {
+            const qn = q?.question_number ?? i + 1;
+            const fb = (q?.feedback || '').toString().replace(/\s+/g, ' ').trim();
+            return `Q${qn}: ${fb || 'Needs improvement'}`;
+          })
+          .slice(0, 8)
+          .join(', ');
+        if (fallback) {
+          console.debug('[Weaknesses][fallback] Using parsedFeedback-derived weaknesses.', { text: fallback.slice(0, 300) });
+          weaknesses = fallback;
+        }
       }
       // Get student name (fallback to email)
       const studentName = user?.full_name || user?.email?.split('@')[0] || 'Student';
@@ -362,7 +417,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         setSaveStatus('saving');
         setSaveError(null);
         try {
-          // Use locally extracted weaknesses to avoid state update race conditions
+          // Use extracted weaknesses (or fallback) to avoid state update race conditions
           const studentWeaknesses = weaknesses || 'No specific weaknesses section found.';
           const { data: attemptInsert, error } = await supabase.from('cbse_exam_attempts').insert({
             user_id: user.id,
