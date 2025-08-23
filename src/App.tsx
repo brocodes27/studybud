@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
@@ -47,6 +47,17 @@ function AppContent() {
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
+  const location = useLocation();
+
+  // Fullscreen mode from notification deep links
+  const isFullscreen = (() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      return params.get('fullscreen') === '1';
+    } catch {
+      return false;
+    }
+  })();
 
   // Floating Live Notes modal state
   const [showLiveNotes, setShowLiveNotes] = useState(false);
@@ -175,14 +186,14 @@ function AppContent() {
       <div className="animated-gradient fixed inset-0 opacity-10"></div>
       <div className="relative z-10">
         {/* Offline Indicator */}
-        {!isOnline && (
+        {!isFullscreen && !isOnline && (
           <div className="bg-warning-600 text-white text-center py-3 text-sm font-medium shadow-lg">
             📱 You're offline. Some features may be limited.
           </div>
         )}
         
         {/* Improved Subscribe Button for Free Users */}
-        {isPremium === false && showSubscribeBanner && (
+        {!isFullscreen && isPremium === false && showSubscribeBanner && (
           <div className="w-full flex justify-center sticky top-0 z-50">
             <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-4">
               <button
@@ -206,8 +217,8 @@ function AppContent() {
           </div>
         )}
         
-        {role === 'teacher' ? <TeacherNavbar /> : <Navbar />}
-        <main className="w-full px-6 py-8 page-with-sidebar">
+        {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
+        <main className={isFullscreen ? "w-full h-screen p-0 m-0" : "w-full px-6 py-8 page-with-sidebar"}>
           <Routes>
             <Route path="/calendar" element={<CalendarSync />} />
             <Route path="/" element={<Dashboard />} />

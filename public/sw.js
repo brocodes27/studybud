@@ -145,9 +145,27 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
   
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url)
-  );
+  event.waitUntil((async () => {
+    try {
+      const rawUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';
+      const url = new URL(rawUrl, self.location.origin);
+      if (!url.searchParams.has('fullscreen')) {
+        url.searchParams.set('fullscreen', '1');
+      }
+
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of allClients) {
+        // If a tab with the same URL is open, focus it
+        if (client.url === url.toString()) {
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url.toString());
+    } catch (e) {
+      // Fallback: open root in fullscreen mode
+      return clients.openWindow('/?fullscreen=1');
+    }
+  })());
 });
 
 // Receive messages from client (e.g., show notifications)

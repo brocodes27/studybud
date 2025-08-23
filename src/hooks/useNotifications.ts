@@ -7,7 +7,7 @@ interface NotificationOptions {
   badge?: string;
   tag?: string;
   requireInteraction?: boolean;
-  actions?: NotificationAction[];
+  url?: string; // optional deep link target
 }
 
 export function useNotifications() {
@@ -51,24 +51,23 @@ export function useNotifications() {
     }
 
     try {
-      // Check if service worker is available and active
+      // Prefer using the ServiceWorkerRegistration API in production builds
       if ('serviceWorker' in navigator) {
         const registration = await navigator.serviceWorker.ready;
-        if (registration && registration.active) {
-          // Use service worker for better reliability
-          registration.active.postMessage({
-            type: 'SHOW_NOTIFICATION',
-            payload: {
-              ...options,
-              icon: options.icon || '/pwa-192x192.png',
-              badge: options.badge || '/pwa-192x192.png'
-            }
+        if (registration) {
+          await registration.showNotification(options.title, {
+            body: options.body,
+            icon: options.icon || '/pwa-192x192.png',
+            badge: options.badge || '/pwa-192x192.png',
+            tag: options.tag,
+            requireInteraction: options.requireInteraction,
+            data: { url: options.url }
           });
           return true;
         }
       }
-      
-      // Fallback to regular notification
+
+      // Fallback to the Notification constructor
       const notification = new Notification(options.title, {
         body: options.body,
         icon: options.icon || '/pwa-192x192.png',

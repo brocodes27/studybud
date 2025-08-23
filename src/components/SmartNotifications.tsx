@@ -289,7 +289,8 @@ export function SmartNotifications() {
     const success = await showNotification({
       title: '🎯 Test Notification',
       body: 'Your notifications are working perfectly! You\'re all set for smart study reminders.',
-      tag: 'test-notification'
+      tag: 'test-notification',
+      url: '/notifications'
     });
 
     if (success) {
@@ -356,6 +357,29 @@ export function SmartNotifications() {
 
   const permissionStatus = getPermissionStatus();
   const StatusIcon = permissionStatus.icon;
+
+  const openInFullscreenTab = async (notification: Notification) => {
+    // Prefer provided action_url; fallback to home
+    let url = notification.action_url || '/';
+    try {
+      const u = new URL(url, window.location.origin);
+      if (!u.searchParams.has('fullscreen')) {
+        u.searchParams.set('fullscreen', '1');
+      }
+      url = u.toString();
+    } catch {
+      // If URL parsing fails, append query in a simple way
+      url += (url.includes('?') ? '&' : '?') + 'fullscreen=1';
+    }
+
+    // Open in new tab to maximize viewing area
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    // Mark as read after opening
+    if (!notification.is_read) {
+      await markAsRead(notification.id);
+    }
+  };
 
   if (loading) {
     return (
@@ -597,9 +621,18 @@ export function SmartNotifications() {
           notifications.map((notification) => (
             <div
               key={notification.id}
-              className={`bg-gray-800 rounded-xl p-4 border-l-4 transition-all duration-200 hover:bg-gray-750 ${
+              className={`bg-gray-800 rounded-xl p-4 border-l-4 transition-all duration-200 hover:bg-gray-750 cursor-pointer ${
                 getPriorityColor(notification.priority)
               } ${notification.is_read ? 'opacity-60' : ''}`}
+              onClick={() => openInFullscreenTab(notification)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openInFullscreenTab(notification);
+                }
+              }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
