@@ -8,28 +8,28 @@ const TeacherPortal: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
       </div>
     );
   }
 
   if (role !== 'teacher') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="bg-gray-800 p-8 rounded-xl shadow text-center border border-gray-700">
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h2>
-          <p className="text-gray-300">You must be a teacher to access this portal.</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="bg-card p-8 rounded-xl shadow text-center border border-border">
+          <h2 className="text-2xl font-bold text-red-500 mb-2">Access Denied</h2>
+          <p className="text-foreground/70">You must be a teacher to access this portal.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-foreground">
       <Outlet />
     </div>
   );
 };
 
-export default TeacherPortal; 
+export default TeacherPortal;

@@ -240,7 +240,7 @@ const ClassPage = () => {
                 {TABS.map(tab => (
                     <button
                         key={tab}
-                        className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-white'}`}
+                        className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-blue-500 text-blue-400' : 'text-gray-400 hover:text-gray-900'}`}
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab}
@@ -249,32 +249,32 @@ const ClassPage = () => {
             </div>
             {/* Tab Content */}
             {activeTab === 'Overview' && (
-                <div className="text-gray-300">
+                <div className="text-gray-900">
                     <h2 className="font-bold text-lg mb-2">Welcome to the class overview.</h2>
                     <p className="mb-4">Here you can see announcements, assignments, and resources.</p>
                     <div className="mb-4">
-                        <h3 className="font-semibold text-white">Latest Announcement</h3>
+                        <h3 className="font-semibold text-gray-900">Latest Announcement</h3>
                         {announcements.length > 0 ? (
-                            <div className="bg-gray-800 p-2 rounded mb-2">{announcements[0].message || announcements[0].content}</div>
+                            <div className="bg-gray-400 p-2 rounded mb-2">{announcements[0].message || announcements[0].content}</div>
                         ) : <div className="text-gray-500">No announcements yet.</div>}
                     </div>
                     <div className="mb-4">
-                        <h3 className="font-semibold text-white">Latest Assignment</h3>
+                        <h3 className="font-semibold text-gray-900">Latest Assignment</h3>
                         {assignments.length > 0 ? (
-                            <div className="bg-gray-800 p-2 rounded mb-2">{assignments[0].title}</div>
+                            <div className="bg-gray-400 p-2 rounded mb-2">{assignments[0].title}</div>
                         ) : <div className="text-gray-500">No assignments yet.</div>}
                     </div>
                     <div className="mb-4">
-                        <h3 className="font-semibold text-white">Latest Resource</h3>
+                        <h3 className="font-semibold text-gray-900">Latest Resource</h3>
                         {resources.length > 0 ? (
-                            <div className="bg-gray-800 p-2 rounded mb-2">{resources[0].title}</div>
+                            <div className="bg-gray-400 p-2 rounded mb-2">{resources[0].title}</div>
                         ) : <div className="text-gray-500">No resources yet.</div>}
                     </div>
                     {/* Leave/Disband Class Buttons */}
                     <div className="mt-6 flex gap-4">
                         {role === 'student' && (
                             <button
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow"
+                                className="bg-red-600 hover:bg-red-700 text-gray-900 px-4 py-2 rounded shadow"
                                 onClick={handleLeaveClass}
                             >
                                 Leave Class
@@ -282,7 +282,7 @@ const ClassPage = () => {
                         )}
                         {role === 'teacher' && (
                             <button
-                                className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow"
+                                className="bg-red-700 hover:bg-red-800 text-gray-900 px-4 py-2 rounded shadow"
                                 onClick={handleDisbandClass}
                             >
                                 Disband Class
@@ -294,22 +294,22 @@ const ClassPage = () => {
             {activeTab === 'Assignments' && (
                 <div>
                     {role === 'teacher' && (
-                        <form onSubmit={handleCreateAssignment} className="mb-6 p-4 bg-gray-800 rounded-lg">
-                            <h3 className="font-bold mb-2 text-white">Create New Assignment</h3>
+                        <form onSubmit={handleCreateAssignment} className="mb-6 p-4 bg-gray-400 rounded-lg">
+                            <h3 className="font-bold mb-2 text-gray-900">Create New Assignment</h3>
                             {formError && <p className="text-red-500">{formError}</p>}
                             <input type="text" placeholder="Title" value={assignmentTitle} onChange={e => setAssignmentTitle(e.target.value)} required className="w-full p-2 mb-2 border rounded" />
                             <textarea placeholder="Description" value={assignmentDesc} onChange={e => setAssignmentDesc(e.target.value)} className="w-full p-2 mb-2 border rounded" />
                             <input type="date" value={assignmentDueDate} onChange={e => setAssignmentDueDate(e.target.value)} className="w-full p-2 mb-2 border rounded" />
                             <input type="file" onChange={e => setAssignmentFile(e.target.files ? e.target.files[0] : null)} className="w-full p-2 mb-2 border rounded" />
-                            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Assignment</button>
+                            <button type="submit" className="bg-blue-500 text-gray-900 px-4 py-2 rounded hover:bg-blue-600">Add Assignment</button>
                         </form>
                     )}
-                    <h3 className="font-bold mb-2 text-white">Assignments</h3>
+                    <h3 className="font-bold mb-2 text-gray-900">Assignments</h3>
                     {assignments.length === 0 ? (
                         <div className="text-gray-400">No assignments yet.</div>
                     ) : (
                         assignments.map(a => (
-                            <div key={a.id} className="bg-gray-800 p-4 rounded-lg mb-4">
+                            <div key={a.id} className="bg-gray-400 p-4 rounded-lg mb-4">
                                 <div className="font-semibold text-blue-300">{a.title}</div>
                                 <div className="text-gray-200 mb-2">{a.description}</div>
                                 {a.due_date && <div className="text-xs text-yellow-400">Due: {new Date(a.due_date).toLocaleDateString()}</div>}
@@ -329,19 +329,19 @@ const ClassPage = () => {
             {activeTab === 'Announcements' && (
                 <div>
                     {role === 'teacher' && (
-                        <form onSubmit={handleCreateAnnouncement} className="mb-6 p-4 bg-gray-800 rounded-lg">
-                            <h3 className="font-bold mb-2 text-white">Create Announcement</h3>
+                        <form onSubmit={handleCreateAnnouncement} className="mb-6 p-4 bg-gray-400 rounded-lg">
+                            <h3 className="font-bold mb-2 text-gray-900">Create Announcement</h3>
                             {formError && <p className="text-red-500">{formError}</p>}
                             <textarea placeholder="Announcement" value={announcementContent} onChange={e => setAnnouncementContent(e.target.value)} className="w-full p-2 mb-2 border rounded" />
-                            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Announcement</button>
+                            <button type="submit" className="bg-blue-500 text-gray-900 px-4 py-2 rounded hover:bg-blue-600">Add Announcement</button>
                         </form>
                     )}
-                    <h3 className="font-bold mb-2 text-white">Announcements</h3>
+                    <h3 className="font-bold mb-2 text-gray-900">Announcements</h3>
                     {announcements.length === 0 ? (
                         <div className="text-gray-400">No announcements yet.</div>
                     ) : (
                         announcements.map(a => (
-                            <div key={a.id} className="bg-gray-800 p-4 rounded-lg mb-4">
+                            <div key={a.id} className="bg-gray-400 p-4 rounded-lg mb-4">
                                 <div className="text-gray-200">{a.message || a.content}</div>
                                 <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
                             </div>
@@ -351,12 +351,12 @@ const ClassPage = () => {
             )}
             {activeTab === 'Resources' && (
                 <div>
-                    <h3 className="font-bold mb-2 text-white">Resources</h3>
+                    <h3 className="font-bold mb-2 text-gray-900">Resources</h3>
                     {resources.length === 0 ? (
                         <div className="text-gray-400">No resources yet.</div>
                     ) : (
                         resources.map(r => (
-                            <div key={r.id} className="bg-gray-800 p-4 rounded-lg mb-4">
+                            <div key={r.id} className="bg-gray-400 p-4 rounded-lg mb-4">
                                 <div className="font-semibold text-blue-300">{r.title}</div>
                                 {r.file_url && (
                                     <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download File</a>

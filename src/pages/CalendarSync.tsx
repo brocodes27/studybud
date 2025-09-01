@@ -123,17 +123,17 @@ export function CalendarSync() {
       <div className="text-center">
         <div className="inline-flex items-center gap-3 mb-4">
           <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-lg">
-            <CalendarIcon className="h-8 w-8 text-white" />
+            <CalendarIcon className="h-8 w-8 text-gray-900" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold gradient-text">Calendar Sync</h1>
         </div>
-        <p className="text-gray-300 max-w-xl mx-auto mb-6">
+        <p className="text-gray-900 max-w-xl mx-auto mb-6">
           Connect your Google Calendar to automatically import exam dates and deadlines into elevenfolks.
         </p>
         <button
           onClick={() => login()}
           disabled={loading}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed"
+          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-gray-900 px-6 py-3 rounded-xl font-semibold transition-all duration-300 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed"
         >
           {loading ? 'Connecting...' : 'Connect Google Calendar'}
         </button>
@@ -141,7 +141,7 @@ export function CalendarSync() {
 
       {events.length > 0 && (
         <div className="max-w-4xl mx-auto space-y-4">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <CalendarIcon className="h-6 w-6" /> Upcoming Events
           </h2>
           {events.map((event) => {
@@ -151,7 +151,7 @@ export function CalendarSync() {
             
             return (
               <div key={event.id} className="glass rounded-xl border border-gray-700/50 p-4 card-hover">
-                <p className="font-semibold text-white text-lg mb-1">{event.summary || 'Untitled Event'}</p>
+                <p className="font-semibold text-gray-900 text-lg mb-1">{event.summary || 'Untitled Event'}</p>
                 <p className="text-gray-400">
                   {event.start.dateTime
                     ? format(new Date(event.start.dateTime), 'PPpp')
@@ -188,8 +188,8 @@ export function CalendarSync() {
                   }}
                   className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all duration-300 ${
                     isTooFarAway
-                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                      ? 'bg-gray-600 text-gray-900 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-gray-900 hover:from-blue-700 hover:to-purple-700'
                   }`}
                   disabled={isTooFarAway}
                 >

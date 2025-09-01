@@ -403,7 +403,7 @@ export function SmartNotifications() {
             </p>
             <button
               onClick={handleSubscribe}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
             >
               Subscribe Now
             </button>
@@ -413,13 +413,13 @@ export function SmartNotifications() {
       {/* Notification Status */}
       <div className="glass rounded-2xl p-6 border border-gray-700/50">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Bell className="h-6 w-6 text-blue-400" />
             Smart Notifications
           </h3>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="bg-gray-700 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors duration-200"
+            className="bg-gray-700 hover:bg-gray-600 text-gray-900 p-2 rounded-lg transition-colors duration-200"
           >
             <Settings className="h-5 w-5" />
           </button>
@@ -435,7 +435,7 @@ export function SmartNotifications() {
           }`}>
             <div className="flex items-center gap-2 mb-2">
               <StatusIcon className={`h-5 w-5 ${permissionStatus.color}`} />
-              <span className="font-semibold text-white">Permission</span>
+              <span className="font-semibold text-gray-900">Permission</span>
             </div>
             <p className={`text-sm ${permissionStatus.color}`}>
               {permissionStatus.text}
@@ -445,7 +445,7 @@ export function SmartNotifications() {
           <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-5 w-5 text-blue-400" />
-              <span className="font-semibold text-white">Study Reminders</span>
+              <span className="font-semibold text-gray-900">Study Reminders</span>
             </div>
             <p className="text-sm text-blue-400">
               {settings.study_reminders ? 'Active' : 'Inactive'}
@@ -455,7 +455,7 @@ export function SmartNotifications() {
           <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-500/10">
             <div className="flex items-center gap-2 mb-2">
               <Target className="h-5 w-5 text-purple-400" />
-              <span className="font-semibold text-white">Exam Alerts</span>
+              <span className="font-semibold text-gray-900">Exam Alerts</span>
             </div>
             <p className="text-sm text-purple-400">
               {settings.study_reminders ? 'Active' : 'Inactive'}
@@ -466,7 +466,7 @@ export function SmartNotifications() {
         <div className="flex gap-4">
           <button
             onClick={sendTestNotification}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-colors duration-200"
+            className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-3 rounded-xl transition-colors duration-200"
           >
             Test Notification
           </button>
@@ -474,7 +474,7 @@ export function SmartNotifications() {
           {permission !== 'granted' && isSupported && (
             <button
               onClick={requestPermission}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl transition-colors duration-200"
+              className="bg-green-600 hover:bg-green-700 text-gray-900 px-6 py-3 rounded-xl transition-colors duration-200"
             >
               Enable Notifications
             </button>
@@ -493,13 +493,13 @@ export function SmartNotifications() {
       {/* Notification Settings */}
       {showSettings && (
         <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h4 className="text-lg font-bold text-white mb-6">Notification Settings</h4>
+          <h4 className="text-lg font-bold text-gray-900 mb-6">Notification Settings</h4>
           
           <div className="space-y-6">
             {/* Toggle Settings */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <span className="text-white font-medium">Email Notifications</span>
+                <span className="text-gray-900 font-medium">Email Notifications</span>
                 <button
                   onClick={() => updateSettings({ email_notifications: !settings.email_notifications })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -515,7 +515,7 @@ export function SmartNotifications() {
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <span className="text-white font-medium">Push Notifications</span>
+                <span className="text-gray-900 font-medium">Push Notifications</span>
                 <button
                   onClick={() => updateSettings({ push_notifications: !settings.push_notifications })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -531,7 +531,7 @@ export function SmartNotifications() {
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <span className="text-white font-medium">Study Reminders</span>
+                <span className="text-gray-900 font-medium">Study Reminders</span>
                 <button
                   onClick={() => updateSettings({ study_reminders: !settings.study_reminders })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -547,7 +547,7 @@ export function SmartNotifications() {
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <span className="text-white font-medium">Achievement Notifications</span>
+                <span className="text-gray-900 font-medium">Achievement Notifications</span>
                 <button
                   onClick={() => updateSettings({ achievement_notifications: !settings.achievement_notifications })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -563,7 +563,7 @@ export function SmartNotifications() {
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
-                <span className="text-white font-medium">Smart Suggestions</span>
+                <span className="text-gray-900 font-medium">Smart Suggestions</span>
                 <button
                   onClick={() => updateSettings({ smart_suggestions: !settings.smart_suggestions })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -582,26 +582,26 @@ export function SmartNotifications() {
             {/* Time Settings */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Quiet Hours Start
                 </label>
                 <input
                   type="time"
                   value={settings.quiet_hours_start}
                   onChange={(e) => updateSettings({ quiet_hours_start: e.target.value })}
-                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-gray-900 focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   Quiet Hours End
                 </label>
                 <input
                   type="time"
                   value={settings.quiet_hours_end}
                   onChange={(e) => updateSettings({ quiet_hours_end: e.target.value })}
-                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:outline-none"
+                  className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-gray-900 focus:border-blue-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -614,7 +614,7 @@ export function SmartNotifications() {
         {notifications.length === 0 ? (
           <div className="text-center py-12">
             <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Notifications</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Notifications</h3>
             <p className="text-gray-400">You're all caught up! New notifications will appear here.</p>
           </div>
         ) : (
@@ -639,12 +639,12 @@ export function SmartNotifications() {
                   {getNotificationIcon(notification.type)}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-white">{notification.title}</h4>
+                      <h4 className="font-semibold text-gray-900">{notification.title}</h4>
                       {!notification.is_read && (
                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                       )}
                     </div>
-                    <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
+                    <p className="text-gray-900 text-sm mb-2">{notification.message}</p>
                     <div className="flex items-center gap-4 text-xs text-gray-400">
                       <span>{formatTime(notification.created_at)}</span>
                       <span className="capitalize">{notification.priority} priority</span>
@@ -679,19 +679,19 @@ export function SmartNotifications() {
       <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl p-6 border border-purple-500/30">
         <div className="flex items-center gap-3 mb-4">
           <TrendingUp className="h-6 w-6 text-purple-400" />
-          <h4 className="text-lg font-semibold text-white">Smart Insights</h4>
+          <h4 className="text-lg font-semibold text-gray-900">Smart Insights</h4>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">Notification engagement</span>
+            <span className="text-gray-900">Notification engagement</span>
             <span className="text-green-400 font-semibold">85%</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">Response time</span>
+            <span className="text-gray-900">Response time</span>
             <span className="text-blue-400 font-semibold">2.3 min</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-gray-300">Study sessions triggered</span>
+            <span className="text-gray-900">Study sessions triggered</span>
             <span className="text-purple-400 font-semibold">12 this week</span>
           </div>
         </div>

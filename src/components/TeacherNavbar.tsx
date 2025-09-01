@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Users,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -12,11 +11,12 @@ import {
   FileText,
   Mic,
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const navLinks = [
   { href: '/teacher', label: 'Teacher Panel', icon: BookUser },
   { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText },
+  { href: '/cuet-simulator', label: 'CUET Simulator', icon: FileText },
   { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Mic },
 ];
 
@@ -24,7 +24,6 @@ const TeacherNavbar = () => {
   const { user, signOut, loading, fullName } = useAuth() as any;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
   // Sync collapsed state to document for global layout adjustments
   useEffect(() => {
@@ -50,7 +49,7 @@ const TeacherNavbar = () => {
       to={link.href}
       className={({ isActive }) =>
         `flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${
-          isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+          isActive ? 'bg-primary-600 text-white' : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
         }`
       }
     >
@@ -65,7 +64,7 @@ const TeacherNavbar = () => {
       onClick={() => setIsMobileMenuOpen(false)}
       className={({ isActive }) =>
         `flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${
-          isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+          isActive ? 'bg-primary-600 text-white' : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
         }`
       }
     >
@@ -82,13 +81,13 @@ const TeacherNavbar = () => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-gray-800 text-white transition-width duration-300 ease-in-out z-40 hidden md:flex flex-col ${
+        className={`fixed top-0 left-0 h-full bg-card text-foreground transition-all duration-300 ease-in-out z-40 hidden md:flex flex-col border-r border-border ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           {!isCollapsed && <span className="text-2xl font-bold">elevenfolks Teacher</span>}
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-full hover:bg-gray-700">
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-full hover:bg-foreground/5">
             {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
           </button>
         </div>
@@ -99,16 +98,16 @@ const TeacherNavbar = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-border">
            {user && (
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
-              <User className="w-10 h-10 rounded-full bg-gray-600 p-2" />
+              <User className="w-10 h-10 rounded-full bg-foreground/10 p-2" />
               {!isCollapsed && (
                 <div className="ml-3">
                   <p className="font-semibold text-sm">{fullName || user.email}</p>
                    <button
                     onClick={handleSignOut}
-                    className="flex items-center text-sm text-gray-400 hover:text-red-500 transition-colors"
+                    className="flex items-center text-sm text-foreground/60 hover:text-red-500 transition-colors"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -121,7 +120,7 @@ const TeacherNavbar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 w-full bg-gray-800 text-white p-4 z-50 flex items-center justify-between">
+      <header className="md:hidden fixed top-0 left-0 w-full bg-card text-foreground p-4 z-50 flex items-center justify-between border-b border-border">
          <span className="text-2xl font-bold">elevenfolks Teacher</span>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -130,8 +129,8 @@ const TeacherNavbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-90 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <nav className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-6 animate-slide-in">
+        <div className="fixed inset-0 bg-gray-900/90 z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+          <nav className="fixed top-0 left-0 h-full w-64 bg-card text-foreground p-6 animate-slide-in border-r border-border">
              <div className="flex justify-between items-center mb-6">
                 <span className="text-2xl font-bold">elevenfolks Teacher</span>
                 <button onClick={() => setIsMobileMenuOpen(false)}>
@@ -148,12 +147,12 @@ const TeacherNavbar = () => {
             <div className="mt-auto">
                {user && (
                 <div className="flex items-center">
-                  <User className="w-10 h-10 rounded-full bg-gray-600 p-2" />
+                  <User className="w-10 h-10 rounded-full bg-foreground/10 p-2" />
                   <div className="ml-3">
                     <p className="font-semibold text-sm">{fullName || user.email}</p>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center text-sm text-gray-400 hover:text-red-500 transition-colors"
+                      className="flex items-center text-sm text-foreground/60 hover:text-red-500 transition-colors"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout

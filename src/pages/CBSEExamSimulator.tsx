@@ -479,13 +479,13 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Exam Configuration</h2>
-        <p className="text-gray-300">Select your exam details to get started</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Exam Configuration</h2>
+        <p className="text-gray-900">Select your exam details to get started</p>
       </div>
       <div className="card-elevated">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block mb-2 font-semibold text-white">Class</label>
+            <label className="block mb-2 font-semibold text-gray-900">Class</label>
             <select
               className="form-input w-full"
               value={selectedClass}
@@ -500,7 +500,7 @@ const CBSEExamSimulator: React.FC = () => {
           </div>
           {selectedClass === '12' && (
             <div>
-              <label className="block mb-2 font-semibold text-white">Stream</label>
+              <label className="block mb-2 font-semibold text-gray-900">Stream</label>
               <select
                 className="form-input w-full"
                 value={selectedStream}
@@ -516,7 +516,7 @@ const CBSEExamSimulator: React.FC = () => {
             </div>
           )}
           <div>
-            <label className="block mb-2 font-semibold text-white">Subject</label>
+            <label className="block mb-2 font-semibold text-gray-900">Subject</label>
             <select
               className="form-input w-full"
               value={selectedSubject}
@@ -529,7 +529,7 @@ const CBSEExamSimulator: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block mb-2 font-semibold text-white">Exam Type</label>
+            <label className="block mb-2 font-semibold text-gray-900">Exam Type</label>
             <select
               className="form-input w-full"
               value={examType}
@@ -557,12 +557,12 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Chapter Selection & Settings</h2>
-        <p className="text-gray-300">Choose chapters and configure exam parameters</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Chapter Selection & Settings</h2>
+        <p className="text-gray-900">Choose chapters and configure exam parameters</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card-elevated">
-          <h3 className="text-lg font-bold text-white mb-4">Chapters (with weightage)</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Chapters (with weightage)</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
             {aiChapters.length > 0 && (
               <label className="flex items-center gap-2 bg-primary-500/10 rounded-lg p-3 cursor-pointer mb-2 border border-primary-500/30">
@@ -605,7 +605,7 @@ const CBSEExamSimulator: React.FC = () => {
                   }}
                   className="text-primary-500"
                 />
-                <span className="font-semibold text-white">{ch.name}</span>
+                <span className="font-semibold text-gray-900">{ch.name}</span>
                 <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
               </label>
                     ))}
@@ -629,7 +629,7 @@ const CBSEExamSimulator: React.FC = () => {
                   }}
                   className="text-primary-500"
                 />
-                <span className="font-semibold text-white">{ch.name}</span>
+                <span className="font-semibold text-gray-900">{ch.name}</span>
                 <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
               </label>
                           ))}
@@ -644,10 +644,10 @@ const CBSEExamSimulator: React.FC = () => {
         </div>
         <div className="space-y-4">
           <div className="card-elevated">
-            <h3 className="text-lg font-bold text-white mb-4">Exam Settings</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Exam Settings</h3>
             <div className="space-y-4">
               <div>
-                <label className="block mb-2 font-semibold text-white">Difficulty</label>
+                <label className="block mb-2 font-semibold text-gray-900">Difficulty</label>
                 <select
                   className="form-input w-full"
                   value={difficulty}
@@ -659,7 +659,7 @@ const CBSEExamSimulator: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block mb-2 font-semibold text-white">Section Types</label>
+                <label className="block mb-2 font-semibold text-gray-900">Section Types</label>
                 <div className="flex gap-4">
                   {SECTION_TYPES.map(s => (
                     <label key={s.value} className="flex items-center gap-2">
@@ -672,13 +672,13 @@ const CBSEExamSimulator: React.FC = () => {
                         }}
                         className="text-primary-500"
                       />
-                      <span className="text-white">{s.label}</span>
+                      <span className="text-gray-900">{s.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="block mb-2 font-semibold text-white">Total Marks</label>
+                <label className="block mb-2 font-semibold text-gray-900">Total Marks</label>
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 p-2 rounded hover:bg-gray-800 cursor-pointer">
                     <input
@@ -687,7 +687,7 @@ const CBSEExamSimulator: React.FC = () => {
                       onChange={() => setUseCustomMarks(false)}
                       className="text-primary-500"
                     />
-                    <span className={!useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-300"}>
+                    <span className={!useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-900"}>
                       Use Default ({SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80} marks)
                     </span>
                   </label>
@@ -698,7 +698,7 @@ const CBSEExamSimulator: React.FC = () => {
                       onChange={() => setUseCustomMarks(true)}
                       className="text-primary-500"
                     />
-                    <span className={useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-300"}>
+                    <span className={useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-900"}>
                       Custom Marks
                     </span>
                   </label>
@@ -752,13 +752,13 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Preview Question Paper</h2>
-        <p className="text-gray-300">Review and generate your CBSE-style exam paper</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Preview Question Paper</h2>
+        <p className="text-gray-900">Review and generate your CBSE-style exam paper</p>
       </div>
       <div ref={previewRef} className="card-elevated">
         <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-lg font-semibold text-white">{selectedSubject} - Class {selectedClass} ({examType} Exam)</div>
+            <div className="text-lg font-semibold text-gray-900">{selectedSubject} - Class {selectedClass} ({examType} Exam)</div>
             <div className="text-sm text-gray-400">Chapters: {selectedChapters.join(', ')}</div>
             <div className="text-sm text-gray-400">
               Difficulty: {difficulty} | Sections: {selectedSections.join(', ')} | Total Questions: {questions.length} | 
@@ -772,17 +772,17 @@ const CBSEExamSimulator: React.FC = () => {
         {questions.length > 0 ? questions.map((q, i) => (
           <div key={i} className="py-6 px-4 bg-gradient-to-r from-primary-500/5 via-gray-800/50 to-primary-500/5 rounded-xl mb-4 border border-primary-500/20 animate-fade-in">
             <div className="flex items-center gap-4 mb-2">
-              <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
+              <span className="bg-primary-600 text-gray-900 px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
               <span className="bg-gray-700 text-primary-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
               <span className="ml-auto text-warning-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
             </div>
-            <div className="text-white text-lg font-medium pl-2 border-l-4 border-primary-600 question-math">
+            <div className="text-gray-900 text-lg font-medium pl-2 border-l-4 border-primary-600 question-math">
               {i + 1}. {parseMathInline(q.question)}
             </div>
             {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
               <div className="mt-4 ml-6 space-y-2">
                 {q.options.map((option: string, optIndex: number) => (
-                  <div key={optIndex} className="flex items-center gap-3 text-gray-300">
+                  <div key={optIndex} className="flex items-center gap-3 text-gray-900">
                     <span className="font-bold text-primary-400 w-6">({String.fromCharCode(65 + optIndex)})</span>
                     <span>{parseMathInline(option)}</span>
                   </div>
@@ -874,13 +874,13 @@ const CBSEExamSimulator: React.FC = () => {
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
-            <BookOpen className="w-8 h-8 text-white" />
+            <BookOpen className="w-8 h-8 text-gray-900" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
             CBSE <span className="gradient-text">Exam Simulator</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xl text-gray-900 max-w-3xl mx-auto leading-relaxed">
           Generate authentic CBSE-style question papers with AI-powered questions that follow the latest syllabus and marking schemes.
         </p>
       </div>
@@ -893,7 +893,7 @@ const CBSEExamSimulator: React.FC = () => {
           href="https://cbseacademic.nic.in/curriculum_2026.html"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
+          className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
         >
           📄 View the Latest Official CBSE Syllabus (2025-26)
         </a>
@@ -907,7 +907,7 @@ const CBSEExamSimulator: React.FC = () => {
           {TABS.map(tab => (
             <button
               key={tab}
-              className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-primary-500 text-primary-400' : 'text-gray-400 hover:text-white'}`}
+              className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-primary-500 text-primary-400' : 'text-gray-400 hover:text-gray-900'}`}
               onClick={() => setActiveTab(tab)}
             >
               {tab}
@@ -927,10 +927,10 @@ const CBSEExamSimulator: React.FC = () => {
 
       {activeTab === 'Saved Results' && (
         <div className="card-elevated animate-fade-in">
-          <h2 className="text-2xl font-bold text-white mb-6">Saved Results</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Saved Results</h2>
           {/* Handwriting extraction with GPT-4 Vision */}
           <div className="mb-8 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
-            <h3 className="text-lg font-semibold text-white mb-3">Extract Handwritten Answers from PDF</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Extract Handwritten Answers from PDF</h3>
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <input
                 type="file"
@@ -942,7 +942,7 @@ const CBSEExamSimulator: React.FC = () => {
                 className="form-input"
               />
               {visionLoading && (
-                <div className="flex items-center gap-2 text-gray-300">
+                <div className="flex items-center gap-2 text-gray-900">
                   <div className="loading-spinner w-4 h-4" /> Processing PDF with GPT‑4 Vision…
                 </div>
               )}
@@ -975,7 +975,7 @@ const CBSEExamSimulator: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left text-gray-300">
+              <table className="min-w-full text-sm text-left text-gray-900">
                 <thead className="bg-primary-500/20 text-primary-200">
                   <tr>
                     <th className="px-4 py-3">Date</th>

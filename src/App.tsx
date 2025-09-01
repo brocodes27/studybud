@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { supabase } from './lib/supabase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import TeacherNavbar from './components/TeacherNavbar';
@@ -13,7 +12,6 @@ import { Analytics } from './pages/Analytics';
 import { CalendarSync } from './pages/CalendarSync';
 import { Social } from './pages/Social';
 import { Notifications } from './pages/Notifications';
-import { Auth } from './pages/Auth';
 import Landing from './pages/Landing';
 import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
@@ -34,8 +32,10 @@ import MyClasses from './pages/MyClasses';
 import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
 import CBSEExamSimulator from './pages/CBSEExamSimulator';
+import CUETSimulator from './pages/CUETSimulator';
 import CBSEExamSession from './pages/CBSEExamSession';
 import VAPITestComponent from './components/VAPITestComponent';
+import CUETSyllabusDev from './pages/CUETSyllabusDev';
 import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
@@ -43,7 +43,7 @@ import { Sparkles, Crown, X, Zap } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
 
 function AppContent() {
-  const { user, role, loading, session, trialStart, trialActive, isPremium } = useAuth() as any;
+  const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
@@ -60,8 +60,7 @@ function AppContent() {
   })();
 
   // Floating Live Notes modal state
-  const [showLiveNotes, setShowLiveNotes] = useState(false);
-  const [showSuggest, setShowSuggest] = useState(false);
+  // Removed unused showLiveNotes and showSuggest state
 
   // Dismissible subscribe banner
   const [showSubscribeBanner, setShowSubscribeBanner] = useState(true);
@@ -79,17 +78,7 @@ function AppContent() {
     }
   }, []);
 
-  // Detect Google Meet or Zoom in URL (simple heuristic)
-  useEffect(() => {
-    const url = window.location.href;
-    if (
-      url.includes('meet.google.com') ||
-      url.includes('zoom.us') ||
-      url.includes('web.zoom.us')
-    ) {
-      setShowSuggest(true);
-    }
-  }, []);
+  // Removed unused meeting URL detection effect
 
   // Debug logs for loading and user
   console.log('AppContent loading state:', loading);
@@ -116,19 +105,14 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen animated-gradient flex items-center justify-center">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-16 h-16 border-4 border-accent-500/20 border-b-accent-500 rounded-full animate-spin animation-delay-150"></div>
-          <div className="absolute inset-4 w-12 h-12 border-4 border-success-500/20 border-r-success-500 rounded-full animate-spin animation-delay-300"></div>
-          <div className="absolute inset-8 w-8 h-8 border-4 border-warning-500/20 border-l-warning-500 rounded-full animate-spin animation-delay-500"></div>
-        </div>
-        <div className="absolute bottom-8 text-center">
-          <div className="flex items-center justify-center space-x-2 text-white/80">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="loading-spinner w-12 h-12" />
+        <div className="mt-4 text-center">
+          <div className="flex items-center justify-center space-x-2 text-gray-700">
+            <Sparkles className="w-5 h-5" />
             <span className="text-lg font-semibold">ElevenFolks</span>
           </div>
-          <p className="text-white/60 text-sm mt-2">Loading your study experience...</p>
+          <p className="text-gray-500 text-sm mt-2">Loading your study experience...</p>
         </div>
       </div>
     );
@@ -182,12 +166,11 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="animated-gradient fixed inset-0 opacity-10"></div>
+    <div className="min-h-screen bg-background">
       <div className="relative z-10">
         {/* Offline Indicator */}
         {!isFullscreen && !isOnline && (
-          <div className="bg-warning-600 text-white text-center py-3 text-sm font-medium shadow-lg">
+          <div className="bg-amber-100 text-amber-800 text-center py-3 text-sm font-medium border-b border-amber-200">
             📱 You're offline. Some features may be limited.
           </div>
         )}
@@ -239,6 +222,8 @@ function AppContent() {
             <Route path="/pricing" element={<FeatureComparison />} />
             <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
             <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
+            <Route path="/cuet-simulator" element={<CUETSimulator />} />
+            <Route path="/dev/cuet-syllabus" element={<CUETSyllabusDev />} />
             <Route path="/vapi-test" element={<VAPITestComponent />} />
             <Route path="/vapi-setup" element={<VAPISetupTest />} />
             <Route path="/voice-selector" element={<VoiceSelector />} />

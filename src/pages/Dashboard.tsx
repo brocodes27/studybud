@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Trophy, MessageCircle, Sparkles, Crown, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, MessageCircle, Sparkles, Crown, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { format, isToday, isTomorrow, differenceInDays } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { Button } from '../components/Button';
 
 interface StudyPlan {
@@ -33,7 +33,7 @@ export function Dashboard() {
   const { user, role, loading, isPremium, fullName } = useAuth() as any;
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="loading-spinner w-12 h-12"></div>
       </div>
     );
@@ -52,11 +52,7 @@ export function Dashboard() {
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
 
-  // CBSE Exam Progress State
-  const [examAttempts, setExamAttempts] = useState<any[]>([]);
-  const [examLoading, setExamLoading] = useState(true);
-  const [examError, setExamError] = useState<string | null>(null);
-  const [selectedAttempt, setSelectedAttempt] = useState<any | null>(null);
+  // (removed) CBSE Exam Progress State - not used in UI
 
   // Calculate trial days left
   let trialDaysLeft = null;
@@ -74,26 +70,7 @@ export function Dashboard() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchAttempts = async () => {
-      setExamLoading(true);
-      setExamError(null);
-      try {
-        const { data, error } = await supabase
-          .from('cbse_exam_attempts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('exam_date', { ascending: true });
-        if (error) throw error;
-        setExamAttempts(data || []);
-      } catch (err: any) {
-        setExamError(err.message || 'Failed to fetch exam attempts');
-      }
-      setExamLoading(false);
-    };
-    fetchAttempts();
-  }, [user]);
+  // (removed) effect to fetch exam attempts - unused
 
   const fetchUsageThisMonth = async () => {
     if (!user) return;
@@ -224,7 +201,7 @@ export function Dashboard() {
 
   if (dashboardLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="loading-spinner w-12 h-12"></div>
       </div>
     );
@@ -242,10 +219,10 @@ export function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Welcome Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
           Welcome back, <span className="gradient-text-primary">{displayName}!</span>
         </h1>
-        <p className="text-gray-400 text-lg">Ready to continue your learning journey?</p>
+        <p className="text-gray-600 text-lg">Ready to continue your learning journey?</p>
       </div>
 
       {/* Trial Days Left Banner */}
@@ -257,8 +234,8 @@ export function Dashboard() {
                 <Crown className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Free Trial Active</h3>
-                <p className="text-warning-200">{trialDaysLeft} days remaining in your trial</p>
+                <h3 className="text-lg font-bold text-gray-900">Free Trial Active</h3>
+                <p className="text-amber-700">{trialDaysLeft} days remaining in your trial</p>
               </div>
             </div>
             <Button variant="warning" size="lg">
@@ -277,8 +254,8 @@ export function Dashboard() {
                 <Star className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Study Plan Usage</h3>
-                <p className="text-primary-200">{usageDaysThisMonth} of 7 free study plan days used this month</p>
+                <h3 className="text-lg font-bold text-gray-900">Study Plan Usage</h3>
+                <p className="text-blue-700">{usageDaysThisMonth} of 7 free study plan days used this month</p>
               </div>
             </div>
             <Button variant="primary" size="lg">
@@ -295,8 +272,8 @@ export function Dashboard() {
               <CheckCircle className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Premium Active</h3>
-              <p className="text-success-200">Unlimited study plan usage this month</p>
+              <h3 className="text-lg font-bold text-gray-900">Premium Active</h3>
+              <p className="text-emerald-700">Unlimited study plan usage this month</p>
             </div>
           </div>
         </div>
@@ -310,8 +287,8 @@ export function Dashboard() {
               <BookOpen className="w-8 h-8 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Total Plans</p>
-              <p className="text-3xl font-bold text-white">{stats.totalPlans}</p>
+              <p className="text-sm text-gray-600 font-medium">Total Plans</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalPlans}</p>
             </div>
           </div>
         </div>
@@ -322,8 +299,8 @@ export function Dashboard() {
               <Target className="w-8 h-8 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Active Plans</p>
-              <p className="text-3xl font-bold text-white">{stats.activePlans}</p>
+              <p className="text-sm text-gray-600 font-medium">Active Plans</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.activePlans}</p>
             </div>
           </div>
         </div>
@@ -334,8 +311,8 @@ export function Dashboard() {
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Completed Tasks</p>
-              <p className="text-3xl font-bold text-white">{stats.completedTasks}</p>
+              <p className="text-sm text-gray-600 font-medium">Completed Tasks</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.completedTasks}</p>
             </div>
           </div>
         </div>
@@ -346,8 +323,8 @@ export function Dashboard() {
               <AlertCircle className="w-8 h-8 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-400 font-medium">Upcoming Exams</p>
-              <p className="text-3xl font-bold text-white">{stats.upcomingExams}</p>
+              <p className="text-sm text-gray-600 font-medium">Upcoming Exams</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.upcomingExams}</p>
             </div>
           </div>
         </div>
@@ -358,14 +335,14 @@ export function Dashboard() {
         <div className="lg:col-span-2">
           <div className="card-elevated">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
                 Today's Study Tasks
               </h3>
               {todaysTasks.length > 0 && (
-                <span className="bg-gradient-to-r from-primary-500/20 to-accent-500/20 text-primary-300 px-4 py-2 rounded-full text-sm font-medium border border-primary-500/30">
+                <span className="bg-gradient-to-r from-primary-500/10 to-accent-500/10 text-blue-700 px-4 py-2 rounded-full text-sm font-medium border border-blue-200">
                   {todaysTasks.length} tasks
                 </span>
               )}
@@ -373,10 +350,10 @@ export function Dashboard() {
 
             {todaysTasks.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Calendar className="w-12 h-12 text-gray-400" />
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-12 h-12 text-gray-500" />
                 </div>
-                <p className="text-gray-400 mb-6 text-lg">No study tasks scheduled for today</p>
+                <p className="text-gray-600 mb-6 text-lg">No study tasks scheduled for today</p>
                 <Button variant="primary" size="lg" icon={<Plus className="w-5 h-5" />}>
                   Create Study Plan
                 </Button>
@@ -384,19 +361,19 @@ export function Dashboard() {
             ) : (
               <div className="space-y-4">
                 {todaysTasks.map((task, index) => (
-                  <div key={index} className="card-hover-subtle bg-gray-800/30 border border-gray-700/50 rounded-xl p-6">
+                  <div key={index} className="card-hover-subtle bg-card border border-gray-200 rounded-xl p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-grow">
                         <div className="flex items-center gap-3 mb-3">
-                          <h4 className="font-semibold text-white text-lg">{task.topic}</h4>
+                          <h4 className="font-semibold text-gray-900 text-lg">{task.topic}</h4>
                           {task.completed && (
                             <div className="w-6 h-6 bg-gradient-to-r from-success-500 to-success-600 rounded-full flex items-center justify-center">
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                           )}
                         </div>
-                        <p className="text-gray-300 mb-3">{task.subject}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                        <p className="text-gray-600 mb-3">{task.subject}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Clock className="w-4 h-4" />
                           Day {task.day} of study plan
                         </div>
@@ -423,7 +400,7 @@ export function Dashboard() {
           {/* Next Exam */}
           {upcomingExam && (
             <div className="card-elevated bg-gradient-to-r from-warning-500/10 to-warning-600/10 border-warning-500/30">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-3">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
                   <AlertCircle className="w-5 h-5 text-white" />
                 </div>
@@ -431,43 +408,45 @@ export function Dashboard() {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <p className="font-semibold text-white text-lg">{upcomingExam.subject}</p>
-                  <p className="text-gray-300">
+                  <p className="font-semibold text-gray-900 text-lg">{upcomingExam.subject}</p>
+                  <p className="text-gray-600">
                     {format(new Date(upcomingExam.exam_date), 'EEEE, MMMM do, yyyy')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-warning-300">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-2  mb-1 text-sm text-amber-700">
+                  <Clock className="w-4 h-4 mb-1" />
                   {differenceInDays(new Date(upcomingExam.exam_date), new Date())} days remaining
                 </div>
-                <Button variant="warning" size="sm" className="w-full">
-                  View Study Plan
-                </Button>
+                <Link to={`/study/${upcomingExam.planId}`}>
+                  <Button variant="warning" size="sm" className="w-full mt-2">
+                    View Study Plan
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
 
           {/* Quick Actions */}
           <div className="card-elevated">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
               Quick Actions
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-8">
               <Link to="/create">
-                <Button variant="primary" size="sm" className="w-full" icon={<Plus className="w-4 h-4" />}>
+                <Button variant="primary" size="sm" className="w-full mb-1" icon={<Plus className="w-4 h-4" />}>
                   Create New Plan
                 </Button>
               </Link>
               <Link to="/tools">
-                <Button variant="secondary" size="sm" className="w-full" icon={<Sparkles className="w-4 h-4" />}>
+                <Button variant="secondary" size="sm" className="w-full mb-1" icon={<Sparkles className="w-4 h-4" />}>
                   Study Tools
                 </Button>
               </Link>
               <Link to="/ai-study-buddy">
-                <Button variant="accent" size="sm" className="w-full" icon={<MessageCircle className="w-4 h-4" />}>
+                <Button variant="accent" size="sm" className="w-full mb-1" icon={<MessageCircle className="w-4 h-4" />}>
                   AI Study Buddy
                 </Button>
               </Link>
@@ -476,7 +455,7 @@ export function Dashboard() {
 
           {/* Recent Progress */}
           <div className="card-elevated">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
@@ -484,16 +463,16 @@ export function Dashboard() {
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300">Tasks Completed</span>
-                <span className="text-white font-semibold">{stats.completedTasks}</span>
+                <span className="text-gray-600">Tasks Completed</span>
+                <span className="text-gray-900 font-semibold">{stats.completedTasks}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-300">Study Plans</span>
-                <span className="text-white font-semibold">{stats.totalPlans}</span>
+                <span className="text-gray-600">Study Plans</span>
+                <span className="text-gray-900 font-semibold">{stats.totalPlans}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-300">Active Plans</span>
-                <span className="text-white font-semibold">{stats.activePlans}</span>
+                <span className="text-gray-600">Active Plans</span>
+                <span className="text-gray-900 font-semibold">{stats.activePlans}</span>
               </div>
             </div>
           </div>

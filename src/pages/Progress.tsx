@@ -194,7 +194,7 @@ export function Progress() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="loading-spinner w-12 h-12"></div>
       </div>
     );
@@ -204,7 +204,7 @@ export function Progress() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
           Your <span className="gradient-text-primary">Progress</span>
         </h1>
         <p className="text-gray-400 text-lg">Track your learning journey and celebrate your achievements</p>
@@ -218,9 +218,9 @@ export function Progress() {
         <div className="card-elevated">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
+              <TrendingUp className="w-5 h-5 text-gray-900" />
             </div>
-            <h3 className="text-xl font-bold text-white">Weekly Study Activity</h3>
+            <h3 className="text-xl font-bold text-gray-900">Weekly Study Activity</h3>
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -260,9 +260,9 @@ export function Progress() {
         <div className="card-elevated">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
+              <BarChart3 className="w-5 h-5 text-gray-900" />
             </div>
-            <h3 className="text-xl font-bold text-white">Subject Progress</h3>
+            <h3 className="text-xl font-bold text-gray-900">Subject Progress</h3>
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -309,38 +309,38 @@ export function Progress() {
       <div className="card-elevated">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-white" />
+            <Trophy className="w-5 h-5 text-gray-900" />
           </div>
-          <h3 className="text-xl font-bold text-white">Recent Achievements</h3>
+          <h3 className="text-xl font-bold text-gray-900">Recent Achievements</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-primary-500/10 to-primary-600/10 rounded-xl border border-primary-500/20">
             <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <Star className="w-6 h-6 text-white" />
+              <Star className="w-6 h-6 text-gray-900" />
             </div>
             <div>
-              <h4 className="font-semibold text-white">Study Streak</h4>
+              <h4 className="font-semibold text-gray-900">Study Streak</h4>
               <p className="text-sm text-gray-400">Maintained {progressData.streakDays} day streak</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-success-500/10 to-success-600/10 rounded-xl border border-success-500/20">
             <div className="w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-white" />
+              <CheckCircle className="w-6 h-6 text-gray-900" />
             </div>
             <div>
-              <h4 className="font-semibold text-white">Task Master</h4>
+              <h4 className="font-semibold text-gray-900">Task Master</h4>
               <p className="text-sm text-gray-400">Completed {progressData.completedTasks} tasks</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-accent-500/10 to-accent-600/10 rounded-xl border border-accent-500/20">
             <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
+              <Zap className="w-6 h-6 text-gray-900" />
             </div>
             <div>
-              <h4 className="font-semibold text-white">Time Warrior</h4>
+              <h4 className="font-semibold text-gray-900">Time Warrior</h4>
               <p className="text-sm text-gray-400">Studied for {formatTime(progressData.totalStudyTime)}</p>
             </div>
           </div>

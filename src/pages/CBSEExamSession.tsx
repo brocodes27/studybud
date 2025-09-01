@@ -88,7 +88,7 @@ const CBSEExamSession: React.FC = () => {
   const totalMarks = (location.state && location.state.totalMarks) || 80;
   const useCustomMarks = (location.state && location.state.useCustomMarks) || false;
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  // Removed unused answers state
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
   const [submitted, setSubmitted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -179,10 +179,7 @@ const CBSEExamSession: React.FC = () => {
     return `${h}:${m}:${s}`;
   };
 
-  // Answer change
-  const handleAnswer = (val: string) => {
-    setAnswers((prev) => ({ ...prev, [current]: val }));
-  };
+  // Answer change (removed input-based answering; answers are taken from uploaded sheets)
 
   // Submit logic
   const handleSubmit = () => {
@@ -195,8 +192,7 @@ const CBSEExamSession: React.FC = () => {
   const next = () => setCurrent((c) => Math.min(c + 1, questions.length - 1));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
-  // Summary
-  const unanswered = questions.filter((_: any, i: number) => !answers[i]);
+  // Summary (unused when relying solely on uploaded answers)
 
   // Handle answer sheet upload
   const handleAnswerSheetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,9 +202,8 @@ const CBSEExamSession: React.FC = () => {
       const file = e.target.files?.[0];
       if (!file || !user?.id) throw new Error('No file selected or user not found');
       if (file.type !== 'application/pdf') throw new Error('Only PDF files are supported.');
-      const ext = file.name.split('.').pop();
       const filePath = `${user.id}/exam_${Date.now()}_${file.name}`;
-      const { data, error: uploadError } = await supabase.storage.from('answer-sheets').upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from('answer-sheets').upload(filePath, file);
       if (uploadError) throw uploadError;
       const { data: publicURLData } = supabase.storage.from('answer-sheets').getPublicUrl(filePath);
       setUploadedFileUrl(publicURLData.publicUrl);
@@ -507,22 +502,27 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
   if (showSummary) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
-        <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 w-full max-w-2xl animate-fade-in">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+        <div className="bg-card rounded-2xl shadow-2xl p-8 border border-border w-full max-w-2xl animate-fade-in">
           <h2 className="text-2xl font-bold text-blue-400 mb-4 flex items-center gap-2"><CheckCircle className="w-6 h-6 text-green-400" /> Exam Submitted!</h2>
-          <div className="mb-4 text-gray-300">Thank you for completing the exam. Your answers have been saved.</div>
+          <div className="mb-4 text-foreground">Thank you for completing the exam. Your answers have been saved.</div>
           {/* Answer Sheet Upload */}
-          <div className="mt-8 p-6 bg-gray-800 rounded-xl border border-blue-700">
+          <div className="mt-8 p-6 bg-card rounded-xl border border-border">
             <h3 className="text-lg font-bold text-blue-300 mb-2">Upload Your Handwritten Answer Sheet</h3>
             <p className="text-gray-400 mb-4">Scan or take clear photos of your answer sheets, combine them into a single PDF, and upload the PDF file here. <span className="text-yellow-400 font-semibold">Only PDF files are allowed.</span> This will be used for AI evaluation.</p>
             <input
               type="file"
               accept="application/pdf"
               onChange={handleAnswerSheetUpload}
-              className="mb-2"
+              className="form-input mb-2"
               disabled={uploading}
             />
-            {uploading && <div className="text-blue-400">Uploading...</div>}
+            {uploading && (
+              <div className="flex items-center gap-2 text-blue-400">
+                <div className="loading-spinner w-4 h-4" />
+                Uploading...
+              </div>
+            )}
             {uploadError && <div className="text-red-400">{uploadError}</div>}
             {uploadedFileUrl && (
               <div className="mt-2 text-green-400">
@@ -532,14 +532,17 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           </div>
           {/* OCR Extracted Text */}
           {uploadedFileUrl && (
-            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-card rounded-xl border border-border">
               <h3 className="text-lg font-bold text-blue-200 mb-2">Extracted Text from Answer Sheet</h3>
               {extracting && (
-                <div className="text-blue-400 mb-2">Extracting text... {ocrProgress !== null ? `(${ocrProgress}%)` : ''}</div>
+                <div className="flex items-center gap-2 text-blue-400 mb-2">
+                  <div className="loading-spinner w-4 h-4" />
+                  Extracting text... {ocrProgress !== null ? `(${ocrProgress}%)` : ''}
+                </div>
               )}
               {extractedText && (
                 <textarea
-                  className="w-full p-3 rounded bg-gray-800 text-white border border-blue-700"
+                  className="form-input w-full"
                   rows={10}
                   value={extractedText}
                   readOnly
@@ -552,14 +555,19 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* AI Evaluation Button and Feedback */}
           {uploadedFileUrl && extractedText && (
-            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-card rounded-xl border border-border">
               <h3 className="text-lg font-bold text-blue-200 mb-2">AI Evaluation</h3>
               <button
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition mb-4"
+                className="bg-green-600 hover:bg-green-700 text-gray-900 px-6 py-2 rounded shadow transition mb-4"
                 onClick={handleEvaluateWithAI}
                 disabled={aiLoading}
               >
-                {aiLoading ? 'Evaluating...' : 'Evaluate with AI'}
+                {aiLoading ? (
+                  <span className="inline-flex items-center">
+                    <span className="loading-spinner w-4 h-4 mr-2" />
+                    Evaluating...
+                  </span>
+                ) : 'Evaluate with AI'}
               </button>
               {aiError && <div className="text-red-400 mb-2">{aiError}</div>}
               {/* Raw JSON feedback textarea removed */}
@@ -567,11 +575,11 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* Structured AI Feedback Report */}
           {aiFeedback && parsedFeedback.length > 0 && (
-            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-green-800">
+            <div className="mt-8 p-6 bg-card rounded-xl border border-border">
               <h3 className="text-lg font-bold text-green-300 mb-2">CBSE-Style Report Card</h3>
-              <div className="mb-4 text-white font-semibold">Total Score: <span className="text-green-400">{totalScore} / {maxScore}</span></div>
+              <div className="mb-4 text-foreground font-semibold">Total Score: <span className="text-green-400">{totalScore} / {maxScore}</span></div>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-left text-gray-300 mb-4">
+                <table className="min-w-full text-sm text-left text-foreground mb-4">
                   <thead className="bg-green-900 text-green-200">
                     <tr>
                       <th className="px-3 py-2">Q#</th>
@@ -581,7 +589,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
                   </thead>
                   <tbody>
                     {parsedFeedback.map((q, i) => (
-                      <tr key={i} className="border-b border-green-800">
+                      <tr key={i} className="border-b border-border">
                         <td className="px-3 py-2 font-bold">{q.question_number || i + 1}</td>
                         <td className="px-3 py-2">{q.marks_awarded} / {q.max_marks}</td>
                         <td className="px-3 py-2 whitespace-pre-line">{q.feedback || '-'}</td>
@@ -591,11 +599,13 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
                 </table>
               </div>
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition mt-2"
+                className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-2 rounded shadow transition mt-2"
                 onClick={handleSaveResults}
                 disabled={saveStatus === 'saving' || saveStatus === 'saved'}
               >
-                {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved!' : 'Save Results'}
+                {saveStatus === 'saving' ? (
+                  <span className="inline-flex items-center"><span className="loading-spinner w-4 h-4 mr-2" /> Saving...</span>
+                ) : saveStatus === 'saved' ? 'Saved!' : 'Save Results'}
               </button>
               {saveStatus === 'error' && <div className="text-red-400 mt-2">{saveError}</div>}
               {saveStatus === 'saved' && <div className="text-green-400 mt-2">Results saved successfully!</div>}
@@ -603,25 +613,30 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           )}
           {/* Personalized Improvement Plan */}
           {aiFeedback && (
-            <div className="mt-8 p-6 bg-gray-900 rounded-xl border border-blue-800">
+            <div className="mt-8 p-6 bg-card rounded-xl border border-border">
               <h3 className="text-lg font-bold text-blue-200 mb-2">Personalized Improvement Plan</h3>
               <button
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow transition mb-4"
+                className="bg-purple-600 hover:bg-purple-700 text-gray-900 px-6 py-2 rounded shadow transition mb-4"
                 onClick={handleGenerateImprovementPlan}
                 disabled={planLoading}
               >
-                {planLoading ? 'Generating...' : 'Generate Improvement Plan'}
+                {planLoading ? (
+                  <span className="inline-flex items-center">
+                    <span className="loading-spinner w-4 h-4 mr-2" />
+                    Generating...
+                  </span>
+                ) : 'Generate Improvement Plan'}
               </button>
               {planError && <div className="text-red-400 mb-2">{planError}</div>}
               {improvementPlan && (
                 <div
-                  className="w-full p-3 rounded bg-gray-800 text-white border border-purple-700 prose prose-invert max-w-none"
+                  className="w-full p-3 rounded bg-card text-foreground border border-border prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: marked(improvementPlan) as string }}
                 />
               )}
             </div>
           )}
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition mt-8" onClick={() => setShowSummary(false)}>Review Answers</button>
+          <button className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-2 rounded shadow transition mt-8" onClick={() => setShowSummary(false)}>Review Answers</button>
         </div>
       </div>
     );
@@ -629,11 +644,11 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
   if (!questions || questions.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
-        <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 w-full max-w-2xl animate-fade-in text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+        <div className="bg-card rounded-2xl shadow-2xl p-8 border border-border w-full max-w-2xl animate-fade-in text-center">
           <h2 className="text-2xl font-bold text-blue-400 mb-4">No Questions Found</h2>
-          <div className="mb-6 text-gray-300">No questions were provided for this exam session. Please generate a paper in the CBSE Exam Simulator first.</div>
-          <a href="/cbse-simulator" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition">Go to CBSE Simulator</a>
+          <div className="mb-6 text-gray-900">No questions were provided for this exam session. Please generate a paper in the CBSE Exam Simulator first.</div>
+          <a href="/cbse-simulator" className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-2 rounded shadow transition">Go to CBSE Simulator</a>
         </div>
       </div>
     );
@@ -642,8 +657,8 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
   const q = questions[current];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-black p-6">
-      <div className="w-full max-w-2xl bg-gray-900 rounded-2xl shadow-2xl p-8 border border-blue-800 animate-fade-in relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+      <div className="w-full max-w-2xl bg-card rounded-2xl shadow-2xl p-8 border border-border animate-fade-in relative">
         {/* Exam Header */}
         <div className="mb-6 text-center">
           <h2 className="text-xl font-bold text-blue-400 mb-2">CBSE Exam Session</h2>
@@ -661,17 +676,17 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           Question {current + 1} of {questions.length}
         </div>
         {/* Question Card */}
-        <div className="bg-gradient-to-r from-blue-950 via-gray-900 to-black rounded-xl p-6 shadow mb-6 animate-fade-in">
+        <div className="bg-card rounded-xl p-6 shadow mb-6 animate-fade-in">
           <div className="flex items-center gap-4 mb-2">
-            <span className="bg-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
+            <span className="bg-blue-700 text-gray-900 px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
             <span className="bg-gray-700 text-blue-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
             <span className="ml-auto text-yellow-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
           </div>
-          <div className="text-white text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{parseMathInline(q.question)}</div>
+          <div className="text-foreground text-lg font-medium pl-2 border-l-4 border-blue-600 mb-4">{parseMathInline(q.question)}</div>
           {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
             <div className="mt-4 space-y-2">
               {q.options.map((option: string, optIndex: number) => (
-                <div key={optIndex} className="flex items-center gap-3 text-gray-300">
+                <div key={optIndex} className="flex items-center gap-3 text-gray-900">
                   <span className="font-bold text-blue-400 w-6">({String.fromCharCode(65 + optIndex)})</span>
                   <span>{parseMathInline(option)}</span>
                 </div>
@@ -688,7 +703,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         {/* Navigation Buttons Restored */}
         <div className="flex justify-between items-center mt-4">
           <button
-            className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded shadow transition disabled:opacity-50"
+            className="bg-gray-700 hover:bg-gray-800 text-gray-900 px-6 py-2 rounded shadow transition disabled:opacity-50"
             onClick={prev}
             disabled={current === 0}
           >
@@ -696,14 +711,14 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           </button>
           {current < questions.length - 1 ? (
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded shadow transition"
+              className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-2 rounded shadow transition"
               onClick={next}
             >
               Next <ArrowRight className="w-5 h-5 inline ml-2" />
             </button>
           ) : (
             <button
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow transition"
+              className="bg-green-600 hover:bg-green-700 text-gray-900 px-6 py-2 rounded shadow transition"
               onClick={handleSubmit}
             >
               Submit <CheckCircle className="w-5 h-5 inline ml-2" />
@@ -715,4 +730,4 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
   );
 };
 
-export default CBSEExamSession; 
+export default CBSEExamSession;

@@ -46,14 +46,14 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 
   return (
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">Your Learning Journey</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Learning Journey</h2>
       
       {/* Level and XP Section */}
       <div className="grid grid-cols-1 gap-6 mb-8">
         {/* Level Progress */}
         <div className="bg-gray-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-white">Level {level}</h3>
+            <h3 className="text-lg font-semibold text-gray">Level {level}</h3>
             <span className="text-2xl">🏆</span>
           </div>
           <div className="space-y-2">
@@ -76,7 +76,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         {/* Total XP */}
         <div className="bg-gray-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-white">Total XP</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Total XP</h3>
             <span className="text-2xl">⭐</span>
           </div>
           <div className="text-center">
@@ -90,7 +90,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         {/* Streak */}
         <div className="bg-gray-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-white">Streak</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Streak</h3>
             <span className="text-2xl">🔥</span>
           </div>
           <div className="text-center">
@@ -105,7 +105,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       {/* Weekly Goal */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white">Weekly Goal</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Weekly Goal</h3>
           <span className="text-sm text-gray-300">
             {weeklyProgress}/{weeklyGoal} XP
           </span>
@@ -124,7 +124,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 
       {/* Recent Achievements */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-4">Recent Achievements</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Achievements</h3>
         <div className="space-y-3">
           {achievements.slice(0, 3).map((achievement) => (
             <div
@@ -138,7 +138,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
               <span className="text-xl">{achievement.icon}</span>
               <div className="flex-1">
                 <h4 className={`font-medium ${
-                  achievement.isUnlocked ? 'text-white' : 'text-gray-400'
+                  achievement.isUnlocked ? 'text-gray-900' : 'text-gray-400'
                 }`}>
                   {achievement.title}
                 </h4>

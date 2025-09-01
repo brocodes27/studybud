@@ -40,9 +40,9 @@ export function StudyTools() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
-            <Zap className="w-8 h-8 text-white" />
+            <Zap className="w-8 h-8 text-gray-900" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
             AI <span className="gradient-text">Study Tools</span>
           </h1>
         </div>
@@ -65,8 +65,8 @@ export function StudyTools() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 ${
                     activeTab === tab.id
-                      ? `bg-gradient-to-r ${tab.color} text-white font-semibold shadow-lg`
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                      ? `bg-gradient-to-r ${tab.color} text-gray-900 font-semibold shadow-lg`
+                      : 'text-gray-400 hover:text-gray-900 hover:bg-gray-700/50'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

@@ -8,9 +8,9 @@ export function Analytics() {
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
-            <BarChart3 className="w-8 h-8 text-white" />
+            <BarChart3 className="w-8 h-8 text-gray-900" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
             Advanced <span className="gradient-text">Analytics</span>
           </h1>
         </div>

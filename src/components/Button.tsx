@@ -15,11 +15,11 @@ const buttonVariants = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
   accent: 'btn-accent',
-  success: 'bg-gradient-to-r from-success-600 to-success-700 hover:from-success-700 hover:to-success-800 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-success-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg hover:shadow-xl',
-  warning: 'bg-gradient-to-r from-warning-600 to-warning-700 hover:from-warning-700 hover:to-warning-800 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-warning-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg hover:shadow-xl',
-  danger: 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg hover:shadow-xl',
-  ghost: 'bg-transparent hover:bg-gray-700/50 text-gray-300 hover:text-white font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900',
-  outline: 'bg-transparent border-2 border-gray-600 hover:border-primary-500 text-gray-300 hover:text-white font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-gray-900',
+  success: 'bg-green-600 hover:bg-green-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
+  warning: 'bg-yellow-600 hover:bg-yellow-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
+  danger: 'bg-red-600 hover:bg-red-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
+  ghost: 'bg-transparent hover:bg-foreground/5 text-foreground/80 hover:text-foreground font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:ring-offset-2 focus:ring-offset-background',
+  outline: 'bg-transparent border-2 border-border hover:border-primary-500 text-foreground/80 hover:text-foreground font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-background',
 };
 
 const buttonSizes = {

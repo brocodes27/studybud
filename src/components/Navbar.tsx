@@ -39,6 +39,7 @@ const navLinks = [
   { href: '/notifications', label: 'Notifications', icon: Bell, color: 'from-yellow-500 to-yellow-600' },
   { href: '/live-notes', label: 'Live Meeting Notes', icon: Mic, color: 'from-red-500 to-red-600' },
   { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText, color: 'from-violet-500 to-violet-600' },
+  { href: '/cuet-simulator', label: 'CUET Simulator', icon: FileText, color: 'from-fuchsia-500 to-fuchsia-600' },
   { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Sparkles, color: 'from-rose-500 to-rose-600' },
 ];
 
@@ -81,8 +82,8 @@ const Navbar = () => {
       className={({ isActive }) =>
         `group flex items-center p-3 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
           isActive 
-            ? `bg-gradient-to-r ${link.color} text-white shadow-lg shadow-${link.color.split('-')[1]}-500/25` 
-            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+            ? `bg-gradient-to-r ${link.color} text-primary-foreground shadow-lg shadow-${link.color.split('-')[1]}-500/25` 
+            : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
         }`
       }
     >
@@ -105,8 +106,8 @@ const Navbar = () => {
       className={({ isActive }) =>
         `group flex items-center p-4 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
           isActive 
-            ? `bg-gradient-to-r ${link.color} text-white shadow-lg` 
-            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+            ? `bg-gradient-to-r ${link.color} text-primary-foreground shadow-lg` 
+            : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
         }`
       }
     >
@@ -120,8 +121,8 @@ const Navbar = () => {
 
   if (loading) {
     return (
-      <div className="fixed top-0 left-0 h-full bg-gray-800/95 backdrop-blur-xl text-white z-40 hidden md:flex flex-col w-64">
-        <div className="flex items-center justify-center p-4 border-b border-gray-700">
+      <div className="fixed top-0 left-0 h-full bg-card text-foreground z-40 hidden md:flex flex-col w-64 border-r border-border">
+        <div className="flex items-center justify-center p-4 border-b border-border">
           <div className="loading-spinner w-8 h-8"></div>
         </div>
       </div>
@@ -132,23 +133,23 @@ const Navbar = () => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-gray-800/95 backdrop-blur-xl text-white transition-all duration-300 ease-in-out z-40 hidden md:flex flex-col border-r border-gray-700/50 ${
+        className={`fixed top-0 left-0 h-full bg-card text-foreground transition-all duration-300 ease-in-out z-40 hidden md:flex flex-col border-r border-border ${
           isCollapsed ? 'w-20' : 'w-72'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+                <Sparkles className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold gradient-text">ElevenFolks</span>
             </div>
           )}
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 focus-ring"
+            className="p-2 rounded-lg hover:bg-foreground/5 transition-colors duration-200 focus-ring"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
@@ -163,9 +164,9 @@ const Navbar = () => {
 
             {role === 'student' && (
               <>
-                <div className="my-6 border-t border-gray-700/50"></div>
+                <div className="my-6 border-t border-border"></div>
                 <div className="px-3 mb-3">
-                  {!isCollapsed && <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</span>}
+                  {!isCollapsed && <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Student</span>}
                 </div>
                 {studentNavLinks.map((link) => (
                   <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
@@ -175,9 +176,9 @@ const Navbar = () => {
 
             {isAdmin && (
               <>
-                <div className="my-6 border-t border-gray-700/50"></div>
+                <div className="my-6 border-t border-border"></div>
                 <div className="px-3 mb-3">
-                  {!isCollapsed && <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin</span>}
+                  {!isCollapsed && <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Admin</span>}
                 </div>
                 {adminNavLinks.map((link) => (
                   <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
@@ -188,26 +189,26 @@ const Navbar = () => {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-700/50">
+        <div className="p-4 border-t border-border">
           {user && (
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
+                  <User className="w-6 h-6 text-primary-foreground" />
                 </div>
                 {isPremium && (
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
-                    <Crown className="w-2.5 h-2.5 text-white" />
+                    <Crown className="w-2.5 h-2.5 text-primary-foreground" />
                   </div>
                 )}
               </div>
               {!isCollapsed && (
                 <div className="ml-3 flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{fullName || user.email}</p>
-                  <p className="text-xs text-gray-400 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
+                  <p className="text-xs text-foreground/60 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center text-xs text-gray-400 hover:text-red-400 transition-colors mt-1 group"
+                    className="flex items-center text-xs text-foreground/60 hover:text-red-500 transition-colors mt-1 group"
                   >
                     <LogOut className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform" />
                     Logout
@@ -220,11 +221,11 @@ const Navbar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/50">
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold gradient-text">ElevenFolks</span>
           </div>
@@ -241,17 +242,17 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-sm z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <nav className="fixed top-0 left-0 h-full w-80 bg-gray-800/95 backdrop-blur-xl text-white p-6 animate-slide-in-right">
+          <nav className="fixed top-0 left-0 h-full w-80 bg-card text-foreground p-6 animate-slide-in-right border-r border-border">
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <Sparkles className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-bold gradient-text">ElevenFolks</span>
               </div>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 focus-ring"
+                className="p-2 rounded-lg hover:bg-foreground/5 transition-colors duration-200 focus-ring"
               >
                 <X size={20} />
               </button>
@@ -264,9 +265,9 @@ const Navbar = () => {
               
               {role === 'student' && (
                 <>
-                  <div className="my-6 border-t border-gray-700/50"></div>
+                  <div className="my-6 border-t border-border"></div>
                   <div className="px-4 mb-3">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Student</span>
+                    <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Student</span>
                   </div>
                   {studentNavLinks.map((link) => (
                     <MobileNavItem key={link.href} link={link} />
@@ -276,9 +277,9 @@ const Navbar = () => {
               
               {isAdmin && (
                 <>
-                  <div className="my-6 border-t border-gray-700/50"></div>
+                  <div className="my-6 border-t border-border"></div>
                   <div className="px-4 mb-3">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin</span>
+                    <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Admin</span>
                   </div>
                   {adminNavLinks.map((link) => (
                     <MobileNavItem key={link.href} link={link} />
@@ -287,25 +288,25 @@ const Navbar = () => {
               )}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-700/50">
+            <div className="mt-8 pt-6 border-t border-border">
               {user && (
                 <div className="flex items-center">
                   <div className="relative">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center">
-                      <User className="w-7 h-7 text-white" />
+                      <User className="w-7 h-7 text-primary-foreground" />
                     </div>
                     {isPremium && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
-                        <Crown className="w-3 h-3 text-white" />
+                        <Crown className="w-3 h-3 text-primary-foreground" />
                       </div>
                     )}
                   </div>
                   <div className="ml-4 flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{fullName || user.email}</p>
-                    <p className="text-xs text-gray-400 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
+                    <p className="text-xs text-foreground/60 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center text-xs text-gray-400 hover:text-red-400 transition-colors mt-2 group"
+                      className="flex items-center text-xs text-foreground/60 hover:text-red-500 transition-colors mt-2 group"
                     >
                       <LogOut className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform" />
                       Logout

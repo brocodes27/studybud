@@ -90,22 +90,22 @@ const MyClasses = () => {
     };
 
     return (
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto p-4 text-foreground">
             <h1 className="text-2xl font-bold mb-4">My Classes</h1>
 
             {error && <p className="text-red-500 bg-red-100 p-3 rounded mb-4">{error}</p>}
 
             {role === 'teacher' && (
-                <form onSubmit={handleCreateClass} className="mb-6 p-4 bg-gray-100 rounded-lg">
+                <form onSubmit={handleCreateClass} className="mb-6 p-4 bg-card border border-border rounded-lg">
                     <h2 className="text-xl font-semibold mb-2">Create a New Class</h2>
                     <input
                         type="text"
                         placeholder="Class Name"
                         value={className}
                         onChange={(e) => setClassName(e.target.value)}
-                        className="w-full p-2 border rounded mb-2"
+                        className="w-full p-2 border border-border bg-background text-foreground rounded mb-2 placeholder:text-muted-foreground"
                     />
-                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    <button type="submit" className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90">
                         Create Class
                     </button>
                 </form>
@@ -114,31 +114,31 @@ const MyClasses = () => {
             {role === 'student' && (
                 <>
                     <button
-                        className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 mb-6"
+                        className="bg-primary text-primary-foreground px-4 py-2 rounded shadow hover:bg-primary/90 mb-6"
                         onClick={() => setShowJoinModal(true)}
                     >
                         Join Class
                     </button>
                     {showJoinModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-                            <div className="relative bg-black rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                            <div className="relative bg-card border border-border text-foreground rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto">
                                 <button
-                                    className="absolute top-3 right-4 text-gray-400 hover:text-white text-2xl font-bold"
+                                    className="absolute top-3 right-4 text-muted-foreground hover:text-foreground text-2xl font-bold"
                                     onClick={() => setShowJoinModal(false)}
                                     aria-label="Close"
                                 >
                                     &times;
                                 </button>
                                 <form onSubmit={handleJoinClass}>
-                                    <h2 className="text-xl font-semibold mb-4 text-white">Join a Class</h2>
+                                    <h2 className="text-xl font-semibold mb-4 text-foreground">Join a Class</h2>
                                     <input
                                         type="text"
                                         placeholder="Enter Class ID"
                                         value={classId}
                                         onChange={(e) => setClassId(e.target.value)}
-                                        className="w-full p-3 border border-gray-700 rounded mb-4 bg-gray-900 text-white placeholder-gray-400"
+                                        className="w-full p-3 border border-border rounded mb-4 bg-background text-foreground placeholder:text-muted-foreground"
                                     />
-                                    <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full font-semibold">
+                                    <button type="submit" className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90 w-full font-semibold">
                                         Join Class
                                     </button>
                                 </form>
@@ -150,15 +150,15 @@ const MyClasses = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
-                    <p>Loading classes...</p>
+                    <p className="text-muted-foreground">Loading classes...</p>
                 ) : (
                     // Debug: log the classes array
                     console.log('Classes:', classes),
                     classes.map((c) => (
-                        <Link to={`/class/${c.id}`} key={c.id} className="block p-4 bg-gray-900 rounded-lg shadow hover:shadow-md transition-shadow">
-                            <h3 className="text-lg font-bold text-white">{c.name || 'Unnamed Class'}</h3>
-                            {!c.name && <p className="text-xs text-gray-400">ID: {c.id}</p>}
-                            {role === 'teacher' && c.class_code && <p className="text-sm text-gray-400">Code: {c.class_code}</p>}
+                        <Link to={`/class/${c.id}`} key={c.id} className="block p-4 bg-card border border-border rounded-lg shadow hover:shadow-md transition-shadow">
+                            <h3 className="text-lg font-bold text-foreground">{c.name || 'Unnamed Class'}</h3>
+                            {!c.name && <p className="text-xs text-muted-foreground">ID: {c.id}</p>}
+                            {role === 'teacher' && c.class_code && <p className="text-sm text-muted-foreground">Code: {c.class_code}</p>}
                         </Link>
                     ))
                 )}
@@ -167,4 +167,4 @@ const MyClasses = () => {
     );
 };
 
-export default MyClasses; 
+export default MyClasses;

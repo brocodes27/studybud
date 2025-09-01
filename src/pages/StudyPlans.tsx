@@ -175,7 +175,7 @@ export function StudyPlans() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="loading-spinner w-12 h-12"></div>
       </div>
     );
@@ -185,7 +185,7 @@ export function StudyPlans() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
           My <span className="gradient-text-primary">Study Plans</span>
         </h1>
         <p className="text-gray-400 text-lg">Manage and track your personalized study schedules</p>
@@ -196,11 +196,11 @@ export function StudyPlans() {
         <div className="card-elevated">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
+              <BookOpen className="w-6 h-6 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Total Plans</p>
-              <p className="text-2xl font-bold text-white">{studyPlans.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{studyPlans.length}</p>
             </div>
           </div>
         </div>
@@ -208,11 +208,11 @@ export function StudyPlans() {
         <div className="card-elevated">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-              <Target className="w-6 h-6 text-white" />
+              <Target className="w-6 h-6 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Active Plans</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {studyPlans.filter(plan => new Date(plan.exam_date) > new Date()).length}
               </p>
             </div>
@@ -222,11 +222,11 @@ export function StudyPlans() {
         <div className="card-elevated">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-white" />
+              <AlertCircle className="w-6 h-6 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">This Week</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {studyPlans.filter(plan => {
                   const daysUntil = differenceInDays(new Date(plan.exam_date), new Date());
                   return daysUntil <= 7 && daysUntil >= 0;
@@ -239,11 +239,11 @@ export function StudyPlans() {
         <div className="card-elevated">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
+              <TrendingUp className="w-6 h-6 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Completed</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-2xl font-bold text-gray-900">
                 {studyPlans.filter(plan => new Date(plan.exam_date) < new Date()).length}
               </p>
             </div>
@@ -266,7 +266,7 @@ export function StudyPlans() {
           <div className="w-24 h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <BookOpen className="w-12 h-12 text-gray-400" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-4">No Study Plans Yet</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">No Study Plans Yet</h3>
           <p className="text-gray-400 mb-8 text-lg">Create your first study plan to get started with personalized learning</p>
           <Link to="/create">
             <Button variant="primary" size="lg" icon={<Sparkles className="w-5 h-5" />}>
@@ -308,7 +308,7 @@ export function StudyPlans() {
                         />
                       </div>
                     ) : (
-                      <h3 className="text-lg font-bold text-white truncate">
+                      <h3 className="text-lg font-bold text-gray-900 truncate">
                         {plan.plan_name || `${plan.subject} Study Plan`}
                       </h3>
                     )}
@@ -316,7 +316,7 @@ export function StudyPlans() {
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => startEditing(plan)}
-                      className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors text-gray-400 hover:text-white"
+                      className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors text-gray-400 hover:text-gray-900"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
