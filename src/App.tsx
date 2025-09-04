@@ -41,6 +41,8 @@ import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
 import { Sparkles, Crown, X, Zap } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
+import { RanjanSir } from './pages/RanjanSir';
+import { Curriculum } from './pages/Curriculum';
 
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -204,9 +206,10 @@ function AppContent() {
         <main className={isFullscreen ? "w-full h-screen p-0 m-0" : "w-full px-6 py-8 page-with-sidebar"}>
           <Routes>
             <Route path="/calendar" element={<CalendarSync />} />
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<RanjanSir />} />
             <Route path="/create" element={<CreatePlan />} />
             <Route path="/plans" element={<StudyPlans />} />
+            <Route path="/curriculum" element={<Curriculum />} />
             <Route path="/tools" element={<StudyTools />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/analytics" element={<Analytics />} />
@@ -217,6 +220,7 @@ function AppContent() {
             <Route path="/my-notes/:id" element={<NoteDetailPage />} />
             <Route path="/study/:planId" element={<StudySession />} />
             <Route path="/ai-study-buddy" element={<AIStudyBuddyPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/pricing" element={<FeatureComparison />} />

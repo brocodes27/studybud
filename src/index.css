@@ -334,6 +334,17 @@
 }
 
 /* Enhanced button styles */
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg font-medium tracking-tight px-4 py-2;
+}
+
+.btn-text {
+  @apply inline-flex items-center justify-center gap-1 text-black/60 hover:text-black transition-colors;
+}
+
+.tag {
+  @apply inline-block rounded-full bg-black text-white text-xs px-3 py-1;
+}
 .btn-primary {
   @apply px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl;
 }

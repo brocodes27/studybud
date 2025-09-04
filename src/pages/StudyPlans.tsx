@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Calendar, Clock, Plus, Trash2, Eye, Pencil, Check, X, Target, TrendingUp, AlertCircle, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -27,7 +27,7 @@ interface StudyPlan {
 }
 
 export function StudyPlans() {
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
   const { showToast } = useToast();
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,25 @@ export function StudyPlans() {
   useEffect(() => {
     fetchStudyPlans();
   }, [user]);
+
+  // Realtime: refresh when any of the user's exam_plans change (e.g., reschedule)
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('exam_plans_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_plans', filter: `user_id=eq.${user.id}` },
+        () => {
+          fetchStudyPlans();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const fetchStudyPlans = async () => {
     try {
@@ -173,6 +192,15 @@ export function StudyPlans() {
     return { status: 'future', color: 'secondary', text: 'Future' };
   };
 
+  const getUpcoming = (plan: StudyPlan) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const sched = Array.isArray(plan?.plan?.daily_schedule) ? plan.plan.daily_schedule : [];
+    return sched
+      .filter((d: any) => d?.date && d.date >= todayStr)
+      .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)))
+      .slice(0, 3);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -299,13 +327,17 @@ export function StudyPlans() {
                           size="sm"
                           onClick={() => updatePlanName(plan.id)}
                           icon={<Check className="w-4 h-4" />}
-                        />
+                        >
+                          Save
+                        </Button>
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={cancelEditing}
                           icon={<X className="w-4 h-4" />}
-                        />
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     ) : (
                       <h3 className="text-lg font-bold text-gray-900 truncate">
@@ -343,6 +375,26 @@ export function StudyPlans() {
                     <Clock className="w-4 h-4" />
                     <span>{plan.plan.daily_schedule.length} study sessions</span>
                   </div>
+                  {/* Upcoming preview (reflects reschedules) */}
+                  {(() => {
+                    const upcoming = getUpcoming(plan);
+                    return (
+                      <div className="mt-2 p-3 rounded-lg bg-gray-900/40">
+                        <div className="text-xs text-gray-900 mb-1">Upcoming</div>
+                        {upcoming.length > 0 ? (
+                          <ul className="text-sm text-gray-300 space-y-1">
+                            {upcoming.map((d) => (
+                              <li key={`${plan.id}-${d.date}-${d.topic}`}>
+                                {format(new Date(`${d.date}T00:00:00`), 'MMM dd')}: {d.topic}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-sm text-gray-400">No upcoming sessions</div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Progress Bar */}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Pause, CheckCircle, Clock, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Play, Pause, CheckCircle, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -22,12 +22,22 @@ interface StudyPlan {
   };
 }
 
+const getUpcoming = (plan: StudyPlan | null) => {
+  if (!plan) return [] as Array<{ day: number; date: string; topic: string }>;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const sched = Array.isArray(plan.plan?.daily_schedule) ? plan.plan.daily_schedule : [];
+  return sched
+    .filter((d: any) => d?.date && d.date >= todayStr)
+    .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)))
+    .slice(0, 3);
+};
+
 export function StudySession() {
   const { planId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
   const { showToast } = useToast();
-  
+
   const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [currentDay, setCurrentDay] = useState(0);
   const [isStudying, setIsStudying] = useState(false);
@@ -39,6 +49,24 @@ export function StudySession() {
   useEffect(() => {
     fetchStudyPlan();
     fetchCompletedTasks();
+  }, [planId]);
+
+  useEffect(() => {
+    if (!planId) return;
+    const channel = supabase
+      .channel('exam_plan_view_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_plans', filter: `id=eq.${planId}` },
+        () => {
+          fetchStudyPlan();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [planId]);
 
   useEffect(() => {
@@ -80,7 +108,7 @@ export function StudySession() {
         .eq('user_id', user?.id);
 
       if (error) throw error;
-      
+
       const completed = new Set(data?.map(item => item.day_number) || []);
       setCompletedTasks(completed);
     } catch (error) {
@@ -96,9 +124,8 @@ export function StudySession() {
     if (!studyPlan) return;
 
     const currentTask = studyPlan.plan.daily_schedule[currentDay];
-    
+
     try {
-      // Save study session
       const { error: sessionError } = await supabase
         .from('study_sessions')
         .insert({
@@ -112,15 +139,17 @@ export function StudySession() {
 
       if (sessionError) throw sessionError;
 
-      // Mark task as completed
       const { error: completionError } = await supabase
         .from('task_completions')
-        .insert({
-          user_id: user?.id,
-          plan_id: planId,
-          day_number: currentTask.day,
-          task_type: 'study_session'
-        });
+        .upsert(
+          {
+            user_id: user?.id,
+            plan_id: planId,
+            day_number: currentTask.day,
+            task_type: 'study_session'
+          },
+          { onConflict: 'user_id,plan_id,day_number', ignoreDuplicates: true }
+        );
 
       if (completionError) throw completionError;
 
@@ -128,10 +157,9 @@ export function StudySession() {
       setIsStudying(false);
       setStudyTime(0);
       setNotes('');
-      
+
       showToast('Study session completed!', 'success');
-      
-      // Move to next day if available
+
       if (currentDay < studyPlan.plan.daily_schedule.length - 1) {
         setCurrentDay(currentDay + 1);
       }
@@ -145,7 +173,7 @@ export function StudySession() {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -187,6 +215,27 @@ export function StudySession() {
           <p className="text-gray-600">Exam: {format(new Date(studyPlan.exam_date), 'MMMM d, yyyy')}</p>
         </div>
       </div>
+
+      {/* Upcoming (reflects reschedules) */}
+      {(() => {
+        const upcoming = getUpcoming(studyPlan);
+        return (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Upcoming</h3>
+            {upcoming.length > 0 ? (
+              <ul className="text-sm text-gray-700 space-y-1">
+                {upcoming.map((d) => (
+                  <li key={`${studyPlan.id}-${d.date}-${d.topic}`}>
+                    {format(new Date(`${d.date}T00:00:00`), 'MMM dd')}: {d.topic}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-500">No upcoming sessions</div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Study Plan Navigation */}

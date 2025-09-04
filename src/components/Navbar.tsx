@@ -24,6 +24,7 @@ import {
   FileText,
   Sparkles,
   Crown,
+  ListChecks,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 
@@ -31,6 +32,7 @@ const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'from-blue-500 to-blue-600' },
   { href: '/create', label: 'Create Plan', icon: CalendarPlus, color: 'from-green-500 to-green-600' },
   { href: '/plans', label: 'Study Plans', icon: BookOpen, color: 'from-purple-500 to-purple-600' },
+  { href: '/curriculum', label: 'Curriculum', icon: ListChecks, color: 'from-lime-500 to-lime-600' },
   { href: '/tools', label: 'Study Tools', icon: Wrench, color: 'from-orange-500 to-orange-600' },
   { href: '/progress', label: 'Progress', icon: LineChart, color: 'from-emerald-500 to-emerald-600' },
   { href: '/analytics', label: 'Analytics', icon: BarChart2, color: 'from-cyan-500 to-cyan-600' },
