@@ -27,7 +27,7 @@ export function LandingFooter() {
           <img src={socialPin} alt="Pinterest" className="h-5 w-5" />
           <img src={socialYoutube} alt="YouTube" className="h-5 w-5" />
         </div>
-        <p className="mt-6">&copy; {new Date().getFullYear()} ElevenFolks. All rights reserved.</p>
+        <p className="mt-6">&copy; {new Date().getFullYear()} dbuck. All rights reserved.</p>
       </div>
     </footer>
   );
