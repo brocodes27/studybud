@@ -25,7 +25,7 @@ export function LandingHero() {
               The all-in-one study workspace
             </h1>
             <p className="text-xl text-[#010d3e] tracking-tight mt-6">
-              Centralize your plans, progress, and practice. Learn smarter with AI Study Buddy, personalized plans, and exam simulators.
+              Centralize your plans, progress, and practice. Learn smarter with your AI mentor, personalized plans, and exam simulators.
             </p>
             <div className="flex gap-1 items-center mt-[30px]">
               <button

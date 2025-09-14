@@ -9,7 +9,6 @@ import {
   X,
   BookUser,
   FileText,
-  Mic,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -17,7 +16,6 @@ const navLinks = [
   { href: '/teacher', label: 'Teacher Panel', icon: BookUser },
   { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText },
   { href: '/cuet-simulator', label: 'CUET Simulator', icon: FileText },
-  { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Mic },
 ];
 
 const TeacherNavbar = () => {
@@ -47,6 +45,7 @@ const TeacherNavbar = () => {
   const NavItem = ({ link, isCollapsed }: { link: any, isCollapsed: boolean }) => (
     <NavLink
       to={link.href}
+      data-tour-nav={link.href}
       className={({ isActive }) =>
         `flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${
           isActive ? 'bg-primary-600 text-white' : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
@@ -61,6 +60,7 @@ const TeacherNavbar = () => {
   const MobileNavItem = ({ link }: { link: any }) => (
     <NavLink
       to={link.href}
+      data-tour-nav={link.href}
       onClick={() => setIsMobileMenuOpen(false)}
       className={({ isActive }) =>
         `flex items-center p-3 my-1 rounded-lg transition-colors duration-200 ${

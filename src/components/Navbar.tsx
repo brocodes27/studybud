@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -18,7 +18,6 @@ import {
   Menu,
   X,
   BookUser,
-  PlusCircle,
   Mic,
   Shield,
   FileText,
@@ -26,7 +25,7 @@ import {
   Crown,
   ListChecks,
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const navLinks = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'from-blue-500 to-blue-600' },
@@ -42,7 +41,6 @@ const navLinks = [
   { href: '/live-notes', label: 'Live Meeting Notes', icon: Mic, color: 'from-red-500 to-red-600' },
   { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText, color: 'from-violet-500 to-violet-600' },
   { href: '/cuet-simulator', label: 'CUET Simulator', icon: FileText, color: 'from-fuchsia-500 to-fuchsia-600' },
-  { href: '/ai-study-buddy', label: 'AI Study Buddy', icon: Sparkles, color: 'from-rose-500 to-rose-600' },
 ];
 
 const studentNavLinks = [
@@ -57,7 +55,6 @@ const Navbar = () => {
   const { user, role, signOut, loading, isAdmin, fullName, isPremium } = useAuth() as any;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
   // Sync collapsed state to document for global layout adjustments
   useEffect(() => {
@@ -81,6 +78,7 @@ const Navbar = () => {
   const NavItem = ({ link, isCollapsed }: { link: any, isCollapsed: boolean }) => (
     <NavLink
       to={link.href}
+      data-tour-nav={link.href}
       className={({ isActive }) =>
         `group flex items-center p-3 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
           isActive 
@@ -104,6 +102,7 @@ const Navbar = () => {
   const MobileNavItem = ({ link }: { link: any }) => (
     <NavLink
       to={link.href}
+      data-tour-nav={link.href}
       onClick={() => setIsMobileMenuOpen(false)}
       className={({ isActive }) =>
         `group flex items-center p-4 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${

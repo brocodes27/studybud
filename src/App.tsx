@@ -20,7 +20,6 @@ import { useToast } from './hooks/useToast';
 import { LiveMeetingNotes } from './components/LiveMeetingNotes';
 import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
-import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import { Profile } from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 import { FeatureComparison } from './components/FeatureComparison';
@@ -43,6 +42,8 @@ import { Sparkles, Crown, X, Zap } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
 import { RanjanSir } from './pages/RanjanSir';
 import { Curriculum } from './pages/Curriculum';
+import GlobalTourManager from './components/GlobalTourManager';
+import PersonalTipsManager from './components/PersonalTipsManager';
 
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -219,7 +220,6 @@ function AppContent() {
             <Route path="/my-notes" element={<MyMeetingNotes />} />
             <Route path="/my-notes/:id" element={<NoteDetailPage />} />
             <Route path="/study/:planId" element={<StudySession />} />
-            <Route path="/ai-study-buddy" element={<AIStudyBuddyPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
@@ -245,6 +245,8 @@ function AppContent() {
       </div>
       
       {/* Global Components */}
+      <GlobalTourManager />
+      <PersonalTipsManager />
       <Toaster toasts={toasts} removeToast={removeToast} />
     </div>
   );

@@ -87,6 +87,7 @@ const CBSEExamSession: React.FC = () => {
   const selectedSubject = (location.state && location.state.selectedSubject) || questions[0]?.subject || '';
   const totalMarks = (location.state && location.state.totalMarks) || 80;
   const useCustomMarks = (location.state && location.state.useCustomMarks) || false;
+  const assignmentId = (location.state && location.state.assignmentId) || null;
   const [current, setCurrent] = useState(0);
   // Removed unused answers state
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
@@ -144,6 +145,7 @@ const CBSEExamSession: React.FC = () => {
         questions_count: parsedFeedback.length,
         answer_sheet_url: uploadedFileUrl,
         student_weaknesses: studentWeaknesses,
+        assignment_id: assignmentId,
       });
       if (error) throw error;
       setSaveStatus('saved');
@@ -424,6 +426,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
             questions_count: parsedFeedback.length,
             answer_sheet_url: uploadedFileUrl,
             student_weaknesses: studentWeaknesses,
+            assignment_id: assignmentId,
           }).select('id').single();
           if (error) throw error;
           attemptId = attemptInsert?.id;

@@ -9,6 +9,19 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import OpenAIService from '../lib/openaiService';
 import { pdfFileToImageDataUrls } from '../lib/pdfToImages';
+import { Document, Packer, Paragraph, HeadingLevel } from 'docx';
+
+// Helper to render mixed text and inline LaTeX math delimited by $...$
+function parseMathInline(text: any) {
+  const str = typeof text === 'string' ? text : String(text ?? '');
+  const parts = str.split(/(\$[^$]+\$)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('$') && part.endsWith('$')) {
+      return <InlineMath key={idx} math={part.slice(1, -1)} errorColor="#cc0000" />;
+    }
+    return <span key={idx}>{part}</span>;
+  });
+}
 
 const CLASS10_SUBJECTS = [
   'Mathematics',
@@ -188,29 +201,7 @@ Return ONLY a valid JSON array, no explanation or extra text.`;
     }
   }
 }
-const SECTION_TYPES = [
-  { label: 'MCQ', value: 'mcq' },
-  { label: 'Short Answer', value: 'short' },
-  { label: 'Long Answer', value: 'long' },
-];
 
-const STEPS = [
-  { label: 'Exam Details', icon: BookOpen },
-  { label: 'Chapters & Settings', icon: FileText },
-  { label: 'Preview & Generate', icon: Zap },
-];
-
-interface GeminiQuestionGenParams {
-  subject: string;
-  classLevel: string;
-  chapters: string[];
-  examType: string;
-  difficulty: string;
-  numQuestions: number;
-  sectionTypes: string[];
-}
-
-// Add Gemini-based question generation
 async function generateQuestionsWithGemini({ subject, classLevel, chapters, examType, difficulty, sectionTypes, totalMarks }: Omit<GeminiQuestionGenParams, 'numQuestions'> & { totalMarks: number }) {
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
   
@@ -281,45 +272,141 @@ Return ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JS
   }
 }
 
-// Add/replace feedback and evaluation logic to use OpenAI
-async function evaluateAnswersWithOpenAI({ answers, questions, subject, classLevel }: { answers: string[]; questions: any[]; subject: string; classLevel: string }) {
-  const openai = OpenAIService.getInstance();
-  const prompt = `You are an expert CBSE board examiner for Class ${classLevel} ${subject}. Given the following student answers and the official questions, evaluate each answer thoroughly according to the latest CBSE marking scheme and answer key style. For each answer, provide:
-- A score (out of the question's marks)
-- Detailed, constructive feedback (point out strengths, mistakes, and how to improve)
-- Reference to the marking scheme if possible
+async function generateAnswerKeyWithGemini({
+  subject,
+  classLevel,
+  questions,
+}: {
+  subject: string;
+  classLevel: string;
+  questions: any[];
+}) {
+  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  const questionsForAi = questions.map((q: any, idx: number) => ({
+    index: idx + 1,
+    type: q.type,
+    marks: q.marks,
+    question: q.question,
+    options: Array.isArray(q.options) ? q.options : undefined,
+  }));
+
+  const prompt = `You are preparing an official teacher's answer key for CBSE Class ${classLevel} ${subject}.
+For each question below, return a concise, marking-scheme-aligned answer.
+
+Rules:
+- For MCQs: return the correct option letter (A/B/C/D) in 'correct_answer' and a one-line justification in 'explanation'.
+- For Short/Long answers: return a crisp 'answer' string that covers all key points; keep within 2-6 lines.
+- Keep language neutral and suitable for an official answer key.
+- Do NOT exceed the maximum marks logic for details; prioritize points typically awarded in CBSE marking schemes.
+
+Return ONLY a valid JSON array of length equal to the input questions, where each item has:
+{ "index": number, "type": "mcq"|"short"|"long", "answer"?: string, "correct_answer"?: "A"|"B"|"C"|"D", "explanation"?: string }.
 
 Questions:
-${JSON.stringify(questions, null, 2)}
-
-Student Answers:
-${JSON.stringify(answers, null, 2)}
-
-Return ONLY a valid JSON array, where each item has: questionIndex, score, feedback.`;
-  const text = await openai.generateChatCompletion(prompt);
+${JSON.stringify(questionsForAi, null, 2)}`;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+  const body = { contents: [{ parts: [{ text: prompt }] }] } as any;
+  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!response.ok) throw new Error('Gemini API error: ' + response.statusText);
+  const data = await response.json();
+  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let cleanText = text.trim();
+  cleanText = cleanText.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
   try {
-    const feedback = JSON.parse(text);
-    return feedback;
-  } catch {
-    const match = text.match(/\[.*\]/s);
+    const arr = JSON.parse(cleanText);
+    if (!Array.isArray(arr) || arr.length !== questions.length) throw new Error('Answer key length mismatch');
+    return arr;
+  } catch (e) {
+    const match = cleanText.match(/\[.*\]/s);
     if (match) {
       try {
-        return JSON.parse(match[0]);
+        const arr = JSON.parse(match[0]);
+        if (!Array.isArray(arr)) throw new Error('Invalid answer key format');
+        return arr;
       } catch {}
     }
-    throw new Error('Failed to parse OpenAI feedback response: ' + text);
+    throw new Error('Failed to parse Gemini answer key response');
   }
 }
 
-// Helper to render mixed text and math (delimited by $...$)
-function parseMathInline(text: string) {
-  const parts = text.split(/(\$[^$]+\$)/g);
-  return parts.map((part, idx) => {
-    if (part.startsWith('$') && part.endsWith('$')) {
-      return <InlineMath key={idx} math={part.slice(1, -1)} errorColor="#cc0000" />;
+async function exportTeacherDocx({
+  subject,
+  classLevel,
+  examType,
+  questions,
+  answers,
+}: {
+  subject: string;
+  classLevel: string;
+  examType: string;
+  questions: any[];
+  answers: any[];
+}) {
+  const children: Paragraph[] = [];
+  const title = `CBSE Exam Paper – ${subject} Class ${classLevel} (${examType})`;
+  children.push(new Paragraph({ text: `${title} [Teacher Pack]`, heading: HeadingLevel.TITLE }));
+  children.push(new Paragraph({ text: '' }));
+
+  // Section: Question Paper
+  children.push(new Paragraph({ text: 'Section 1: Question Paper', heading: HeadingLevel.HEADING_1 }));
+  questions.forEach((q: any, idx: number) => {
+    const qNum = idx + 1;
+    children.push(new Paragraph({ text: `${qNum}. [${q.marks} mark${q.marks > 1 ? 's' : ''}] ${q.question}` }));
+    if (q.type === 'mcq' && Array.isArray(q.options)) {
+      q.options.forEach((opt: string, i: number) => {
+        const label = String.fromCharCode(65 + i);
+        children.push(new Paragraph({ text: `   (${label}) ${opt}` }));
+      });
     }
-    return <span key={idx}>{part}</span>;
+    children.push(new Paragraph({ text: '' }));
   });
+
+  // Section: Answer Key
+  children.push(new Paragraph({ text: 'Section 2: Answer Key', heading: HeadingLevel.HEADING_1 }));
+  answers.forEach((a: any, idx: number) => {
+    const qNum = idx + 1;
+    if ((a?.type || questions[idx]?.type) === 'mcq') {
+      const line = `Q${qNum}: Correct Answer – ${a?.correct_answer || questions[idx]?.correct_answer || '-'}${a?.explanation ? ` | ${a.explanation}` : ''}`;
+      children.push(new Paragraph({ text: line }));
+    } else {
+      const line = `Q${qNum}: ${a?.answer || 'Answer not available'}`;
+      children.push(new Paragraph({ text: line }));
+    }
+  });
+
+  const doc = new Document({ sections: [{ properties: {}, children }] });
+  const blob = await Packer.toBlob(doc);
+  const fileName = `CBSE_${subject.replace(/\s+/g, '_')}_Class${classLevel}_Teacher_Pack.docx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+const SECTION_TYPES = [
+  { label: 'MCQ', value: 'mcq' },
+  { label: 'Short Answer', value: 'short' },
+  { label: 'Long Answer', value: 'long' },
+];
+
+const STEPS = [
+  { label: 'Exam Details', icon: BookOpen },
+  { label: 'Chapters & Settings', icon: FileText },
+  { label: 'Preview & Generate', icon: Zap },
+];
+
+interface GeminiQuestionGenParams {
+  subject: string;
+  classLevel: string;
+  chapters: string[];
+  examType: string;
+  difficulty: string;
+  numQuestions: number;
+  sectionTypes: string[];
 }
 
 const TABS = ['Exam Simulator', 'Saved Results'];
@@ -336,10 +423,20 @@ const CBSEExamSimulator: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [questions, setQuestions] = useState<any[]>([]);
   const navigate = useNavigate();
+  const { user, role } = useAuth() as any;
+  const isTeacher = role === 'teacher';
+  const [activeTab, setActiveTab] = useState('Exam Simulator');
+  // Vision (handwriting from PDF) states
+  const [visionLoading, setVisionLoading] = useState(false);
+  const [visionText, setVisionText] = useState('');
+  const [visionError, setVisionError] = useState<string | null>(null);
+  // Teacher DOCX export states
+  const [docxDownloading, setDocxDownloading] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
+  // Missing states restored
   const [selectedStream, setSelectedStream] = useState<keyof typeof CLASS12_SUBJECTS>('Science');
   const [useCustomMarks, setUseCustomMarks] = useState(false);
   const [customMarks, setCustomMarks] = useState(80);
-  // Update aiChapters state type for 3-level hierarchy
   const [aiChapters, setAiChapters] = useState<{
     unit: string;
     weightage: number;
@@ -348,13 +445,6 @@ const CBSEExamSimulator: React.FC = () => {
   }[]>([]);
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const [chaptersError, setChaptersError] = useState<string | null>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth() as any;
-  const [activeTab, setActiveTab] = useState('Exam Simulator');
-  // Vision (handwriting from PDF) states
-  const [visionLoading, setVisionLoading] = useState(false);
-  const [visionText, setVisionText] = useState('');
-  const [visionError, setVisionError] = useState<string | null>(null);
 
   const handleExtractHandwritingFromPdf = async (file: File) => {
     try {
@@ -375,11 +465,10 @@ const CBSEExamSimulator: React.FC = () => {
       setVisionLoading(false);
     }
   };
+
   const [savedResults, setSavedResults] = useState<any[]>([]);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [resultsError, setResultsError] = useState<string | null>(null);
-
-
 
   useEffect(() => {
     if (activeTab === 'Saved Results' && user) {
@@ -397,8 +486,6 @@ const CBSEExamSimulator: React.FC = () => {
         });
     }
   }, [activeTab, user]);
-
-
 
   const handleExportPDF = async () => {
     if (!previewRef.current) return;
@@ -422,7 +509,6 @@ const CBSEExamSimulator: React.FC = () => {
     pdf.save(`CBSE_Question_Paper_${selectedSubject}_Class${selectedClass}.pdf`);
   };
 
-  // Helper for select all chapters (now works with 3-level structure)
   const allChapterNames = aiChapters.flatMap(unit => [
     ...(unit.chapters ? unit.chapters.map(ch => ch.name) : []),
     ...(unit.subunits ? unit.subunits.flatMap(su => su.chapters.map(ch => ch.name)) : []),
@@ -433,7 +519,8 @@ const CBSEExamSimulator: React.FC = () => {
     else setSelectedChapters([]);
   };
 
-  // Fetch chapters when subject/class changes
+  const previewRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!selectedSubject || !selectedClass) {
       setAiChapters([]);
@@ -448,7 +535,6 @@ const CBSEExamSimulator: React.FC = () => {
       .finally(() => setChaptersLoading(false));
   }, [selectedSubject, selectedClass]);
 
-  // Reset custom marks when subject/class changes
   useEffect(() => {
     if (selectedSubject && selectedClass) {
       const defaultMarks = SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
@@ -475,7 +561,6 @@ const CBSEExamSimulator: React.FC = () => {
     </div>
   );
 
-  // Step 1: Select subject, class, exam type
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
@@ -553,7 +638,6 @@ const CBSEExamSimulator: React.FC = () => {
     </div>
   );
 
-  // Step 2: Select chapters, difficulty, sections, number of questions
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
@@ -576,7 +660,7 @@ const CBSEExamSimulator: React.FC = () => {
               </label>
             )}
             {aiChapters.length > 0 && (
-              <div className="text-xs text-primary-300 mb-2 p-2 bg-primary-500/5 rounded">
+              <div className="text-xs text-primary-300 mb-2 p-2 bg-primary-500/5 rounded-lg">
                 <span>Note: Only group/unit weightage is official. Chapter weightage is not provided by CBSE.</span><br />
                 <span className="text-warning-300">This simulator generates the theory paper only. Practical/Internal Assessment marks are not included.</span>
               </div>
@@ -595,19 +679,19 @@ const CBSEExamSimulator: React.FC = () => {
                 {unit.chapters && unit.chapters.length > 0 && (
                   <div className="space-y-1 ml-4">
                     {unit.chapters.map(ch => (
-              <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
-                <input
-                  type="checkbox"
-                  checked={selectedChapters.includes(ch.name)}
-                  onChange={e => {
-                    if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
-                    else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
-                  }}
-                  className="text-primary-500"
-                />
-                <span className="font-semibold text-gray-900">{ch.name}</span>
-                <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
-              </label>
+                      <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
+                        <input
+                          type="checkbox"
+                          checked={selectedChapters.includes(ch.name)}
+                          onChange={e => {
+                            if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
+                            else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
+                          }}
+                          className="text-primary-500"
+                        />
+                        <span className="font-semibold text-gray-900">{ch.name}</span>
+                        <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
+                      </label>
                     ))}
                   </div>
                 )}
@@ -619,19 +703,19 @@ const CBSEExamSimulator: React.FC = () => {
                         <div className="font-semibold text-primary-300 mb-1">{su.subunit}</div>
                         <div className="space-y-1 ml-4">
                           {su.chapters.map(ch => (
-              <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
-                <input
-                  type="checkbox"
-                  checked={selectedChapters.includes(ch.name)}
-                  onChange={e => {
-                    if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
-                    else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
-                  }}
-                  className="text-primary-500"
-                />
-                <span className="font-semibold text-gray-900">{ch.name}</span>
-                <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
-              </label>
+                            <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
+                              <input
+                                type="checkbox"
+                                checked={selectedChapters.includes(ch.name)}
+                                onChange={e => {
+                                  if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
+                                  else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
+                                }}
+                                className="text-primary-500"
+                              />
+                              <span className="font-semibold text-gray-900">{ch.name}</span>
+                              <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
+                            </label>
                           ))}
                         </div>
                       </div>
@@ -748,13 +832,17 @@ const CBSEExamSimulator: React.FC = () => {
     </div>
   );
 
-  // Step 3: Generate and preview paper
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Preview Question Paper</h2>
         <p className="text-gray-900">Review and generate your CBSE-style exam paper</p>
       </div>
+      {isTeacher && (
+        <div className="mx-auto max-w-3xl mb-2 p-3 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-300 text-sm">
+          Teacher mode: You’ll get a downloadable Word document containing the question paper and the official-style answer key. No exam submission is required.
+        </div>
+      )}
       <div ref={previewRef} className="card-elevated">
         <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
@@ -847,24 +935,67 @@ const CBSEExamSimulator: React.FC = () => {
             'Generate with AI'
           )}
         </button>
-        <button
-          className="btn-accent px-6 py-2"
-          onClick={() => {
-            const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
-            navigate('/cbse-exam-session', { 
-              state: { 
-                questions,
-                selectedSubject,
-                totalMarks,
-                useCustomMarks
-              } 
-            });
-          }}
-          disabled={questions.length === 0}
-        >
-          Start Exam
-        </button>
+        {isTeacher && (
+          <button
+            className="btn-accent px-6 py-2"
+            onClick={async () => {
+              if (questions.length === 0) return;
+              setDocxError(null);
+              setDocxDownloading(true);
+              try {
+                const answers = await generateAnswerKeyWithGemini({
+                  subject: selectedSubject,
+                  classLevel: selectedClass,
+                  questions,
+                });
+                await exportTeacherDocx({
+                  subject: selectedSubject,
+                  classLevel: selectedClass,
+                  examType,
+                  questions,
+                  answers,
+                });
+              } catch (e: any) {
+                setDocxError(e.message || 'Failed to build teacher pack');
+              } finally {
+                setDocxDownloading(false);
+              }
+            }}
+            disabled={questions.length === 0 || docxDownloading}
+          >
+            {docxDownloading ? (
+              <div className="flex items-center gap-2">
+                <div className="loading-spinner w-4 h-4" />
+                Building Word Doc...
+              </div>
+            ) : (
+              'Download Word (Questions + Answer Key)'
+            )}
+          </button>
+        )}
+        {!isTeacher && (
+          <button
+            className="btn-accent px-6 py-2"
+            onClick={() => {
+              const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
+              navigate('/cbse-exam-session', { 
+                state: { 
+                  questions,
+                  selectedSubject,
+                  totalMarks,
+                  useCustomMarks
+                } 
+              });
+            }}
+            disabled={questions.length === 0}
+          >
+            Start Exam
+          </button>
+        )}
       </div>
+      {docxError && (
+        <div className="text-center text-red-400 mt-2">{docxError}</div>
+      )}
     </div>
   );
 
@@ -884,8 +1015,6 @@ const CBSEExamSimulator: React.FC = () => {
           Generate authentic CBSE-style question papers with AI-powered questions that follow the latest syllabus and marking schemes.
         </p>
       </div>
-
-
 
       {/* Official CBSE Syllabus Link */}
       <div className="text-center mb-8">
@@ -915,103 +1044,103 @@ const CBSEExamSimulator: React.FC = () => {
           ))}
         </div>
 
-      {/* Tab Content */}
-      {activeTab === 'Exam Simulator' && (
-        <div className="card-elevated">
-          {renderProgress()}
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-          {step === 3 && renderStep3()}
-        </div>
-      )}
+        {/* Tab Content */}
+        {activeTab === 'Exam Simulator' && (
+          <div className="card-elevated">
+            {renderProgress()}
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+          </div>
+        )}
 
-      {activeTab === 'Saved Results' && (
-        <div className="card-elevated animate-fade-in">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Saved Results</h2>
-          {/* Handwriting extraction with GPT-4 Vision */}
-          <div className="mb-8 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Extract Handwritten Answers from PDF</h3>
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleExtractHandwritingFromPdf(f);
-                }}
-                className="form-input"
-              />
-              {visionLoading && (
-                <div className="flex items-center gap-2 text-gray-900">
-                  <div className="loading-spinner w-4 h-4" /> Processing PDF with GPT‑4 Vision…
+        {activeTab === 'Saved Results' && (
+          <div className="card-elevated animate-fade-in">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Saved Results</h2>
+            {/* Handwriting extraction with GPT-4 Vision */}
+            <div className="mb-8 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Extract Handwritten Answers from PDF</h3>
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleExtractHandwritingFromPdf(f);
+                  }}
+                  className="form-input"
+                />
+                {visionLoading && (
+                  <div className="flex items-center gap-2 text-gray-900">
+                    <div className="loading-spinner w-4 h-4" /> Processing PDF with GPT‑4 Vision…
+                  </div>
+                )}
+              </div>
+              {visionError && (
+                <div className="mt-3 text-red-400 text-sm">{visionError}</div>
+              )}
+              {visionText && (
+                <div className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-gray-200 bg-gray-900/60 p-3 rounded-lg text-sm">
+                  {visionText}
                 </div>
               )}
+              {!visionText && !visionLoading && (
+                <p className="mt-2 text-xs text-gray-400">Tip: Large PDFs can be slow and costly. We process up to 6 pages by default.</p>
+              )}
             </div>
-            {visionError && (
-              <div className="mt-3 text-red-400 text-sm">{visionError}</div>
-            )}
-            {visionText && (
-              <div className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-gray-200 bg-gray-900/60 p-3 rounded-lg text-sm">
-                {visionText}
+            {resultsLoading ? (
+              <div className="text-center py-8">
+                <div className="loading-spinner w-8 h-8 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading results...</p>
               </div>
-            )}
-            {!visionText && !visionLoading && (
-              <p className="mt-2 text-xs text-gray-400">Tip: Large PDFs can be slow and costly. We process up to 6 pages by default.</p>
+            ) : resultsError ? (
+              <div className="text-red-400 text-center py-8">{resultsError}</div>
+            ) : savedResults.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-400">No saved results found.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-left text-gray-900">
+                  <thead className="bg-primary-500/20 text-primary-200">
+                    <tr>
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Subject</th>
+                      <th className="px-4 py-3">Class</th>
+                      <th className="px-4 py-3">Score</th>
+                      <th className="px-4 py-3">Sheet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {savedResults.map((r, i) => (
+                      <tr key={r.id || i} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
+                        <td className="px-4 py-3">{r.exam_date ? new Date(r.exam_date).toLocaleString() : ''}</td>
+                        <td className="px-4 py-3">{r.subject || '-'}</td>
+                        <td className="px-4 py-3">{r.class_level || '-'}</td>
+                        <td className="px-4 py-3">{r.total_score} / {r.max_score}</td>
+                        <td className="px-4 py-3">
+                          {r.answer_sheet_url && (
+                            <a 
+                              href={r.answer_sheet_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-primary-400 hover:text-primary-300 underline transition-colors"
+                            >
+                              View
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
-          {resultsLoading ? (
-            <div className="text-center py-8">
-              <div className="loading-spinner w-8 h-8 mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading results...</p>
-            </div>
-          ) : resultsError ? (
-            <div className="text-red-400 text-center py-8">{resultsError}</div>
-          ) : savedResults.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-400">No saved results found.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left text-gray-900">
-                <thead className="bg-primary-500/20 text-primary-200">
-                  <tr>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Subject</th>
-                    <th className="px-4 py-3">Class</th>
-                    <th className="px-4 py-3">Score</th>
-                    <th className="px-4 py-3">Sheet</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {savedResults.map((r, i) => (
-                    <tr key={r.id || i} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
-                      <td className="px-4 py-3">{r.exam_date ? new Date(r.exam_date).toLocaleString() : ''}</td>
-                      <td className="px-4 py-3">{r.subject || '-'}</td>
-                      <td className="px-4 py-3">{r.class_level || '-'}</td>
-                      <td className="px-4 py-3">{r.total_score} / {r.max_score}</td>
-                      <td className="px-4 py-3">
-                        {r.answer_sheet_url && (
-                          <a 
-                            href={r.answer_sheet_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-primary-400 hover:text-primary-300 underline transition-colors"
-                          >
-                            View
-                          </a>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+        )}
       </div>
 
       

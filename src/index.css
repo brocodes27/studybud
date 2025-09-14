@@ -418,3 +418,134 @@
 body.sidebar-collapsed {
   --sidebar-width: 5rem; /* matches w-20 */
 }
+
+/* ===== Guided Tour (Coachmarks) ===== */
+body.tour-no-scroll {
+  overflow: hidden;
+}
+
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000;
+  pointer-events: auto;
+}
+
+.tour-highlight {
+  position: fixed;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.9), 0 0 0 8px rgba(59, 130, 246, 0.2), 0 0 0 16px rgba(59, 130, 246, 0.1);
+}
+
+.tour-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.8);
+  animation: tour-ring 1.8s ease-out infinite;
+}
+
+@keyframes tour-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    opacity: 1;
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(59, 130, 246, 0);
+    opacity: 0.7;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    opacity: 0.4;
+  }
+}
+
+.tour-bubble {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  padding: 14px 14px 12px 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+}
+
+.tour-bubble-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #111827; /* gray-900 */
+}
+
+.tour-bubble-content {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #374151; /* gray-700 */
+}
+
+.tour-bubble-footer {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.tour-step-indicator {
+  font-size: 12px;
+  color: #6b7280; /* gray-500 */
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tour-spacer { flex: 0 0 8px; }
+
+.tour-btn {
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  background: #ffffff;
+  color: #111827;
+  padding: 6px 10px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.05s;
+}
+
+.tour-btn:hover:not(:disabled) {
+  background: #f9fafb; /* gray-50 */
+}
+
+.tour-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.tour-btn.primary {
+  background: #2563eb; /* blue-600 */
+  color: white;
+  border-color: #2563eb;
+}
+
+.tour-btn.primary:hover:not(:disabled) {
+  background: #1d4ed8; /* blue-700 */
+}
+
+.tour-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: #6b7280;
+}
+
+.tour-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tour-arrow {
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transform: rotate(45deg);
+}

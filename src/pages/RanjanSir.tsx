@@ -5,7 +5,7 @@ export function RanjanSir() {
   const now = new Date();
   const hh = now.getHours();
   const greeting = hh < 12 ? 'Good morning' : hh < 18 ? 'Good afternoon' : 'Good evening';
-  const welcome = `${greeting}! I am **Ranjan Sir**, your AI mentor. Quick setup: Are you aiming for **CBSE** or **JEE**? Tell me your class and subjects, and I’ll generate your monthly curriculum.`;
+  const welcome = `${greeting}! I am **Ranjan Sir**, your AI mentor. Picking up from our last session: I’ll recall your previous chats and study plan so we don’t repeat steps. If this is your first time, quick setup: Are you aiming for **CBSE** or **JEE**? Tell me your class and subjects, and I’ll generate your monthly curriculum.`;
 
   const personaContext = `You are "Ranjan Sir", a warm, encouraging AI mentor for school students (Classes 9–12) and CBSE/CUET aspirants in India.
 
@@ -24,6 +24,7 @@ Safety and reliability:
 - Avoid hallucinations; stick to known syllabus topics.
 
 Personalization and context use:
+- Proactively recall previous chats and study plan details; avoid re-asking for information already captured. Use phrasing like "As we discussed earlier..." or "Picking up from our last session...".
 - When study plan context is provided, prioritize today's syllabus/tasks and upcoming exams.
 - Suggest next steps: quick recap -> focused practice -> short self-check -> brief summary.
 - For conceptual questions: explain simply, give a tiny example, then ask a 1-line check question.
@@ -62,6 +63,7 @@ Your identity:
             functionPath="ai-study-buddy"
             extraContext={personaContext}
             variant="mentor"
+            storageNamespace="ranjan_sir"
           />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FormEvent, useCallback } from 'react';
+import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,6 +19,8 @@ interface Assignment {
     due_date: string | null;
     file_url: string | null;
     created_at: string;
+    is_mock?: boolean;
+    expires_at?: string | null;
 }
 
 interface Announcement {
@@ -90,8 +92,14 @@ const ClassPage = () => {
         
         if(assignmentsError) console.error('Error fetching assignments:', assignmentsError);
         else {
-            setAssignments(assignmentsData);
-            console.log('Assignments:', assignmentsData);
+            const now = new Date();
+            const filtered = (assignmentsData || []).filter((a: Assignment) => {
+                if (!a.is_mock) return true;
+                if (!a.expires_at) return true;
+                return new Date(a.expires_at) > now;
+            });
+            setAssignments(filtered);
+            console.log('Assignments (filtered):', filtered);
         }
 
         // Fetch announcements (FIX: use class_announcements)
@@ -141,7 +149,7 @@ const ClassPage = () => {
         let fileUrl: string | null = null;
         if (assignmentFile) {
             const filePath = `${user.id}/${id}/${Date.now()}_${assignmentFile.name}`;
-            const { data, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('assignments')
                 .upload(filePath, assignmentFile);
             
@@ -215,6 +223,41 @@ const ClassPage = () => {
         await supabase.from('class_members').delete().eq('class_id', id);
         await supabase.from('classes').delete().eq('id', id);
         navigate('/my-classes');
+    };
+
+    // Take mock test from assignment JSON
+    const handleTakeMockTest = async (assignment: Assignment) => {
+        try {
+            if (!assignment.file_url) return;
+            const res = await fetch(assignment.file_url);
+            if (!res.ok) throw new Error('Failed to fetch mock test file');
+            const json = await res.json();
+            const rawQuestions = Array.isArray(json) ? json : json.questions;
+            if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) throw new Error('No questions found in mock file');
+            const transformed = rawQuestions.map((q: any, i: number) => ({
+                section: q.section || (q.type === 'mcq' ? 'A' : q.type === 'short' ? 'B' : 'C'),
+                type: q.type || 'short',
+                marks: q.marks ?? (q.type === 'mcq' ? 1 : q.type === 'short' ? 3 : 5),
+                question: q.question || q.prompt || `Q${i + 1}`,
+                options: Array.isArray(q.options) ? q.options : undefined,
+            }));
+            const totalMarks = transformed.reduce((sum: number, q: any) => sum + (q.marks || 0), 0);
+            const subjectName = (classInfo as any)?.subject || classInfo?.class_name || 'Mock Test';
+            navigate('/cbse-exam-session', {
+                state: {
+                    questions: transformed,
+                    selectedSubject: subjectName,
+                    totalMarks,
+                    useCustomMarks: true,
+                    assignmentId: assignment.id,
+                    assignmentTitle: assignment.title,
+                    classId: classInfo?.id,
+                },
+            });
+        } catch (err) {
+            console.error('Failed to start mock test:', err);
+            setFormError('Failed to start mock test. Please try again.');
+        }
     };
 
     if (loading) {
@@ -319,6 +362,17 @@ const ClassPage = () => {
                                     ) : (
                                         <a href={a.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download File</a>
                                     )
+                                )}
+                                {/* Take Mock Test action if JSON is attached */}
+                                {a.file_url && /\.json(\?|$)/i.test(a.file_url) && (
+                                    <div className="mt-3 flex gap-3">
+                                        <button
+                                            className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-4 py-2 rounded"
+                                            onClick={() => handleTakeMockTest(a)}
+                                        >
+                                            Take Mock Test
+                                        </button>
+                                    </div>
                                 )}
                                 <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
                             </div>

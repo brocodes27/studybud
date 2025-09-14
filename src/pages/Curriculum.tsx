@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
 import { generateMonthlyCurriculum } from '../lib/curriculumApi';
 import { Calendar, CheckCircle, Clock, Loader2, RefreshCw, Sparkles, ListChecks, AlertTriangle } from 'lucide-react';
+import CurriculumTour from '../components/CurriculumTour.tsx';
 
 interface CurriculumPlan {
   id: string;
@@ -168,6 +169,8 @@ export function Curriculum() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Guided Tour Overlay */}
+      <CurriculumTour hasMonthlyPlan={hasMonthlyPlan} hasTasks={groupedTasks.length > 0} ready={!loading} />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -194,15 +197,17 @@ export function Curriculum() {
           <button
             onClick={() => setMonthCursor(prev => subMonths(prev, 1))}
             className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700"
+            data-tour="month-prev"
           >
             ‹ Prev
           </button>
-          <div className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold flex items-center gap-2">
+          <div className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold flex items-center gap-2" data-tour="month-label">
             <Calendar className="h-4 w-4" /> {format(monthStart, 'MMMM yyyy')}
           </div>
           <button
             onClick={() => setMonthCursor(prev => addMonths(prev, 1))}
             className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700"
+            data-tour="month-next"
           >
             Next ›
           </button>
@@ -249,6 +254,7 @@ export function Curriculum() {
                 onClick={handleGenerateMonth}
                 disabled={generating}
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                data-tour="generate-btn"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 {hasMonthlyPlan ? 'Regenerate' : 'Generate'}
@@ -259,7 +265,7 @@ export function Curriculum() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4" data-tour="filters">
         <div className="flex flex-wrap items-center gap-4">
           <div className="text-sm font-semibold text-gray-700">Filter</div>
           <div className="flex items-center gap-3">
@@ -324,6 +330,7 @@ export function Curriculum() {
                       onClick={() => toggleTaskCompleted(t)}
                       className={`mt-1 w-5 h-5 rounded border flex items-center justify-center ${t.status === 'completed' ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 text-transparent hover:text-gray-300'}`}
                       title={t.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
+                      data-tour="task-toggle"
                     >
                       <CheckCircle className="w-4 h-4" />
                     </button>

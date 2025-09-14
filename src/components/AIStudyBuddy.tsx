@@ -37,6 +37,7 @@ type Props = {
   functionPath?: string; // supabase function name
   extraContext?: string; // appended to studyContext
   variant?: 'default' | 'mentor';
+  storageNamespace?: string;
 };
 
 export function AIStudyBuddy({
@@ -46,6 +47,7 @@ export function AIStudyBuddy({
   functionPath = 'ai-study-buddy',
   extraContext = '',
   variant = 'default',
+  storageNamespace = 'ai_buddy',
 }: Props) {
   const { session } = useAuth() as any;
   const { showToast } = useToast();
@@ -358,9 +360,10 @@ export function AIStudyBuddy({
   };
   // Storage keys per user
   const userKey = (session?.user?.id as string) || 'guest';
-  const historyKey = `ai_buddy_history_${userKey}`;
-  const notesKey = `ai_buddy_notes_${userKey}`;
-  const selectedPlanKey = `ai_buddy_selected_plan_${userKey}`;
+  const defaultNamespace = 'ai_buddy';
+  const historyKey = `${storageNamespace}_history_${userKey}`;
+  const notesKey = `${storageNamespace}_notes_${userKey}`;
+  const selectedPlanKey = `${storageNamespace}_selected_plan_${userKey}`;
 
   const saveHistory = (msgs: Message[]) => {
     try {
@@ -369,7 +372,15 @@ export function AIStudyBuddy({
   };
   const loadHistory = (): Message[] => {
     try {
-      const raw = localStorage.getItem(historyKey);
+      let raw = localStorage.getItem(historyKey);
+      // Migrate from default namespace if needed
+      if (!raw && storageNamespace !== defaultNamespace) {
+        const fallbackKey = `${defaultNamespace}_history_${userKey}`;
+        raw = localStorage.getItem(fallbackKey);
+        if (raw) {
+          try { localStorage.setItem(historyKey, raw); } catch {}
+        }
+      }
       if (!raw) return [];
       const parsed = JSON.parse(raw) as Message[];
       // revive dates
@@ -382,7 +393,18 @@ export function AIStudyBuddy({
     try { localStorage.setItem(notesKey, val); } catch {}
   };
   const loadNotes = (): string => {
-    try { return localStorage.getItem(notesKey) || ''; } catch { return ''; }
+    try {
+      let val = localStorage.getItem(notesKey) || '';
+      if ((!val || val === '') && storageNamespace !== defaultNamespace) {
+        const fallbackKey = `${defaultNamespace}_notes_${userKey}`;
+        const legacy = localStorage.getItem(fallbackKey) || '';
+        if (legacy) {
+          val = legacy;
+          try { localStorage.setItem(notesKey, legacy); } catch {}
+        }
+      }
+      return val || '';
+    } catch { return ''; }
   };
 
   // Save homework locally per user+plan+day
@@ -398,7 +420,7 @@ export function AIStudyBuddy({
         dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         if (dayNumber < 1) dayNumber = 1;
       }
-      const hwKey = `ai_buddy_homework_${userKey}_${plan.id}_${dayNumber}`;
+      const hwKey = `${storageNamespace}_homework_${userKey}_${plan.id}_${dayNumber}`;
       localStorage.setItem(hwKey, val);
     } catch {}
   };
@@ -464,7 +486,14 @@ What would you like to study today?`;
     setNotes(loadNotes());
     // Restore last selected plan if available
     try {
-      const savedSel = localStorage.getItem(selectedPlanKey);
+      let savedSel = localStorage.getItem(selectedPlanKey);
+      if (!savedSel && storageNamespace !== defaultNamespace) {
+        const fallbackSel = localStorage.getItem(`${defaultNamespace}_selected_plan_${userKey}`);
+        if (fallbackSel) {
+          savedSel = fallbackSel;
+          try { localStorage.setItem(selectedPlanKey, savedSel); } catch {}
+        }
+      }
       if (savedSel) setSelectedPlan(savedSel);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -474,6 +503,28 @@ What would you like to study today?`;
   useEffect(() => {
     saveHistory(messages);
   }, [messages]);
+
+  // Handle namespace changes (e.g., HMR or persona switch) by attempting to reload
+  useEffect(() => {
+    // Refresh notes from new namespace
+    setNotes(loadNotes());
+    // If no history currently loaded (or only welcome), try to load migrated history
+    const hasOnlyWelcome = messages.length === 0 || (messages.length === 1 && messages[0]?.id === 'welcome');
+    if (hasOnlyWelcome) {
+      const existing = loadHistory();
+      if (existing.length > 0) {
+        setMessages(existing);
+      }
+    }
+    // Try to restore selected plan if not set
+    try {
+      if (!selectedPlan) {
+        const savedSel = localStorage.getItem(selectedPlanKey);
+        if (savedSel) setSelectedPlan(savedSel);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageNamespace]);
 
   // Fetch user's study plans
   useEffect(() => {
@@ -553,6 +604,22 @@ What would you like to study today?`;
  `;
   };
 
+  // Build a compact conversation history context to keep continuity without overloading tokens
+  const buildConversationContext = (msgs: Message[], maxMessages: number = 8, charLimit: number = 1500) => {
+    try {
+      const recent = msgs.filter(m => m.id !== 'welcome').slice(-maxMessages);
+      if (recent.length === 0) return '';
+      const lines = recent.map(m => `${m.role === 'user' ? 'Student' : 'Mentor'}: ${m.content.replace(/\s+/g, ' ').trim()}`);
+      let s = lines.join('\n');
+      if (s.length > charLimit) {
+        s = s.slice(s.length - charLimit);
+      }
+      return `CONVERSATION HISTORY (last ${recent.length} messages):\n${s}\nUse this to maintain continuity and avoid repeating earlier steps.`;
+    } catch {
+      return '';
+    }
+  };
+
   // Load per-day homework and completion status when plan changes
   useEffect(() => {
     const loadPerDay = async () => {
@@ -566,9 +633,20 @@ What would you like to study today?`;
           dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
           if (dayNumber < 1) dayNumber = 1;
         }
-        // homework from localStorage
-        const hwKey = `ai_buddy_homework_${userKey}_${plan.id}_${dayNumber}`;
-        try { setHomework(localStorage.getItem(hwKey) || ''); } catch { setHomework(''); }
+        // homework from localStorage with namespace migration
+        const hwKey = `${storageNamespace}_homework_${userKey}_${plan.id}_${dayNumber}`;
+        try {
+          let hw = localStorage.getItem(hwKey) || '';
+          if ((!hw || hw === '') && storageNamespace !== defaultNamespace) {
+            const legacyKey = `${defaultNamespace}_homework_${userKey}_${plan.id}_${dayNumber}`;
+            const legacy = localStorage.getItem(legacyKey) || '';
+            if (legacy) {
+              hw = legacy;
+              try { localStorage.setItem(hwKey, legacy); } catch {}
+            }
+          }
+          setHomework(hw);
+        } catch { setHomework(''); }
         // completion from Supabase
         if (session?.user?.id) {
           const { data, error } = await supabase
@@ -654,6 +732,8 @@ What would you like to study today?`;
       timestamp: new Date(),
     };
 
+    const newMessageList = [...messages, userMessage];
+
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
 
@@ -682,12 +762,14 @@ What would you like to study today?`;
       if (!context || context.trim() === '') {
         context = 'General study context.';
       }
+      const convHistory = buildConversationContext(newMessageList);
       const selectedPlanObj = studyPlans.find(p => p.id === selectedPlan);
       const subject = selectedPlanObj?.subject || 'General';
       let classValue = selectedPlanObj?.class || '';
       if (!classValue || classValue.trim() === '') {
         classValue = '10'; // Default to class 10 or another sensible default
       }
+      const finalContext = [context, extraContext, convHistory].filter(Boolean).join('\n\n');
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionPath}`, {
         method: 'POST',
@@ -697,7 +779,7 @@ What would you like to study today?`;
         },
         body: JSON.stringify({
           message: content.trim(),
-          studyContext: extraContext ? `${context}\n${extraContext}` : context,
+          studyContext: finalContext,
           subject,
           class: classValue,
         }),
@@ -919,7 +1001,7 @@ What would you like to study today?`;
             }
             const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
             return (
-              <div className="mt-4 bg-gray-50 border border-border rounded-xl p-4">
+              <div className="mt-4 bg-gray-50 border border-border rounded-xl p-4" data-tour="ranjan-today-panel">
                 <div className="flex items-center gap-2 mb-1">
                   <Brain className="h-4 w-4 text-blue-600" />
                   <h3 className="text-sm font-semibold text-gray-900">Today's Plan</h3>
@@ -931,14 +1013,14 @@ What would you like to study today?`;
                 </div>
                 <div className="mt-3 overflow-x-auto">
                   <div className="inline-flex gap-2 pr-1">
-                    <button onClick={() => sendMessage(`Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors">Explain Topic</button>
-                    <button onClick={() => sendMessage(`Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors">5 Practices</button>
-                    <button onClick={() => sendMessage(`Give me a quick 3-question quiz on ${today?.topic || 'today\'s topic'} and check my answers step-by-step.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors">3Q Quiz</button>
-                    <button onClick={() => sendMessage(`Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors">5-Bullet Summary</button>
-                    <button onClick={() => sendMessage(`Based on my studyContext, suggest a reshuffled plan for the next 7 days as simple day-wise bullets (bold allowed only).`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors">Reshuffle 7 Days</button>
-                    <button onClick={() => skillsEngine.startSkill('dailyStudy')} className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200 transition-colors">Start Today's Study</button>
-                    <button onClick={() => skillsEngine.startSkill('rescheduler')} className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-200 transition-colors">Reschedule Missed Days</button>
-                    <button onClick={toggleTodayCompletion} disabled={isTogglingCompletion} className={`text-xs ${isTodayCompleted ? 'bg-green-100 hover:bg-green-200 text-green-800' : 'bg-white hover:bg-gray-100 text-gray-800'} px-3 py-1 rounded-full border border-gray-200 transition-colors`}>
+                    <button onClick={() => sendMessage(`Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors" data-tour="ranjan-explain">Explain Topic</button>
+                    <button onClick={() => sendMessage(`Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors" data-tour="ranjan-practice">5 Practices</button>
+                    <button onClick={() => sendMessage(`Give me a quick 3-question quiz on ${today?.topic || 'today\'s topic'} and check my answers step-by-step.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors" data-tour="ranjan-quiz">3Q Quiz</button>
+                    <button onClick={() => sendMessage(`Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors" data-tour="ranjan-summary">5-Bullet Summary</button>
+                    <button onClick={() => sendMessage(`Based on my studyContext, suggest a reshuffled plan for the next 7 days as simple day-wise bullets (bold allowed only).`)} className="text-xs bg-white hover:bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200 transition-colors" data-tour="ranjan-reshuffle-7">Reshuffle 7 Days</button>
+                    <button onClick={() => skillsEngine.startSkill('dailyStudy')} className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200 transition-colors" data-tour="ranjan-start-study">Start Today's Study</button>
+                    <button onClick={() => skillsEngine.startSkill('rescheduler')} className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-200 transition-colors" data-tour="ranjan-rescheduler">Reschedule Missed Days</button>
+                    <button onClick={toggleTodayCompletion} disabled={isTogglingCompletion} className={`text-xs ${isTodayCompleted ? 'bg-green-100 hover:bg-green-200 text-green-800' : 'bg-white hover:bg-gray-100 text-gray-800'} px-3 py-1 rounded-full border border-gray-200 transition-colors`} data-tour="ranjan-mark-done">
                       {isTodayCompleted ? '✓ Done' : 'Mark Done'}
                     </button>
                   </div>
@@ -969,6 +1051,7 @@ What would you like to study today?`;
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
                   className="text-[11px] bg-white text-blue-900 border border-blue-100 rounded-full px-2 py-1"
+                  data-tour="ranjan-plan-select"
                   title="Select Study Plan"
                 >
                   {studyPlans.map((p) => (
@@ -980,6 +1063,7 @@ What would you like to study today?`;
                 <button
                   onClick={() => skillsEngine.startSkill('rescheduler')}
                   className="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full border border-amber-200 transition-colors"
+                  data-tour="ranjan-quick-reschedule"
                 >
                   Reschedule
                 </button>
@@ -1096,6 +1180,7 @@ What would you like to study today?`;
               placeholder="Enter your query..."
               className={`${isMentor ? 'rounded-full h-12 pl-4 pr-12 border-blue-100' : 'pr-12'} form-input`}
               disabled={isLoading}
+              data-tour="ranjan-input"
             />
             <button
               type="button"
@@ -1104,6 +1189,7 @@ What would you like to study today?`;
               className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 transition-colors ${
                 isMentor ? 'rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100' : 'rounded-lg ' + (isRecording || isListening ? 'bg-red-500 text-destructive-foreground' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')
               }`}
+              data-tour="ranjan-mic"
             >
               {isListening ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1118,6 +1204,7 @@ What would you like to study today?`;
             type="submit"
             disabled={!inputMessage.trim() || isLoading}
             className={`${isMentor ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200' : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-primary-foreground'} px-4 py-3 rounded-xl transition-all duration-200 disabled:cursor-not-allowed`}
+            data-tour="ranjan-send"
           >
             <Send className="h-4 w-4" />
           </button>

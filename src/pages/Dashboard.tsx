@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, MessageCircle, Sparkles, Crown, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Sparkles, Crown, ArrowRight, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, differenceInDays } from 'date-fns';
@@ -51,6 +51,8 @@ export function Dashboard() {
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
+  // In-app notification banner for latest unread notification
+  const [latestNotif, setLatestNotif] = useState<any | null>(null);
 
   // (removed) CBSE Exam Progress State - not used in UI
 
@@ -69,6 +71,24 @@ export function Dashboard() {
       fetchUsageThisMonth();
     }
   }, [user]);
+
+  // Fetch latest unread notification for in-app banner
+  useEffect(() => {
+    const fetchLatestNotif = async () => {
+      if (!user || role === 'teacher') return; // Students only
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (!error) setLatestNotif((data && data[0]) || null);
+      } finally {}
+    };
+    fetchLatestNotif();
+  }, [user, role]);
 
   // (removed) effect to fetch exam attempts - unused
 
@@ -224,6 +244,46 @@ export function Dashboard() {
         </h1>
         <p className="text-gray-600 text-lg">Ready to continue your learning journey?</p>
       </div>
+
+      {/* In-App Notification Banner */}
+      {latestNotif && (
+        <div className="card-elevated bg-gradient-to-r from-primary-500/10 to-accent-500/10 border-primary-500/30">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg font-bold text-gray-900">{latestNotif.title}</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-700 border border-red-500/30">New</span>
+              </div>
+              <p className="text-gray-700 mb-3">{latestNotif.message}</p>
+              <div className="flex gap-3">
+                <a
+                  href={latestNotif.action_url || '/notifications'}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
+                  onClick={async () => {
+                    // mark as read when viewing
+                    try { await supabase.from('notifications').update({ is_read: true }).eq('id', latestNotif.id); } catch {}
+                    setLatestNotif(null);
+                  }}
+                >
+                  View
+                </a>
+                <button
+                  className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                  onClick={async () => {
+                    try { await supabase.from('notifications').update({ is_read: true }).eq('id', latestNotif.id); } catch {}
+                    setLatestNotif(null);
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Trial Days Left Banner */}
       {trialDaysLeft !== null && trialDaysLeft > 0 && (
@@ -417,7 +477,7 @@ export function Dashboard() {
                   <Clock className="w-4 h-4 mb-1" />
                   {differenceInDays(new Date(upcomingExam.exam_date), new Date())} days remaining
                 </div>
-                <Link to={`/study/${upcomingExam.planId}`}>
+                <Link to={`/study/${upcomingExam.id}`}>
                   <Button variant="warning" size="sm" className="w-full mt-2">
                     View Study Plan
                   </Button>
@@ -443,11 +503,6 @@ export function Dashboard() {
               <Link to="/tools">
                 <Button variant="secondary" size="sm" className="w-full mb-1" icon={<Sparkles className="w-4 h-4" />}>
                   Study Tools
-                </Button>
-              </Link>
-              <Link to="/ai-study-buddy">
-                <Button variant="accent" size="sm" className="w-full mb-1" icon={<MessageCircle className="w-4 h-4" />}>
-                  AI Study Buddy
                 </Button>
               </Link>
             </div>
