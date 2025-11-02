@@ -1,0 +1,9 @@
+{
+  "project_id": "yjdcshkqgzcubniinwoc",
+  "supabase_url": "https://yjdcshkqgzcubniinwoc.supabase.co",
+  "functions": [
+    {
+      "import_map": "./functions/import_map.json"
+    }
+  ]
+}

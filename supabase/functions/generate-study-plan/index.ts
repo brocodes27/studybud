@@ -11,7 +11,7 @@ interface StudyPlanRequest {
   exam_date: string;
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve({ port: Number(Deno.env.get("FUNCTION_PORT") ?? "8002") }, async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -167,8 +167,16 @@ Make sure to include actual, specific practice questions that are appropriate fo
     // Parse the JSON response from Gemini
     let studyPlan;
     try {
+      // Remove markdown code blocks if present
+      let cleanedText = generatedText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      }
+      
       // Extract JSON from the response (in case there's additional text)
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         studyPlan = JSON.parse(jsonMatch[0]);
       } else {

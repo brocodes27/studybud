@@ -13,7 +13,7 @@ interface FlashcardRequest {
   count: number;
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve({ port: Number(Deno.env.get("FUNCTION_PORT") ?? "8000") }, async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -24,43 +24,50 @@ Deno.serve(async (req: Request) => {
   try {
     // Get the authorization header to extract user info
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Authorization header required" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+
+    // Local dev bypass: set DISABLE_AUTH=true in .env.functions to skip Supabase auth checks
+    let userId: string | undefined;
+    if (Deno.env.get("DISABLE_AUTH") === "true") {
+      userId = Deno.env.get("LOCAL_TEST_USER_ID") ?? "local-test-user";
+    } else {
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: "Authorization header required" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Extract JWT token and verify user
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        throw new Error("Supabase configuration missing");
+      }
+
+      const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: {
+          "Authorization": authHeader,
+          "apikey": supabaseServiceKey,
+        },
+      });
+
+      if (!userResponse.ok) {
+        return new Response(
+          JSON.stringify({ error: "Invalid authorization token" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const userData = await userResponse.json();
+      userId = userData.id;
     }
-
-    // Extract JWT token and verify user
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Supabase configuration missing");
-    }
-
-    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        "Authorization": authHeader,
-        "apikey": supabaseServiceKey,
-      },
-    });
-
-    if (!userResponse.ok) {
-      return new Response(
-        JSON.stringify({ error: "Invalid authorization token" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const userData = await userResponse.json();
-    const userId = userData.id;
 
     const { topic, subject, class: studentClass, chapters, plan_id, count }: FlashcardRequest = await req.json();
 
@@ -153,7 +160,15 @@ Make sure questions are specific and answers are educational. Include definition
     // Parse the JSON response from Gemini
     let flashcardsData;
     try {
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      // Remove markdown code blocks if present
+      let cleanedText = generatedText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      }
+      
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         flashcardsData = JSON.parse(jsonMatch[0]);
       } else {
@@ -164,7 +179,17 @@ Make sure questions are specific and answers are educational. Include definition
       throw new Error("Failed to parse AI response");
     }
 
-    // Save flashcards to Supabase
+      // If running locally with auth disabled, return the AI output directly (don't try to save to Supabase)
+      if (Deno.env.get("DISABLE_AUTH") === "true") {
+        return new Response(
+          JSON.stringify(flashcardsData),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Save flashcards to Supabase
     const flashcardsToInsert = flashcardsData.flashcards.map((card: any) => ({
       user_id: userId,
       plan_id: plan_id || null,
