@@ -13,7 +13,7 @@ interface PracticeTestRequest {
   duration_minutes: number;
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve({ port: Number(Deno.env.get("FUNCTION_PORT") ?? "8001") }, async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -162,7 +162,15 @@ Make sure questions are challenging but fair, and test real understanding of ${s
     // Parse the JSON response from Gemini
     let testData;
     try {
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      // Remove markdown code blocks if present
+      let cleanedText = generatedText.trim();
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      }
+      
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         testData = JSON.parse(jsonMatch[0]);
       } else {

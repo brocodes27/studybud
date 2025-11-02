@@ -24,7 +24,7 @@ interface PabblyWebhookPayload {
   };
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve({ port: Number(Deno.env.get("FUNCTION_PORT") ?? "8003") }, async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
