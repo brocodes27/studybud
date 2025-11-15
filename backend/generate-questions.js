@@ -1,3 +1,4 @@
+// generate-questions.js
 // Import necessary libraries
 // Make sure to install these: npm install mongodb node-fetch dotenv
 import { MongoClient, ObjectId } from 'mongodb';
@@ -309,7 +310,7 @@ RULES:
  * IIFE (Immediately Invoked Function Expression) to run the example.
  * To use this, run `node generatePersonalizedQuestions.js` from your terminal.
  */
-(async () => {
+/*(async () => {
     try {
         // --- Test Case 1: Physics (Electrostatics) ---
         // This user is 'weak' in Electrostatics.
@@ -351,4 +352,7 @@ RULES:
         }
         process.exit(0);
     }
-})();
+})();*/
+
+// --- Exports for other modules (do NOT change other code above) ---
+export { getDb, USER_COLLECTION, QUESTION_COLLECTION, GEMINI_API_URL };
