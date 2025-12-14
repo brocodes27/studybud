@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
     // Extract JWT token
     const token = authHeader.replace("Bearer ", "");
-    
+
     // Verify token and get user ID using Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -154,11 +154,11 @@ Deno.serve(async (req: Request) => {
     const generateStudyPlanWithPrompt = async (useShortPrompt = false) => {
       // Determine number of questions based on study period length
       const questionsPerDay = daysUntilExam <= 15 ? 10 : 3;
-      
+
       console.log(`Generating study plan with ${questionsPerDay} questions per day for ${daysUntilExam} days study period`);
-      
-      const prompt = useShortPrompt 
-        ? `Create a study plan for Class ${studentClass} ${subject} exam in ${daysUntilExam} days. Cover chapters: ${chapters}. Return JSON with daily_schedule array, each day having: day, date, topic, question_type, description, and practice_questions (${questionsPerDay} questions max). Keep it concise.`
+
+      const prompt = useShortPrompt
+        ? `Create a study plan for Class ${studentClass} ${subject} exam in ${daysUntilExam} days. Cover chapters: ${chapters}. Return JSON with daily_schedule array, each day having: day, date, chapter, topic, question_type, description, and practice_questions (${questionsPerDay} questions max). Keep it concise.`
         : `Create a comprehensive personalized study plan for a Class ${studentClass} student preparing for a ${subject} exam. 
 
 Details:
@@ -188,7 +188,8 @@ Return the response in this exact JSON format:
     {
       "day": 1,
       "date": "YYYY-MM-DD",
-      "topic": "Chapter name and specific topics to study",
+      "chapter": "Name of the main chapter covering this topic",
+      "topic": "Specific sub-topic or concept to study",
       "question_type": "Types of questions to practice",
       "description": "Study approach and key points to focus on",
       "practice_questions": [
@@ -257,23 +258,23 @@ Make sure to include actual, specific practice questions that are appropriate fo
         }
 
         const jsonString = jsonMatch[0];
-        
+
         // Check if JSON appears to be complete
         const openBraces = (jsonString.match(/\{/g) || []).length;
         const closeBraces = (jsonString.match(/\}/g) || []).length;
-        
+
         if (openBraces !== closeBraces) {
           throw new Error("JSON appears to be incomplete (unmatched braces)");
         }
 
         // Try to parse the JSON
         studyPlan = JSON.parse(jsonString);
-        
+
         // Validate the parsed structure
         if (!studyPlan || typeof studyPlan !== 'object') {
           throw new Error("Parsed response is not a valid object");
         }
-        
+
         if (!studyPlan.daily_schedule || !Array.isArray(studyPlan.daily_schedule)) {
           throw new Error("Missing or invalid daily_schedule in response");
         }
@@ -292,7 +293,7 @@ Make sure to include actual, specific practice questions that are appropriate fo
           responseEnd: generatedText.substring(Math.max(0, generatedText.length - 200)),
           useShortPrompt
         });
-        
+
         throw parseError;
       }
     };
@@ -307,8 +308,8 @@ Make sure to include actual, specific practice questions that are appropriate fo
         studyPlan = await generateStudyPlanWithPrompt(true);
       } catch (fallbackError) {
         // If both attempts fail, provide a helpful error message
-        if (fallbackError.message.includes("Unexpected end of JSON input") || 
-            fallbackError.message.includes("unmatched braces")) {
+        if (fallbackError.message.includes("Unexpected end of JSON input") ||
+          fallbackError.message.includes("unmatched braces")) {
           throw new Error("AI response was truncated. Please try again with a shorter study period (max 30 days) or fewer chapters. For longer periods, we automatically reduce questions to prevent truncation.");
         } else {
           throw new Error(`Failed to generate study plan: ${fallbackError.message}`);
@@ -359,9 +360,9 @@ Make sure to include actual, specific practice questions that are appropriate fo
   } catch (error) {
     console.error("Error generating study plan:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Failed to generate study plan", 
-        details: error.message 
+      JSON.stringify({
+        error: "Failed to generate study plan",
+        details: error.message
       }),
       {
         status: 500,

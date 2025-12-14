@@ -13,6 +13,7 @@ interface StudyPlan {
   daily_schedule: Array<{
     day: number;
     date: string;
+    chapter?: string;
     topic: string;
     question_type: string;
     description: string;
