@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 export class OpenAIService {
   private static instance: OpenAIService;
   private proxyUrl: string;
-  private model: string = 'gpt-4.1';
+  private model: string = 'gpt-4o';
 
   private constructor() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -51,7 +51,7 @@ export class OpenAIService {
     const body = {
       model: this.model,
       messages,
-      max_tokens: 8192,  // Increased for exam paper generation
+      max_completion_tokens: 8192,  // Updated for newer models
       temperature: 0.7,
     };
     const data = await this.authorizedFetch(body);
@@ -76,7 +76,7 @@ export class OpenAIService {
       messages: [
         { role: 'user', content },
       ],
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
       temperature: 0.2,
     } as any;
 
