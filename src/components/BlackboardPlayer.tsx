@@ -22,12 +22,17 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [displayedText, setDisplayedText] = useState('');
 
     const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         generateScript();
 
         return () => {
             window.speechSynthesis.cancel();
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
         };
     }, []);
 
@@ -46,8 +51,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             setLoading(true);
             const isStem = ['science', 'physics', 'chemistry', 'biology', 'math', 'mathematics'].some(s => subject.toLowerCase().includes(s));
             const visualPrompt = isStem
-                ? "For visualContent, generate HIGH FIDELITY, TEXTBOOK QUALITY SVG diagrams. Use minimalist, clean lines with NO clutter or overlapping text. Prioritize clarity and geometric precision. Use <svg viewBox='0 0 500 350'> with stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'. Use a vibrant chalk palette: stroke='#ffeb3b' (yellow), '#4fc3f7' (blue), '#ff8a80' (red), '#b9f6ca' (green), '#ffffff' (white)."
-                : "For visualContent, use EITHER plain text summary OR valid SVG code (starting with <svg) for a clean, simple chalk illustration. For SVG: use viewBox='0 0 400 250', fill='none', stroke-width='2', stroke-linecap='round'. Use various chalk colors (stroke='#ffeb3b', '#4fc3f7', '#ff8a80', '#ffffff').";
+                ? "For visualContent, generate 3D ISOMETRIC or PERSPECTIVE SVG diagrams with depth. Use embedded <style> or <animateTransform> to create subtle 3D ROTATION, PULSING, or FLOATING animations. Use gradients only for chalk shading effect. Prioritize clarity. Use <svg viewBox='0 0 500 350'>. Palette: #ffeb3b, #4fc3f7, #ff8a80, #b9f6ca, #ffffff. Make it look like a high-tech 3D hologram lesson."
+                : "For visualContent, use valid SVG code (starting with <svg) for a '3D-ish' chalk illustration using perspective. Add subtle animations (e.g. floating, fading). viewBox='0 0 400 250'. Colors: #ffeb3b, #4fc3f7, #ff8a80, #ffffff.";
 
             const prompt = `Create a short blackboard-style educational lesson script for the topic: "${topic}" in subject: "${subject}".
       Break it down into 3-6 segments.
@@ -86,39 +91,76 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         }
     }, [currentIndex, isPlaying]);
 
-    const playSegment = (segment: ScriptSegment) => {
+    const playSegment = async (segment: ScriptSegment) => {
+        // cleanup previous
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(segment.textToSpeak);
-        utterance.rate = 1.0;
-        utterance.onend = () => {
-            if (currentIndex < script.length - 1) {
-                setCurrentIndex(prev => prev + 1);
-            } else {
-                setIsPlaying(false);
-            }
-        };
-        speechRef.current = utterance;
-
-        // Visual Content Logic
-        const isSvg = segment.visualContent.trim().startsWith('<svg');
-
-        if (isSvg) {
-            setDisplayedText(segment.visualContent); // Show SVG immediately
-        } else {
-            // Typing animation for text
-            let i = 0;
-            setDisplayedText('');
-
-            // Clear any existing intervals if we store them in a ref (omitted for brevity, but ideal)
-            // For now simple interval
-            const interval = setInterval(() => {
-                setDisplayedText(segment.visualContent.slice(0, i + 1));
-                i++;
-                if (i > segment.visualContent.length) clearInterval(interval);
-            }, 30); // Faster typing
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
         }
 
-        window.speechSynthesis.speak(utterance);
+        const startVisuals = () => {
+            // Visual Content Logic
+            const isSvg = segment.visualContent.trim().startsWith('<svg');
+
+            if (isSvg) {
+                setDisplayedText(segment.visualContent); // Show SVG immediately
+            } else {
+                // Typing animation for text
+                let i = 0;
+                setDisplayedText('');
+
+                // Clear any existing intervals if we store them in a ref (omitted for brevity, but ideal)
+                // For now simple interval
+                const interval = setInterval(() => {
+                    setDisplayedText(segment.visualContent.slice(0, i + 1));
+                    i++;
+                    if (i > segment.visualContent.length) clearInterval(interval);
+                }, 30); // Faster typing
+            }
+        };
+
+        try {
+            // Try OpenAI TTS
+            const audioBuffer = await OpenAIService.getInstance().generateSpeech(segment.textToSpeak);
+            const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+                if (currentIndex < script.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                } else {
+                    setIsPlaying(false);
+                }
+            };
+
+            await audio.play();
+            startVisuals();
+
+        } catch (e) {
+            console.warn('TTS Error, falling back to browser voice:', e);
+            // Fallback
+            const utterance = new SpeechSynthesisUtterance(segment.textToSpeak);
+            utterance.rate = 1.0;
+            // More natural browser voice if possible
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'));
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            utterance.onend = () => {
+                if (currentIndex < script.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                } else {
+                    setIsPlaying(false);
+                }
+            };
+            speechRef.current = utterance;
+            startVisuals();
+            window.speechSynthesis.speak(utterance);
+        }
     };
 
     return (

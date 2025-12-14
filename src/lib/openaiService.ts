@@ -133,6 +133,37 @@ export class OpenAIService {
     if (error) throw new Error(`Vector Search Error: ${error.message}`);
     return data;
   }
+
+  /**
+   * Generate speech from text using OpenAI TTS
+   */
+  async generateSpeech(input: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'onyx'): Promise<ArrayBuffer> {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+      console.warn('VITE_OPENAI_API_KEY missing, falling back to browser TTS');
+      throw new Error('MISSING_KEY');
+    }
+
+    const res = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        input,
+        voice,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenAI TTS Error: ${res.status} ${err}`);
+    }
+
+    return await res.arrayBuffer();
+  }
 }
 
 export default OpenAIService;
