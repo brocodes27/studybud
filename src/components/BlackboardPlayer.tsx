@@ -251,8 +251,17 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     )}
                 </div>
 
+                {/* Subtitles Overlay */}
+                {currentIndex >= 0 && currentIndex < script.length && (
+                    <div className="absolute bottom-20 left-0 right-0 px-8 flex justify-center pointer-events-none z-10">
+                        <div className="bg-black/60 backdrop-blur-md text-white text-lg font-sans px-6 py-4 rounded-xl max-w-3xl text-center shadow-lg pointer-events-auto border border-white/10 animate-fade-in max-h-40 overflow-y-auto custom-scrollbar">
+                            {script[currentIndex].textToSpeak}
+                        </div>
+                    </div>
+                )}
+
                 {/* Controls */}
-                <div className="h-16 bg-gray-800 border-t border-gray-700 flex items-center justify-center gap-6">
+                <div className="h-16 bg-gray-800 border-t border-gray-700 flex items-center justify-center gap-6 z-20 relative">
                     <button
                         onClick={() => {
                             setCurrentIndex(0);

@@ -27,7 +27,7 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[radial-gradient(ellipse_240%_140%_at_bottom_left,#183ec2_0%,#eaeefe_60%,#f8faff_100%)]">
+    <div className="min-h-screen overflow-x-clip bg-[radial-gradient(ellipse_200%_100%_at_bottom_left,#000_0%,#111_100%)] text-white">
       <LandingHeader />
       <LandingHero />
       <LandingBenefits />

@@ -28,17 +28,17 @@ const Column = ({ items, className = '', duration = 15 }: { items: typeof testim
       {[...new Array(2)].fill(0).map((_, dupIndex) => (
         <div key={dupIndex} className="flex flex-col gap-6">
           {items.map((t) => (
-            <div key={t.text} className="rounded-xl border border-border p-6 bg-card shadow-sm">
+            <div key={t.text} className="rounded-xl border border-white/10 p-6 bg-white/5 backdrop-blur-sm shadow-none">
               <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center mr-3">
+                <div className="w-10 h-10 rounded-full bg-neon-blue/20 text-neon-blue flex items-center justify-center mr-3 border border-white/5">
                   <span className="text-sm font-semibold">{t.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}</span>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900">{t.name}</h4>
-                  <p className="text-gray-500 text-xs">{t.grade}</p>
+                  <h4 className="text-sm font-semibold text-white">{t.name}</h4>
+                  <p className="text-white/50 text-xs">{t.grade}</p>
                 </div>
               </div>
-              <p className="text-gray-700 leading-relaxed">"{t.text}"</p>
+              <p className="text-white/70 leading-relaxed">"{t.text}"</p>
             </div>
           ))}
         </div>
@@ -55,10 +55,10 @@ export function LandingTestimonials() {
     <section id="testimonials" className="py-16 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-3">Loved by students worldwide</h2>
-          <p className="text-gray-600">Join thousands of learners who’ve transformed their study experience.</p>
+          <h2 className="text-2xl md:text-4xl font-bold text-white mb-3">Loved by students worldwide</h2>
+          <p className="text-white/60 text-lg">Join thousands of learners who’ve transformed their study experience.</p>
         </div>
-        <div className="flex justify-center gap-6 mt-10 [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_75%,transparent)] max-h-[738px] overflow-hidden">
+        <div className="flex justify-center gap-6 mt-10 [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] max-h-[738px] overflow-hidden">
           <Column items={first} duration={15} />
           <Column items={second} className="hidden md:block" duration={19} />
           <Column items={third} className="hidden lg:block" duration={17} />
