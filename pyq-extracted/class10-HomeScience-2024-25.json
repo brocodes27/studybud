@@ -1,0 +1,333 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "HomeScience",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:57:03.689Z",
+    "total_questions": 32
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "What will be the consequence of using the same chopping board for raw meat and vegetables?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Enhanced flavor in the salad due to meat juice",
+        "Reduced risk of food contamination",
+        "Increased risk of cross-contamination",
+        "Extended shelf life of the salad"
+      ],
+      "correct_index": 2,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "2",
+      "question": "What is the first step in creating a time plan?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Grouping flexible and inflexible activities",
+        "Estimating the time required for each activity",
+        "Listing all the activities",
+        "Assigning jobs to family members"
+      ],
+      "correct_index": 2,
+      "chapter": "Time Management"
+    },
+    {
+      "question_number": "3",
+      "question": "Which of the following is a key aspect of social development in an eight-year-old child?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Egocentrism",
+        "Close friendships",
+        "Imitation of adults",
+        "Preference for solo play"
+      ],
+      "correct_index": 1,
+      "chapter": "Child Development"
+    },
+    {
+      "question_number": "4",
+      "question": "Which type of food is classified as 'Unsafe Food'?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Food with high sugar content",
+        "Food that is injurious to health",
+        "Food that is expensive",
+        "Food with added nutrients"
+      ],
+      "correct_index": 1,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "5",
+      "question": "While working at home, where would you place the frequently used items to simplify work?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "In hard-to-reach places",
+        "On the floor",
+        "Outside the workspace",
+        "At waist or shoulder level"
+      ],
+      "correct_index": 3,
+      "chapter": "Home Management"
+    },
+    {
+      "question_number": "6",
+      "question": "Which of the following measures would help to make a meal look more attractive?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Serving food items of same texture",
+        "Placing food randomly on the plate",
+        "Blending of different colours in food",
+        "Focusing only on the taste of food"
+      ],
+      "correct_index": 2,
+      "chapter": "Meal Planning"
+    },
+    {
+      "question_number": "7",
+      "question": "Which fabric is most likely to be attacked by mildew?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Wool",
+        "Silk",
+        "Cotton",
+        "Nylon"
+      ],
+      "correct_index": 2,
+      "chapter": "Fabric Care"
+    },
+    {
+      "question_number": "8",
+      "question": "Choose the incorrect statement related to personal hygiene of food handler.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Wash hands before and after handling the food",
+        "Nails should be unpainted and trimmed",
+        "Wear rings/necklace",
+        "Tie and cover the hair"
+      ],
+      "correct_index": 2,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "9",
+      "question": "What is the recommended dietary choice for the elderly?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Fried foods",
+        "Light and digestible meals",
+        "Spicy foods",
+        "Protein shakes"
+      ],
+      "correct_index": 1,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "10",
+      "question": "Which factor should be considered while making the time plan?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Flexibility and realism",
+        "Strict rules",
+        "Unclear goals",
+        "Rigid deadlines"
+      ],
+      "correct_index": 0,
+      "chapter": "Time Management"
+    },
+    {
+      "question_number": "11",
+      "question": "Which of the following is a feature of language development in adolescence?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Use of simple sentences only",
+        "Limited vocabulary",
+        "Use of slang and abbreviations",
+        "Speaks only in passive voice"
+      ],
+      "correct_index": 2,
+      "chapter": "Adolescent Development"
+    },
+    {
+      "question_number": "12",
+      "question": "Match the List I with List II. LIST I (Type of Stain) LIST II (Stain Removing Reagents) 1.Polish I. Acidic reagent 2.Ink II. Alkaline Reagent 3.Oil III. Grease solvent 4.Tea IV. Grease absorbent Choose the correct option from the following.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1 - II, 2 - IV, 3 - I, 4 - III",
+        "1 - I, 2 - II, 3 - III, 4 - IV",
+        "1 - IV, 2 - III, 3 - II, 4 - I",
+        "1 - III, 2 - I, 3 - IV, 4 - II"
+      ],
+      "correct_index": 1,
+      "chapter": "Stain Removal"
+    },
+    {
+      "question_number": "13",
+      "question": "Given below are two statements labeled as Assertion (A) and Reason (R) - Assertion (A): Playing in group enhances the child's ability to share and cooperate. Reason (R): Group play teaches social rules, such as taking turns and sharing toys. Select the most appropriate answer from the options given below.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true, and R is the correct explanation of A.",
+        "Both A and R are true, but R is not the correct explanation of A.",
+        "A is true, but R is false.",
+        "A is false, but R is true."
+      ],
+      "correct_index": 0,
+      "chapter": "Child Development"
+    },
+    {
+      "question_number": "14",
+      "question": "Given below are two statements labeled as Assertion (A) and Reason (R) - Assertion (A): Stiffening agents are used for garments as they give shine to the fabric. Reason (R): Stiffening agents form a smooth coating on the fabric surface as it acts as fabric cleanser. Select the most appropriate answer from the options given below.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true, and R is the correct explanation of A.",
+        "Both A and R are true, but R is not the correct explanation of A.",
+        "A is true, but R is false.",
+        "A is false, but R is true."
+      ],
+      "correct_index": 1,
+      "chapter": "Fabric Care"
+    },
+    {
+      "question_number": "15",
+      "question": "What two points should be considered while storing perishable food? OR List any two guidelines that should be followed to ensure hygiene while serving the food.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "16",
+      "question": "Adopting energy-efficient postures reduces physical strain. Provide two examples to support your answer.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Ergonomics"
+    },
+    {
+      "question_number": "17",
+      "question": "Mention any two substitutes other than expensive protein sources that can be included in a balanced diet. OR Suggest two ways to incorporate leftover food in meals.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "18",
+      "question": "Apart from the ISI mark, what other two points will you consider while purchasing toys for a 6-month-old child?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Child Safety"
+    },
+    {
+      "question_number": "19",
+      "question": "Identify two harmful effects of adulterant Metanil yellow on health.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "20",
+      "question": "Why is bleach used in fabric care and maintenance? Give an example of bleach used in daily routine. OR Why is blue applied to white clothes while laundering? What one precaution will you consider while applying blue?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Fabric Care"
+    },
+    {
+      "question_number": "21",
+      "question": "Write any two key guidelines provided by ICMR for creating a balanced meal using the food groups.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "22",
+      "question": "Give three benefits of time management. OR Enlist three advantages of energy management.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Time and Energy Management"
+    },
+    {
+      "question_number": "23",
+      "question": "Suggest three ways to your school canteen cook to retain the nutrients while preparing a variety of dishes.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "24",
+      "question": "What are three key cognitive changes that occur as children transition from early childhood to middle childhood? OR Write any three differences in emotional development between early childhood and middle childhood.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Child Development"
+    },
+    {
+      "question_number": "25",
+      "question": "Your mother wants to store silk saree to ensure it lasts for a long time. What three precautions should she take while storing this saree?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Fabric Care"
+    },
+    {
+      "question_number": "26",
+      "question": "Enumerate any four key roles of ventilation in the kitchen.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Home Management"
+    },
+    {
+      "question_number": "27",
+      "question": "During adolescence, both boys and girls undergo a growth spurt, resulting in several noticeable changes in their body. Elaborate on any four of these changes. OR Riya, a 14-year-old, has started experiencing various socio-emotional changes. Elaborate on any four such changes.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Adolescent Development"
+    },
+    {
+      "question_number": "28",
+      "question": "Bharat is a factory worker living with his wife and teenage children. Explain any four factors that you should consider while planning meals for his family.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Meal Planning"
+    },
+    {
+      "question_number": "29",
+      "question": "While preparing for the upcoming board exams, you are experiencing psychological fatigue. I. Suggest two ways to reduce this fatigue. II. Identify any two ways to create a conducive environment for effective study.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Stress Management"
+    },
+    {
+      "question_number": "30",
+      "question": "Elucidate any four circumstances under which FSSAI may cancel the license of a food vendor.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Food Safety"
+    },
+    {
+      "question_number": "31",
+      "question": "I. What two points to be considered while selecting the soap? II. Give three advantages of detergent over the soap. OR I. In what two ways can stain be identified? II. Explicate any three methods of stain removal.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Fabric Care"
+    },
+    {
+      "question_number": "32",
+      "question": "During a festive season, a popular brand of cooking oil was declared out of stock from the market. However, a few days later, the same oil was available but sold at a much higher price. I. What malpractice is evident in this situation? II. Mention two ways consumers can safeguard themselves against such practices during high-demand periods. III. Indicate any two other malpractices commonly faced by consumers during festive seasons.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Consumer Education"
+    }
+  ]
+}

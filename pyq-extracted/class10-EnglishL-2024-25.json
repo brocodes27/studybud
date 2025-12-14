@@ -1,0 +1,565 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "EnglishL",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:18:55.533Z",
+    "total_questions": 61
+  },
+  "questions": [
+    {
+      "question_number": "I",
+      "question": "Why is the growing preference for indigenous craft items described as a ‘welcome trend’ in paragraph 1?",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "II",
+      "question": "According to paragraph 1, the indigenous craft items have all of the following qualities EXCEPT being:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. handcrafted products",
+        "B. rooted in artistic traditions",
+        "C. aesthetic in appeal",
+        "D. easily accessible"
+      ],
+      "correct_index": 3,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "III",
+      "question": "Complete the following by selecting the correct option from those given in the brackets. The usage of locally sourced materials makes the indigenous crafts _____ (traditional / eco-friendly). (Paragraph 2)",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "traditional",
+        "eco-friendly"
+      ],
+      "correct_index": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "IV",
+      "question": "Select the option that is True from (a) - (c) given for what the phrase, ‘time-tested methods’ suggests in paragraph 2.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Artisans use traditional techniques that have been refined and proven effective over generations",
+        "B. Artisans use outdated practices that are no longer relevant in today's commercial markets.",
+        "C. Artisans follow techniques that prioritise speed and mass production over craftsmanship."
+      ],
+      "correct_index": 0,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "V",
+      "question": "Complete the analogy by selecting one of the two correct options (a), (b) fair trade: fair wages: : ______ : _______ (Paragraph 3)",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "(a) employment: job security",
+        "(b) mass production: reduced prices"
+      ],
+      "correct_index": 0,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VI",
+      "question": "Why is supporting indigenous crafts considered an effective way to improve the economic conditions of small communities? (Paragraph 3)",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VII",
+      "question": "What are the main ideas of paragraph 4 and paragraph 5? Select the correct option.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. ii iv",
+        "B. v ii",
+        "C. i iii",
+        "D. iv ii"
+      ],
+      "correct_index": 2,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VIII",
+      "question": "Why is it important for consumers to take an active role alongside government and organisations in sustaining indigenous crafts? (Paragraph 6)",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "I",
+      "question": "Why did the study most likely focus on the two specific age groups of 10 – 12 and 13 – 16? (Paragraph 1) This is so because these age groups ____.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. represent the largest population of growing students.",
+        "B. are when students develop and refine their writing habits.",
+        "C. were the easiest to survey across various schools.",
+        "D. have a natural preference for ballpoint pens."
+      ],
+      "correct_index": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "II",
+      "question": "Identify the phrase in paragraph 1 that conveys the writer's reference to the patterns or preferences observed in how students use pens for various writing tasks.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "III",
+      "question": "Complete the following by selecting the correct option from those given in the brackets. (Paragraph 2) Geetha, aged 11, wishes to complete her practical file neatly, ensuring her work is legible and appealing. She is most likely to choose a micro-tip pen for this task because the ________ (speed / precision) offered by this type of pen helps produce tidy work.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "speed",
+        "precision"
+      ],
+      "correct_index": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "IV",
+      "question": "What does the writer mean by ‘affordability’ while citing the high percentage of ballpoint pen usage? (Paragraph 2)",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "V",
+      "question": "Complete the following with the correct option. When the writer says ‘distinct patterns’ in the line ‘The results revealed distinct patterns based on age groups and writing purposes,’ of paragraph 3, s/he means that _______.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. students in both age groups use pens in the same way for all the listed purposes.",
+        "B. the preferences for pens varied according to the students' age and the type of writing task.",
+        "C. only micro-tip pens were popular across all writing tasks in the 13 - 16 age group.",
+        "D. students of all age groups preferred ballpoint pens for completing creative writing tasks."
+      ],
+      "correct_index": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VI",
+      "question": "Complete the following appropriately. The one likely reason why more than 40% of students still chose ballpoint pens for creative tasks, even though micro-tip pens are better suited for such activities is _________________. (Paragraph 3)",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VII",
+      "question": "How are ‘aesthetic appeal’ and ‘finer lines’ connected? (Paragraph 3)",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "VIII",
+      "question": "Elaborate how hybrid features in pens would lead to a commercially viable product. (Paragraph 4)",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "IX",
+      "question": "Fill in the blank with ONE suitable word. (Paragraph 4) Understanding age-specific preferences helps manufacturers design products that cater to the unique needs of different age groups, ensuring their products are both ________ as well as appealing.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "I",
+      "question": "Fill in the blank by using the correct form of the word in the bracket for the given portion of a market research: The special subscriptions of newspapers are well ____ (illustrate), to make reading interesting for school students.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "II",
+      "question": "Identify the error and write the correction in the given sentence from a life skills’ book. The road to success is not the bed of roses. Use the given format. Error Correction",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "III",
+      "question": "Fill in the blank with the correct form of verb given in the brackets. I’m so happy to see my plants again! They _____ (grow) so much since I last saw them.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "IV",
+      "question": "Read the given statement. They said to the guide, “We’d love to come here again next year.” Report it correctly by completing the following. They told the guide that _____.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "V",
+      "question": "Fill in the blank by choosing the correct option to complete the conclusion of a letter of placing order. There would be no compromise _________the quality of items supplied.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. regards",
+        "B. regard",
+        "C. regardless",
+        "D. regarding"
+      ],
+      "correct_index": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "VI",
+      "question": "Report the following by completing the sentence correctly. \"Don't try mending the trousers yourself,\" she warned him. She warned him _____.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "VII",
+      "question": "Complete the given opinion by filling the blank with correct option. The experience of watching the movie left me _____ grateful for knowing the importance of being empathetic to others.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. having felt",
+        "B. feeling",
+        "C. felt",
+        "D. feels"
+      ],
+      "correct_index": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "VIII",
+      "question": "The given question has an error. Select the option that correctly identifies the error and the correction. Which kind of person does something like that?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Which What",
+        "B. kind kinds",
+        "C. something somethings",
+        "D. that this"
+      ],
+      "correct_index": 0,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "IX",
+      "question": "Report the following question. She said to her sister, “Are you joining us for lunch today?”",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "X",
+      "question": "Fill in the blank with the correct option from those given in the brackets. Everyone is saying that Farhana’s chances are bright in the upcoming tournament and she ______ (must / may) become the youngest football player ever.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "must",
+        "may"
+      ],
+      "correct_index": 1,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "XI",
+      "question": "Fill in the blank to complete the sentence in a teacher’s diary by choosing the correct option. _____ student in the class submitted their assignment on time.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. All",
+        "B. One",
+        "C. Every",
+        "D. A"
+      ],
+      "correct_index": 2,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "XII",
+      "question": "Choose the correct option to fill the blank. I looked inside the bucket and saw there was ______water in it, so they had to add more to use.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. little",
+        "B. any",
+        "C. few",
+        "D. least"
+      ],
+      "correct_index": 0,
+      "chapter": "Grammar"
+    },
+    {
+      "question_number": "4A",
+      "question": "As Vaibhav, the Club in-charge of your school’s Ecology Club, you strongly believe in the importance of starting Eco-Clubs in schools in the rural areas surrounding your city to promote the preservation and conservation of nature. Write a letter to the Education Secretary of your city, in about 120 words, highlighting the significance of ecological awareness and suggesting the need to establish Eco-Clubs in these schools.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "4B",
+      "question": "As Amitha, the Vice Head Girl of Vidya Mandir, you are aware of the increasing prevalence of cyber-attacks and unauthorised exploitation of systems, networks, and technologies affecting individuals across all demographics. Write a letter to the editor of a national daily in about 120 words, stressing the urgent need to promote digital security among all age groups. Highlight the challenges posed by cyber threats and propose practical solutions to address this growing issue.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "5A",
+      "question": "You are the President of the Debate Society in your school. Two guest speakers -- Mr. Rajan Sharma and Ms. Meera Kapoor, have written to express their interest in participating in your upcoming debate competition. Analyse the information in a paragraph, justifying which guest speaker would be a better choice. Consider factors such as experience, relevance to the topic, and audience engagement.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "5B",
+      "question": "Jaspreet, class X, is known for her creativity, excellent communication skills, and ability to think outside the box. However, she sometimes struggles with time management and prefers collaborative efforts over working solo. She has been assigned an art-integrated project presentation and must choose a partner from Sunaina, Tabassum, and Alice. Based on the features of each candidate, analyse and decide who would be the best partner for Jaspreet. Consider aspects such as complementary strengths, teamwork, and the project's requirements.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "I",
+      "question": "Contradict the view that the young seagull celebrated his maiden flight alone.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "Which of the following statements best explains the young seagull’s experience as he starts flying?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "a) The young seagull immediately mastered flying and was no longer afraid.",
+        "b) The young seagull gradually gained confidence and joined his family in the air."
+      ],
+      "correct_index": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "What can be inferred about the young seagull’s emotional state after flying with his family?",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "IV",
+      "question": "Read the following sound and movement words. Select the option that correctly categorises (i) – (v) into sound and movement words.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. i, ii, v iii, iv",
+        "B. iv, v i, ii, iii",
+        "C. ii, v i, iii, iv",
+        "D. v i, ii, iii, iv"
+      ],
+      "correct_index": 2,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "I",
+      "question": "What does the pause indicated by the dash in the line ‘It was — but here, let me turn on the historiscope and show you’ convey?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. i, ii, v",
+        "B. Only ii",
+        "C. iii and iv",
+        "D. Only v"
+      ],
+      "correct_index": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "How do the stage directions, such as ‘Historian turns on projector’ and ‘Spotlight on Historian goes out,’ contribute to the atmosphere and understanding of the scene in this part of the play?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "Select the option that correctly completes the following. The Historian dismisses the noble encyclopaedia and rockets because she wants to _____",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "a) convey the importance of scientific knowledge and military power in stopping the invasion.",
+        "b) stress the surprising and unexpected nature of the book that stopped the invasion."
+      ],
+      "correct_index": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "IV",
+      "question": "What emotion is the Historian most likely conveying with the phrase ‘Tsk, tsk’?",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "I",
+      "question": "What emotions are most appropriately conveyed by the phrase ‘desperate eyes’ and ‘epistemology of loss’?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. i, iii",
+        "B. i, iv, v",
+        "C. ii, iii, iv",
+        "D. iv, v"
+      ],
+      "correct_index": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "What does the phrase ‘how to stand up’ suggest about the boy’s emotional growth?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "Which phrase from the extract conveys the poet's idea that loss is universal?",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "IV",
+      "question": "Fill in the blank with a phrase to suitably complete the sentence. The loss of his ball symbolises ______ in life.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "I",
+      "question": "What does the poet imply by referring to the Bengal Tiger as a ‘noble wild beast’?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. The tiger is majestic and dignified despite its ferocity.",
+        "B. The tiger is kind and considerate toward humans.",
+        "C. The tiger has a royal lineage and should be revered.",
+        "D. The tiger is a symbol of fear and destruction."
+      ],
+      "correct_index": 0,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "Complete the following suitably. The word ‘ground’ in the line ‘With black stripes on a yellow ground’ refers to _____.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "How does the poet use humour in the description of the Bengal Tiger?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "IV",
+      "question": "Identify the phrase in the poem that is advisory in nature.",
+      "type": "short",
+      "marks": 1,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "I",
+      "question": "Otters are known for their peculiar behavioural traits. Support this statement with reference to any two traits mentioned in ‘Mijbil the Otter.’",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "How does the use of repetition in the poem ‘Amanda!’ highlight the speaker's expectations and Amanda's responses?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "How can Nelson Mandela’s vision of ‘liberating both the oppressed and the oppressor’ be applied in modern-day societies to address issues of inequality and discrimination? (Nelson Mandela – Long Walk to Freedom)",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "IV",
+      "question": "How does the line ‘and then moves on’ reflect the transient nature of the fog thereby contributing to the poem's deeper message about life's impermanence? (Fog)",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "V",
+      "question": "How does Chubukov’s reaction to Lomov’s marriage proposal reflect his priorities and values? (The Proposal)",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "I",
+      "question": "How does ‘The Necklace’ illustrate the significance of honesty as the key element for leading a happy and stress-free life?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "II",
+      "question": "Briefly evaluate the validity of the adage ‘Values are caught, not taught’, in the context of the relationship between Anil and Hari Singh in ‘The Thief’s Story’.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "III",
+      "question": "Griffin’s experiences moments of comfort and normalcy while being invisible. How do these fleeting moments impact his sense of identity and his actions throughout 'Footprints Without Feet'?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "A",
+      "question": "How does literature like ‘The Baker from Goa,’ ‘Coorg,’ and ‘Tea from Assam’ contribute to promoting tourism and raising awareness about regional cultures and traditions?",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "B",
+      "question": "The poems, ‘The Trees’ and ‘A Tiger in the Zoo’ resonate the theme of importance of freedom and the desire to break free from any kind of dominance. Examine.",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "A",
+      "question": "How does the author use the narrative technique of misdirection in 'The Midnight Visitor', to enhance the suspense and the story’s unexpected ending?",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Literature Textbook"
+    },
+    {
+      "question_number": "B",
+      "question": "Comment critically on the role of the Surgery in the ‘The Triumph of Surgery’.",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Literature Textbook"
+    }
+  ]
+}

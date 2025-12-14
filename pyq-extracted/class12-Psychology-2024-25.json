@@ -1,0 +1,375 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Psychology",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:10:25.104Z",
+    "total_questions": 38
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Bobby is diagnosed with diabetes. However, he refuses to accept the diagnosis and continues to maintain the same lifestyle. Identify the defense mechanism that Bobby is using.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Repression",
+        "Rationalization",
+        "Denial",
+        "Displacement"
+      ],
+      "correct_index": 2,
+      "chapter": "Defense Mechanisms"
+    },
+    {
+      "question_number": "2",
+      "question": "Which one of the following is true for personality assessment? i. A person’s behaviour in a variety of situations can provide us with meaningful information about his/her personality. ii. Indirect techniques can be scored in an objective manner. iii. Direct methods of personality assessment cover the unconscious part of our behaviour. iv. Psychological testing requires great skill and training.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "i and iii",
+        "i and iv",
+        "ii and iii",
+        "ii and iv"
+      ],
+      "correct_index": 1,
+      "chapter": "Personality Assessment"
+    },
+    {
+      "question_number": "3",
+      "question": "Rita wants to perform well in the examination and hence starts attending classes regularly, taking notes, setting study targets, etc. Which theory of intelligence gives importance to this stage of planning?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Hierarchical Model of Intelligence",
+        "PASS Model",
+        "Theory of Multiple Intelligences",
+        "Structure of Intellect Model of Intelligence"
+      ],
+      "correct_index": 1,
+      "chapter": "Theories of Intelligence"
+    },
+    {
+      "question_number": "4",
+      "question": "Which of the following statements applies to Sudarshan Kriya Yoga?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "It combines pranayam with chanting",
+        "It consists of mindfulness-based meditation",
+        "It involves rapid breathing technique to induce hyperventilation",
+        "It refers to asanas or only bodily postures"
+      ],
+      "correct_index": 2,
+      "chapter": "Yoga and Meditation"
+    },
+    {
+      "question_number": "5",
+      "question": "Suhail’s intense and overwhelming fear of driving has disrupted his daily life. He does not go outside for important tasks unless somebody else drives the car for him. He has even left his job and has few social contacts. The most suitable behaviour therapy for Suhail would be:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Systematic desensitization",
+        "Positive reinforcement",
+        "Differential reinforcement",
+        "Token economy"
+      ],
+      "correct_index": 0,
+      "chapter": "Behaviour Therapy"
+    },
+    {
+      "question_number": "6",
+      "question": "In the following question, a statement of Assertion (A) is followed by a statement of Reason (R). Mark the correct choice: Assertion (A): In Logotherapy, transference is actively discouraged. Reason (R): The goal of Logotherapy is to help patients find meaning and responsibility in their lives irrespective of their life circumstances.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true, and R is the correct explanation of A.",
+        "Both A and R are true, but R is not the correct explanation of A",
+        "A is true but R is false.",
+        "A is false but R is true."
+      ],
+      "correct_index": 0,
+      "chapter": "Logotherapy"
+    },
+    {
+      "question_number": "7",
+      "question": "Jayant believes that the television news anchor is talking to him. He is exhibiting:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Delusion of reference",
+        "Delusion of control",
+        "Formal thought disorder",
+        "Auditory hallucination"
+      ],
+      "correct_index": 0,
+      "chapter": "Psychotic Disorders"
+    },
+    {
+      "question_number": "8",
+      "question": "Maya has been feeling anxious and experiencing panic attacks for the past two weeks. She feels a constant sense of fear accompanied by rapid heartbeat, sweating, and shortness of breath. This is affecting her ability to participate in school activities. Which of the following criteria for abnormality in psychological disorders is best illustrated by Maya’s symptoms?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Deviance and danger",
+        "Distress and dysfunction",
+        "Duration and distress",
+        "Danger and depression"
+      ],
+      "correct_index": 1,
+      "chapter": "Abnormal Psychology"
+    },
+    {
+      "question_number": "9",
+      "question": "Which of the following is not a characteristic of Autism spectrum disorder?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Shortness of breath",
+        "Repetitive behaviour",
+        "Problem in non-verbal communication",
+        "Problem in social interaction"
+      ],
+      "correct_index": 0,
+      "chapter": "Autism Spectrum Disorder"
+    },
+    {
+      "question_number": "10",
+      "question": "Identify the statements that are not true to group polarisation: i. It is a consequence of extreme cohesiveness. ii. Groups are more likely to take extreme decisions than individuals alone. iii. When you find people having similar views you perceive them as an ingroup. iv. As the group becomes one unit you begin to think, feel and act like them.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "i and iv",
+        "iii and iv",
+        "ii and iv",
+        "ii and iii"
+      ],
+      "correct_index": 0,
+      "chapter": "Group Dynamics"
+    },
+    {
+      "question_number": "11",
+      "question": "Which one of the following statements describes a team?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Collection of people who may be present at a place by chance.",
+        "The members have complimentary skills and are committed to a common goal.",
+        "Only the leader is responsible for the work.",
+        "Polarisation in attention and actions of persons are in common direction."
+      ],
+      "correct_index": 1,
+      "chapter": "Team Dynamics"
+    },
+    {
+      "question_number": "12",
+      "question": "Shweta has joined the National Cadet Corps. Identify the type of group she is now a member of:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "i and iv",
+        "iii and iv",
+        "ii and iv",
+        "ii and iii"
+      ],
+      "correct_index": 2,
+      "chapter": "Group Types"
+    },
+    {
+      "question_number": "13",
+      "question": "The concept of balance as proposed by Fritz Heider states that balance is found when:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "All three sides of the P-O-X triangle are negative.",
+        "Two sides of the P-O-X triangle are positive, and one side is negative.",
+        "Two sides of the P-O-X triangle are negative, and one side is positive.",
+        "There is a state of cognitive dissonance."
+      ],
+      "correct_index": 1,
+      "chapter": "Cognitive Balance"
+    },
+    {
+      "question_number": "14",
+      "question": "Identify the statement that can help in reducing social loafing.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Making the group effort identifiable, instead of individual effort.",
+        "Decreasing the pressure to work hard towards the achievement of group goals.",
+        "Making people feel that their individual contribution is important.",
+        "Weakening group cohesiveness and increasing motivation to increase productivity."
+      ],
+      "correct_index": 2,
+      "chapter": "Social Loafing"
+    },
+    {
+      "question_number": "15",
+      "question": "‘An individual’s response to a stressful situation largely depends upon the perceived events and how they are interpreted or appraised.’ Do you agree with this statement with reference to Lazarus’ theory? State a reason for your answer.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Stress and Coping"
+    },
+    {
+      "question_number": "16(A)",
+      "question": "Explain two major limitations of rating scales in assessment.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Psychological Assessment"
+    },
+    {
+      "question_number": "16(B)",
+      "question": "State the main characteristics of Type A personality.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Personality Types"
+    },
+    {
+      "question_number": "17",
+      "question": "‘The cross-situational consistency of traits is found to be quite low’. Evaluate this statement with reference to the interactional approach to personality.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Trait Theory"
+    },
+    {
+      "question_number": "18",
+      "question": "Is intelligence an interplay of nurture and nature? Support your answer with one evidence for each.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Nature vs. Nurture"
+    },
+    {
+      "question_number": "19",
+      "question": "Aslam is a manager in an organisation. To conduct a team-building activity, he assigned work to selected members randomly. He observed that while executing the task, there came a stage when there was conflict among the members. At what stage of group formation would this have taken place and explain the stage that is likely to follow?",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Group Formation"
+    },
+    {
+      "question_number": "20",
+      "question": "Maninder is confident in saying ‘no’ to a request that he cannot fulfil. He is also able to organise his work and not procrastinate it. Explain the life skills exhibited by him.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Life Skills"
+    },
+    {
+      "question_number": "21",
+      "question": "Peter is a 28-year-old man who has been diagnosed with schizophrenia. He lacks the necessary skills to be independent and productive member of society. As a mental health professional, suggest any three rehabilitation techniques to support Peter in becoming self-sufficient.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Rehabilitation"
+    },
+    {
+      "question_number": "22(A)",
+      "question": "Ramit, a painter, is a happy, self-fulfilled and fully functioning person. He holds exhibitions of his artwork which is always appreciated by all the visitors. How will Carl Rogers explain Ramit’s personality?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Humanistic Psychology"
+    },
+    {
+      "question_number": "22(B)",
+      "question": "The Birhors, a tribal community largely lead a nomadic life depending on hunting and gathering. How will this lifestyle influence the personality development of children from this community?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Cultural Psychology"
+    },
+    {
+      "question_number": "23",
+      "question": "Differentiate between obsessive and compulsive behaviour.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Obsessive-Compulsive Disorder"
+    },
+    {
+      "question_number": "24(A)",
+      "question": "Sara believes in the importance of regular exercise for maintaining good health. Despite this belief, she rarely engages in any form of physical activity. With respect to Sara, explain the reasons for the lack of consistency between her attitude and behaviour.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Attitude and Behaviour"
+    },
+    {
+      "question_number": "24(B)",
+      "question": "Rajan has a prejudice against senior citizens. As a result, he ignores their inputs and ideas. What are the likely sources of the prejudice that he holds?",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Prejudice"
+    },
+    {
+      "question_number": "25",
+      "question": "Gagan’s psychologist used a technique of personality assessment that required story writing around pictures and completion of sentences etc. Identify and describe the techniques being referred to here.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Projective Techniques"
+    },
+    {
+      "question_number": "26",
+      "question": "Shanta has an IQ of 140. She has recently won an award for the ‘Best Author’ as well. Will she be gifted or talented? Elaborate on giftedness and its characteristics.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Giftedness"
+    },
+    {
+      "question_number": "27",
+      "question": "Explain the effect of stress on the psychological functioning of an individual.",
+      "type": "long",
+      "marks": 4,
+      "chapter": "Stress"
+    },
+    {
+      "question_number": "28(A)",
+      "question": "What are the features of Neurodevelopmental Disorders? Explain any two disorders under this category.",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Neurodevelopmental Disorders"
+    },
+    {
+      "question_number": "28(B)",
+      "question": "Generalised Anxiety Disorder and Phobia are types of anxiety disorders. How will different psychological models explain the development of these disorders?",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Anxiety Disorders"
+    },
+    {
+      "question_number": "29(A)",
+      "question": "Differentiate between information processing and psychometric approach to understand intelligence. Explain any four theories of psychometric approach.",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Intelligence Theories"
+    },
+    {
+      "question_number": "29(B)",
+      "question": "What is the relationship between creativity and intelligence? Differentiate between creativity tests and intelligence tests.",
+      "type": "long",
+      "marks": 6,
+      "chapter": "Creativity and Intelligence"
+    },
+    {
+      "question_number": "30",
+      "question": "Identify the core beliefs developed during Anita’s childhood.",
+      "type": "mcq",
+      "marks": 1,
+      "chapter": "Cognitive Therapy"
+    },
+    {
+      "question_number": "31",
+      "question": "Which therapy would be most suitable to reduce Anita’s distress? Give reason for your answer.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Therapeutic Approaches"
+    },
+    {
+      "question_number": "32",
+      "question": "‘He actively participated in planting hundreds of saplings in public spaces and along roadsides.’ Which component of attitude is expressed here?",
+      "type": "mcq",
+      "marks": 1,
+      "chapter": "Attitude Components"
+    },
+    {
+      "question_number": "33",
+      "question": "Explain any two processes that may have led to the formation of T. Shobheendran’s attitude towards the environment.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Attitude Formation"
+    }
+  ]
+}

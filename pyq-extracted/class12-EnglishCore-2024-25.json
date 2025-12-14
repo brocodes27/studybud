@@ -1,0 +1,691 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "EnglishCore",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:23:37.536Z",
+    "total_questions": 65
+  },
+  "questions": [
+    {
+      "question_number": "1.I",
+      "question": "According to paragraph 1, what effect do smartphone notifications have on the people in the room?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.II",
+      "question": "How does the author use the metaphor of 'autumn leaves in the wind' to interpret the passing of time in the setting described?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.III",
+      "question": "The phrase ‘a phantom limb syndrome that leaves us feeling incomplete without our digital appendage’ suggests that just as an amputee might feel pain in a limb they no longer have, individuals can feel a sense of loss or incompleteness when they are separated from their digital devices. Choose the correct response from the two options to complete the sentence. The concern this analogy points towards is about ______________.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. a deep (psychological) dependence on technology for a sense of wholeness or connection",
+        "B. excessive physical damage that can be caused due to constant use of digital devices"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.IV",
+      "question": "Complete the following suitably with ONE advantage, with reference to paragraph 2. Designating specific hours each day to intentionally avoid checking digital devices can help __________________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.V",
+      "question": "Why does the writer refer to digital noise as 'dissonance' in paragraph 3? Because -",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. It creates a jarring and chaotic environment that disrupts focus.",
+        "B. It contributes to a sense of overload, overwhelming the senses.",
+        "C. It interferes with our ability to engage with meaningful aspects of our life.",
+        "D. It induces stress by interrupting with regular updates about the device."
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.VI",
+      "question": "Provide ONE textual evidence with reference to paragraph 3, to prove the following: The need to be perpetually engaged with digital notifications manifests in the body.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.VII",
+      "question": "In the line, ‘Yet amidst the flurry of activity, the true rhythm of life remains unheard…,’ what does the phrase 'true rhythm of life’ refer to? (Paragraphs 3 - 4)",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.VIII",
+      "question": "Complete the analogy with ONE word from paragraph 4. whisper: quietly: _______: loudly",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. validation",
+        "B. fleeting",
+        "C. essence",
+        "D. clamour"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.IX",
+      "question": "Why is it fair to say that the statement ‘And yet, for all our efforts to stay connected, we find ourselves increasingly isolated in a sea of digital faces’ from paragraph 4, employs irony?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Despite the intent to connect more effectively, the result is the opposite.",
+        "B. The writer mocks the seriousness with which people approach digital connectivity.",
+        "C. The writer exaggerates the effects of digital connectivity to highlight its impact.",
+        "D. Use of ‘a sea of digital faces’ to symbolically represent digital platforms."
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "1.X",
+      "question": "Assess the potential challenges OR benefits of relying on survey outcomes for designing health interventions, as outlined in paragraph 5.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.I",
+      "question": "Complete the following suitably. In the introduction, the researcher links a hasty lifestyle with the choice of snacks in the study to highlight__________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.II",
+      "question": "What would the following be classified as? To examine snacking preferences across various age groups in detail, and assess health implications. Select the appropriate response.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Primary purpose",
+        "B. Secondary objective",
+        "C. Method of analysis",
+        "D. Research outcome"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.III",
+      "question": "Give two points to support why it is likely that fresh fruits were given as an option to the survey participants to choose from in the study on snacking preferences.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.IV",
+      "question": "Paragraph 3 includes words – ‘motivations’ and ‘influences.’ Classify the following sentences as 'influence' or 'motivation': Sentence 1: Peer pressure leads teenagers to prefer packaged snacks over healthier options. Sentence 2: The drive to maintain health as one ages makes middle-aged adults to choose seasonal fruits.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.V",
+      "question": "Read the following: Seema regularly enjoys snacking on chips and cool drinks while watching movies. Mohan, her neighbour, prefers to snack on oranges and also some nuts occasionally. Arindam, who lives across, often tends to eat a mix of carrot sticks and instant noodles, in between meals. Select the option that identifies the correct demographic Seema, Mohan and Arindam belong to.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Seema – young adult; Mohan – teenager; Arindam - middle-age",
+        "B. Seema - teenager; Mohan – middle-age; Arindam - child",
+        "C. Seema – young adult; Mohan – child; Arindam - teenager",
+        "D. Seema - teenager; Mohan – elderly; Arindam - young adult"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.VI",
+      "question": "Although children, middle-aged, and elderly groups all prefer seasonal fruits, why is the preference percentage highest among the elderly?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.VII",
+      "question": "Analyse how targeted interventions based on the diverse snacking preferences of different age groups can lead to improved health outcomes. (Paragraph 5)",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2.VIII",
+      "question": "What is the ultimate goal for stakeholders, based on the insights from the study?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Increase profitability through enhanced snack marketing",
+        "B. Building healthier communities",
+        "C. Reducing the cost of healthcare services",
+        "D. Expanding the range of available snack product"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "3",
+      "question": "Attempt any one of the two, (A) or (B), in about 50 words. A. Your school is planning to conduct an inter-class seminar on the topic  The Importance of Mental Health  to create awareness in adolescents. As the head of the organising committee, write a notice to inform all students about the seminar and invite registrations from classes XI-XII. Include other necessary details. Put your notice in a box. OR B. Your school is organising an inter-House webinar on enhancing coding skills, As the President of the Computer Club, write a notice to inform all House members from IX-XII about the webinar and specify the number of registrations invited per House. Include other necessary details. Put your notice in a box.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Creative Writing Skills"
+    },
+    {
+      "question_number": "4",
+      "question": "Attempt any one of the two, (A) or (B), in about 50 words. A. Draft an invitation in not more than 50 words from Vani Gopalan, Chief Project Officer of an NGO, for the launch of the 'Each One Teach One' programme, addressed to school Principals and Coordinators. Mention a compelling highlight of the programme along with other necessary details OR B. An invitation had been issued by Mr. Cherian, the HR Head of your company inviting you for the company picnic. As Joseph Vijayan, Asst. Manager, Operations, draft a reply in not more than 50 words, consenting to attend.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Creative Writing Skills"
+    },
+    {
+      "question_number": "5",
+      "question": "Attempt any one of the two, (A) or (B), in 120-150 words. A. Financial literacy is increasingly recognised as a crucial 21st-century skill for young individuals. Write a letter to the editor of a local daily discussing the benefits of providing financial literacy education to children. Also, suggest effective ways to raise awareness about the importance of this education among parents and guardians. You may use some of the given cues along with your own ideas to draft the letter. You are a counsellor, Chitra Mahapatra from Puri, Odisha. OR B. You are Maya Syiem from Shillong. You read the given advertisement and wish to apply for the post advertised. Write this job application along with your bio-data.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Creative Writing Skills"
+    },
+    {
+      "question_number": "6",
+      "question": "Attempt any one of the two, (A) or (B), in 120-150 words. A. In an era of rapid globalisation and technological advancement, the preservation of cultural heritage remains a vital challenge, particularly for the youth. India continues to navigate the complexities of maintaining tradition alongside modernity. Write an article exploring the role of cultural heritage in shaping the identities of today's Indian youth. Provide examples to illustrate your points wherever necessary. You may use some of the given cues along with your own ideas. You are Arti Nirula of Class XII-A. OR B. You are Hina Aziz, student of Class XII-D and a member of the school magazine editorial board. Write a comprehensive report detailing the activities undertaken by students as part of the celebrations on Yoga Day. Include descriptions of the events, participation details, and the overall impact of these activities on the school community. You may organise your report by following - Who - What – When – Where – Why – How",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Creative Writing Skills"
+    },
+    {
+      "question_number": "7.A.I",
+      "question": "What is a common outcome of all the wars described?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.A.II",
+      "question": "What does the imagery of ‘walking about with their brothers in the shade’ primarily represent?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. The readiness for further conflicts.",
+        "B. A return to normal activities post-conflict.",
+        "C. A moment of unity and peaceful reflection.",
+        "D. The physical environment of a typical war zone."
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.A.III",
+      "question": "Complete the following suitably. The putting on of ‘clean clothes’ by the warmongers, symbolises_________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.A.IV",
+      "question": "Select the correct option from those given in brackets, to fill in the blank. The excerpt tells us that the speaker ________ (condemns / glorifies) the destructive nature of modern warfare.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "condemns",
+        "glorifies"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.A.V",
+      "question": "Read the assertion and the reason below, with reference to the given extract. Assertion: The poet advocates for 'doing nothing' as a way to prevent the devastation of war. Reason: 'Doing nothing' refers to a time for stopping any action for a few moments. Choose the correct option regarding their relationship.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Both the assertion and the reason are true, and the reason is the correct explanation of the assertion.",
+        "B. Both the assertion and the reason are true, but the reason is not the correct explanation of the assertion.",
+        "C. The assertion is true, but the reason is false.",
+        "D. The assertion is false, but the reason is true."
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.A.VI",
+      "question": "How can the message in the excerpt, about the outcome of wars be applied to promote peace?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.I",
+      "question": "Select the phrase that suggests the following: The so-called aids are not offered out of genuine care or consent but are imposed in a controlling and perhaps unwelcome manner.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.II",
+      "question": "What does the imagery of ‘swarm’ NOT represent in the given extract?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Coordinated help",
+        "B. Overwhelming force",
+        "C. Discomfort and chaos",
+        "D. Neglect of individual needs"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.III",
+      "question": "Complete the following suitably. In the line, ‘destroy their sleeping at night the ancient way,’ the phrase ‘the ancient way’ refers to ________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.IV",
+      "question": "Select the correct option from those given in brackets, to fill in the blank. The poet has used phrases like ‘greedy good-doers’ and ‘beneficent beasts of prey’ to illustrate the ________ (irony/satire) in the situation where those claiming to help the rural poor actually impose self-serving and detrimental actions on them.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "irony",
+        "satire"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.V",
+      "question": "Read the assertion and the reason below, with reference to the given extract. Assertion: The poet criticizes the way the rural poor are treated by benefactors, suggesting it instills ambition. Reason: The interventions are overwhelmingly calming and lead to a loss of critical thinking among the rural poor. Choose the correct option regarding their relationship:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Both the assertion and the reason are true, and the reason is the correct explanation of the assertion.",
+        "B. Both the assertion and the reason are true, but the reason is not the correct explanation of the assertion.",
+        "C. The assertion is true, but the reason is false.",
+        "D. The assertion is false, but the reason is true."
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "7.B.VI",
+      "question": "State in one sentence, what cautionary advice your address to the rural poor from the extract, is most likely to include.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.A.I",
+      "question": "Complete the following suitably. The passage suggests that visiting Antarctica offers insight into geological processes and Earth's history by ______________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.A.II",
+      "question": "How does the author imply the role of geological knowledge in understanding the Earth's past and potential future changes?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.A.III",
+      "question": "The writer says, ‘When you think about all that can happen in a million years, it can get pretty mind-boggling.’ What is the most likely impact on the writer?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Feels overwhelmed by the vastness of geological time scales.",
+        "B. Is uneasy about the rapid pace of geological changes.",
+        "C. Feels indifferent towards geological phenomena.",
+        "D. Is surprised by the lack of significant geological events over a million years."
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.A.IV",
+      "question": "How might understanding the geological processes mentioned in the passage help scientists in predicting and mitigating future environmental changes, particularly in polar regions?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.B.I",
+      "question": "Complete the following suitably. Zitkala-Sa's description of her experience at the boarding school conveys a sense of abandonment through her portrayal of __________",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.B.II",
+      "question": "List any one emotion that Zitkala-Sa experiences as her hair is being cut.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.B.III",
+      "question": "Select the suitable option to complete the following. The metaphor of being ‘tossed about in the air like a wooden puppet’ contribute to the reader's understanding of Zitkala-Sa's feelings of being ________.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. forced to interact with others",
+        "B. manipulated and controlled",
+        "C. preached at and insulted",
+        "D. made to exist like toy animals"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "8.B.IV",
+      "question": "In what ways does the imagery of her ‘long hair shingled like a coward's’ symbolise the erasure of Zitkala’s cultural heritage and the imposition of Western norms?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.I",
+      "question": "What was the writer’s purpose in using the metaphor of a ‘thunderclap’?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.II",
+      "question": "Select the correct option from those given in brackets to fill in the blank. The use of exclamatory marks in the first five sentences of the extract serves to express the speaker’s _ ______ (hidden / intense) emotions.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "hidden",
+        "intense"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.III",
+      "question": "Complete the following suitably. The activities of seeking birds' eggs and sliding on the Saar reveal two things about Franz's character before his change in perspective. First, his youthful carefree nature and second, his preference for _________________.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.IV",
+      "question": "What is reflected through the shift in the speaker’s perception of Mr. Hamel, conveyed through his readiness to forget the ruler?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.V",
+      "question": "Select the textual option that is closest to indicating a sense of panic.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Oh, how sorry I was for not learning my lessons…",
+        "B. Why, I hardly knew how to write!",
+        "C. Oh, the wretches; that was what they had put up at the town-hall!",
+        "D. And M. Hamel, too;"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.A.VI",
+      "question": "What does the following line from the extract, showcase? My books, that had seemed such a nuisance a while ago, so heavy to carry, my grammar, and my history of the saints, were old friends now that I couldn’t give up.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. realization",
+        "B. confusion",
+        "C. expectation",
+        "D. affirmation"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.I",
+      "question": "What does Saheb's statement about finding money in the garbage reveal about his daily life and aspirations?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.II",
+      "question": "Select the correct option from those given in brackets to fill in the blank. Describing garbage as ‘gold’ metaphorically elevates its value to the children, helping the reader understand the _______ (dynamic / desperate) conditions under which these children live, where even garbage can represent crucial economic resources.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "dynamic",
+        "desperate"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.III",
+      "question": "Complete the following with a suitable reason. Children continue to scrounge in the garbage because _______.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.IV",
+      "question": "How does the perception of garbage differ between children and adults in Seemapuri?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.V",
+      "question": "What is implied by the description of rag-picking as having ‘acquired the proportions of a fine art’ in the excerpt?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. Rag-picking is an undesirable and simple task that anyone can do without effort.",
+        "B. Rag-picking has evolved into a complex skill that is valued within the community.",
+        "C. Rag-picking is a temporary activity that does not significantly impact the community.",
+        "D. Rag-picking has the status of an artistic hobby that children pursue for enjoyment."
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "9.B.VI",
+      "question": "What is the reason for Saheb’s eyes ‘lighting up’?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A. The immediate experience of finding something valuable.",
+        "B. Discussing his findings with others.",
+        "C. Reminiscing about past findings in the garbage.",
+        "D. Planning future scavenging expeditions"
+      ],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.I",
+      "question": "Identify an instance of hope or resilience in ‘Lost Spring’ and analyse how it reflects one of the story's themes.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.II",
+      "question": "Interpret the use of visual imagery by Kamala Das in her poem to depict the passage of time.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.III",
+      "question": "What does the contrasting imagery of the church clock and the Prussian trumpets represent, in ‘The Last Lesson’?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.IV",
+      "question": "How does the author's writing style in ‘The Interview’ affect the reader's understanding of the story?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.V",
+      "question": "Explain how the rattrap symbolises the dual aspects of human nature. (The Rattrap)",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "10.VI",
+      "question": "What factor/s were largely instrumental in the victory of the peasants in ‘Indigo’?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "11.I",
+      "question": "Discuss the significance of the toy tiger in the climax of ‘The Tiger King.’",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "11.II",
+      "question": "Interpret the significance of both literal and metaphorical journeys in the story, ‘The Third Level.’",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "11.III",
+      "question": "How does Susan Hill subtly portray a blend of pessimism and optimism in ‘On the Face of It’?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "12",
+      "question": "Answer any one of the following two questions, in about 120-150 words. A. Analyse the poems, A Roadside Stand and Aunt Jennifer's Tigers for the theme of inequality and its impact on the bearers. OR B. How do the characters of Sophie from ‘Going Places’ and Subbu from ‘Poets and Pancakes’ compare and contrast in terms of their aspirations, constraints, and the pursuit of their dreams?",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "13",
+      "question": "Answer any one of the following two questions, in about 120-150 words. A. The influence of belief in traditions such as religion, family bonds, or patriotism can be used to develop narrative techniques like setting, motivation, sources of conflict, and pacing. Analyse how the writer has incorporated such influences to good effect in the story, The Enemy. Support your answer with valid textual evidence. OR B. Discuss the narrative techniques used by the author in The Third Level. How do these techniques effectively convey the themes of escapism and nostalgia? Provide specific examples from the text to support your analysis.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    }
+  ]
+}

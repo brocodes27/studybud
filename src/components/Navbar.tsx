@@ -1,322 +1,251 @@
 import { useState, useEffect } from 'react';
-
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
   CalendarPlus,
   BookOpen,
+  ListChecks,
   Wrench,
   LineChart,
   BarChart2,
   Calendar,
   Users,
   Bell,
+  Mic,
+  FileText,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  User,
   Menu,
   X,
-  BookUser,
-  Mic,
-  Shield,
-  FileText,
   Sparkles,
   Crown,
-  ListChecks,
+  Brain,
+  Video
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
 
 const navLinks = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'from-blue-500 to-blue-600' },
-  { href: '/create', label: 'Create Plan', icon: CalendarPlus, color: 'from-green-500 to-green-600' },
-  { href: '/plans', label: 'Study Plans', icon: BookOpen, color: 'from-purple-500 to-purple-600' },
-  { href: '/curriculum', label: 'Curriculum', icon: ListChecks, color: 'from-lime-500 to-lime-600' },
-  { href: '/tools', label: 'Study Tools', icon: Wrench, color: 'from-orange-500 to-orange-600' },
-  { href: '/progress', label: 'Progress', icon: LineChart, color: 'from-emerald-500 to-emerald-600' },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2, color: 'from-cyan-500 to-cyan-600' },
-  { href: '/calendar', label: 'Calendar Sync', icon: Calendar, color: 'from-pink-500 to-pink-600' },
-  { href: '/social', label: 'Social', icon: Users, color: 'from-indigo-500 to-indigo-600' },
-  { href: '/notifications', label: 'Notifications', icon: Bell, color: 'from-yellow-500 to-yellow-600' },
-  { href: '/live-notes', label: 'Live Meeting Notes', icon: Mic, color: 'from-red-500 to-red-600' },
-  { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText, color: 'from-violet-500 to-violet-600' },
-  { href: '/cuet-simulator', label: 'CUET Simulator', icon: FileText, color: 'from-fuchsia-500 to-fuchsia-600' },
-];
+  { href: '/', label: 'Ranjan Sir', icon: Brain, color: 'text-neon-blue' },
+  { href: '/dashboard', label: 'Stats Dashboard', icon: LayoutDashboard, color: 'text-gray-400' },
+  { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText, color: 'text-teal-400' },
+  { href: '/create', label: 'Create Plan', icon: CalendarPlus, color: 'text-neon-green' },
+  { href: '/plans', label: 'Study Plans', icon: BookOpen, color: 'text-neon-purple' },
+  // { href: '/ai-buddy', label: 'AI Study Buddy', icon: Brain, color: 'text-pink-500' }, // Removed in favor of Ranjan Sir
+  { href: '/curriculum', label: 'Curriculum', icon: ListChecks, color: 'text-yellow-400' },
+  { href: '/tools', label: 'Study Tools', icon: Wrench, color: 'text-cyan-400' },
+  { href: '/videos', label: 'Video Lessons', icon: Video, color: 'text-neon-green' },
+  { href: '/progress', label: 'Progress', icon: LineChart, color: 'text-indigo-400' },
+  { href: '/analytics', label: 'Analytics', icon: BarChart2, color: 'text-orange-400' },
+  { href: '/calendar', label: 'Calendar Sync', icon: Calendar, color: 'text-emerald-400' },
+  { href: '/social', label: 'Social', icon: Users, color: 'text-blue-400' },
+  { href: '/notifications', label: 'Notifications', icon: Bell, color: 'text-red-400' },
+  { href: '/my-notes', label: 'My Meeting Notes', icon: Mic, color: 'text-violet-400' },
 
-const studentNavLinks = [
-  { href: '/my-classes', label: 'My Classes', icon: BookUser, color: 'from-teal-500 to-teal-600' },
-];
-
-const adminNavLinks = [
-  { href: '/admin', label: 'Admin Panel', icon: Shield, color: 'from-amber-500 to-amber-600' },
 ];
 
 const Navbar = () => {
-  const { user, role, signOut, loading, isAdmin, fullName, isPremium } = useAuth() as any;
+  const { signOut, user, isPremium } = useAuth() as any;
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Sync collapsed state to document for global layout adjustments
+  // Toggle body class for layout adjustment
   useEffect(() => {
-    try {
-      const width = isCollapsed ? '5rem' : '18rem';
-      document.documentElement.style.setProperty('--sidebar-width', width);
-      document.body.classList.toggle('sidebar-collapsed', isCollapsed);
-    } catch {}
-    return () => {
-      try {
-        document.documentElement.style.setProperty('--sidebar-width', '18rem');
-        document.body.classList.remove('sidebar-collapsed');
-      } catch {}
-    };
+    if (isCollapsed) {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
   }, [isCollapsed]);
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
-  const NavItem = ({ link, isCollapsed }: { link: any, isCollapsed: boolean }) => (
-    <NavLink
-      to={link.href}
-      data-tour-nav={link.href}
-      className={({ isActive }) =>
-        `group flex items-center p-3 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
-          isActive 
-            ? `bg-gradient-to-r ${link.color} text-primary-foreground shadow-lg shadow-${link.color.split('-')[1]}-500/25` 
-            : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
-        }`
-      }
-    >
-      <div className={`relative z-10 flex items-center ${!isCollapsed ? 'w-full' : 'justify-center'}`}>
-        <link.icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${!isCollapsed ? 'mr-3' : ''}`} />
-        {!isCollapsed && (
-          <span className="font-medium text-sm">{link.label}</span>
-        )}
-      </div>
-      {!isCollapsed && (
-        <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-      )}
-    </NavLink>
-  );
+  const NavItem = ({ link }: { link: any }) => {
+    const isActive = location.pathname === link.href;
 
-  const MobileNavItem = ({ link }: { link: any }) => (
-    <NavLink
-      to={link.href}
-      data-tour-nav={link.href}
-      onClick={() => setIsMobileMenuOpen(false)}
-      className={({ isActive }) =>
-        `group flex items-center p-4 my-1 rounded-xl transition-all duration-300 relative overflow-hidden ${
-          isActive 
-            ? `bg-gradient-to-r ${link.color} text-primary-foreground shadow-lg` 
-            : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
-        }`
-      }
-    >
-      <div className="relative z-10 flex items-center w-full">
-        <link.icon className="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-110" />
-        <span className="font-medium">{link.label}</span>
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-    </NavLink>
-  );
-
-  if (loading) {
     return (
-      <div className="fixed top-0 left-0 h-full bg-card text-foreground z-40 hidden md:flex flex-col w-64 border-r border-border">
-        <div className="flex items-center justify-center p-4 border-b border-border">
-          <div className="loading-spinner w-8 h-8"></div>
+      <NavLink
+        to={link.href}
+        className={`relative group flex items-center px-3 py-3 my-1 rounded-xl transition-all duration-300 overflow-hidden
+          ${isActive
+            ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(0,243,255,0.1)] border border-white/10'
+            : 'text-gray-400 hover:text-white hover:bg-white/5'
+          }
+        `}
+      >
+        {/* Active Indicator Line */}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-neon-blue rounded-r-full shadow-[0_0_10px_#00f3ff]" />
+        )}
+
+        {/* Icon */}
+        <div className={`relative z-10 flex items-center justify-center w-8 h-8 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+          <link.icon className={`w-5 h-5 ${isActive ? link.color : 'text-current'} transition-colors duration-300`} />
         </div>
-      </div>
+
+        {/* Label */}
+        {!isCollapsed && (
+          <span className={`ml-3 font-medium text-sm transition-all duration-300 ${isActive ? 'text-white' : ''}`}>
+            {link.label}
+          </span>
+        )}
+
+        {/* Hover Glow Effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      </NavLink>
     );
-  }
+  };
 
   return (
     <>
+      {/* Mobile Menu Button */}
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-xl bg-background/80 backdrop-blur-xl border border-white/10 text-white shadow-lg"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-card text-foreground transition-all duration-300 ease-in-out z-40 hidden md:flex flex-col border-r border-border ${
-          isCollapsed ? 'w-20' : 'w-72'
-        }`}
+        className={`hidden md:flex fixed left-0 top-0 h-screen bg-[#0a0b14]/90 backdrop-blur-2xl border-r border-white/5 transition-all duration-300 z-40 flex-col
+          ${isCollapsed ? 'w-20' : 'w-72'}
+        `}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold gradient-text">ElevenFolks</span>
+        {/* Logo Area */}
+        <div className="h-20 flex items-center px-6 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
-          )}
-          <button 
-            onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="p-2 rounded-lg hover:bg-foreground/5 transition-colors duration-200 focus-ring"
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 overflow-y-auto">
-          <div className="space-y-2">
-            {navLinks.map((link) => (
-              <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
-            ))}
-
-            {role === 'student' && (
-              <>
-                <div className="my-6 border-t border-border"></div>
-                <div className="px-3 mb-3">
-                  {!isCollapsed && <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Student</span>}
-                </div>
-                {studentNavLinks.map((link) => (
-                  <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
-                ))}
-              </>
-            )}
-
-            {isAdmin && (
-              <>
-                <div className="my-6 border-t border-border"></div>
-                <div className="px-3 mb-3">
-                  {!isCollapsed && <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Admin</span>}
-                </div>
-                {adminNavLinks.map((link) => (
-                  <NavItem key={link.href} link={link} isCollapsed={isCollapsed} />
-                ))}
-              </>
+            {!isCollapsed && (
+              <div>
+                <h1 className="text-xl font-bold text-white tracking-tight">ElevenFolks</h1>
+                <p className="text-xs text-neon-blue font-medium tracking-wider">FUTURE LEARNING</p>
+              </div>
             )}
           </div>
-        </nav>
+        </div>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-border">
-          {user && (
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
-              <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center">
-                  <User className="w-6 h-6 text-primary-foreground" />
-                </div>
-                {isPremium && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
-                    <Crown className="w-2.5 h-2.5 text-primary-foreground" />
-                  </div>
-                )}
+        {/* Navigation Items */}
+        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1 scrollbar-hide custom-scrollbar">
+          {navLinks.map((link) => (
+            <NavItem key={link.href} link={link} />
+          ))}
+        </div>
+
+        {/* User Profile Section */}
+        <div className="p-4 border-t border-white/5 bg-black/20">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} mb-4`}>
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center border-2 border-white/10">
+                <span className="text-white font-bold">{user?.email?.[0].toUpperCase()}</span>
               </div>
-              {!isCollapsed && (
-                <div className="ml-3 flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{fullName || user.email}</p>
-                  <p className="text-xs text-foreground/60 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center text-xs text-foreground/60 hover:text-red-500 transition-colors mt-1 group"
-                  >
-                    <LogOut className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform" />
-                    Logout
-                  </button>
+              {isPremium && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center border border-black shadow-lg">
+                  <Crown className="w-2.5 h-2.5 text-black" />
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile Header */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 z-40 bg-card border-b border-border">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold gradient-text">ElevenFolks</span>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.user_metadata?.full_name || 'Student'}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              </div>
+            )}
           </div>
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 focus-ring"
-            aria-label="Toggle menu"
+
+          <button
+            onClick={handleSignOut}
+            className={`flex items-center justify-center w-full p-2 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200
+              ${isCollapsed ? '' : 'gap-2'}
+            `}
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <LogOut className="w-5 h-5" />
+            {!isCollapsed && <span className="text-sm font-medium">Sign Out</span>}
           </button>
         </div>
-      </nav>
 
-      {/* Mobile Menu */}
+        {/* Collapse Toggle */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-24 w-6 h-6 bg-neon-blue rounded-full flex items-center justify-center text-black shadow-[0_0_10px_#00f3ff] hover:scale-110 transition-transform duration-200 z-50"
+        >
+          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      </aside>
+
+      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-sm z-40 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
-          <nav className="fixed top-0 left-0 h-full w-80 bg-card text-foreground p-6 animate-slide-in-right border-r border-border">
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary-foreground" />
+        <div className="md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-xl">
+          <div className="flex flex-col h-full p-6 animate-slide-in-right">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-blue-600 flex items-center justify-center shadow-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold gradient-text">ElevenFolks</span>
+                <h1 className="text-xl font-bold text-white">ElevenFolks</h1>
               </div>
-              <button 
+              <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 rounded-lg hover:bg-foreground/5 transition-colors duration-200 focus-ring"
+                className="p-2 rounded-full hover:bg-white/10 text-white"
               >
-                <X size={20} />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
               {navLinks.map((link) => (
-                <MobileNavItem key={link.href} link={link} />
+                <NavLink
+                  key={link.href}
+                  to={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) => `
+                    flex items-center gap-4 p-4 rounded-xl transition-all duration-200
+                    ${isActive
+                      ? 'bg-white/10 text-white border border-white/10 shadow-lg'
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    }
+                  `}
+                >
+                  <link.icon className={`w-5 h-5 ${location.pathname === link.href ? link.color : ''}`} />
+                  <span className="font-medium">{link.label}</span>
+                </NavLink>
               ))}
-              
-              {role === 'student' && (
-                <>
-                  <div className="my-6 border-t border-border"></div>
-                  <div className="px-4 mb-3">
-                    <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Student</span>
-                  </div>
-                  {studentNavLinks.map((link) => (
-                    <MobileNavItem key={link.href} link={link} />
-                  ))}
-                </>
-              )}
-              
-              {isAdmin && (
-                <>
-                  <div className="my-6 border-t border-border"></div>
-                  <div className="px-4 mb-3">
-                    <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Admin</span>
-                  </div>
-                  {adminNavLinks.map((link) => (
-                    <MobileNavItem key={link.href} link={link} />
-                  ))}
-                </>
-              )}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-border">
-              {user && (
-                <div className="flex items-center">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center">
-                      <User className="w-7 h-7 text-primary-foreground" />
-                    </div>
-                    {isPremium && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
-                        <Crown className="w-3 h-3 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="ml-4 flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{fullName || user.email}</p>
-                    <p className="text-xs text-foreground/60 truncate">{isPremium ? 'Premium User' : 'Free User'}</p>
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center text-xs text-foreground/60 hover:text-red-500 transition-colors mt-2 group"
-                    >
-                      <LogOut className="w-3 h-3 mr-1 group-hover:scale-110 transition-transform" />
-                      Logout
-                    </button>
-                  </div>
+            <div className="mt-8 pt-8 border-t border-white/10">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg">
+                  {user?.email?.[0].toUpperCase()}
                 </div>
-              )}
+                <div>
+                  <p className="text-white font-medium">{user?.user_metadata?.full_name || 'Student'}</p>
+                  <p className="text-sm text-gray-400">{user?.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-500/10 text-red-400 font-medium hover:bg-red-500/20 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
             </div>
-          </nav>
+          </div>
         </div>
       )}
     </>

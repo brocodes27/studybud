@@ -1,0 +1,2693 @@
+{
+  "downloaded_at": "2025-11-23T11:31:13.223Z",
+  "stats": {
+    "total": 447,
+    "success": 297,
+    "failed": 25,
+    "skipped": 125
+  },
+  "files": [
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-MS_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBookKeepingAccountancy-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBookKeepingAccountancy-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBusiness-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBusiness-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishL-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishL-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishComm-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishComm-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "FoundationInformationTechnology-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "FoundationInformationTechnology-PQ.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseA-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseA-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseB-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseB-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-MS_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ComputerApplication-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ComputerApplication-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ICT-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ICT-PQ.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasic-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasic-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasic-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasicVIC-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasicVIC-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandard-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandard-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandard-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandardVIC-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandardVIC-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-MS_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "NCC-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "NCC-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMusicPercussion-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMusicPercussion-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMelodicInstrument-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMelodicInstrument-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-SQP_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-MS_hi.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Arabic-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Arabic-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bengali-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bengali-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Assamese-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Assamese-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "BhashaMalyeu-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "BhashaMalyeu-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhoti_SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhoti_MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhutia-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhutia-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bodo-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bodo-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "French-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "French-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "German-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "German-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gujarati-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gujarati-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gurung-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gurung-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Japanese-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Japanese-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kannada-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kannada-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kashmiri-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kashmiri-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kokborok_SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kokborok_MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Lepcha-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Lepcha-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Limboo-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Limboo-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Malayalam-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Malayalam-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Manipuri-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Manipuri-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Mizo-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Mizo-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Marathi-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Marathi-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Nepali-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Nepali-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Odia-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Odia-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Persian-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Persian-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Punjabi-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Punjabi-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "RAI-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "RAI-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Russian-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Russian-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-Comm-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-Comm-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sherpa-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sherpa-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sindhi-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sindhi-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Spanish-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Spanish-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamil-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamil-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamang-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamang-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tangkhul-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tangkhul-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguAndhra-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Telgu-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguTelangana-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguTelengana-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Thai-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Thai-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tibetan-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tibetan-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduA-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduA-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduB-SQP.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduB-MS.pdf",
+      "year": "2025-26"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "Science-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBookKeepingAccountancy-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBookKeepingAccountancy-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBusiness-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ElementsBusiness-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishL-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishL-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishComm-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "English",
+      "filename": "EnglishComm-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "FoundationInformationTechnology-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "FoundationInformationTechnology-PQ.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseA-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseA-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseB-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Hindi",
+      "filename": "HindiCourseB-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "HomeScience-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ComputerApplication-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ComputerApplication-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ICT-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "ICT-PQ.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasicVIC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsBasicVIC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandard-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandard-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandardVIC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "MathsStandardVIC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Science",
+      "filename": "SocialScience-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "NCC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "NCC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMusicPercussion-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniMusicPercussion-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMelodicInstrument-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMelodicInstrument-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Painting-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Arabic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Arabic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bengali-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bengali-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Assamese-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Assamese-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "BhashaMalyeu-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "BhashaMalyeu-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhoti_SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhoti_MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhutia-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bhutia-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bodo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Bodo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "French-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "French-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "German-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "German-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gujarati-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gujarati-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gurung-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Gurung-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Japanese-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Japanese-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kannada-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kannada-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kashmiri-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kashmiri-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kokborok_SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Kokborok_MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Lepcha-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Lepcha-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Limboo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Limboo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Malayalam-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Malayalam-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Manipuri-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Manipuri-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Mizo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Mizo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Marathi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Marathi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Nepali-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Nepali-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Odia-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Odia-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Persian-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Persian-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Punjabi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Punjabi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "RAI-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "RAI-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Russian-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Russian-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-Comm-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sanskrit-Comm-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sherpa-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sherpa-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sindhi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Sindhi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Spanish-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Spanish-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamil-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamil-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamang-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tamang-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tangkhul-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tangkhul-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguAndhra-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Telgu-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguTelangana-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "TeluguTelengana-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Thai-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Thai-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tibetan-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "Tibetan-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduA-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduA-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduB-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "10",
+      "subject": "Unknown",
+      "filename": "UrduB-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Accountancy",
+      "filename": "Accountancy-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Accountancy",
+      "filename": "Accountancy-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Agriculture-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Agriculture-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Arabic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Arabic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Assamese-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Assamese-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bengali-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bengali-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bharatnatyam-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bharatnatyam-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bhutia-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bhutia-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Biology",
+      "filename": "Biology-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Biology",
+      "filename": "Biology-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Biotechnology-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Biotechnology-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bhoti-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bhoti-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bodo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Bodo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Business Studies",
+      "filename": "BusinessStudies-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Business Studies",
+      "filename": "BusinessStudies-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicMelodicInstrument-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicMelodicInstrument-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicPercussion-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "CarnaticMusicVocal-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Chemistry",
+      "filename": "Chemistry-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Chemistry",
+      "filename": "Chemistry-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Computer Science",
+      "filename": "ComputerScience-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Computer Science",
+      "filename": "ComputerScience-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "ManipuriDance-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "ManipuriDance-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Odissi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Odissi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Economics",
+      "filename": "Economics-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Economics",
+      "filename": "Economics-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "EnggGraphics-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "EnggGraphics-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "English",
+      "filename": "EnglishCore-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "English",
+      "filename": "EnglishCore-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "English",
+      "filename": "EnglishElective-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "English",
+      "filename": "EnglishElective-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Entrepreneurship-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Entrepreneurship-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "French-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "French-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Geography",
+      "filename": "Geography-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Geography",
+      "filename": "Geography-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "German-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "German-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Gujarati-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Gujarati-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindiElective-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindiElective-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindiCore-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindiCore-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "History",
+      "filename": "History-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "History",
+      "filename": "History-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniMelodic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniPercussion-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniPercussion-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HindustaniVocal-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HomeScience-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HomeScience-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "HRGS-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "InformaticsPractices-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "InformaticsPractices-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "InformaticsPractices-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "InformaticsPractices-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Japanese-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Japanese-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kannada-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kannada-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kashmiri-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kashmiri-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kathak-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kathak-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kathakali-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kathakali-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kuchipudi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kuchipudi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "LegalStudies-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "LegalStudies-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Lepcha-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Lepcha-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Library-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Library-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Limboo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Limboo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Malayalam-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Malayalam-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Manipuri-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Manipuri-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Marathi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Marathi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Mass_Media_Studies-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Mass_Media_Studies-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied_Arts_SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied_Arts_MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied-Maths-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied-Maths-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied-MathsVIC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Applied-MathsVIC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Maths-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Maths-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "MathsVIC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "MathsVIC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Mizo-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Mizo-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Multimedia_WebTech_SQP 2018-19.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Multimedia_WebTech_MS 2018-19.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "NCC-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "NCC-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Nepalese-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Nepalese-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kokborok_SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Kokborok_MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "KTPI-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "KTPI-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "ODIA-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "ODIA-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Painting-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Painting-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Graphic-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Graphic-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sculpture-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Scluputre-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Persian-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Persian-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "PhysicalEducation-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "PhyscalEducation-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Physics",
+      "filename": "Physics-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Physics",
+      "filename": "Physics-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "PolSci-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "PolSci-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Psychology",
+      "filename": "Psychology-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Psychology",
+      "filename": "Psychology-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Punjabi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Punjabi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Russian-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Russian-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sanskrit_Core_SQP_Core.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sanskrit_Core_MS_Core.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sanskrit_Elective-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sanskrit_Elective-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sculpture-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sculpture-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sindhi-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Sindhi-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Sociology",
+      "filename": "Sociology-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Sociology",
+      "filename": "Sociology-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Spanish-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Spanish-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "SanskritCore-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "SanskritCore-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "SanskritElective-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "SanskritElective-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tamil-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tamil-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tangkhul-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tangkhul-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "TeluguAndhra-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Telugu-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "TeluguTelangana-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "TeluguTelangana-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tibetan-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "Tibetan-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "UrduCore-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "UrduCore-MS.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "UrduElective-SQP.pdf",
+      "year": "2024-25"
+    },
+    {
+      "class": "12",
+      "subject": "Unknown",
+      "filename": "UrduElective-MS.pdf",
+      "year": "2024-25"
+    }
+  ]
+}

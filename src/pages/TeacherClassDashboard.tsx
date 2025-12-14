@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Bell, XCircle, Eye } from 'lucide-react';
+import { Bell, XCircle, Eye, Trash2, Upload, Plus, FileText, Link as LinkIcon, MessageSquare, BarChart2, Brain, Calendar, Users, BookOpen, AlertCircle, CheckCircle, Loader2, Send, Search, Download, Clock } from 'lucide-react';
 import { marked } from 'marked';
 
 const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Analytics', 'AI Insights', 'Notifications'];
@@ -61,20 +61,6 @@ const TeacherClassDashboard: React.FC = () => {
   const [attemptProfiles, setAttemptProfiles] = useState<Record<string, { full_name?: string; email?: string }>>({});
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [attemptModal, setAttemptModal] = useState<any | null>(null);
-  const [autoCleanupRunning, setAutoCleanupRunning] = useState(false);
-
-  const handleNotificationClick = async (notif: any) => {
-    if (!notif.attempt_id) return;
-    // Fetch weaknesses for this attempt
-    const { data } = await supabase
-      .from('cbse_exam_attempts')
-      .select('student_weaknesses')
-      .eq('id', notif.attempt_id)
-      .single();
-    setNotifModalTitle(notif.title);
-    setNotifModalContent(data?.student_weaknesses || 'No weaknesses found.');
-    setShowNotifModal(true);
-  };
 
   // Helper to extract storage path from a public URL for the 'assignments' bucket
   const getAssignmentsStoragePath = (publicUrl?: string | null) => {
@@ -235,22 +221,6 @@ Rules:
     }
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
-      if (error) throw error;
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    } catch (err) {
-      console.error('Failed to delete notification', err);
-      alert('Failed to delete notification');
-    }
-  };
-
   // Initial data fetch (class info, students, resources, announcements, assignments)
   useEffect(() => {
     if (!user || !id) return;
@@ -353,7 +323,7 @@ Rules:
     } catch {
       const match = clean.match(/\[.*\]/s);
       if (match) {
-        try { const arr = JSON.parse(match[0]); return Array.isArray(arr) ? arr : []; } catch {}
+        try { const arr = JSON.parse(match[0]); return Array.isArray(arr) ? arr : []; } catch { }
       }
       return [] as any[];
     }
@@ -388,25 +358,14 @@ Rules:
 
   // Resource upload handler (teacher only)
   const handleResourceUpload = async (e: React.FormEvent) => {
-    console.log('handleResourceUpload called');
     e.preventDefault();
-    console.log('After preventDefault');
-    if (!user) {
-      console.log('No user!');
-      return;
-    }
-    if (!id) {
-      console.log('No class_id!');
-      setUploadingResource(false);
-      alert('No class selected. Please reload the page.');
-      return;
-    }
+    if (!user || !id) return;
+
     setUploadingResource(true);
     let fileUrl = '';
     let type = resourceType;
-    console.log('Before file upload, resourceType:', resourceType);
+
     if (resourceType === 'file' && resourceFile) {
-      console.log('Uploading file:', resourceFile);
       const ext = resourceFile.name.split('.').pop();
       const filePath = `${id}/${Date.now()}_${resourceFile.name}`;
       const { error: uploadError } = await supabase.storage
@@ -415,16 +374,13 @@ Rules:
       if (uploadError) {
         setUploadingResource(false);
         alert('File upload failed: ' + uploadError.message);
-        console.log('File upload error:', uploadError);
         return;
       }
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from('class-resources')
         .getPublicUrl(filePath);
       fileUrl = publicUrlData.publicUrl;
-      type = ext?.toLowerCase() === 'pdf' ? 'pdf' : ['jpg','jpeg','png','gif','webp','bmp'].includes(ext?.toLowerCase() || '') ? 'image' : 'file';
-      console.log('File uploaded, fileUrl:', fileUrl, 'type:', type);
+      type = ext?.toLowerCase() === 'pdf' ? 'pdf' : ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext?.toLowerCase() || '') ? 'image' : 'file';
     }
     const insertObj = {
       class_id: id,
@@ -434,7 +390,6 @@ Rules:
       type,
       uploaded_by: user.id
     };
-    console.log('Uploading resource as user:', user?.id, insertObj);
     await supabase.from('class_resources').insert(insertObj);
     setResourceTitle('');
     setResourceUrl('');
@@ -445,13 +400,6 @@ Rules:
     const { data: resourceData } = await supabase.from('class_resources').select('*').eq('class_id', id);
     setResources(resourceData || []);
   };
-
-  // Add this useEffect to log when the resource upload form is rendered
-  React.useEffect(() => {
-    if (role === 'teacher' && tab === 'Resources') {
-      console.log('Resource upload form rendered');
-    }
-  }, [role, tab]);
 
   const handlePostAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -488,7 +436,6 @@ Rules:
     try {
       if (assignmentFile) {
         const filePath = `${user.id}/${id}/${Date.now()}_${assignmentFile.name}`;
-        console.log("Uploading to bucket: assignments, path:", filePath);
         const { error: uploadError } = await supabase.storage.from('assignments').upload(filePath, assignmentFile);
         if (uploadError) throw new Error(uploadError.message);
         const { data: publicURLData } = supabase.storage.from('assignments').getPublicUrl(filePath);
@@ -509,18 +456,13 @@ Rules:
       setAssignmentFile(null);
 
       // Refresh assignments
-      const { data: assignmentData, error: fetchError } = await supabase
+      const { data: assignmentData } = await supabase
         .from('assignments')
         .select('*')
         .eq('class_id', id);
-      if (fetchError) {
-        console.error('Fetch assignments error:', fetchError);
-      }
       setAssignments(assignmentData || []);
     } catch (err: any) {
       setAssignmentError('Failed to create assignment: ' + (err.message || err));
-      console.error('Assignment creation error:', err);
-      alert('Error: ' + (err.message || JSON.stringify(err, null, 2)));
     } finally {
       setPostingAssignment(false);
     }
@@ -528,49 +470,408 @@ Rules:
 
   if (loading || loadingData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="loading-spinner w-12 h-12" />
-        <p className="text-gray-500 text-sm mt-4">Loading class dashboard...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-blue" />
+        <p className="text-gray-400 text-sm mt-4">Loading class dashboard...</p>
       </div>
     );
   }
 
   if (role !== 'teacher') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-xl shadow text-center border border-gray-200">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You must be a teacher to access this dashboard.</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="glass-panel p-8 rounded-2xl border border-red-500/20 text-center max-w-md">
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Access Denied</h2>
+          <p className="text-gray-400">You must be a teacher to access this dashboard.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 text-gray-800">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-600 mb-2">{classInfo?.name || 'Class'}</h1>
-        <div className="mb-4 text-gray-600 text-sm">Class Code: <span className="font-mono text-blue-600 select-all">{classInfo?.id}</span></div>
-        <div className="mb-6 flex gap-4 flex-wrap">
-          {TABS.map(t => (
-            <button
-              key={t}
-              className={`px-4 py-2 rounded ${tab === t ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'} font-semibold transition-colors shadow-sm`}
-              onClick={() => setTab(t)}
-            >
-              {t}
-            </button>
-          ))}
+    <div className="min-h-screen relative p-4 md:p-8 animate-fade-in">
+      {/* Background Glow */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
+
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <BookOpen className="h-8 w-8 text-neon-blue" />
+            {classInfo?.name || 'Class'}
+          </h1>
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <span>Class Code:</span>
+            <span className="font-mono text-neon-blue bg-black/40 px-2 py-1 rounded border border-white/10 select-all">{classInfo?.id}</span>
+          </div>
+        </div>
+
+        <div className="mb-8 overflow-x-auto pb-2">
+          <div className="flex gap-2 min-w-max">
+            {TABS.map(t => (
+              <button
+                key={t}
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap ${tab === t
+                    ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/20'
+                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                  }`}
+                onClick={() => setTab(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Overview Tab */}
         {tab === 'Overview' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 mb-6 shadow-sm">
-            <div className="mb-2 text-lg font-semibold text-blue-600">Class Overview</div>
-            <div className="text-gray-700">Students: {students.length}</div>
-            <div className="text-gray-700">Resources: {resources.length}</div>
-            <div className="text-gray-700">Assignments: {assignments.length}</div>
-            <div className="text-gray-700">Announcements: {announcements.length}</div>
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 mb-6">
+            <div className="mb-4 text-lg font-semibold text-white flex items-center gap-2">
+              <BarChart2 className="h-5 w-5 text-neon-purple" />
+              Class Overview
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-sm mb-1">Students</div>
+                <div className="text-2xl font-bold text-white">{students.length}</div>
+              </div>
+              <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-sm mb-1">Resources</div>
+                <div className="text-2xl font-bold text-white">{resources.length}</div>
+              </div>
+              <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-sm mb-1">Assignments</div>
+                <div className="text-2xl font-bold text-white">{assignments.length}</div>
+              </div>
+              <div className="bg-black/40 p-4 rounded-xl border border-white/5">
+                <div className="text-gray-400 text-sm mb-1">Announcements</div>
+                <div className="text-2xl font-bold text-white">{announcements.length}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Students Tab */}
+        {tab === 'Students' && (
+          <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Users className="h-5 w-5 text-neon-blue" />
+              Students
+            </h3>
+            {students.length === 0 ? (
+              <p className="text-gray-400">No students enrolled yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm text-left">
+                  <thead>
+                    <tr className="text-gray-400 border-b border-white/10">
+                      <th className="px-4 py-3 font-medium">Name</th>
+                      <th className="px-4 py-3 font-medium">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {students.map((s: any) => (
+                      <tr key={s.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 text-white font-medium">{s.full_name || 'Unknown'}</td>
+                        <td className="px-4 py-3 text-gray-400">{s.email}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Resources Tab */}
+        {tab === 'Resources' && (
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Upload className="h-5 w-5 text-neon-green" />
+                Upload Resource
+              </h3>
+              <form onSubmit={handleResourceUpload} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Resource Title"
+                  value={resourceTitle}
+                  onChange={(e) => setResourceTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-green focus:outline-none"
+                  required
+                />
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resourceType"
+                      value="link"
+                      checked={resourceType === 'link'}
+                      onChange={() => setResourceType('link')}
+                      className="text-neon-green focus:ring-neon-green"
+                    />
+                    Link
+                  </label>
+                  <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resourceType"
+                      value="file"
+                      checked={resourceType === 'file'}
+                      onChange={() => setResourceType('file')}
+                      className="text-neon-green focus:ring-neon-green"
+                    />
+                    File
+                  </label>
+                </div>
+                {resourceType === 'link' ? (
+                  <input
+                    type="url"
+                    placeholder="Resource URL"
+                    value={resourceUrl}
+                    onChange={(e) => setResourceUrl(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-green focus:outline-none"
+                    required
+                  />
+                ) : (
+                  <input
+                    type="file"
+                    onChange={(e) => setResourceFile(e.target.files ? e.target.files[0] : null)}
+                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-gray-400"
+                    required
+                  />
+                )}
+                <button
+                  type="submit"
+                  disabled={uploadingResource}
+                  className="bg-neon-green hover:bg-neon-green/80 text-black font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-neon-green/20 disabled:opacity-50"
+                >
+                  {uploadingResource ? 'Uploading...' : 'Add Resource'}
+                </button>
+              </form>
+            </div>
+
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4">Class Resources</h3>
+              {resources.length === 0 ? (
+                <p className="text-gray-400">No resources uploaded yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {resources.map((r: any) => (
+                    <div key={r.id} className="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-white">{r.title}</h4>
+                        <p className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <a
+                        href={r.url || r.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-neon-green hover:text-neon-green/80"
+                      >
+                        <LinkIcon className="h-5 w-5" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Announcements Tab */}
+        {tab === 'Announcements' && (
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Bell className="h-5 w-5 text-neon-purple" />
+                Post Announcement
+              </h3>
+              <form onSubmit={handlePostAnnouncement} className="space-y-4">
+                {announcementError && <p className="text-red-400">{announcementError}</p>}
+                <textarea
+                  placeholder="Write your announcement here..."
+                  value={announcementContent}
+                  onChange={(e) => setAnnouncementContent(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-purple focus:outline-none min-h-[100px]"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={postingAnnouncement}
+                  className="bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-neon-purple/20 disabled:opacity-50"
+                >
+                  {postingAnnouncement ? 'Posting...' : 'Post Announcement'}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-4">
+              {announcements.map((a: any) => (
+                <div key={a.id} className="glass-panel p-6 rounded-2xl border border-white/10">
+                  <p className="text-white whitespace-pre-wrap">{a.message}</p>
+                  <p className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</p>
+                </div>
+              ))}
+              {announcements.length === 0 && <p className="text-gray-400">No announcements yet.</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Assignments Tab */}
+        {tab === 'Assignments' && (
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-neon-blue" />
+                Create Assignment
+              </h3>
+              <form onSubmit={handlePostAssignment} className="space-y-4">
+                {assignmentError && <p className="text-red-400">{assignmentError}</p>}
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={assignmentTitle}
+                  onChange={(e) => setAssignmentTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none"
+                  required
+                />
+                <textarea
+                  placeholder="Description"
+                  value={assignmentDesc}
+                  onChange={(e) => setAssignmentDesc(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none min-h-[100px]"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Due Date</label>
+                    <input
+                      type="date"
+                      value={assignmentDueDate}
+                      onChange={(e) => setAssignmentDueDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Attachment</label>
+                    <input
+                      type="file"
+                      onChange={(e) => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-gray-400"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={postingAssignment}
+                  className="bg-neon-blue hover:bg-neon-blue/80 text-white font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-neon-blue/20 disabled:opacity-50"
+                >
+                  {postingAssignment ? 'Creating...' : 'Create Assignment'}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-4">
+              {assignments.map((a: any) => (
+                <div key={a.id} className="glass-panel p-6 rounded-2xl border border-white/10 relative group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xl font-bold text-white">{a.title}</h4>
+                      <p className="text-gray-300 mt-2 whitespace-pre-wrap">{a.description}</p>
+                      {a.due_date && (
+                        <p className="text-sm text-neon-yellow mt-2 flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          Due: {new Date(a.due_date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteAssignment(a)}
+                      className="text-red-400 hover:text-red-300 p-2 rounded-lg hover:bg-red-500/10 transition-colors"
+                      title="Delete Assignment"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                  {a.file_url && (
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                      <a
+                        href={a.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-neon-blue hover:text-neon-blue/80 bg-neon-blue/10 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Attachment
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {assignments.length === 0 && <p className="text-gray-400">No assignments yet.</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Daily Log & Mock Test Tab */}
+        {tab === 'Daily Log & Mock Test' && (
+          <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-neon-purple" />
+              Daily Log & AI Mock Test
+            </h3>
+            <form onSubmit={handleGenerateDailyMockTest} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">What did you teach today?</label>
+                <textarea
+                  value={dailyTopics}
+                  onChange={(e) => setDailyTopics(e.target.value)}
+                  placeholder="e.g., Newton's Laws of Motion, Inertia, and Momentum..."
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-purple focus:outline-none min-h-[150px]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Number of Questions</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={mockQuestionCount}
+                  onChange={(e) => setMockQuestionCount(parseInt(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-purple focus:outline-none"
+                />
+              </div>
+
+              {mockGenError && <p className="text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">{mockGenError}</p>}
+              {mockSuccessMsg && <p className="text-neon-green bg-neon-green/10 p-3 rounded-xl border border-neon-green/20">{mockSuccessMsg}</p>}
+
+              <button
+                type="submit"
+                disabled={generatingMock}
+                className="bg-gradient-to-r from-neon-purple to-pink-600 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg shadow-neon-purple/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                {generatingMock ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5" />
+                    Generate & Post Mock Test
+                  </>
+                )}
+              </button>
+            </form>
+
+            {mockPreview && (
+              <div className="mt-8 pt-8 border-t border-white/10">
+                <h4 className="text-white font-semibold mb-4">Preview (Last Generated)</h4>
+                <div className="bg-black/40 p-6 rounded-xl border border-white/5 text-gray-300 whitespace-pre-wrap font-mono text-sm">
+                  {mockPreview}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -578,17 +879,19 @@ Rules:
         {tab === 'Student Responses' && (
           <div className="space-y-6">
             {attemptsLoading && (
-              <div className="text-blue-600">Loading student responses...</div>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
+              </div>
             )}
             {attemptsError && (
-              <div className="text-red-600">{attemptsError}</div>
+              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400">
+                {attemptsError}
+              </div>
             )}
             {!attemptsLoading && !attemptsError && (
               <>
                 {(() => {
-                  // Build assignment map and group attempts by mock test
                   const assignmentMap = new Map<string, any>((assignments || []).map((a: any) => [a.id, a]));
-                  // Groups for mock tests only
                   const mockAssignments = (assignments || []).filter((a: any) => a?.is_mock);
                   const groups = mockAssignments
                     .map((assn: any) => ({
@@ -596,14 +899,17 @@ Rules:
                       attempts: (attempts || []).filter((at: any) => at.assignment_id === assn.id)
                     }))
                     .filter(g => g.attempts.length > 0);
-                  // Other or ungrouped attempts
                   const otherAttempts = (attempts || []).filter((at: any) => {
                     const assn = assignmentMap.get(at.assignment_id);
                     return !assn || !assn.is_mock;
                   });
 
                   if (groups.length === 0 && otherAttempts.length === 0) {
-                    return <div className="text-gray-500">No student responses found yet.</div>;
+                    return (
+                      <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
+                        <p className="text-gray-400">No student responses found yet.</p>
+                      </div>
+                    );
                   }
 
                   return (
@@ -611,48 +917,38 @@ Rules:
                       {groups.map((g) => (
                         <div key={g.assignment.id} className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-blue-700">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                              <FileText className="h-5 w-5 text-neon-blue" />
                               {g.assignment.title}
                             </h3>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-400">
                               {g.assignment.created_at ? new Date(g.assignment.created_at).toLocaleString() : ''}
-                              {g.assignment.expires_at && (
-                                <span className="ml-2 text-red-600">(Expires: {new Date(g.assignment.expires_at).toLocaleString()})</span>
-                              )}
                             </div>
                           </div>
-                          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-                            <table className="min-w-full text-sm">
+                          <div className="glass-panel p-4 rounded-xl border border-white/10 overflow-x-auto">
+                            <table className="min-w-full text-sm text-left">
                               <thead>
-                                <tr className="text-left text-gray-700">
-                                  <th className="px-3 py-2">Date</th>
-                                  <th className="px-3 py-2">Student</th>
-                                  <th className="px-3 py-2">Score</th>
-                                  <th className="px-3 py-2">Questions</th>
-                                  <th className="px-3 py-2">Sheet</th>
-                                  <th className="px-3 py-2">Actions</th>
+                                <tr className="text-gray-400 border-b border-white/10">
+                                  <th className="px-3 py-3 font-medium">Date</th>
+                                  <th className="px-3 py-3 font-medium">Student</th>
+                                  <th className="px-3 py-3 font-medium">Score</th>
+                                  <th className="px-3 py-3 font-medium">Questions</th>
+                                  <th className="px-3 py-3 font-medium">Actions</th>
                                 </tr>
                               </thead>
-                              <tbody>
+                              <tbody className="divide-y divide-white/5">
                                 {g.attempts.map((a: any, i: number) => {
                                   const prof = attemptProfiles[a.user_id] || {};
                                   const name = prof.full_name || prof.email || a.user_id;
                                   return (
-                                    <tr key={a.id || i} className="border-t border-gray-200">
-                                      <td className="px-3 py-2">{a.exam_date ? new Date(a.exam_date).toLocaleString() : '-'}</td>
-                                      <td className="px-3 py-2">{name}</td>
-                                      <td className="px-3 py-2">{a.total_score} / {a.max_score}</td>
-                                      <td className="px-3 py-2">{a.questions_count || '-'}</td>
-                                      <td className="px-3 py-2">
-                                        {a.answer_sheet_url ? (
-                                          <a href={a.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
-                                        ) : (
-                                          <span className="text-gray-400">—</span>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2">
+                                    <tr key={a.id || i} className="hover:bg-white/5 transition-colors">
+                                      <td className="px-3 py-3 text-gray-300">{a.exam_date ? new Date(a.exam_date).toLocaleString() : '-'}</td>
+                                      <td className="px-3 py-3 text-white font-medium">{name}</td>
+                                      <td className="px-3 py-3 text-neon-green font-mono">{a.total_score} / {a.max_score}</td>
+                                      <td className="px-3 py-3 text-gray-300">{a.questions_count || '-'}</td>
+                                      <td className="px-3 py-3">
                                         <button
-                                          className="inline-flex items-center gap-2 bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-900"
+                                          className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg transition-colors border border-white/10"
                                           onClick={() => { setAttemptModal(a); setShowAttemptModal(true); }}
                                         >
                                           <Eye className="w-4 h-4" /> View
@@ -666,466 +962,126 @@ Rules:
                           </div>
                         </div>
                       ))}
-
-                      {otherAttempts.length > 0 && (
-                        <div className="space-y-3">
-                          <h3 className="text-lg font-bold text-gray-700">Other / Ungrouped Submissions</h3>
-                          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                              <thead>
-                                <tr className="text-left text-gray-700">
-                                  <th className="px-3 py-2">Date</th>
-                                  <th className="px-3 py-2">Student</th>
-                                  <th className="px-3 py-2">Score</th>
-                                  <th className="px-3 py-2">Questions</th>
-                                  <th className="px-3 py-2">Sheet</th>
-                                  <th className="px-3 py-2">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {otherAttempts.map((a: any, i: number) => {
-                                  const prof = attemptProfiles[a.user_id] || {};
-                                  const name = prof.full_name || prof.email || a.user_id;
-                                  return (
-                                    <tr key={a.id || i} className="border-t border-gray-200">
-                                      <td className="px-3 py-2">{a.exam_date ? new Date(a.exam_date).toLocaleString() : '-'}</td>
-                                      <td className="px-3 py-2">{name}</td>
-                                      <td className="px-3 py-2">{a.total_score} / {a.max_score}</td>
-                                      <td className="px-3 py-2">{a.questions_count || '-'}</td>
-                                      <td className="px-3 py-2">
-                                        {a.answer_sheet_url ? (
-                                          <a href={a.answer_sheet_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>
-                                        ) : (
-                                          <span className="text-gray-400">—</span>
-                                        )}
-                                      </td>
-                                      <td className="px-3 py-2">
-                                        <button
-                                          className="inline-flex items-center gap-2 bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-900"
-                                          onClick={() => { setAttemptModal(a); setShowAttemptModal(true); }}
-                                        >
-                                          <Eye className="w-4 h-4" /> View
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })()}
               </>
-            )}
-
-            {/* Attempt Details Modal */}
-            {showAttemptModal && attemptModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6 max-w-3xl w-full relative">
-                  <button
-                    className="absolute top-3 right-4 text-gray-500 hover:text-gray-800 text-2xl"
-                    onClick={() => { setShowAttemptModal(false); setAttemptModal(null); }}
-                    aria-label="Close"
-                  >
-                    &times;
-                  </button>
-                  <h3 className="text-xl font-bold text-blue-600 mb-3">Student Response</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                    <div><span className="font-semibold text-gray-700">Student:</span> {attemptProfiles[attemptModal.user_id]?.full_name || attemptProfiles[attemptModal.user_id]?.email || attemptModal.user_id}</div>
-                    <div><span className="font-semibold text-gray-700">Date:</span> {attemptModal.exam_date ? new Date(attemptModal.exam_date).toLocaleString() : '-'}</div>
-                    <div><span className="font-semibold text-gray-700">Score:</span> {attemptModal.total_score} / {attemptModal.max_score}</div>
-                    <div><span className="font-semibold text-gray-700">Questions:</span> {attemptModal.questions_count || '-'}</div>
-                  </div>
-
-                  {attemptModal.student_weaknesses && (
-                    <div className="mb-4">
-                      <div className="font-semibold text-gray-800 mb-1">Weaknesses (summary)</div>
-                      <div className="text-gray-700 whitespace-pre-wrap">{attemptModal.student_weaknesses}</div>
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <div className="font-semibold text-gray-800 mb-2">Per-question Feedback</div>
-                    {(() => {
-                      const items = parseAttemptFeedback(attemptModal.ai_feedback);
-                      if (!items || items.length === 0) return <div className="text-gray-500">No structured feedback available.</div>;
-                      return (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-xs border border-gray-200">
-                            <thead className="bg-gray-100">
-                              <tr>
-                                <th className="px-2 py-1 text-left">Q#</th>
-                                <th className="px-2 py-1 text-left">Marks</th>
-                                <th className="px-2 py-1 text-left">Feedback</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {items.map((q: any, idx: number) => (
-                                <tr key={idx} className="border-t">
-                                  <td className="px-2 py-1 font-semibold">{q.question_number || idx + 1}</td>
-                                  <td className="px-2 py-1">{q.marks_awarded} / {q.max_marks}</td>
-                                  <td className="px-2 py-1 whitespace-pre-wrap">{q.feedback || '-'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {attemptModal.answers_text && (
-                    <div className="mb-2">
-                      <div className="font-semibold text-gray-800 mb-1">Extracted Answers (OCR)</div>
-                      <div className="max-h-56 overflow-auto whitespace-pre-wrap text-gray-700 bg-gray-50 p-2 rounded border border-gray-200 text-xs">
-                        {attemptModal.answers_text}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-4 text-right">
-                    <button
-                      className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900"
-                      onClick={() => { setShowAttemptModal(false); setAttemptModal(null); }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Daily Log & Mock Test Tab */}
-        {tab === 'Daily Log & Mock Test' && (
-          <div className="space-y-4">
-            <form onSubmit={handleGenerateDailyMockTest} className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-              <h3 className="font-bold mb-2 text-blue-600">Daily Log & Generate Mock Test</h3>
-              {mockGenError && <p className="text-red-500 mb-2">{mockGenError}</p>}
-              {mockSuccessMsg && <p className="text-green-600 mb-2">{mockSuccessMsg}</p>}
-              <label className="block text-sm font-medium text-gray-700 mb-1">What did you teach today?</label>
-              <textarea
-                placeholder="e.g., Class 10 Science – Chemical Reactions: types (combination, decomposition), examples, equations balancing..."
-                value={dailyTopics}
-                onChange={e => setDailyTopics(e.target.value)}
-                className="w-full p-2 mb-3 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                required
-              />
-              <div className="flex items-center gap-4 mb-3">
-                <label className="text-sm text-gray-700">Number of questions</label>
-                <input
-                  type="number"
-                  min={4}
-                  max={20}
-                  value={mockQuestionCount}
-                  onChange={e => setMockQuestionCount(parseInt(e.target.value || '8'))}
-                  className="w-24 p-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                disabled={generatingMock}
-              >
-                {generatingMock ? 'Generating…' : 'Generate Mock Test & Notify Students'}
-              </button>
-            </form>
-
-            {mockPreview && (
-              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <div className="font-semibold text-gray-800 mb-2">Preview</div>
-                <pre className="whitespace-pre-wrap text-gray-700 text-sm">{mockPreview}</pre>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Students Tab */}
-        {tab === 'Students' && (
-          <div className="space-y-4">
-            {students.length === 0 ? (
-              <div className="text-gray-500">No students in this class yet.</div>
-            ) : (
-              students.map((s, i) => (
-                <div key={i} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="font-semibold text-blue-600">{s.full_name}</div>
-                    <div className="text-sm text-gray-500">{s.email}</div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Resources Tab */}
-        {tab === 'Resources' && (
-          <div className="space-y-4">
-            {/* Teacher upload form */}
-            {role === 'teacher' && (
-              <form onSubmit={handleResourceUpload} className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                <div className="mb-2 font-semibold text-gray-700">Upload/Share Resource</div>
-                <input
-                  className="w-full p-2 mb-2 rounded bg-gray-50 text-gray-800 border border-gray-300"
-                  placeholder="Title"
-                  value={resourceTitle || ''}
-                  onChange={e => setResourceTitle(e.target.value)}
-                  required
-                />
-                <select
-                  className="w-full p-2 mb-2 rounded bg-gray-50 text-gray-800 border border-gray-300"
-                  value={resourceType || 'link'}
-                  onChange={e => setResourceType(e.target.value)}
-                >
-                  <option value="link">Link</option>
-                  <option value="file">File Upload</option>
-                </select>
-                {resourceType === 'link' ? (
-                  <input
-                    className="w-full p-2 mb-2 rounded bg-gray-50 text-gray-800 border border-gray-300"
-                    placeholder="Paste link here"
-                    value={resourceUrl || ''}
-                    onChange={e => setResourceUrl(e.target.value)}
-                    required
-                  />
-                ) : (
-                  <input
-                    type="file"
-                    className="w-full p-2 mb-2 rounded bg-gray-50 text-gray-800 border border-gray-300"
-                    accept="*"
-                    onChange={e => setResourceFile(e.target.files?.[0] || null)}
-                    required
-                  />
-                )}
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  disabled={uploadingResource}
-                  onClick={() => { console.log('Resource upload button clicked'); }}
-                >
-                  {uploadingResource ? 'Uploading...' : 'Add Resource'}
-                </button>
-              </form>
-            )}
-            {resources.length === 0 ? (
-              <div className="text-gray-500">No resources yet.</div>
-            ) : (
-              resources.map(r => (
-                <div key={r.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="font-semibold text-blue-600">{r.title}</div>
-                    <div className="text-sm text-gray-600">
-                      {r.type === 'link' && <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline text-blue-500">{r.url}</a>}
-                      {r.type === 'pdf' && <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-500">PDF File</a>}
-                      {r.type === 'image' && <a href={r.file_url} target="_blank" rel="noopener noreferrer"><img src={r.file_url} alt={r.title} className="max-h-32 rounded mt-2" /></a>}
-                      {r.type === 'file' && <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="underline text-blue-500">Download File</a>}
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-400 mt-2 md:mt-0">{r.file_url ? r.file_url.split('/').pop() : ''}</div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Announcements Tab */}
-        {tab === 'Announcements' && (
-          <div className="space-y-4">
-            {role === 'teacher' && (
-              <form onSubmit={handlePostAnnouncement} className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <h3 className="font-bold mb-2 text-blue-600">Post New Announcement</h3>
-                {announcementError && <p className="text-red-500 mb-2">{announcementError}</p>}
-                <textarea
-                  placeholder="Type your announcement..."
-                  value={announcementContent}
-                  onChange={e => setAnnouncementContent(e.target.value)}
-                  required
-                  className="w-full p-2 mb-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-                  disabled={postingAnnouncement}
-                >
-                  {postingAnnouncement ? 'Posting...' : 'Post Announcement'}
-                </button>
-              </form>
-            )}
-            {announcements.length === 0 ? (
-              <div className="text-gray-500">No announcements yet.</div>
-            ) : (
-              announcements.map(a => (
-                <div key={a.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                  <div className="text-gray-700">{a.message}</div>
-                  <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Assignments Tab */}
-        {tab === 'Assignments' && (
-          <div className="space-y-4">
-            {role === 'teacher' && (
-              <form onSubmit={handlePostAssignment} className="mb-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <h3 className="font-bold mb-2 text-blue-600">Create New Assignment</h3>
-                {assignmentError && <p className="text-red-500 mb-2">{assignmentError}</p>}
-                <input
-                  type="text"
-                  placeholder="Title"
-                  value={assignmentTitle}
-                  onChange={e => setAssignmentTitle(e.target.value)}
-                  required
-                  className="w-full p-2 mb-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-                <textarea
-                  placeholder="Description"
-                  value={assignmentDesc}
-                  onChange={e => setAssignmentDesc(e.target.value)}
-                  className="w-full p-2 mb-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-                <input
-                  type="date"
-                  value={assignmentDueDate}
-                  onChange={e => setAssignmentDueDate(e.target.value)}
-                  className="w-full p-2 mb-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-                <input
-                  type="file"
-                  onChange={e => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
-                  className="w-full p-2 mb-2 border rounded bg-gray-50 text-gray-800 border-gray-300"
-                />
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  disabled={postingAssignment}
-                >
-                  {postingAssignment ? 'Posting...' : 'Add Assignment'}
-                </button>
-              </form>
-            )}
-            {assignments.length === 0 ? (
-              <div className="text-gray-500">No assignments yet.</div>
-            ) : (
-              assignments.map(a => (
-                <div key={a.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                  <div className="font-semibold text-blue-600">{a.title}</div>
-                  <div className="text-gray-700 mb-2">{a.description}</div>
-                  {a.due_date && <div className="text-xs text-orange-500">Due: {new Date(a.due_date).toLocaleDateString()}</div>}
-                  {a.is_mock && a.expires_at && (
-                    <div className="text-xs text-red-600">Expires: {new Date(a.expires_at).toLocaleString()}</div>
-                  )}
-                  {/* Show image preview if file_url is an image, else show download link */}
-                  {a.file_url && (
-                    a.file_url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
-                      <img
-                        src={a.file_url}
-                        alt={a.title}
-                        className="max-h-48 rounded mt-2"
-                        style={{ maxWidth: '100%' }}
-                      />
-                    ) : (
-                      <a
-                        href={a.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        Download File
-                      </a>
-                    )
-                  )}
-                  <div className="text-xs text-gray-500 mt-2">{new Date(a.created_at).toLocaleString()}</div>
-                  {role === 'teacher' && (
-                    <div className="mt-3 flex gap-3">
-                      <button
-                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                        onClick={() => handleDeleteAssignment(a)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))
             )}
           </div>
         )}
 
         {/* Analytics Tab */}
         {tab === 'Analytics' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
-            <div className="mb-2 text-lg font-semibold text-blue-600">Class Analytics</div>
-            <div className="text-gray-700">Students: {students.length}</div>
-            <div className="text-gray-700">Resources: {resources.length}</div>
-            <div className="text-gray-700">Assignments: {assignments.length}</div>
-            <div className="text-gray-700">Announcements: {announcements.length}</div>
-            {/* Add more analytics as needed */}
+          <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
+            <BarChart2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">Class Analytics</h3>
+            <p className="text-gray-400">Detailed analytics coming soon. Check "AI Insights" for a summary.</p>
           </div>
         )}
 
         {/* AI Insights Tab */}
         {tab === 'AI Insights' && (
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
-            <div className="mb-2 text-lg font-semibold text-blue-600">AI Insights</div>
+          <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-neon-purple" />
+              AI Class Insights
+            </h3>
             {aiLoading ? (
-              <div className="text-gray-500">Generating insights...</div>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-purple"></div>
+              </div>
             ) : (
-              <div className="text-gray-700 whitespace-pre-line">{aiSummary}</div>
+              <div className="prose prose-invert max-w-none">
+                <div dangerouslySetInnerHTML={{ __html: marked(aiSummary) }} />
+              </div>
             )}
           </div>
         )}
 
         {/* Notifications Tab */}
         {tab === 'Notifications' && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-blue-600 flex items-center gap-2 mb-2"><Bell className="w-6 h-6" /> Notifications</h2>
-            {loadingNotifications ? (
-              <div className="text-blue-600">Loading notifications...</div>
-            ) : notifications.length === 0 ? (
-              <div className="text-gray-500">No notifications yet.</div>
-            ) : (
-              <div className="space-y-2">
-                {notifications.map((notif, i) => (
-                  <div
-                    key={notif.id || i}
-                    className={`p-4 rounded-lg border ${notif.is_read ? 'border-gray-200 bg-gray-50 opacity-60' : 'border-blue-300 bg-blue-50'} transition-all cursor-pointer shadow-sm`}
-                    onClick={() => handleNotificationClick(notif)}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800 mb-1">{notif.title}</div>
-                        <div className="text-gray-600 mb-1">{notif.message}</div>
-                        <div className="text-xs text-gray-500">{notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}</div>
-                      </div>
-                      <button
-                        className="p-1 rounded hover:bg-red-100 text-red-600"
-                        title="Delete notification"
-                        onClick={(e) => { e.stopPropagation(); handleDeleteNotification(notif.id); }}
-                      >
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </div>
+          <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Bell className="h-5 w-5 text-neon-blue" />
+              Notifications
+            </h3>
+            <p className="text-gray-400">System notifications for this class will appear here.</p>
+          </div>
+        )}
+
+        {/* Attempt Details Modal */}
+        {showAttemptModal && attemptModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="glass-panel rounded-2xl border border-white/10 shadow-2xl p-6 max-w-3xl w-full relative max-h-[90vh] overflow-y-auto">
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                onClick={() => { setShowAttemptModal(false); setAttemptModal(null); }}
+                aria-label="Close"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <FileText className="h-6 w-6 text-neon-blue" />
+                Student Response
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6 bg-black/40 p-4 rounded-xl border border-white/5">
+                <div><span className="font-semibold text-gray-400">Student:</span> <span className="text-white ml-2">{attemptProfiles[attemptModal.user_id]?.full_name || attemptProfiles[attemptModal.user_id]?.email || attemptModal.user_id}</span></div>
+                <div><span className="font-semibold text-gray-400">Date:</span> <span className="text-white ml-2">{attemptModal.exam_date ? new Date(attemptModal.exam_date).toLocaleString() : '-'}</span></div>
+                <div><span className="font-semibold text-gray-400">Score:</span> <span className="text-neon-green font-mono ml-2">{attemptModal.total_score} / {attemptModal.max_score}</span></div>
+              </div>
+
+              {attemptModal.student_weaknesses && (
+                <div className="mb-6">
+                  <div className="font-semibold text-white mb-2 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-neon-yellow" />
+                    Weaknesses (summary)
                   </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Modal for weaknesses */}
-            {showNotifModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 max-w-2xl w-full relative">
-                  <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl" onClick={() => setShowNotifModal(false)}>&times;</button>
-                  <h3 className="text-xl font-bold text-blue-600 mb-2">{notifModalTitle}</h3>
-                  <div className="mb-4 text-gray-800 prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(notifModalContent) as string }} />
+                  <div className="text-gray-300 whitespace-pre-wrap bg-black/40 p-4 rounded-xl border border-white/5 text-sm">
+                    {attemptModal.student_weaknesses}
+                  </div>
                 </div>
+              )}
+
+              <div className="mb-6">
+                <div className="font-semibold text-white mb-3">Per-question Feedback</div>
+                {(() => {
+                  const items = parseAttemptFeedback(attemptModal.ai_feedback);
+                  if (!items || items.length === 0) return <div className="text-gray-500 italic">No structured feedback available.</div>;
+                  return (
+                    <div className="overflow-x-auto rounded-xl border border-white/10">
+                      <table className="min-w-full text-xs text-left">
+                        <thead className="bg-white/5">
+                          <tr>
+                            <th className="px-3 py-2 font-medium text-gray-300">Q#</th>
+                            <th className="px-3 py-2 font-medium text-gray-300">Marks</th>
+                            <th className="px-3 py-2 font-medium text-gray-300">Feedback</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 bg-black/20">
+                          {items.map((q: any, idx: number) => (
+                            <tr key={idx}>
+                              <td className="px-3 py-2 font-semibold text-white">{q.question_number || idx + 1}</td>
+                              <td className="px-3 py-2 text-neon-green font-mono">{q.marks_awarded} / {q.max_marks}</td>
+                              <td className="px-3 py-2 text-gray-300 whitespace-pre-wrap">{q.feedback || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </div>
-            )}
+
+              <div className="mt-6 text-right">
+                <button
+                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl transition-colors border border-white/10"
+                  onClick={() => { setShowAttemptModal(false); setAttemptModal(null); }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

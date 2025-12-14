@@ -1,0 +1,235 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Physics",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:09:31.621Z",
+    "total_questions": 16
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "A uniform electric field pointing in positive X-direction exists in a region. Let A be the origin, B be the point on the X-axis at x = +1 cm and C be the point on the Y-axis at y = +1 cm. Then the potential at points A, B and C satisfy.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "V_A < V_B",
+        "V_A > V_B",
+        "V_A < V_C",
+        "V_A > V_C"
+      ],
+      "correct_index": null,
+      "chapter": "Electrostatics"
+    },
+    {
+      "question_number": "2",
+      "question": "A conducting wire connects two charged conducting spheres of radii r_1 and r_2 such that they attain equilibrium with respect to each other. The distance of separation between the two spheres is very large as compared to either of their radii. The ratio of the magnitudes of the electric fields at the surfaces of the spheres of radii r_1 and r_2 is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "r_1/r_2",
+        "r_2/r_1",
+        "r_2^2/r_1^2",
+        "r_1^2/r_2^2"
+      ],
+      "correct_index": null,
+      "chapter": "Electrostatics"
+    },
+    {
+      "question_number": "3",
+      "question": "A long straight wire of circular cross section of radius 'a' carries a steady current I. The current is uniformly distributed across its cross section. The ratio of magnitudes of the magnetic field at a point a/2 above the surface of wire to that of a point a/2 below its surface is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "4:1",
+        "1:1",
+        "4:3",
+        "3:4"
+      ],
+      "correct_index": null,
+      "chapter": "Magnetism"
+    },
+    {
+      "question_number": "4",
+      "question": "The diffraction effect can be observed in",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "sound waves only",
+        "light waves only",
+        "ultrasonic waves only",
+        "sound waves as well as light waves"
+      ],
+      "correct_index": null,
+      "chapter": "Wave Optics"
+    },
+    {
+      "question_number": "5",
+      "question": "A capacitor consists of two parallel plates, with an area of cross-section of 0.001 m^2, separated by a distance of 0.0001 m. If the voltage across the plates varies at the rate of 10^8 V/s, then the value of displacement current through the capacitor is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "8.85 × 10^{-3} A",
+        "8.85 × 10^{-4} A",
+        "7.85 × 10^{-3} A",
+        "9.85 × 10^{-3} A"
+      ],
+      "correct_index": null,
+      "chapter": "Electromagnetic Waves"
+    },
+    {
+      "question_number": "6",
+      "question": "In a series LCR circuit, the voltage across the resistance, capacitance and inductance is 10 V each. If the capacitance is short-circuited, the voltage across the inductance will be",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "10 V",
+        "10√2 V",
+        "10/√2 V",
+        "20 V"
+      ],
+      "correct_index": null,
+      "chapter": "AC Circuits"
+    },
+    {
+      "question_number": "7",
+      "question": "Correct match of column I with column II is: Column I (waves) - Column II (Production): (1) Infra-red, (2) Radio, (3) Light, (4) Microwave",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1-P, 2-R, 3-S, 4-Q",
+        "1-S, 2-P, 3-O, 4-R",
+        "1-Q, 2-P, 3-S, 4-R",
+        "1-S, 2-R, 3-P, 4-Q"
+      ],
+      "correct_index": null,
+      "chapter": "Electromagnetic Waves"
+    },
+    {
+      "question_number": "8",
+      "question": "The distance of closest approach of an alpha particle is d when it moves with a speed V towards a nucleus. Another alpha particle is projected with higher energy such that the new distance of the closest approach is d/2. What is the speed of projection of the alpha particle in this case?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "V/2",
+        "√2 V",
+        "2 V",
+        "4 V"
+      ],
+      "correct_index": null,
+      "chapter": "Nuclear Physics"
+    },
+    {
+      "question_number": "9",
+      "question": "A point object is placed at the centre of a glass sphere of radius 6 cm and refractive index 1.5. The distance of virtual image from the surface of the sphere is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2 cm",
+        "4 cm",
+        "6 cm",
+        "12 cm"
+      ],
+      "correct_index": null,
+      "chapter": "Ray Optics"
+    },
+    {
+      "question_number": "10",
+      "question": "Colours observed on a CD (Compact Disk) is due to",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Reflection",
+        "Diffraction",
+        "Dispersion",
+        "Absorption"
+      ],
+      "correct_index": null,
+      "chapter": "Wave Optics"
+    },
+    {
+      "question_number": "11",
+      "question": "The number of electrons made available for conduction by dopant atoms depends strongly upon",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "doping level",
+        "increase in ambient temperature",
+        "energy gap",
+        "options (A) and (B) both"
+      ],
+      "correct_index": null,
+      "chapter": "Semiconductors"
+    },
+    {
+      "question_number": "12",
+      "question": "If copper wire is stretched to make its radius decrease by 0.1%, then the percentage change in its resistance is approximately",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "–0.4%",
+        "+0.8%",
+        "+0.4%",
+        "+0.2%"
+      ],
+      "correct_index": null,
+      "chapter": "Current Electricity"
+    },
+    {
+      "question_number": "13",
+      "question": "Assertion (A): On increasing the current sensitivity of a galvanometer by increasing the number of turns may not necessarily increase its voltage sensitivity. Reason (R): The resistance of the coil of the galvanometer increases on increasing the number of turns.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correct_index": null,
+      "chapter": "Electromagnetic Induction"
+    },
+    {
+      "question_number": "14",
+      "question": "Assertion (A): In a hydrogen atom there is only one electron but its emission spectrum shows many lines. Reason (R): In a given sample of hydrogen there are many atoms each containing one electron; hence many electrons in different atoms may be in different orbits so many transitions from higher to lower orbits are possible.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correct_index": null,
+      "chapter": "Atomic Physics"
+    },
+    {
+      "question_number": "15",
+      "question": "Assertion (A): Nuclei having mass number about 60 are least stable. Reason (R): When two or more light nuclei are combined into a heavier nucleus then the binding energy per nucleon will decrease.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correct_index": null,
+      "chapter": "Nuclear Physics"
+    },
+    {
+      "question_number": "16",
+      "question": "Assertion (A): de Broglie's wavelength of a freely falling body keeps decreasing with time. Reason (R): The momentum of the freely falling body increases with time.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correct_index": null,
+      "chapter": "Quantum Physics"
+    }
+  ]
+}

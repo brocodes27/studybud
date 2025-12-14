@@ -1,0 +1,164 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "Assamese",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:40:07.429Z",
+    "total_questions": 12
+  },
+  "questions": [
+    {
+      "question_number": "I",
+      "question": "প্ৰকৃতিতৰ অৱস্থোলল চোই বকোন মোহত শৰৎ কোল ধৰো হয?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ভোি - আদহন",
+        "আদহন - কোদত",
+        "কোদত",
+        "আদহন"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "II",
+      "question": "গোওেঁচ্ছৰ আদল পিুদল শৰৎ কোলত দক ৰূ প ধচ্ছৰ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "আৱৰ্মনোময",
+        "পংকময",
+        "পদৰষ্কোৰ",
+        "ধূদলময"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "III",
+      "question": "শৰতক দক নোচ্ছমচ্ছৰ দ ভূদষত কৰো হয?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ঋতুৰোৰ্",
+        "ঋতুসুন্দৰী",
+        "ঋতুৰোণী",
+        "ঋতুপণ মো"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "IV",
+      "question": "বিৱী িুগ মোই কোক দধ লল কোলী ৰূ প ধোৰণ কদৰদিল?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ৰোৱণক",
+        "ৰি ীৰ্ক",
+        "মদহষোসুৰ ক",
+        "কুম্ভকণ মক"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "V",
+      "question": "কোদত দ হু অনুটিত হয",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "আদহনত",
+        "কোদতত",
+        "ভোি",
+        "আদহনৰ সংক্ৰোদিত"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "VI",
+      "question": "ৰ ৰো ফলৰ বসোৱোি বকচ্ছনকুৱো?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ব েো",
+        "দমঠো",
+        "বকেঁহো",
+        "জ্ব লো"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "VII",
+      "question": "দ পৰীত শব্দ দলিো - ‘পূদণ মমো’",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "অমোৱসযো",
+        "বৰ্োনোক",
+        "দিন",
+        "ৰোদত"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "VIII",
+      "question": "সমোথ মক শব্দ দলিো - ‘সৰসী’",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "নিী",
+        "িোল",
+        "সচ্ছৰো ৰ",
+        "নলো"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "IX",
+      "question": "‘প্ৰ কৃদত’ - শব্দচ্ছত দক উপসগ ম বযোগ হহচ্ছি?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "প্ৰ",
+        "পৰো",
+        "পদৰ",
+        "পৰ"
+      ],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "A",
+      "question": "শৰৎ কোলত প্ৰ কৃদতচ্ছয বকচ্ছনৰূপ ধোৰণ কচ্ছৰ?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "B",
+      "question": "শৰৎ কোলত দক দক উৎসৱ পোলন কৰো হয?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    },
+    {
+      "question_number": "C",
+      "question": "শৰৎ কোলত দক দক শসয উৎপন্ন হয?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Comprehension"
+    }
+  ]
+}

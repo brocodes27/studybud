@@ -1,0 +1,235 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Biology",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:04:07.529Z",
+    "total_questions": 16
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Signals for parturition in human female originate from",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Fully developed foetus only",
+        "Both placenta as well as fully developed foetus",
+        "Placenta only",
+        "Oxytocin released from maternal pituitary"
+      ],
+      "correct_index": null,
+      "chapter": "Reproduction in Humans"
+    },
+    {
+      "question_number": "2",
+      "question": "To produce 1600 seeds, the number of meiotic divisions required will be",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2400",
+        "2000",
+        "1600",
+        "1800"
+      ],
+      "correct_index": null,
+      "chapter": "Genetics and Evolution"
+    },
+    {
+      "question_number": "3",
+      "question": "A sample of normal double-stranded DNA was found to have thymine content of 27%. What will be the expected proportion of guanine in this strand?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "23%",
+        "32%",
+        "36%",
+        "73%"
+      ],
+      "correct_index": null,
+      "chapter": "Molecular Basis of Inheritance"
+    },
+    {
+      "question_number": "4",
+      "question": "Observe the schematic diagram that depicts a small section of nucleic acid. The bases in two strands are paired through hydrogen bonds that are shown by the dark lines. Identify the correct sequence of nucleotide in the 5’ - 3’ direction.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "GCAT",
+        "CGTA",
+        "TAGC",
+        "ATCG"
+      ],
+      "correct_index": null,
+      "chapter": "Molecular Basis of Inheritance"
+    },
+    {
+      "question_number": "5",
+      "question": "Suresh and Rajesh have defective haemoglobin due to genetic disorders. In Suresh, the problem is qualitative as he is having incorrectly functioning globin molecules while in Rajesh the problem is quantitative as he is having very few globin molecules. Identify the disorder they are suffering from.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Thalassemia - Autosomal Dominant blood disorder, Sickle Cell Anaemia - Autosomal linked Recessive trait",
+        "Sickle Cell Anaemia - Autosomal linked Dominant trait, Thalassemia - Autosomal Recessive blood disorder",
+        "Sickle Cell Anaemia - Autosomal linked Recessive trait, Thalassemia - Autosomal Recessive blood disorder",
+        "Thalassemia - Autosomal Dominant blood disorder, Sickle Cell Anaemia - Autosomal linked Dominant trait"
+      ],
+      "correct_index": null,
+      "chapter": "Genetics and Evolution"
+    },
+    {
+      "question_number": "6",
+      "question": "In E. coli, the lac operon gets switched on when lactose is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "present in the medium and it binds to the repressor.",
+        "not present in the medium and the repressor binds to the operator.",
+        "not present in the medium and RNA polymerase binds to the operator.",
+        "Active lactose present in the medium binds to RNA polymerase."
+      ],
+      "correct_index": null,
+      "chapter": "Molecular Basis of Inheritance"
+    },
+    {
+      "question_number": "7",
+      "question": "Which of the following features shows the mechanism of sex determination in honey-bee?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "(i) and (ii)",
+        "(ii) and (iii)",
+        "(i) and (iv)",
+        "(ii) and (iv)"
+      ],
+      "correct_index": null,
+      "chapter": "Genetics and Evolution"
+    },
+    {
+      "question_number": "8",
+      "question": "The following diagram shows a fragment of DNA which is going to be transcribed, the upper strand with polarity 3’ to 5’ is the template strand: 3’ ATTGCC 5’ 5’ TAACGG 3’ After transcription the mRNA can be represented by:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "5’ AUUGCC 3’",
+        "5’ AUUGCC 3’",
+        "5’ UAACGG 3’",
+        "5’ GGCAAU 3’"
+      ],
+      "correct_index": null,
+      "chapter": "Molecular Basis of Inheritance"
+    },
+    {
+      "question_number": "9",
+      "question": "Idli – dosa dough rises due to production of which of the following gas?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "CO",
+        "CO2",
+        "NO",
+        "NO2"
+      ],
+      "correct_index": null,
+      "chapter": "Microbes in Human Welfare"
+    },
+    {
+      "question_number": "10",
+      "question": "Adaptive radiation leads to which of the following?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Increased competition among species",
+        "Decreased speciation rates",
+        "Limited morphological diversity among species",
+        "Rapid divergence of traits among populations inhabiting a given geographical area."
+      ],
+      "correct_index": null,
+      "chapter": "Evolution"
+    },
+    {
+      "question_number": "11",
+      "question": "Eco R1 cuts the DNA between bases G and A only when the sequence of GAATTC is present. The number of nucleotides present in the resultant sticky ends that will be formed in each of the two strands of DNA after this enzyme cuts the DNA will be:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1 & 5 5 &1",
+        "2 & 4 4 &2",
+        "2 & 5 5 & 2",
+        "3 & 4 4 & 3"
+      ],
+      "correct_index": null,
+      "chapter": "Biotechnology: Principles and Processes"
+    },
+    {
+      "question_number": "12",
+      "question": "During the secondary treatment of sewage, which of the following change in the effluent occur due to flocs?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Reduction in BOD",
+        "Increase in BOD",
+        "Decrease in DO",
+        "No change in DO or BOD"
+      ],
+      "correct_index": null,
+      "chapter": "Microbes in Human Welfare"
+    },
+    {
+      "question_number": "13",
+      "question": "Assertion (A): Cells of tapetum have more than one nucleus. Reason (R): They undergo meiosis without cytokinesis.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A.",
+        "Both A and R are true and R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is False but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Reproduction in Plants"
+    },
+    {
+      "question_number": "14",
+      "question": "Assertion (A): Deoxyribonucleoside triphosphates serve dual purposes. Reason (R): They act as proof readers and provide energy.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A.",
+        "Both A and R are true and R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is False but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Molecular Basis of Inheritance"
+    },
+    {
+      "question_number": "15",
+      "question": "Assertion (A): A floating cover placed over the slurry in a biogas plant keeps on rising. Reason (R): This cover keeps on rising due to the gas produced in the tank by the microbial activity.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A.",
+        "Both A and R are true and R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is False but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Microbes in Human Welfare"
+    },
+    {
+      "question_number": "16",
+      "question": "Assertion (A): DNA fragments can be isolated by Gel electrophoresis on the basis of their size. Reason (R): The larger the fragment size, the faster it moves.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A.",
+        "Both A and R are true and R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is False but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Biotechnology: Principles and Processes"
+    }
+  ]
+}

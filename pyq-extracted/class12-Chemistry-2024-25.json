@@ -1,0 +1,235 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Chemistry",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:05:10.037Z",
+    "total_questions": 16
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Ammonolysis of ethyl chloride followed by reaction of the amine so formed with 1 mole of methyl chloride gives an amine that",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "reacts with Hinsberg reagent to form a product soluble in an alkali.",
+        "on reaction with Nitrous acid, produced nitrogen gas.",
+        "reacts with Benzenesulphonyl chloride to form a product that is insoluble in alkali.",
+        "does not react with Hinsberg reagent."
+      ],
+      "correct_index": null,
+      "chapter": "Amines"
+    },
+    {
+      "question_number": "2",
+      "question": "Which one of the following has the highest dipole moment?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "CH₃F",
+        "CH₃Cl",
+        "CH₃I",
+        "CH₃Br"
+      ],
+      "correct_index": null,
+      "chapter": "Haloalkanes and Haloarenes"
+    },
+    {
+      "question_number": "3",
+      "question": "Match the properties given in column I with the metals in column II",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "(i)-(C), (ii)-(B), (iii)-(A)",
+        "(i)-(C), (ii)-(A), (iii)-(B)",
+        "(i)-(A), (ii)-(B), (iii)-(C)",
+        "(i)-(B), (ii)-(A), (iii)-(C)"
+      ],
+      "correct_index": null,
+      "chapter": "d and f Block Elements"
+    },
+    {
+      "question_number": "4",
+      "question": "Study the graph showing the boiling points of bromoalkanes and identify the compounds.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1 = Bromomethane, 2= 2-Bromobutane, 3= 1-Bromobutane, 4= 2-Bromo-2-methylpropane",
+        "1 =1-Bromobutane, 2= 2-Bromo-2-methylpropane, 3= 2-Bromobutane, 4= Bromomethane",
+        "1 = Bromomethane, 2=1-Bromobutane, 3= 2-Bromo-2-methylpropane, 4= 2-Bromobutane",
+        "1 =Bromomethane, 2= 2-Bromo-2-methylpropane, 3=2- Bromobutane, 4= 1-Bromobutane"
+      ],
+      "correct_index": null,
+      "chapter": "Haloalkanes and Haloarenes"
+    },
+    {
+      "question_number": "5",
+      "question": "The initial concentration of R in the reaction R → P is 4.62 × 10⁻² mol/L. What is the half life for the reaction if k = 2.31 × 10⁻² mol L⁻¹ s⁻¹?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "30 s",
+        "3 s",
+        "1 s",
+        "10 s"
+      ],
+      "correct_index": null,
+      "chapter": "Chemical Kinetics"
+    },
+    {
+      "question_number": "6",
+      "question": "When C₆H₅COOCOCH₃ is treated with H₂O, the product obtained is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Benzoic acid and ethanol",
+        "Benzoic acid and ethanoic acid",
+        "Acetic Acid and phenol",
+        "Benzoic anhydride and methanol"
+      ],
+      "correct_index": null,
+      "chapter": "Carboxylic Acids and Derivatives"
+    },
+    {
+      "question_number": "7",
+      "question": "'X' and 'Y' in the above table are:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "X=[Co(NH₃)₆]²⁺ 3Cl⁻, Y= 1:3",
+        "X= [Co(NH₃)₄Cl₂]⁺ Cl⁻, Y= 1:3",
+        "X=[Co(NH₃)₄Cl₂]⁺ Cl⁻, Y= 1:1",
+        "X=[Co(NH₃)₄Cl₂]³⁺ 3Cl⁻, Y= 1:1"
+      ],
+      "correct_index": null,
+      "chapter": "Coordination Compounds"
+    },
+    {
+      "question_number": "8",
+      "question": "Which of the following contains only β-D-glucose as its monosaccharide unit:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Sucrose",
+        "Cellulose",
+        "Starch",
+        "Maltose"
+      ],
+      "correct_index": null,
+      "chapter": "Biomolecules"
+    },
+    {
+      "question_number": "9",
+      "question": "Which one of the following sets correctly represents the increase in the paramagnetic property of the ions?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Ti³⁺ < Fe²⁺ < Cr³⁺ < Mn²⁺",
+        "Ti³⁺ < Mn²⁺ < Fe²⁺ < Cr³⁺",
+        "Mn²⁺ < Fe²⁺ < Cr³⁺ < Ti³⁺",
+        "Ti³⁺ < Cr³⁺ < Fe²⁺ < Mn²⁺"
+      ],
+      "correct_index": null,
+      "chapter": "d and f Block Elements"
+    },
+    {
+      "question_number": "10",
+      "question": "A first-order reaction is found to have a rate constant, k = 5.5 × 10⁻¹⁴ s⁻¹. The time taken for completion of the reaction is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1.26 × 10¹³ s",
+        "2.52 × 10¹³ s",
+        "0.63 × 10¹³ s",
+        "It never goes to completion"
+      ],
+      "correct_index": null,
+      "chapter": "Chemical Kinetics"
+    },
+    {
+      "question_number": "11",
+      "question": "A student was preparing aniline in the lab. She took a compound “X” and reduced it in the presence of Ni as a catalyst. What could be the compound “X”?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Nitrobenzene",
+        "1-Nitrohexane",
+        "Benzonitrile",
+        "1-Hexanenitrile"
+      ],
+      "correct_index": null,
+      "chapter": "Amines"
+    },
+    {
+      "question_number": "12",
+      "question": "Which of the following compound gives an oxime with hydroxylamine:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "CH₃COCH₃",
+        "CH₃COOH",
+        "(CH₃CO)₂O",
+        "CH₃COCl"
+      ],
+      "correct_index": null,
+      "chapter": "Aldehydes, Ketones and Carboxylic Acids"
+    },
+    {
+      "question_number": "13",
+      "question": "Assertion (A): [Mn(CN)₆]³⁻ has a magnetic moment of two unpaired electrons while [MnCl₆]³⁻ has a paramagnetic moment of four unpaired electrons. Reason (R): [Mn(CN)₆]³⁻ is inner orbital complexes involving d²sp³ hybridisation, on the other hand, [MnCl₆]³⁻ is outer orbital complexes involving sp³d² hybridisation. Select the most appropriate answer from the options given below:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Coordination Compounds"
+    },
+    {
+      "question_number": "14",
+      "question": "Assertion (A): For strong electrolytes, there is a slow increase in molar conductivity with dilution and can be represented by the equation. Reason (R): The value of the constant ‘A’ for NaCl, CaCl₂, and MgSO₄ in a given solvent and at a given temperature is different. Select the most appropriate answer from the options given below:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Electrochemistry"
+    },
+    {
+      "question_number": "15",
+      "question": "Assertion (A): Glucose does not form the hydrogensulphite addition product with NaHSO₃. Reason (R): Glucose exists in a six-membered cyclic structure called pyranose structure. Select the most appropriate answer from the options given below:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Biomolecules"
+    },
+    {
+      "question_number": "16",
+      "question": "Assertion (A): The half-life for a zero order reaction is independent of the initial concentration of the reactant. Reason (R): For a zero order reaction, Rate = k. Select the most appropriate answer from the options given below:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false but R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Chemical Kinetics"
+    }
+  ]
+}

@@ -1,0 +1,319 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "Bodo",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:48:45.189Z",
+    "total_questions": 22
+  },
+  "questions": [
+    {
+      "question_number": "1(i)",
+      "question": "गाहाय न बबे मोनसेया अराय जोला आथोन न गेब बदि थ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "बैरा थ",
+        "सां े मा",
+        "बारलांफा",
+        "िज ेोद"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "1(ii)",
+      "question": "गाहाय न बबे मोनसेया जथाइ थाइजा न गेब बदि थ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "फाहाम",
+        "ल फै",
+        "दाल",
+        "दाङा"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "1(iii)",
+      "question": "दा जाखां बदि था फोरमायनो मा उन दाजाबदा दाजाबनाय जायो?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "-आ",
+        "-खौ",
+        "–बाय",
+        "- द मोन"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "1(iv)",
+      "question": "‘खुगा नां’ न गेब फोरमाय थया -",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "साव नां",
+        "बा Ġ ा बुं",
+        "बा Ġ ा हो",
+        "गोथाव मोन"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "1(v)",
+      "question": "हाबायाव गइ रान ा ह जावखौ फंसे सोदोबाव मा बुङो?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "बारला फा",
+        "बैरा थ",
+        "बावरा",
+        "दौ द न"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(i)",
+      "question": "‘बबार खानाय’ ख थाइयाव ख थाइ ग रया बबार खानायज मा फोरमायनो नाजाद?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "सोल थाइ लानाय",
+        "बबार खनथुमनाय",
+        "बबार स रनाय",
+        "बबार गायनाय"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(ii)",
+      "question": "‘आं न गा म’ ख थाइ न ख थाइ ग रया सोर?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "पनाथ हेम",
+        "मदाराम हेम",
+        "कमल कुमार हेम",
+        "वजे ग हेम"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(iii)",
+      "question": "‘आं न गा म’ ख थाइयाव ख थाइ ग र न ‘आं न गा म’आ मामोन?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "नांगोल भाङा",
+        "भबा नपु र",
+        "धाव लगु र",
+        "बरागा र"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(iv)",
+      "question": "‘िजउ न अलंबार’ ख थाइया गाहाय न बबे मोनसेज सोमो दो गोनां सायख’?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "म थंगा मोजां मोननाय ख थाइ",
+        "रह य सानथौ बेरखांनाय ख थाइ",
+        "हा र स बनाय सान इ बेरखांनाय ख थाइ",
+        "हादर मोजां मोननाय सान इ बेरखांनाय ख थाइ"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(v)",
+      "question": "‘रादाय’ ख थाइयाव ख थाइ ग रया ‘रादाय’ ज मा ओं थ फोरमायद?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "सदबांसा",
+        "थार एबा सैथो आखु",
+        "गुं",
+        "सान न जारौ गाब"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(vi)",
+      "question": "‘गेव ांनाय महर’ ख थाइ न ख थाइ ग रया सोर?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "कमल कुमार हेम",
+        "वजे ग कुमार हेम",
+        "धरनीधर औवार",
+        "सुरथ नाजा"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "2(vii)",
+      "question": "‘गेव ांनाय महर’ ख थाइखौ बबे ख थाइ बजाब न ाय जेरै दं एरै दैखांना होनाय जाद?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "मोडै",
+        "आं न गा मयाव दै लां",
+        "मो दां थ न रोजाबथाय",
+        "फा स न दौलेङाव अखाफोर"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(i)",
+      "question": "‘रोि दनी’ या गाहाय न बबे मोनसेज सोमो दो गोनां?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "गु देब का लचरण हेम न बबै",
+        "गु देब का लचरण हेम न बमा",
+        "गु देब का लचरण हेम न बब ’",
+        "गु देब का लचरण हेम न बनानाव"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(ii)",
+      "question": "साइमन क मसननो आरजलाइ गथायनो गु देब का लचरण हेमज गुबुन साबा सुबुं थांफाद मोन। बथांमोन न गेजेराव सासे उ खलबो दं फायो मोन आरो बथाङानो जाद ____।",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "सदा र बाहादुर बेलबुंराम कसा र",
+        "जादब खाखलार",
+        "करे ग म डल",
+        "गयासु दन आहमेद"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(iii)",
+      "question": "इनफ सस क पा न न गायसन ग रया सोरमोन?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "नारायन मुत",
+        "धी भाइ आ बानी",
+        "नरे ग नाथ द",
+        "नमल च ग बरा"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(iv)",
+      "question": "जोमै İ नो बफाया मा न थाखाय कि पउटार अनथोब होद मोन?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "फरायनायाव मोजां रजा ट खालामनाय न थाखाय",
+        "थाखो गु न ाय थाखो िज सम से थ बाहागोआव उ Ġ नाय न थाखाय",
+        "मे क अ जादाव से थ बाहागोआव उ Ġ नाय न थाखाय",
+        "थाखो दाइन न ाय थाखो गु सम से थ बाहागोआव उ Ġ नाय न थाखाय"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(v)",
+      "question": "‘बर’ हा र न खुगा थुनलाइ’ रायथाइयाव खुगा थुनलाइखौ मोननै बाहागोआव राननाय जाद । बेफोर जाद -",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "खुगा मेथाइ आरो सुबुं मोसानाय",
+        "खुगा मेथाइ आरो खुगा राव",
+        "खुगा मेथाइ आरो बैसागो मेथाइ",
+        "खुगा मेथाइ आरो बा Ġ ा फाव"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(vi)",
+      "question": "‘बर’ मोसानाय’ रायथाइयाव खेराइ मोसानायखौ मोननै होनना बुंद । बे न मोनसेया गाहाइ खेराइ मोसानाय Þ ला गुबुन मोनसेया मा?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "आखाि थ खेराइ",
+        "लेङाइ खेराइ",
+        "गाहाय खेराइ",
+        "गा म न खेराइ"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(vii)",
+      "question": "‘हा रमा न खौसे थ’ रायथाइयाव रायथाइ ग रया भारत हादर न देर सन गोहोआ मा होनना बुंद?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "राव आरो धोरोम",
+        "हा र आरो धोरोम",
+        "गोरोबनाय आरो खौसे जानाय",
+        "धोरोम बा सलायनाय"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(viii)",
+      "question": "‘हा ामा दावबायनाय’ रायथाइयाव जायगा मोननाय आब’ माल’ थया सोर?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "थाखो िज न फरायसु ल",
+        "गोनोखो न फोर ग र",
+        "ओंखाम सं ा",
+        "फरायसाफोर न बगोमा"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(ix)",
+      "question": "अ नमा स हाया बबे रायजो न भ लबल गेले ग रमोन?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "म य देश",
+        "उ र देश",
+        "महारा ç",
+        "द ल"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    },
+    {
+      "question_number": "3(x)",
+      "question": "‘मन Ġ फैगोन’ सुंद’ सल’ वाव जायगा मोननाय मि ग न मुङा मा?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "थेमबायराम",
+        "थुब लाव दैमा र",
+        "गे दाव दैमा र",
+        "मो लाव दैमा र"
+      ],
+      "correct_index": null,
+      "chapter": "Bodo Language"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "Bhutia",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:48:16.127Z",
+    "total_questions": 10
+  },
+  "questions": [
+    {
+      "question_number": "1(I)",
+      "question": "དང་པོ་ Ƿ ི མ་གཅིག་ནང་ ཀ་ ཡོད་པོ་ ཨིན་ནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ཨ་ ɾ ས།",
+        "Ƿ ི །",
+        "Ʉ ི༹ ɹ །",
+        "ཀ་ཡང་ མེད།"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Comprehension"
+    },
+    {
+      "question_number": "1(II)",
+      "question": "ཁོང་ ɫ ས་ གན་ བགོ་བཤའ་ Ǭ བས་ཤད་ འཚ Ǒ ལ་ འབོ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ཤ།",
+        "ཉ།",
+        "Ƕɹ །",
+        "Ȩ ོ །"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Comprehension"
+    },
+    {
+      "question_number": "1(III)",
+      "question": "བགོ་བཤའ་ Ǭ བས་པོའི་ Ȉ ང ་ Ʉ ི༹ ɹ ་ཀིས་ གན་ Ɏ ༹ ས་ འབོ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Ƕɹ ་ ཐམས་ཅད་ ཟ་བོ་ ɘ ད།",
+        "ཟམ་ ཟ་བོ་ ɘ ད།",
+        "མ་ཆམས་པོ་ ɘ ད།",
+        "ཆམས་པོ་ ɘ ད།"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Comprehension"
+    },
+    {
+      "question_number": "1(IV)",
+      "question": "ཨ་ ɾ ས་ གཉིས་ མ་ཆམས་པོའི་ Ȉ ང་ ཀ་ འོང་འབོ་ ཨིན་ནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Ƿ ི །",
+        "མི།",
+        "Ʉ ི ɹ །",
+        "ཀ་ཡང་ མ་འོང་།"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Comprehension"
+    },
+    {
+      "question_number": "1(V)",
+      "question": "འ ș ག་ན་ ཨ་ ɾ ས་ གཉིས་པོ་ གན་ འཐོན་འབོ་ ཨིན་ནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Ǽ ོ ད་པོ་ ཏོ་ Ȫ ི ་ ɾ ས།",
+        "ཟ་ ȴ ོ ད་ Ȫ ི ་ ɾ ས།",
+        "ǲ ེ ད་པོ་ བཏང་ ȴ ི ་ ɾ ས།",
+        "Ȫ ེ ང་ཁའི་ ག་འདི་ཡང་ མན།"
+      ],
+      "correct_index": null,
+      "chapter": "Reading Comprehension"
+    },
+    {
+      "question_number": "2(I)",
+      "question": "ȓ ོ ན་ བྷེ་ཏའི་ ɺ ལ་ Ǽ ི ་ Ȅ ལ་པོ་ ས་ ǲ ོ ང་ Ǿ གས་པ་ལོ་ གན་ཅིག་ ཡོད་པོ་ ཨིནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ʁ ས་གཅིག།",
+        "ནོར་ ɍ ་ གཅིག།",
+        "Ȅ ལ་ཁབ་ གཅིག།",
+        "ཕོ་ ɐ ང་ གཅིག།"
+      ],
+      "correct_index": null,
+      "chapter": "Applied Grammar"
+    },
+    {
+      "question_number": "2(II)",
+      "question": "Ȅ ལ་པོ་ ས་ ǲ ོ ང་ Ǿ གས་པའི་ ʁ ས་ Ǥ ི ་ མཆ༹ན་ གན་ ཨིནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ནོར་ ɍ ་ འཇི༹ན་བོ །",
+        "དགོས་འདོད་ ǣ ན་འ ɏ ང་།",
+        "Ȯ ི ་མེད་ ǣ ན་ Ȳ ན །",
+        "Ȥ ི༹ ་ན་ འཇི༹ན་བོ།"
+      ],
+      "correct_index": null,
+      "chapter": "Applied Grammar"
+    },
+    {
+      "question_number": "2(III)",
+      "question": "Ȅ ལ་ ʁ ས་ Ȯ ི ་མེད་ ǣ ན་ Ȳ ན་ འདི་ གན་ བཏང་ཤད་ན་ དགའ་ Ȯ གས་ ཡོད་པོ་ ཨིནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "ɚ ི ན་ བོ།",
+        "Ƿ ི མ།",
+        "རང་གི་ གཞིས་པོ།",
+        "ཞིང་ན་ Ș །"
+      ],
+      "correct_index": null,
+      "chapter": "Applied Grammar"
+    },
+    {
+      "question_number": "3(I)",
+      "question": "ɋ ད་ གཞན་དབང་ཅན་ ག་ཚ Ǒ ད་ ཡོད་པོ་ ཨིན་ནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "གཅིག།",
+        "གཉིས།",
+        "ȑ །",
+        "ȯ ག །"
+      ],
+      "correct_index": null,
+      "chapter": "Text book"
+    },
+    {
+      "question_number": "3(II)",
+      "question": "ཨི་ Ȳ ན་ ག་ཚ Ǒ ད་ ཡོད་པོ་ ཨིན་ནམ?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "བཞི །",
+        "ȑ །",
+        "ȯ ག །",
+        "བ ȭ ན །"
+      ],
+      "correct_index": null,
+      "chapter": "Text book"
+    }
+  ]
+}

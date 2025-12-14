@@ -47,16 +47,6 @@ interface AnalyticsData {
   };
 }
 
-// Razorpay script loader
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = resolve;
-    document.body.appendChild(script);
-  });
-};
-
 export function AdvancedAnalytics() {
   const { user, loading } = useAuth() as { user: any; loading: boolean };
   const { showToast } = useToast();
@@ -77,7 +67,7 @@ export function AdvancedAnalytics() {
   const fetchAnalyticsData = async () => {
     try {
       setLoadingData(true);
-      
+
       // Calculate date range
       const endDate = new Date();
       const startDate = new Date();
@@ -129,7 +119,7 @@ export function AdvancedAnalytics() {
 
       if (focusError) throw focusError;
 
-            // -------------- Process data for analytics -----------------
+      // -------------- Process data for analytics -----------------
       // Leaderboard rank & total users
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('leaderboard_view')
@@ -197,14 +187,14 @@ export function AdvancedAnalytics() {
   const processAnalyticsData = (sessions: any[], flashcards: any[], testAttempts: any[], focusSessions: any[], socialMetrics: AnalyticsData['socialMetrics']): AnalyticsData => {
     // Study patterns by hour
     const hourlyData = Array.from({ length: 24 }, (_, hour) => {
-      const hourSessions = sessions.filter(s => 
+      const hourSessions = sessions.filter(s =>
         s.completed_at && new Date(s.completed_at).getHours() === hour
       );
       return {
         hour,
         sessions: hourSessions.length,
-        avgDuration: hourSessions.length > 0 
-          ? hourSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / hourSessions.length 
+        avgDuration: hourSessions.length > 0
+          ? hourSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / hourSessions.length
           : 0
       };
     });
@@ -248,13 +238,13 @@ export function AdvancedAnalytics() {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
       const dateStr = format(date, 'MMM dd');
-      
-      const dayFlashcards = flashcards.filter(f => 
+
+      const dayFlashcards = flashcards.filter(f =>
         f.created_at && format(new Date(f.created_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
       );
-      
+
       const dayMastery = dayFlashcards.reduce((sum, f) => sum + (f.mastery_level || 0), 0);
-      
+
       return {
         date: dateStr,
         conceptsLearned: dayFlashcards.length,
@@ -263,11 +253,11 @@ export function AdvancedAnalytics() {
     });
 
     // Focus metrics
-    const avgFocusScore = focusSessions.length > 0 
-      ? focusSessions.reduce((sum, s) => sum + (s.focus_score || 0), 0) / focusSessions.length 
+    const avgFocusScore = focusSessions.length > 0
+      ? focusSessions.reduce((sum, s) => sum + (s.focus_score || 0), 0) / focusSessions.length
       : 0;
 
-    const peakFocusHour = hourlyData.reduce((peak, current) => 
+    const peakFocusHour = hourlyData.reduce((peak, current) =>
       current.avgDuration > peak.avgDuration ? current : peak
     ).hour;
 
@@ -377,8 +367,8 @@ export function AdvancedAnalytics() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="relative">
-          <div className="w-32 h-32 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-32 h-32 border-4 border-purple-500/20 border-b-purple-500 rounded-full animate-spin animation-delay-150"></div>
+          <div className="w-32 h-32 border-4 border-neon-blue/30 border-t-neon-blue rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-32 h-32 border-4 border-neon-purple/20 border-b-neon-purple rounded-full animate-spin animation-delay-150"></div>
         </div>
       </div>
     );
@@ -386,9 +376,9 @@ export function AdvancedAnalytics() {
 
   if (!analyticsData) {
     return (
-      <div className="text-center py-12">
-        <Brain className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data</h3>
+      <div className="text-center py-12 glass-panel rounded-3xl border border-white/5">
+        <Brain className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-white mb-2">No Analytics Data</h3>
         <p className="text-gray-400">Start studying to see your personalized insights</p>
       </div>
     );
@@ -398,13 +388,13 @@ export function AdvancedAnalytics() {
     <div className="space-y-6 relative">
       {/* Razorpay Paywall Overlay */}
       {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="glass-card rounded-2xl p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
+            <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
+            <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all features.</p>
             <button
               onClick={handleSubscribe}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+              className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
             >
               Go to Subscription
             </button>
@@ -413,9 +403,9 @@ export function AdvancedAnalytics() {
       )}
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
+            <h1 className="text-3xl font-bold text-white">Advanced Analytics</h1>
             <p className="text-gray-400 mt-2">AI-powered insights into your learning journey</p>
           </div>
           <div className="flex gap-2">
@@ -423,11 +413,10 @@ export function AdvancedAnalytics() {
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                  timeRange === range
-                    ? 'bg-blue-500 text-gray-900'
-                    : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-                }`}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 border ${timeRange === range
+                    ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
+                    : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
               >
                 {range.charAt(0).toUpperCase() + range.slice(1)}
               </button>
@@ -436,17 +425,17 @@ export function AdvancedAnalytics() {
         </div>
 
         {/* AI Insights */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Brain className="h-6 w-6 text-purple-400" />
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <Brain className="h-6 w-6 text-neon-purple" />
             AI-Powered Insights
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {analyticsData.aiInsights.length === 0 ? (
               <div className="col-span-1 md:col-span-2 text-center py-8">
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 inline-block">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 inline-block">
                   <Brain className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                  <h4 className="text-lg font-semibold text-gray-900">No insights yet!</h4>
+                  <h4 className="text-lg font-semibold text-white">No insights yet!</h4>
                   <p className="text-gray-400 max-w-sm mx-auto">
                     Start creating study plans, generating flashcards, and taking practice tests to receive personalized AI-powered feedback.
                   </p>
@@ -456,27 +445,25 @@ export function AdvancedAnalytics() {
               analyticsData.aiInsights.map((insight, index) => (
                 <div
                   key={index}
-                  className={`glass rounded-xl p-4 border ${
-                    insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
-                    insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
-                    'border-green-500/30 bg-green-500/10'
-                  }`}
+                  className={`glass-card rounded-xl p-4 border ${insight.priority === 'high' ? 'border-red-500/30 bg-red-500/10' :
+                      insight.priority === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
+                        'border-green-500/30 bg-green-500/10'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      insight.type === 'strength' ? 'bg-green-500/20' :
-                      insight.type === 'weakness' ? 'bg-red-500/20' :
-                      insight.type === 'achievement' ? 'bg-purple-500/20' :
-                      'bg-blue-500/20'
-                    }`}>
+                    <div className={`p-2 rounded-lg ${insight.type === 'strength' ? 'bg-green-500/20' :
+                        insight.type === 'weakness' ? 'bg-red-500/20' :
+                          insight.type === 'achievement' ? 'bg-purple-500/20' :
+                            'bg-blue-500/20'
+                      }`}>
                       {insight.type === 'strength' && <Star className="h-5 w-5 text-green-400" />}
                       {insight.type === 'weakness' && <Target className="h-5 w-5 text-red-400" />}
                       {insight.type === 'achievement' && <Award className="h-5 w-5 text-purple-400" />}
                       {insight.type === 'recommendation' && <Zap className="h-5 w-5 text-blue-400" />}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="font-semibold text-gray-900 mb-1">{insight.title}</h4>
-                      <p className="text-gray-900 text-sm mb-2">{insight.description}</p>
+                      <h4 className="font-semibold text-white mb-1">{insight.title}</h4>
+                      <p className="text-gray-300 text-sm mb-2">{insight.description}</p>
                       <ul className="text-xs text-gray-400 space-y-1">
                         {insight.actionItems.map((item, i) => (
                           <li key={i}>• {item}</li>
@@ -491,38 +478,38 @@ export function AdvancedAnalytics() {
         </div>
 
         {/* Social Metrics */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Users className="h-6 w-6 text-blue-400" />
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <Users className="h-6 w-6 text-neon-blue" />
             Social Performance
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
-              <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-3 inline-block">
-                <Award className="h-8 w-8 text-gray-900" />
+              <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-3 inline-block shadow-lg shadow-orange-500/20">
+                <Award className="h-8 w-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">#{analyticsData.socialMetrics.rank}</p>
+              <p className="text-3xl font-bold text-white">#{analyticsData.socialMetrics.rank}</p>
               <p className="text-gray-400 text-sm">Global Rank</p>
             </div>
             <div className="text-center">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-4 rounded-2xl mb-3 inline-block">
-                <TrendingUp className="h-8 w-8 text-gray-900" />
+              <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-4 rounded-2xl mb-3 inline-block shadow-lg shadow-green-500/20">
+                <TrendingUp className="h-8 w-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{analyticsData.socialMetrics.studyStreak}</p>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.studyStreak}</p>
               <p className="text-gray-400 text-sm">Day Streak</p>
             </div>
             <div className="text-center">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl mb-3 inline-block">
-                <Star className="h-8 w-8 text-gray-900" />
+              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl mb-3 inline-block shadow-lg shadow-pink-500/20">
+                <Star className="h-8 w-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{analyticsData.socialMetrics.achievements}</p>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.achievements}</p>
               <p className="text-gray-400 text-sm">Achievements</p>
             </div>
             <div className="text-center">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl mb-3 inline-block">
-                <Users className="h-8 w-8 text-gray-900" />
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl mb-3 inline-block shadow-lg shadow-blue-500/20">
+                <Users className="h-8 w-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{analyticsData.socialMetrics.totalUsers.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-white">{analyticsData.socialMetrics.totalUsers.toLocaleString()}</p>
               <p className="text-gray-400 text-sm">Total Users</p>
             </div>
           </div>
@@ -530,23 +517,24 @@ export function AdvancedAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Study Patterns */}
-          <div className="glass rounded-2xl p-6 border border-gray-700/50">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Clock className="h-6 w-6 text-blue-400" />
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Clock className="h-6 w-6 text-neon-blue" />
               Study Patterns by Hour
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={analyticsData.studyPatterns}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis dataKey="hour" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                      border: '1px solid rgba(75, 85, 99, 0.3)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
-                      color: '#F9FAFB'
+                      color: '#F9FAFB',
+                      backdropFilter: 'blur(10px)'
                     }}
                   />
                   <Bar dataKey="sessions" fill="#3B82F6" radius={[4, 4, 0, 0]} />
@@ -556,15 +544,15 @@ export function AdvancedAnalytics() {
           </div>
 
           {/* Subject Performance Radar */}
-          <div className="glass rounded-2xl p-6 border border-gray-700/50">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Target className="h-6 w-6 text-green-400" />
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Target className="h-6 w-6 text-neon-green" />
               Subject Performance
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={analyticsData.subjectPerformance}>
-                  <PolarGrid stroke="#374151" />
+                  <PolarGrid stroke="#374151" opacity={0.5} />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
                   <Radar
@@ -583,12 +571,13 @@ export function AdvancedAnalytics() {
                     fillOpacity={0.2}
                     strokeWidth={2}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                      border: '1px solid rgba(75, 85, 99, 0.3)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
-                      color: '#F9FAFB'
+                      color: '#F9FAFB',
+                      backdropFilter: 'blur(10px)'
                     }}
                   />
                 </RadarChart>
@@ -597,36 +586,37 @@ export function AdvancedAnalytics() {
           </div>
 
           {/* Learning Velocity */}
-          <div className="glass rounded-2xl p-6 border border-gray-700/50">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-purple-400" />
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <TrendingUp className="h-6 w-6 text-neon-purple" />
               Learning Velocity
             </h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={analyticsData.learningVelocity}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis dataKey="date" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                      border: '1px solid rgba(75, 85, 99, 0.3)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       borderRadius: '12px',
-                      color: '#F9FAFB'
+                      color: '#F9FAFB',
+                      backdropFilter: 'blur(10px)'
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="conceptsLearned" 
-                    stroke="#8B5CF6" 
+                  <Line
+                    type="monotone"
+                    dataKey="conceptsLearned"
+                    stroke="#8B5CF6"
                     strokeWidth={3}
                     dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="retentionRate" 
-                    stroke="#EC4899" 
+                  <Line
+                    type="monotone"
+                    dataKey="retentionRate"
+                    stroke="#EC4899"
                     strokeWidth={3}
                     dot={{ fill: '#EC4899', strokeWidth: 2, r: 4 }}
                   />
@@ -636,21 +626,21 @@ export function AdvancedAnalytics() {
           </div>
 
           {/* Focus Metrics */}
-          <div className="glass rounded-2xl p-6 border border-gray-700/50">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <Brain className="h-6 w-6 text-yellow-400" />
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <Brain className="h-6 w-6 text-neon-yellow" />
               Focus Analysis
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-900">Average Focus Score</span>
-                <span className="text-2xl font-bold text-yellow-400">
+                <span className="text-gray-300">Average Focus Score</span>
+                <span className="text-2xl font-bold text-neon-yellow">
                   {Math.round(analyticsData.focusMetrics.averageFocusScore)}%
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-900">Peak Focus Hour</span>
-                <span className="text-xl font-bold text-blue-400">
+                <span className="text-gray-300">Peak Focus Hour</span>
+                <span className="text-xl font-bold text-neon-blue">
                   {analyticsData.focusMetrics.peakFocusHour}:00
                 </span>
               </div>
@@ -659,12 +649,13 @@ export function AdvancedAnalytics() {
                   <BarChart data={analyticsData.focusMetrics.distractionPatterns}>
                     <XAxis dataKey="timeOfDay" stroke="#9CA3AF" />
                     <YAxis stroke="#9CA3AF" />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        border: '1px solid rgba(75, 85, 99, 0.3)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         borderRadius: '12px',
-                        color: '#F9FAFB'
+                        color: '#F9FAFB',
+                        backdropFilter: 'blur(10px)'
                       }}
                     />
                     <Bar dataKey="distractions" fill="#EF4444" radius={[4, 4, 0, 0]} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Zap, Star, Sparkles, Crown, ArrowRight, Bell } from 'lucide-react';
+import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, AlertCircle, Sparkles, Crown, ArrowRight, Flame, Activity, Trophy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, differenceInDays } from 'date-fns';
@@ -31,16 +31,7 @@ interface StudyStats {
 
 export function Dashboard() {
   const { user, role, loading, isPremium, fullName } = useAuth() as any;
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="loading-spinner w-12 h-12"></div>
-      </div>
-    );
-  }
-  if (role === 'teacher') {
-    return <Navigate to="/teacher" replace />;
-  }
+
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [stats, setStats] = useState<StudyStats>({
     totalPlans: 0,
@@ -50,20 +41,10 @@ export function Dashboard() {
   });
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
-  // In-app notification banner for latest unread notification
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [latestNotif, setLatestNotif] = useState<any | null>(null);
-
-  // (removed) CBSE Exam Progress State - not used in UI
-
-  // Calculate trial days left
-  let trialDaysLeft = null;
-  if (user?.trial_start && user?.trial_active) {
-    const now = new Date();
-    const diff = now.getTime() - user.trial_start.getTime();
-    const daysUsed = Math.floor(diff / (1000 * 60 * 60 * 24));
-    trialDaysLeft = Math.max(0, 7 - daysUsed);
-  }
 
   useEffect(() => {
     if (user) {
@@ -72,10 +53,9 @@ export function Dashboard() {
     }
   }, [user]);
 
-  // Fetch latest unread notification for in-app banner
   useEffect(() => {
     const fetchLatestNotif = async () => {
-      if (!user || role === 'teacher') return; // Students only
+      if (!user || role === 'teacher') return;
       try {
         const { data, error } = await supabase
           .from('notifications')
@@ -85,12 +65,10 @@ export function Dashboard() {
           .order('created_at', { ascending: false })
           .limit(1);
         if (!error) setLatestNotif((data && data[0]) || null);
-      } finally {}
+      } finally { }
     };
     fetchLatestNotif();
   }, [user, role]);
-
-  // (removed) effect to fetch exam attempts - unused
 
   const fetchUsageThisMonth = async () => {
     if (!user) return;
@@ -122,12 +100,14 @@ export function Dashboard() {
         .eq('user_id', user?.id);
 
       if (error) {
+        console.error('Error fetching plans:', error);
       } else {
         setStudyPlans(data || []);
         calculateStats(data || []);
         extractTodaysTasks(data || []);
       }
     } catch (error) {
+      console.error('Error:', error);
     } finally {
       setDashboardLoading(false);
     }
@@ -142,7 +122,6 @@ export function Dashboard() {
       return daysUntil <= 7 && daysUntil >= 0;
     });
 
-    // Fetch completed tasks count
     try {
       const { data: completions, error } = await supabase
         .from('task_completions')
@@ -171,7 +150,6 @@ export function Dashboard() {
     const today = new Date();
     const tasks: any[] = [];
 
-    // Get completed task days
     try {
       const { data: completions, error } = await supabase
         .from('task_completions')
@@ -185,18 +163,16 @@ export function Dashboard() {
       );
 
       plans.forEach(plan => {
-        // Calculate which day of the study plan we should be on
         const planCreatedDate = new Date(plan.created_at);
         const daysSinceCreated = Math.floor((today.getTime() - planCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-        const currentStudyDay = daysSinceCreated + 1; // Day 1 is the first day
+        const currentStudyDay = daysSinceCreated + 1;
 
-        // Find the task for the current study day
         const currentTask = plan.plan.daily_schedule.find(task => task.day === currentStudyDay);
-        
+
         if (currentTask) {
           const taskKey = `${plan.id}-${currentTask.day}`;
           const isCompleted = completedTasks.has(taskKey);
-          
+
           tasks.push({
             planId: plan.id,
             subject: plan.subject,
@@ -210,16 +186,12 @@ export function Dashboard() {
 
       setTodaysTasks(tasks);
     } catch (error) {
+      console.error('Error extracting tasks:', error);
       setTodaysTasks([]);
     }
   };
 
-  // Get upcoming exam
-  const upcomingExam = studyPlans
-    .filter(plan => new Date(plan.exam_date) > new Date())
-    .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())[0];
-
-  if (dashboardLoading) {
+  if (loading || dashboardLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="loading-spinner w-12 h-12"></div>
@@ -227,7 +199,14 @@ export function Dashboard() {
     );
   }
 
-  // Determine the best display name for the greeting
+  if (role === 'teacher') {
+    return <Navigate to="/teacher" replace />;
+  }
+
+  const upcomingExam = studyPlans
+    .filter(plan => new Date(plan.exam_date) > new Date())
+    .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())[0];
+
   const displayName =
     fullName ||
     user?.user_metadata?.full_name ||
@@ -236,301 +215,199 @@ export function Dashboard() {
     'Student';
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Welcome Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Welcome back, <span className="gradient-text-primary">{displayName}!</span>
-        </h1>
-        <p className="text-gray-600 text-lg">Ready to continue your learning journey?</p>
-      </div>
+    <div className="space-y-8 animate-fade-in pb-10">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-3xl glass-panel p-8 md:p-12 border border-white/10">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-neon-blue/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-64 h-64 bg-neon-purple/20 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
 
-      {/* In-App Notification Banner */}
-      {latestNotif && (
-        <div className="card-elevated bg-gradient-to-r from-primary-500/10 to-accent-500/10 border-primary-500/30">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
-              <Bell className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-lg font-bold text-gray-900">{latestNotif.title}</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-700 border border-red-500/30">New</span>
-              </div>
-              <p className="text-gray-700 mb-3">{latestNotif.message}</p>
-              <div className="flex gap-3">
-                <a
-                  href={latestNotif.action_url || '/notifications'}
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-primary/90"
-                  onClick={async () => {
-                    // mark as read when viewing
-                    try { await supabase.from('notifications').update({ is_read: true }).eq('id', latestNotif.id); } catch {}
-                    setLatestNotif(null);
-                  }}
-                >
-                  View
-                </a>
-                <button
-                  className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-                  onClick={async () => {
-                    try { await supabase.from('notifications').update({ is_read: true }).eq('id', latestNotif.id); } catch {}
-                    setLatestNotif(null);
-                  }}
-                >
-                  Dismiss
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-cyan-300">{displayName}</span>
+            </h1>
+            <p className="text-gray-300 text-lg max-w-xl">
+              Your AI learning assistant is ready. You have <span className="text-neon-green font-bold">{todaysTasks.length} tasks</span> scheduled for today.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-6">
+              <Link to="/create">
+                <button className="btn-primary flex items-center gap-2 group">
+                  <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                  Create New Plan
                 </button>
-              </div>
+              </Link>
+              <Link to="/tools">
+                <button className="btn-secondary flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-neon-purple" />
+                  Explore Tools
+                </button>
+              </Link>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Trial Days Left Banner */}
-      {trialDaysLeft !== null && trialDaysLeft > 0 && (
-        <div className="card-elevated bg-gradient-to-r from-warning-500/10 to-warning-600/10 border-warning-500/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Free Trial Active</h3>
-                <p className="text-amber-700">{trialDaysLeft} days remaining in your trial</p>
-              </div>
+          {/* Streak Widget */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center min-w-[160px] border border-white/10 bg-black/20">
+            <div className="relative">
+              <Flame className="w-12 h-12 text-orange-500 animate-pulse" />
+              <div className="absolute inset-0 blur-lg bg-orange-500/30"></div>
             </div>
-            <Button variant="warning" size="lg">
-              Upgrade Now
-            </Button>
+            <span className="text-3xl font-bold text-white mt-2">3</span>
+            <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">Day Streak</span>
           </div>
         </div>
-      )}
-
-      {/* Usage Left Banner */}
-      {isPremium === false && (
-        <div className="card-elevated bg-gradient-to-r from-primary-500/10 to-accent-500/10 border-primary-500/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
-                <Star className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Study Plan Usage</h3>
-                <p className="text-blue-700">{usageDaysThisMonth} of 7 free study plan days used this month</p>
-              </div>
-            </div>
-            <Button variant="primary" size="lg">
-              Upgrade to Premium
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {isPremium === true && (
-        <div className="card-elevated bg-gradient-to-r from-success-500/10 to-success-600/10 border-success-500/30">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Premium Active</h3>
-              <p className="text-emerald-700">Unlimited study plan usage this month</p>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="card-elevated">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center glow-blue">
-              <BookOpen className="w-8 h-8 text-white" />
+        {[
+          { label: 'Total Plans', value: stats.totalPlans, icon: BookOpen, color: 'text-neon-blue', bg: 'bg-neon-blue/10', border: 'border-neon-blue/20' },
+          { label: 'Active Plans', value: stats.activePlans, icon: Target, color: 'text-neon-green', bg: 'bg-neon-green/10', border: 'border-neon-green/20' },
+          { label: 'Tasks Done', value: stats.completedTasks, icon: CheckCircle, color: 'text-neon-purple', bg: 'bg-neon-purple/10', border: 'border-neon-purple/20' },
+          { label: 'Upcoming Exams', value: stats.upcomingExams, icon: AlertCircle, color: 'text-neon-yellow', bg: 'bg-neon-yellow/10', border: 'border-neon-yellow/20' }
+        ].map((stat, index) => (
+          <div key={index} className={`glass-card p-6 border ${stat.border} hover:scale-[1.02] transition-transform duration-300 group`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <TrendingUp className={`w-4 h-4 ${stat.color} opacity-50`} />
             </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Total Plans</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.totalPlans}</p>
-            </div>
+            <p className="text-gray-400 text-sm font-medium">{stat.label}</p>
+            <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
           </div>
-        </div>
-
-        <div className="card-elevated">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center glow-green">
-              <Target className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Active Plans</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.activePlans}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-elevated">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center glow-purple">
-              <CheckCircle className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Completed Tasks</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.completedTasks}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-elevated">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center glow-yellow">
-              <AlertCircle className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-medium">Upcoming Exams</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.upcomingExams}</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Today's Tasks */}
-        <div className="lg:col-span-2">
-          <div className="card-elevated">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-                Today's Study Tasks
-              </h3>
-              {todaysTasks.length > 0 && (
-                <span className="bg-gradient-to-r from-primary-500/10 to-accent-500/10 text-blue-700 px-4 py-2 rounded-full text-sm font-medium border border-blue-200">
-                  {todaysTasks.length} tasks
-                </span>
-              )}
-            </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+              <Activity className="w-6 h-6 text-neon-blue" />
+              Today's Focus
+            </h2>
+            <Link to="/calendar" className="text-sm text-neon-blue hover:text-cyan-300 transition-colors">
+              View Calendar →
+            </Link>
+          </div>
 
-            {todaysTasks.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <Calendar className="w-12 h-12 text-gray-500" />
-                </div>
-                <p className="text-gray-600 mb-6 text-lg">No study tasks scheduled for today</p>
-                <Button variant="primary" size="lg" icon={<Plus className="w-5 h-5" />}>
+          {todaysTasks.length === 0 ? (
+            <div className="glass-panel p-12 text-center rounded-3xl border-dashed border-2 border-white/10">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-10 h-10 text-gray-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No tasks for today</h3>
+              <p className="text-gray-400 mb-6">Take a break or start a new learning journey.</p>
+              <Link to="/create">
+                <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
                   Create Study Plan
                 </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {todaysTasks.map((task, index) => (
-                  <div key={index} className="card-hover-subtle bg-card border border-gray-200 rounded-xl p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h4 className="font-semibold text-gray-900 text-lg">{task.topic}</h4>
-                          {task.completed && (
-                            <div className="w-6 h-6 bg-gradient-to-r from-success-500 to-success-600 rounded-full flex items-center justify-center">
-                              <CheckCircle className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-gray-600 mb-3">{task.subject}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Clock className="w-4 h-4" />
-                          Day {task.day} of study plan
-                        </div>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {todaysTasks.map((task, index) => (
+                <div key={index} className="glass-card p-6 border border-white/5 hover:border-neon-blue/30 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-blue to-neon-purple opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-grow">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-neon-blue border border-white/10">
+                          {task.subject}
+                        </span>
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Day {task.day}
+                        </span>
                       </div>
-                      <Link to={`/study/${task.planId}`}>
-                        <Button
-                          variant={task.completed ? "success" : "primary"}
-                          size="md"
-                          icon={task.completed ? <CheckCircle className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                        >
-                          {task.completed ? 'Completed' : 'Start Study'}
-                        </Button>
-                      </Link>
+                      <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">
+                        {task.topic}
+                      </h3>
                     </div>
+
+                    <Link to={`/study/${task.planId}`}>
+                      <button className={`
+                        px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2
+                        ${task.completed
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-neon-blue text-black hover:bg-cyan-400 shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:shadow-[0_0_25px_rgba(0,243,255,0.5)]'
+                        }
+                      `}>
+                        {task.completed ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" /> Completed
+                          </>
+                        ) : (
+                          <>
+                            Start Session <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </Link>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar Widgets */}
         <div className="space-y-6">
-          {/* Next Exam */}
-          {upcomingExam && (
-            <div className="card-elevated bg-gradient-to-r from-warning-500/10 to-warning-600/10 border-warning-500/30">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
-                  <AlertCircle className="w-5 h-5 text-white" />
-                </div>
+          {/* Next Exam Widget */}
+          {upcomingExam ? (
+            <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-neon-yellow/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-neon-yellow" />
                 Next Exam
               </h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="font-semibold text-gray-900 text-lg">{upcomingExam.subject}</p>
-                  <p className="text-gray-600">
-                    {format(new Date(upcomingExam.exam_date), 'EEEE, MMMM do, yyyy')}
-                  </p>
+              <div className="relative z-10">
+                <div className="text-3xl font-bold text-white mb-1">
+                  {differenceInDays(new Date(upcomingExam.exam_date), new Date())}
                 </div>
-                <div className="flex items-center gap-2  mb-1 text-sm text-amber-700">
-                  <Clock className="w-4 h-4 mb-1" />
-                  {differenceInDays(new Date(upcomingExam.exam_date), new Date())} days remaining
+                <div className="text-sm text-gray-400 mb-4">Days Remaining</div>
+
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-4">
+                  <div className="font-semibold text-neon-yellow mb-1">{upcomingExam.subject}</div>
+                  <div className="text-xs text-gray-400">{format(new Date(upcomingExam.exam_date), 'MMMM do, yyyy')}</div>
                 </div>
+
                 <Link to={`/study/${upcomingExam.id}`}>
-                  <Button variant="warning" size="sm" className="w-full mt-2">
-                    View Study Plan
-                  </Button>
+                  <button className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
+                    Prepare Now
+                  </button>
                 </Link>
               </div>
             </div>
+          ) : (
+            <div className="glass-panel p-6 rounded-3xl text-center">
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Trophy className="w-6 h-6 text-gray-500" />
+              </div>
+              <p className="text-gray-400 text-sm mb-4">No upcoming exams</p>
+              <Link to="/create">
+                <button className="text-neon-blue text-sm hover:underline">Schedule an exam</button>
+              </Link>
+            </div>
           )}
 
-          {/* Quick Actions */}
-          <div className="card-elevated">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              Quick Actions
-            </h3>
-            <div className="space-y-8">
-              <Link to="/create">
-                <Button variant="primary" size="sm" className="w-full mb-1" icon={<Plus className="w-4 h-4" />}>
-                  Create New Plan
-                </Button>
-              </Link>
-              <Link to="/tools">
-                <Button variant="secondary" size="sm" className="w-full mb-1" icon={<Sparkles className="w-4 h-4" />}>
-                  Study Tools
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Recent Progress */}
-          <div className="card-elevated">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              Recent Progress
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Tasks Completed</span>
-                <span className="text-gray-900 font-semibold">{stats.completedTasks}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Study Plans</span>
-                <span className="text-gray-900 font-semibold">{stats.totalPlans}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Active Plans</span>
-                <span className="text-gray-900 font-semibold">{stats.activePlans}</span>
+          {/* Premium Banner */}
+          {!isPremium && (
+            <div className="glass-panel p-6 rounded-3xl border border-neon-purple/30 relative overflow-hidden group cursor-pointer hover:border-neon-purple/50 transition-all">
+              <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 to-transparent opacity-50"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-neon-purple/20 text-neon-purple">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-white">Go Premium</h3>
+                </div>
+                <p className="text-sm text-gray-300 mb-4">Unlock unlimited study plans, AI mentoring, and advanced analytics.</p>
+                <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-neon-purple to-pink-600 text-white font-bold text-sm shadow-lg shadow-neon-purple/20 group-hover:shadow-neon-purple/40 transition-all">
+                  Upgrade Now
+                </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

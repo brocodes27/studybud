@@ -14,6 +14,11 @@ export function AdminPanel() {
   const [newExtension, setNewExtension] = useState('');
   const [extLoading, setExtLoading] = useState(false);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [dailyDate, setDailyDate] = useState<string>('');
+  const [dailyTarget, setDailyTarget] = useState<number>(30);
+  const [dailyDryRun, setDailyDryRun] = useState<boolean>(true);
+  const [dailyLoading, setDailyLoading] = useState<boolean>(false);
+  const [dailyResult, setDailyResult] = useState<any | null>(null);
 
   useEffect(() => {
     if (isAdmin) {
@@ -114,6 +119,76 @@ export function AdminPanel() {
             <div className="text-4xl font-bold text-green-400">{planCount ?? '-'}</div>
             <div className="text-gray-300 mt-2">Total Study Plans</div>
           </div>
+        </div>
+        <div className="bg-gray-800/70 rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">Build Daily Question Pools</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Date (YYYY-MM-DD)</label>
+              <input
+                type="date"
+                value={dailyDate}
+                onChange={(e) => setDailyDate(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Target per Subject</label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={dailyTarget}
+                onChange={(e) => setDailyTarget(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
+                className="px-3 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 w-full"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <label className="inline-flex items-center gap-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={dailyDryRun}
+                  onChange={(e) => setDailyDryRun(e.target.checked)}
+                />
+                Dry Run
+              </label>
+            </div>
+          </div>
+          <button
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+            disabled={dailyLoading}
+            onClick={async () => {
+              try {
+                setDailyLoading(true);
+                setDailyResult(null);
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) throw new Error('Not authenticated');
+                const { data, error } = await supabase.functions.invoke('build-daily-pools', {
+                  body: {
+                    date: dailyDate || undefined,
+                    target_count: dailyTarget,
+                    dry_run: dailyDryRun,
+                  },
+                  headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
+                });
+                if (error) throw error;
+                setDailyResult(data);
+              } catch (e: any) {
+                setDailyResult({ error: e?.message || 'Failed to run daily pools' });
+              } finally {
+                setDailyLoading(false);
+              }
+            }}
+          >
+            {dailyLoading ? 'Running…' : 'Run Build (Daily)'}
+          </button>
+          {dailyResult && (
+            <div className="mt-4 text-sm text-gray-200 whitespace-pre-wrap bg-gray-900/60 rounded-lg p-3 border border-gray-700 overflow-auto max-h-64">
+              {JSON.stringify(dailyResult, null, 2)}
+            </div>
+          )}
         </div>
         <div className="mb-4 flex justify-end">
           <input

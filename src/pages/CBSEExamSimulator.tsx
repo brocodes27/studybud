@@ -1,167 +1,174 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, ChevronRight, FileText, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { InlineMath } from 'react-katex';
-import 'katex/dist/katex.min.css';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import OpenAIService from '../lib/openaiService';
-import { pdfFileToImageDataUrls } from '../lib/pdfToImages';
-import { Document, Packer, Paragraph, HeadingLevel } from 'docx';
+import React, { useState, useEffect, useRef } from "react";
+import { BookOpen, ChevronRight, FileText, Zap, Clock, Download, Upload, CheckCircle, AlertTriangle, Search, Brain, Layers } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { InlineMath } from "react-katex";
+import "katex/dist/katex.min.css";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
+import OpenAIService from "../lib/openaiService";
+import { pdfFileToImageDataUrls } from "../lib/pdfToImages";
+import { Document, Packer, Paragraph, HeadingLevel } from "docx";
+import { getPaperBlueprint, generateBlueprintPrompt } from "../lib/paperBlueprints";
 
 // Helper to render mixed text and inline LaTeX math delimited by $...$
 function parseMathInline(text: any) {
-  const str = typeof text === 'string' ? text : String(text ?? '');
+  const str = typeof text === "string" ? text : String(text ?? "");
   const parts = str.split(/(\$[^$]+\$)/g);
   return parts.map((part, idx) => {
-    if (part.startsWith('$') && part.endsWith('$')) {
-      return <InlineMath key={idx} math={part.slice(1, -1)} errorColor="#cc0000" />;
+    if (part.startsWith("$") && part.endsWith("$")) {
+      return (
+        <InlineMath key={idx} math={part.slice(1, -1)} errorColor="#cc0000" />
+      );
     }
     return <span key={idx}>{part}</span>;
   });
 }
 
 const CLASS10_SUBJECTS = [
-  'Mathematics',
-  'Science',
-  'English',
-  'Social Science',
-  'Hindi',
-  'Sanskrit',
-  'Information Technology',
-  'Home Science',
-  'Computer Applications',
+  "Mathematics",
+  "Science",
+  "English",
+  "Social Science",
+  "Hindi",
+  "Sanskrit",
+  "Information Technology",
+  "Home Science",
+  "Computer Applications",
 ];
 
 const CLASS12_SUBJECTS = {
   Science: [
-    'Physics',
-    'Chemistry',
-    'Mathematics',
-    'Biology',
-    'English',
-    'Computer Science',
-    'Physical Education',
-    'Informatics Practices',
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology",
+    "English",
+    "Computer Science",
+    "Physical Education",
+    "Informatics Practices",
   ],
   Commerce: [
-    'Accountancy',
-    'Business Studies',
-    'Economics',
-    'Mathematics',
-    'English',
-    'Informatics Practices',
-    'Physical Education',
+    "Accountancy",
+    "Business Studies",
+    "Economics",
+    "Mathematics",
+    "English",
+    "Informatics Practices",
+    "Physical Education",
   ],
   Humanities: [
-    'History',
-    'Geography',
-    'Political Science',
-    'Economics',
-    'Psychology',
-    'Sociology',
-    'English',
-    'Mathematics',
-    'Physical Education',
+    "History",
+    "Geography",
+    "Political Science",
+    "Economics",
+    "Psychology",
+    "Sociology",
+    "English",
+    "Mathematics",
+    "Physical Education",
   ],
 };
-const CLASSES = ['10', '12'];
-const EXAM_TYPES = ['Board', 'Pre-Board', 'Practice'];
+const CLASSES = ["10", "12"];
+const EXAM_TYPES = ["Board", "Pre-Board", "Practice"];
 // Add subject/class to total marks mapping
 export const SUBJECT_TOTAL_MARKS: Record<string, number> = {
   // --- Class 10 ---
-  '10 English Language & Literature': 80,
-  '10 Hindi Course A': 80,
-  '10 Hindi Course B': 80,
-  '10 Mathematics': 80,
-  '10 Science': 80,
-  '10 Social Science': 80,
-  '10 Information Technology': 50,
-  '10 Artificial Intelligence': 50,
+  "10 English Language & Literature": 80,
+  "10 Hindi Course A": 80,
+  "10 Hindi Course B": 80,
+  "10 Mathematics": 80,
+  "10 Science": 80,
+  "10 Social Science": 80,
+  "10 Information Technology": 50,
+  "10 Artificial Intelligence": 50,
   // Add other skill/optional subjects as needed
 
   // --- Class 12 Science ---
-  '12 Physics': 70,
-  '12 Chemistry': 70,
-  '12 Biology': 70,
-  '12 Mathematics': 80,
-  '12 Computer Science': 70,
-  '12 Informatics Practices': 70,
-  '12 English Core': 80,
+  "12 Physics": 70,
+  "12 Chemistry": 70,
+  "12 Biology": 70,
+  "12 Mathematics": 80,
+  "12 Computer Science": 70,
+  "12 Informatics Practices": 70,
+  "12 English Core": 80,
 
   // --- Class 12 Commerce ---
-  '12 Accountancy': 80,
-  '12 Business Studies': 80,
-  '12 Economics': 80,
-  '12 Applied Mathematics': 80,
-  '12 Entrepreneurship': 70,
+  "12 Accountancy": 80,
+  "12 Business Studies": 80,
+  "12 Economics": 80,
+  "12 Applied Mathematics": 80,
+  "12 Entrepreneurship": 70,
 
   // --- Class 12 Humanities ---
-  '12 History': 80,
-  '12 Geography': 70,
-  '12 Political Science': 80,
-  '12 Sociology': 80,
-  '12 Psychology': 70,
-  '12 Physical Education': 70,
+  "12 History": 80,
+  "12 Geography": 70,
+  "12 Political Science": 80,
+  "12 Sociology": 80,
+  "12 Psychology": 70,
+  "12 Physical Education": 70,
   // Add Fine Arts, Music, Dance, etc. as needed
 };
 // Add subject-specific expected unit counts
 const SUBJECT_EXPECTED_UNITS: Record<string, { min: number; max: number }> = {
   // Class 10
-  '10 Mathematics': { min: 6, max: 8 },
-  '10 Science': { min: 5, max: 7 },
-  '10 English Language & Literature': { min: 4, max: 6 },
-  '10 Social Science': { min: 4, max: 6 },
-  '10 Hindi Course A': { min: 4, max: 6 },
-  '10 Hindi Course B': { min: 4, max: 6 },
-  
+  "10 Mathematics": { min: 6, max: 8 },
+  "10 Science": { min: 5, max: 7 },
+  "10 English Language & Literature": { min: 4, max: 6 },
+  "10 Social Science": { min: 4, max: 6 },
+  "10 Hindi Course A": { min: 4, max: 6 },
+  "10 Hindi Course B": { min: 4, max: 6 },
+
   // Class 12 Science
-  '12 Physics': { min: 9, max: 10 },
-  '12 Chemistry': { min: 9, max: 10 },
-  '12 Biology': { min: 8, max: 10 },
-  '12 Mathematics': { min: 6, max: 8 },
-  '12 Computer Science': { min: 4, max: 6 },
-  '12 Informatics Practices': { min: 4, max: 6 },
-  '12 English Core': { min: 3, max: 5 },
-  
+  "12 Physics": { min: 9, max: 10 },
+  "12 Chemistry": { min: 9, max: 10 },
+  "12 Biology": { min: 8, max: 10 },
+  "12 Mathematics": { min: 6, max: 8 },
+  "12 Computer Science": { min: 4, max: 6 },
+  "12 Informatics Practices": { min: 4, max: 6 },
+  "12 English Core": { min: 3, max: 5 },
+
   // Class 12 Commerce
-  '12 Accountancy': { min: 4, max: 6 },
-  '12 Business Studies': { min: 4, max: 6 },
-  '12 Economics': { min: 4, max: 6 },
-  '12 Applied Mathematics': { min: 6, max: 8 },
-  
+  "12 Accountancy": { min: 4, max: 6 },
+  "12 Business Studies": { min: 4, max: 6 },
+  "12 Economics": { min: 4, max: 6 },
+  "12 Applied Mathematics": { min: 6, max: 8 },
+
   // Class 12 Humanities
-  '12 History': { min: 4, max: 6 },
-  '12 Geography': { min: 4, max: 6 },
-  '12 Political Science': { min: 4, max: 6 },
-  '12 Sociology': { min: 4, max: 6 },
-  '12 Psychology': { min: 4, max: 6 },
-  '12 Physical Education': { min: 4, max: 6 },
+  "12 History": { min: 4, max: 6 },
+  "12 Geography": { min: 4, max: 6 },
+  "12 Political Science": { min: 4, max: 6 },
+  "12 Sociology": { min: 4, max: 6 },
+  "12 Psychology": { min: 4, max: 6 },
+  "12 Physical Education": { min: 4, max: 6 },
 };
 
 async function fetchChaptersWithAI(subject: string, classLevel: string) {
-  const officialTotalMarks = SUBJECT_TOTAL_MARKS[`${classLevel} ${subject}`] || 80;
-  const expectedUnits = SUBJECT_EXPECTED_UNITS[`${classLevel} ${subject}`] || { min: 4, max: 8 };
-  
+  const officialTotalMarks =
+    SUBJECT_TOTAL_MARKS[`${classLevel} ${subject}`] || 80;
+  const expectedUnits = SUBJECT_EXPECTED_UNITS[`${classLevel} ${subject}`] || {
+    min: 4,
+    max: 8,
+  };
+
   // First check if syllabus exists in database
   try {
     const { data: savedSyllabus, error } = await supabase
-      .from('cbse_syllabi')
-      .select('syllabus_data')
-      .eq('subject', subject)
-      .eq('class_level', classLevel)
+      .from("cbse_syllabi")
+      .select("syllabus_data")
+      .eq("subject", subject)
+      .eq("class_level", classLevel)
       .single();
-    
+
     if (!error && savedSyllabus?.syllabus_data) {
-      console.log('Using saved syllabus from database');
+      console.log("Using saved syllabus from database");
       return savedSyllabus.syllabus_data;
     }
   } catch (error) {
-    console.log('No saved syllabus found, fetching from AI...');
+    console.log("No saved syllabus found, fetching from AI...");
   }
-  
+
   const prompt = `Carefully follow the official CBSE syllabus structure for Class ${classLevel} ${subject} from https://cbseacademic.nic.in/curriculum_2026.html.
 For each unit (as shown in the official table), provide:
 - unit (string): exact name as in the syllabus (e.g., "Unit–I Electrostatics")
@@ -171,106 +178,172 @@ For each unit (as shown in the official table), provide:
   - clo (main learning outcome, if available; otherwise leave blank)
 Do not merge, split, omit, invent, or rename any units or chapters. Do not change the marks. The sum of all unit weightages must be ${officialTotalMarks}.
 Return ONLY a valid JSON array, no explanation or extra text.`;
-  
+
   const openai = OpenAIService.getInstance();
   let attempts = 0;
   const maxAttempts = 3;
-  
+
   while (attempts < maxAttempts) {
     try {
       const text = await openai.generateChatCompletion(prompt);
       const chapters = JSON.parse(text);
-      
+
       // Check if syllabus is complete based on subject-specific expectations
-      if (Array.isArray(chapters) && chapters.length >= expectedUnits.min && chapters.length <= expectedUnits.max) {
+      if (
+        Array.isArray(chapters) &&
+        chapters.length >= expectedUnits.min &&
+        chapters.length <= expectedUnits.max
+      ) {
         return chapters;
       } else {
-        console.log(`Attempt ${attempts + 1}: Incomplete syllabus (${chapters.length} units, expected ${expectedUnits.min}-${expectedUnits.max}). Retrying...`);
+        console.log(
+          `Attempt ${attempts + 1}: Incomplete syllabus (${chapters.length} units, expected ${expectedUnits.min}-${expectedUnits.max}). Retrying...`,
+        );
         attempts++;
         if (attempts >= maxAttempts) {
-          console.warn(`Failed to get complete syllabus after ${maxAttempts} attempts. Returning partial syllabus (${chapters.length} units).`);
+          console.warn(
+            `Failed to get complete syllabus after ${maxAttempts} attempts. Returning partial syllabus (${chapters.length} units).`,
+          );
           return chapters;
         }
       }
     } catch (error) {
       attempts++;
       if (attempts >= maxAttempts) {
-        throw new Error(`Failed to fetch chapters after ${maxAttempts} attempts: ${error}`);
+        throw new Error(
+          `Failed to fetch chapters after ${maxAttempts} attempts: ${error}`,
+        );
       }
       console.log(`Attempt ${attempts} failed, retrying...`);
     }
   }
 }
 
-async function generateQuestionsWithGemini({ subject, classLevel, chapters, examType, difficulty, sectionTypes, totalMarks }: Omit<GeminiQuestionGenParams, 'numQuestions'> & { totalMarks: number }) {
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-  
-  // Calculate appropriate number of questions based on total marks
-  // For CBSE pattern: typically 1-5 marks per question, so we'll aim for reasonable distribution
-  const defaultMarks = SUBJECT_TOTAL_MARKS[`${classLevel} ${subject}`] || 80;
-  const defaultQuestions = 35; // Typical CBSE paper has ~35 questions
-  const questionRatio = totalMarks / defaultMarks;
-  const targetQuestions = Math.max(5, Math.min(50, Math.round(defaultQuestions * questionRatio)));
-  
-  const prompt = `Refer to the official CBSE previous year question papers and the latest syllabus for the academic year 2025-26 at https://cbseacademic.nic.in/curriculum_2026.html for Class ${classLevel} ${subject}.
-Search for the typical number and distribution of each question type (e.g., how many MCQs, short answer, long answer, etc.) in real CBSE board papers for this subject/class. Match the real CBSE pattern for the number of each question type and their marks, using the latest available data from previous year papers and the official CBSE pattern.
+// removed: student-facing pool builder
 
-Generate approximately ${targetQuestions} questions for a total of ${totalMarks} marks. The number of questions should be reasonable for the total marks - typically between 5 and 50 questions depending on the total marks.
+async function generatePaperWithRAG({
+  classLevel,
+  subject,
+  chapters,
+  difficulty,
+  totalMarks,
+  sections,
+  chapterWeightage,
+}: {
+  classLevel: string;
+  subject: string;
+  chapters: string[];
+  difficulty: string;
+  totalMarks: number;
+  sections: string[];
+  chapterWeightage?: { unit: string; weightage: number; chapters: string[] }[];
+}) {
+  const openai = OpenAIService.getInstance();
 
-Generate a CBSE-style question paper for Class ${classLevel} ${subject} (${examType} Exam), following the latest CBSE syllabus and matching the real distribution of marks, question types, and chapter weightage as seen in actual CBSE board exams.
+  // 1. Retrieve relevant PYQs (RAG)
+  let similarQuestions: any[] = [];
+  try {
+    // Create a search query based on the exam parameters
+    const query = `Class ${classLevel} ${subject} questions about ${chapters.join(", ")}`;
+    const embedding = await openai.getEmbedding(query);
 
-The total marks for the paper MUST be exactly ${totalMarks}. The sum of all question marks must be exactly ${totalMarks} and must NOT exceed ${totalMarks} under any circumstances.
+    // Search for similar questions in the vector db
+    similarQuestions = await openai.searchSimilarQuestions(
+      embedding,
+      0.4, // Lower threshold to get more variety
+      10,  // Count
+      classLevel,
+      subject
+    );
+    console.log(`RAG: Found ${similarQuestions.length} relevant PYQs`);
+  } catch (e) {
+    console.warn("RAG retrieval failed, proceeding with zero-shot generation:", e);
+  }
 
-Use only these chapters: ${chapters.join(", ")}. Distribute questions across these section types: ${sectionTypes.join(", ")}. 
+  // 2. Construct Prompt with RAG Context
+  const ragContext = similarQuestions.length > 0
+    ? `\n\nREFERENCE THESE REAL CBSE QUESTIONS FOR STYLE AND DIFFICULTY:\n${JSON.stringify(similarQuestions.map(q => ({ q: q.question, marks: q.marks, type: q.type })), null, 2)}`
+    : "";
 
-For each question, provide: section, type, marks, and question text. 
-For MCQ questions (type: "mcq"), also include an "options" field as an array with exactly 4 options (A, B, C, D) and a "correct_answer" field (A, B, C, or D).
+  // Construct Weightage Context
+  const weightageContext = chapterWeightage
+    ? `\n\nSTRICT CHAPTER WEIGHTAGE:\n${chapterWeightage.map(u => `- ${u.unit} (${u.chapters.join(", ")}): ${u.weightage} marks`).join("\n")}\nEnsure the total marks for questions from each unit align with these weightages.`
+    : "";
 
-Example MCQ format:
+  // Get actual blueprint
+  let blueprint = getPaperBlueprint(classLevel, subject);
+
+  // Only use blueprint if the requested totalMarks matches the blueprint's totalMarks
+  if (blueprint && blueprint.totalMarks !== totalMarks) {
+    blueprint = null;
+  }
+
+  const blueprintContext = blueprint ? generateBlueprintPrompt(blueprint) : "";
+
+  const prompt = `Generate a CBSE Class ${classLevel} ${subject} exam paper with ${totalMarks} marks.
+
+REQUIREMENTS:
+1. Difficulty: ${difficulty}
+2. Chapters to cover: ${chapters.join(", ")}
+3. Include these question types: ${sections.join(", ")}
+
+CBSE QUALITY STANDARDS:
+- Use real-world scenarios and application-based questions (competency-based)
+- For Math/Science: Use LaTeX notation with $ symbols for formulas
+- MCQs must have exactly 4 options labeled A, B, C, D
+- Assertion-Reasoning: Include at least 2 Assertion-Reasoning type questions within the MCQ section.
+- Follow official CBSE marking scheme distribution
+${weightageContext}
+${ragContext}
+${blueprintContext}
+
+STRICT OUTPUT FORMAT:
+Return ONLY a valid JSON array. Each question object must have:
 {
-  "section": "A",
-  "type": "mcq",
-  "marks": 1,
-  "question": "What is 2+2?",
-  "options": ["3", "4", "5", "6"],
-  "correct_answer": "B"
+  "section": "A" or "B" or "C",
+  "type": "mcq" or "short" or "long",
+  "question": "question text here",
+  "marks": number,
+  "options": ["A text", "B text", "C text", "D text"] (REQUIRED for MCQs)
 }
 
-Return ONLY a valid JSON array, no explanation or extra text. Do NOT wrap the JSON in any Markdown or code block. Each item should have fields: section, type, marks, question, and for MCQs: options (array), correct_answer.`;
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
-  const body = {
-    contents: [{ parts: [{ text: prompt }] }]
-  };
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error('Gemini API error: ' + response.statusText);
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  let cleanText = text.trim();
-  cleanText = cleanText.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
+${blueprint ? `Generate EXACTLY the number of questions specified in the paper structure above (Total: ${blueprint.structure.reduce((sum, item) => sum + item.count, 0)} questions).` : `Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMarks} marks total.`}`;
+
+  // 3. Call GPT-4o
+  const text = await openai.generateChatCompletion(prompt, "You are an expert CBSE exam setter.");
+
+  console.log("RAG: Raw OpenAI Response (first 500 chars):", text.substring(0, 500));
+
+  // 4. Parse Response with robust error handling
   try {
+    let cleanText = text.trim();
+
+    // Remove markdown code fences
+    cleanText = cleanText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+
+    // Try to extract JSON array if surrounded by text
+    const arrayMatch = cleanText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (arrayMatch) {
+      cleanText = arrayMatch[0];
+    }
+
     const questions = JSON.parse(cleanText);
-    if (Array.isArray(questions) && questions.length === 0) {
-      alert('AI did not generate any questions. Please try again.');
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new Error("Response is not a valid question array or is empty");
     }
-    return questions;
-  } catch (e) {
-    const match = cleanText.match(/\[.*\]/s);
-    if (match) {
-      try {
-        const questions = JSON.parse(match[0]);
-        if (Array.isArray(questions) && questions.length === 0) {
-          alert('AI did not generate any questions. Please try again.');
-        }
-        return questions;
-      } catch {}
-    }
-    throw new Error('Failed to parse Gemini response: ' + text);
+
+    console.log(`RAG: Successfully parsed ${questions.length} questions`);
+    return { questions };
+
+  } catch (parseError: any) {
+    console.error("RAG: JSON Parse Error:", parseError.message);
+    console.error("RAG: Failed response text:", text);
+    throw new Error(`Failed to parse OpenAI response: ${parseError.message}. This usually means the response was truncated or malformed. Try reducing the number of chapters or total marks.`);
   }
 }
+
+// removed: AI paper generation helper (DB-only flow)
 
 async function generateAnswerKeyWithGemini({
   subject,
@@ -291,41 +364,51 @@ async function generateAnswerKeyWithGemini({
   }));
 
   const prompt = `You are preparing an official teacher's answer key for CBSE Class ${classLevel} ${subject}.
-For each question below, return a concise, marking-scheme-aligned answer.
+For each question below, return a concise, marking - scheme - aligned answer.
 
-Rules:
-- For MCQs: return the correct option letter (A/B/C/D) in 'correct_answer' and a one-line justification in 'explanation'.
-- For Short/Long answers: return a crisp 'answer' string that covers all key points; keep within 2-6 lines.
+    Rules:
+  - For MCQs: return the correct option letter(A / B / C / D) in 'correct_answer' and a one - line justification in 'explanation'.
+- For Short / Long answers: return a crisp 'answer' string that covers all key points; keep within 2 - 6 lines.
 - Keep language neutral and suitable for an official answer key.
 - Do NOT exceed the maximum marks logic for details; prioritize points typically awarded in CBSE marking schemes.
 
 Return ONLY a valid JSON array of length equal to the input questions, where each item has:
-{ "index": number, "type": "mcq"|"short"|"long", "answer"?: string, "correct_answer"?: "A"|"B"|"C"|"D", "explanation"?: string }.
+  { "index": number, "type": "mcq" | "short" | "long", "answer" ?: string, "correct_answer" ?: "A" | "B" | "C" | "D", "explanation" ?: string }.
 
-Questions:
-${JSON.stringify(questionsForAi, null, 2)}`;
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
+  Questions:
+${JSON.stringify(questionsForAi, null, 2)} `;
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+    GEMINI_API_KEY;
   const body = { contents: [{ parts: [{ text: prompt }] }] } as any;
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!response.ok) throw new Error('Gemini API error: ' + response.statusText);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error("Gemini API error: " + response.statusText);
   const data = await response.json();
-  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   let cleanText = text.trim();
-  cleanText = cleanText.replace(/^(```json|```|'''json|''')/i, '').replace(/(```|''')$/i, '').trim();
+  cleanText = cleanText
+    .replace(/^(```json | ```|'''json|''')/i, "")
+    .replace(/(``` | ''')$/i, "")
+    .trim();
   try {
     const arr = JSON.parse(cleanText);
-    if (!Array.isArray(arr) || arr.length !== questions.length) throw new Error('Answer key length mismatch');
+    if (!Array.isArray(arr) || arr.length !== questions.length)
+      throw new Error("Answer key length mismatch");
     return arr;
   } catch (e) {
     const match = cleanText.match(/\[.*\]/s);
     if (match) {
       try {
         const arr = JSON.parse(match[0]);
-        if (!Array.isArray(arr)) throw new Error('Invalid answer key format');
+        if (!Array.isArray(arr)) throw new Error("Invalid answer key format");
         return arr;
-      } catch {}
+      } catch { }
     }
-    throw new Error('Failed to parse Gemini answer key response');
+    throw new Error("Failed to parse Gemini answer key response");
   }
 }
 
@@ -344,41 +427,60 @@ async function exportTeacherDocx({
 }) {
   const children: Paragraph[] = [];
   const title = `CBSE Exam Paper – ${subject} Class ${classLevel} (${examType})`;
-  children.push(new Paragraph({ text: `${title} [Teacher Pack]`, heading: HeadingLevel.TITLE }));
-  children.push(new Paragraph({ text: '' }));
+  children.push(
+    new Paragraph({
+      text: `${title} [Teacher Pack]`,
+      heading: HeadingLevel.TITLE,
+    }),
+  );
+  children.push(new Paragraph({ text: "" }));
 
   // Section: Question Paper
-  children.push(new Paragraph({ text: 'Section 1: Question Paper', heading: HeadingLevel.HEADING_1 }));
+  children.push(
+    new Paragraph({
+      text: "Section 1: Question Paper",
+      heading: HeadingLevel.HEADING_1,
+    }),
+  );
   questions.forEach((q: any, idx: number) => {
     const qNum = idx + 1;
-    children.push(new Paragraph({ text: `${qNum}. [${q.marks} mark${q.marks > 1 ? 's' : ''}] ${q.question}` }));
-    if (q.type === 'mcq' && Array.isArray(q.options)) {
+    children.push(
+      new Paragraph({
+        text: `${qNum}. [${q.marks} mark${q.marks > 1 ? "s" : ""}] ${q.question}`,
+      }),
+    );
+    if (q.type === "mcq" && Array.isArray(q.options)) {
       q.options.forEach((opt: string, i: number) => {
         const label = String.fromCharCode(65 + i);
         children.push(new Paragraph({ text: `   (${label}) ${opt}` }));
       });
     }
-    children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({ text: "" }));
   });
 
   // Section: Answer Key
-  children.push(new Paragraph({ text: 'Section 2: Answer Key', heading: HeadingLevel.HEADING_1 }));
+  children.push(
+    new Paragraph({
+      text: "Section 2: Answer Key",
+      heading: HeadingLevel.HEADING_1,
+    }),
+  );
   answers.forEach((a: any, idx: number) => {
     const qNum = idx + 1;
-    if ((a?.type || questions[idx]?.type) === 'mcq') {
-      const line = `Q${qNum}: Correct Answer – ${a?.correct_answer || questions[idx]?.correct_answer || '-'}${a?.explanation ? ` | ${a.explanation}` : ''}`;
+    if ((a?.type || questions[idx]?.type) === "mcq") {
+      const line = `Q${qNum}: Correct Answer – ${a?.correct_answer || questions[idx]?.correct_answer || "-"}${a?.explanation ? ` | ${a.explanation}` : ""}`;
       children.push(new Paragraph({ text: line }));
     } else {
-      const line = `Q${qNum}: ${a?.answer || 'Answer not available'}`;
+      const line = `Q${qNum}: ${a?.answer || "Answer not available"}`;
       children.push(new Paragraph({ text: line }));
     }
   });
 
   const doc = new Document({ sections: [{ properties: {}, children }] });
   const blob = await Packer.toBlob(doc);
-  const fileName = `CBSE_${subject.replace(/\s+/g, '_')}_Class${classLevel}_Teacher_Pack.docx`;
+  const fileName = `CBSE_${subject.replace(/\s+/g, "_")}_Class${classLevel}_Teacher_Pack.docx`;
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = fileName;
   document.body.appendChild(a);
@@ -388,61 +490,60 @@ async function exportTeacherDocx({
 }
 
 const SECTION_TYPES = [
-  { label: 'MCQ', value: 'mcq' },
-  { label: 'Short Answer', value: 'short' },
-  { label: 'Long Answer', value: 'long' },
+  { label: "MCQ", value: "mcq" },
+  { label: "Short Answer", value: "short" },
+  { label: "Long Answer", value: "long" },
 ];
 
 const STEPS = [
-  { label: 'Exam Details', icon: BookOpen },
-  { label: 'Chapters & Settings', icon: FileText },
-  { label: 'Preview & Generate', icon: Zap },
+  { label: "Exam Details", icon: BookOpen },
+  { label: "Chapters & Settings", icon: FileText },
+  { label: "Preview & Generate", icon: Zap },
 ];
 
-interface GeminiQuestionGenParams {
-  subject: string;
-  classLevel: string;
-  chapters: string[];
-  examType: string;
-  difficulty: string;
-  numQuestions: number;
-  sectionTypes: string[];
-}
 
-const TABS = ['Exam Simulator', 'Saved Results'];
+const TABS = ["Exam Simulator", "Saved Results"];
 
 const CBSEExamSimulator: React.FC = () => {
   const [step, setStep] = useState(1);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
-  const [examType, setExamType] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
+  const [examType, setExamType] = useState("");
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [difficulty, setDifficulty] = useState("Medium");
   const [numQuestions, setNumQuestions] = useState(10);
-  const [selectedSections, setSelectedSections] = useState<string[]>(SECTION_TYPES.map(s => s.value));
-  const [generating, setGenerating] = useState(false);
+  const [selectedSections, setSelectedSections] = useState<string[]>(
+    SECTION_TYPES.map((s) => s.value),
+  );
   const [questions, setQuestions] = useState<any[]>([]);
   const navigate = useNavigate();
   const { user, role } = useAuth() as any;
-  const isTeacher = role === 'teacher';
-  const [activeTab, setActiveTab] = useState('Exam Simulator');
+  const isTeacher = role === "teacher";
+  const [activeTab, setActiveTab] = useState("Exam Simulator");
   // Vision (handwriting from PDF) states
   const [visionLoading, setVisionLoading] = useState(false);
-  const [visionText, setVisionText] = useState('');
+  const [visionText, setVisionText] = useState("");
   const [visionError, setVisionError] = useState<string | null>(null);
   // Teacher DOCX export states
   const [docxDownloading, setDocxDownloading] = useState(false);
   const [docxError, setDocxError] = useState<string | null>(null);
   // Missing states restored
-  const [selectedStream, setSelectedStream] = useState<keyof typeof CLASS12_SUBJECTS>('Science');
+  const [selectedStream, setSelectedStream] =
+    useState<keyof typeof CLASS12_SUBJECTS>("Science");
   const [useCustomMarks, setUseCustomMarks] = useState(false);
   const [customMarks, setCustomMarks] = useState(80);
-  const [aiChapters, setAiChapters] = useState<{
-    unit: string;
-    weightage: number;
-    subunits?: { subunit: string; chapters: { name: string; clo: string }[] }[];
-    chapters?: { name: string; clo: string }[];
-  }[]>([]);
+  const [assembling, setAssembling] = useState(false);
+  const [aiChapters, setAiChapters] = useState<
+    {
+      unit: string;
+      weightage: number;
+      subunits?: {
+        subunit: string;
+        chapters: { name: string; clo: string }[];
+      }[];
+      chapters?: { name: string; clo: string }[];
+    }[]
+  >([]);
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const [chaptersError, setChaptersError] = useState<string | null>(null);
 
@@ -450,17 +551,22 @@ const CBSEExamSimulator: React.FC = () => {
     try {
       setVisionLoading(true);
       setVisionError(null);
-      setVisionText('');
-      const images = await pdfFileToImageDataUrls(file, 1400, 'image/jpeg', 0.85);
+      setVisionText("");
+      const images = await pdfFileToImageDataUrls(
+        file,
+        1400,
+        "image/jpeg",
+        0.85,
+      );
       const limited = images.slice(0, 6);
       const openai = OpenAIService.getInstance();
       const text = await openai.analyzeImagesWithVision(
         limited,
-        'Extract all handwritten answers accurately. Preserve question numbering and line breaks. If any part is unreadable, mark as [illegible]. Return plain text.'
+        "Extract all handwritten answers accurately. Preserve question numbering and line breaks. If any part is unreadable, mark as [illegible]. Return plain text.",
       );
       setVisionText(text);
     } catch (e: any) {
-      setVisionError(e.message || 'Failed to extract handwriting');
+      setVisionError(e.message || "Failed to extract handwriting");
     } finally {
       setVisionLoading(false);
     }
@@ -471,14 +577,14 @@ const CBSEExamSimulator: React.FC = () => {
   const [resultsError, setResultsError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'Saved Results' && user) {
+    if (activeTab === "Saved Results" && user) {
       setResultsLoading(true);
       setResultsError(null);
       supabase
-        .from('cbse_exam_attempts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('exam_date', { ascending: false })
+        .from("cbse_exam_attempts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("exam_date", { ascending: false })
         .then(({ data, error }) => {
           if (error) setResultsError(error.message);
           else setSavedResults(data || []);
@@ -491,29 +597,35 @@ const CBSEExamSimulator: React.FC = () => {
     if (!previewRef.current) return;
     const element = previewRef.current;
     const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     let imgHeight = (canvas.height * pdfWidth) / canvas.width;
     let heightLeft = imgHeight;
     let position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
     heightLeft -= pdfHeight;
     while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
       heightLeft -= pdfHeight;
     }
-    pdf.save(`CBSE_Question_Paper_${selectedSubject}_Class${selectedClass}.pdf`);
+    pdf.save(
+      `CBSE_Question_Paper_${selectedSubject}_Class${selectedClass}.pdf`,
+    );
   };
 
-  const allChapterNames = aiChapters.flatMap(unit => [
-    ...(unit.chapters ? unit.chapters.map(ch => ch.name) : []),
-    ...(unit.subunits ? unit.subunits.flatMap(su => su.chapters.map(ch => ch.name)) : []),
+  const allChapterNames = aiChapters.flatMap((unit) => [
+    ...(unit.chapters ? unit.chapters.map((ch) => ch.name) : []),
+    ...(unit.subunits
+      ? unit.subunits.flatMap((su) => su.chapters.map((ch) => ch.name))
+      : []),
   ]);
-  const allSelected = allChapterNames.length > 0 && allChapterNames.every(name => selectedChapters.includes(name));
+  const allSelected =
+    allChapterNames.length > 0 &&
+    allChapterNames.every((name) => selectedChapters.includes(name));
   const handleSelectAllChapters = (checked: boolean) => {
     if (checked) setSelectedChapters(allChapterNames);
     else setSelectedChapters([]);
@@ -530,14 +642,19 @@ const CBSEExamSimulator: React.FC = () => {
     setChaptersLoading(true);
     setChaptersError(null);
     fetchChaptersWithAI(selectedSubject, selectedClass)
-      .then(chapters => setAiChapters(Array.isArray(chapters) ? chapters : []))
-      .catch(err => setChaptersError(err.message || 'Failed to fetch chapters'))
+      .then((chapters) =>
+        setAiChapters(Array.isArray(chapters) ? chapters : []),
+      )
+      .catch((err) =>
+        setChaptersError(err.message || "Failed to fetch chapters"),
+      )
       .finally(() => setChaptersLoading(false));
   }, [selectedSubject, selectedClass]);
 
   useEffect(() => {
     if (selectedSubject && selectedClass) {
-      const defaultMarks = SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
+      const defaultMarks =
+        SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
       setCustomMarks(defaultMarks);
       setUseCustomMarks(false);
     }
@@ -547,14 +664,18 @@ const CBSEExamSimulator: React.FC = () => {
     <div className="flex items-center justify-center mb-8">
       {STEPS.map((stepObj, idx) => (
         <div key={stepObj.label} className="flex items-center">
-          <div className={`flex flex-col items-center ${step > idx + 1 ? 'text-success-400' : step === idx + 1 ? 'text-primary-500' : 'text-gray-400'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step > idx + 1 ? 'bg-success-500/20 border-success-500' : step === idx + 1 ? 'bg-primary-500/20 border-primary-500' : 'bg-gray-700/20 border-gray-600'} border-2`}>
+          <div
+            className={`flex flex-col items-center ${step > idx + 1 ? "text-neon-green" : step === idx + 1 ? "text-neon-blue" : "text-gray-500"}`}
+          >
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all duration-300 ${step > idx + 1 ? "bg-neon-green/20 border-neon-green shadow-lg shadow-neon-green/20" : step === idx + 1 ? "bg-neon-blue/20 border-neon-blue shadow-lg shadow-neon-blue/20" : "bg-white/5 border-white/10"} border-2`}
+            >
               <stepObj.icon className="w-5 h-5" />
             </div>
-            <span className="text-xs font-semibold">{stepObj.label}</span>
+            <span className="text-xs font-semibold tracking-wide">{stepObj.label}</span>
           </div>
           {idx < STEPS.length - 1 && (
-            <ChevronRight className="mx-3 w-5 h-5 text-gray-500" />
+            <div className={`mx-4 h-0.5 w-16 ${step > idx + 1 ? "bg-neon-green" : "bg-white/10"}`}></div>
           )}
         </div>
       ))}
@@ -564,74 +685,112 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Exam Configuration</h2>
-        <p className="text-gray-900">Select your exam details to get started</p>
+        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <BookOpen className="w-8 h-8 text-neon-blue" />
+          Exam Configuration
+        </h2>
+        <p className="text-gray-400">Select your exam details to get started</p>
       </div>
-      <div className="card-elevated">
+      <div className="glass-panel p-8 rounded-2xl border border-white/10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block mb-2 font-semibold text-gray-900">Class</label>
+            <label className="block mb-2 font-semibold text-gray-300">
+              Class
+            </label>
             <select
-              className="form-input w-full"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
               value={selectedClass}
-              onChange={e => {
+              onChange={(e) => {
                 setSelectedClass(e.target.value);
-                setSelectedSubject('');
+                setSelectedSubject("");
               }}
             >
-              <option value="">Select Class</option>
-              {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="" className="bg-gray-900">Select Class</option>
+              {CLASSES.map((c) => (
+                <option key={c} value={c} className="bg-gray-900">
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
-          {selectedClass === '12' && (
+          {selectedClass === "12" && (
             <div>
-              <label className="block mb-2 font-semibold text-gray-900">Stream</label>
+              <label className="block mb-2 font-semibold text-gray-300">
+                Stream
+              </label>
               <select
-                className="form-input w-full"
+                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
                 value={selectedStream}
-                onChange={e => {
-                  setSelectedStream(e.target.value as keyof typeof CLASS12_SUBJECTS);
-                  setSelectedSubject('');
+                onChange={(e) => {
+                  setSelectedStream(
+                    e.target.value as keyof typeof CLASS12_SUBJECTS,
+                  );
+                  setSelectedSubject("");
                 }}
               >
-                {Object.keys(CLASS12_SUBJECTS).map(stream => (
-                  <option key={stream} value={stream}>{stream}</option>
+                {Object.keys(CLASS12_SUBJECTS).map((stream) => (
+                  <option key={stream} value={stream} className="bg-gray-900">
+                    {stream}
+                  </option>
                 ))}
               </select>
             </div>
           )}
           <div>
-            <label className="block mb-2 font-semibold text-gray-900">Subject</label>
+            <label className="block mb-2 font-semibold text-gray-300">
+              Subject
+            </label>
             <select
-              className="form-input w-full"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
               value={selectedSubject}
-              onChange={e => setSelectedSubject(e.target.value)}
-              disabled={!selectedClass || (selectedClass === '12' && !selectedStream)}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              disabled={
+                !selectedClass || (selectedClass === "12" && !selectedStream)
+              }
             >
-              <option value="">Select Subject</option>
-              {selectedClass === '10' && CLASS10_SUBJECTS.map((s: string) => <option key={s} value={s}>{s}</option>)}
-              {selectedClass === '12' && selectedStream && CLASS12_SUBJECTS[selectedStream] && CLASS12_SUBJECTS[selectedStream].map((s: string) => <option key={s} value={s}>{s}</option>)}
+              <option value="" className="bg-gray-900">Select Subject</option>
+              {selectedClass === "10" &&
+                CLASS10_SUBJECTS.map((s: string) => (
+                  <option key={s} value={s} className="bg-gray-900">
+                    {s}
+                  </option>
+                ))}
+              {selectedClass === "12" &&
+                selectedStream &&
+                CLASS12_SUBJECTS[selectedStream] &&
+                CLASS12_SUBJECTS[selectedStream].map((s: string) => (
+                  <option key={s} value={s} className="bg-gray-900">
+                    {s}
+                  </option>
+                ))}
             </select>
           </div>
           <div>
-            <label className="block mb-2 font-semibold text-gray-900">Exam Type</label>
+            <label className="block mb-2 font-semibold text-gray-300">
+              Exam Type
+            </label>
             <select
-              className="form-input w-full"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
               value={examType}
-              onChange={e => setExamType(e.target.value)}
+              onChange={(e) => setExamType(e.target.value)}
             >
-              <option value="">Select Type</option>
-              {EXAM_TYPES.map(e => <option key={e} value={e}>{e}</option>)}
+              <option value="" className="bg-gray-900">Select Type</option>
+              {EXAM_TYPES.map((e) => (
+                <option key={e} value={e} className="bg-gray-900">
+                  {e}
+                </option>
+              ))}
             </select>
           </div>
         </div>
-        <div className="mt-6 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <button
-            className="btn-primary px-8 py-3"
+            className="bg-gradient-to-r from-neon-blue to-blue-600 hover:from-neon-blue/80 hover:to-blue-600/80 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-neon-blue/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             disabled={!selectedSubject || !selectedClass || !examType}
             onClick={() => setStep(2)}
           >
             Next: Choose Chapters
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -641,511 +800,582 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Chapter Selection & Settings</h2>
-        <p className="text-gray-900">Choose chapters and configure exam parameters</p>
+        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <FileText className="w-8 h-8 text-neon-purple" />
+          Chapter Selection & Settings
+        </h2>
+        <p className="text-gray-400">
+          Choose chapters and configure exam parameters
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card-elevated">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Chapters (with weightage)</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+        <div className="glass-panel p-6 rounded-2xl border border-white/10">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-neon-purple" />
+            Chapters (with weightage)
+          </h3>
+          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
             {aiChapters.length > 0 && (
-              <label className="flex items-center gap-2 bg-primary-500/10 rounded-lg p-3 cursor-pointer mb-2 border border-primary-500/30">
+              <label className="flex items-center gap-3 bg-neon-purple/10 rounded-xl p-3 cursor-pointer mb-4 border border-neon-purple/30 hover:bg-neon-purple/20 transition-colors">
                 <input
                   type="checkbox"
                   checked={allSelected}
-                  onChange={e => handleSelectAllChapters(e.target.checked)}
-                  className="text-primary-500"
+                  onChange={(e) => handleSelectAllChapters(e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-500 text-neon-purple focus:ring-neon-purple bg-gray-800"
                 />
-                <span className="font-semibold text-primary-300">Select All Chapters</span>
+                <span className="font-semibold text-neon-purple">
+                  Select All Chapters
+                </span>
               </label>
             )}
             {aiChapters.length > 0 && (
-              <div className="text-xs text-primary-300 mb-2 p-2 bg-primary-500/5 rounded-lg">
-                <span>Note: Only group/unit weightage is official. Chapter weightage is not provided by CBSE.</span><br />
-                <span className="text-warning-300">This simulator generates the theory paper only. Practical/Internal Assessment marks are not included.</span>
+              <div className="text-xs text-gray-400 mb-4 p-3 bg-white/5 rounded-xl border border-white/5">
+                <p className="mb-1">
+                  Note: Only group/unit weightage is official. Chapter weightage
+                  is not provided by CBSE.
+                </p>
+                <p className="text-neon-yellow">
+                  This simulator generates the theory paper only.
+                  Practical/Internal Assessment marks are not included.
+                </p>
               </div>
             )}
-            {chaptersLoading && <div className="text-primary-400 flex items-center gap-2"><div className="loading-spinner w-4 h-4"></div>Loading chapters...</div>}
-            {chaptersError && <div className="text-red-400">{chaptersError}</div>}
-            {!chaptersLoading && !chaptersError && aiChapters.length === 0 && (
-              <div className="text-gray-400">Select a subject and class to load chapters.</div>
+            {chaptersLoading && (
+              <div className="text-neon-blue flex items-center justify-center gap-2 py-8">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-neon-blue"></div>
+                Loading chapters...
+              </div>
             )}
-            {aiChapters.map(unit => (
-              <div key={unit.unit} className="mb-3 bg-gray-800/50 rounded-lg border border-primary-500/20 p-3">
-                <div className="flex items-center mb-2">
-                  <span className="font-bold text-primary-400 text-base mr-2">{unit.unit}</span>
+            {chaptersError && (
+              <div className="text-red-400 bg-red-500/10 p-4 rounded-xl border border-red-500/20">{chaptersError}</div>
+            )}
+            {!chaptersLoading && !chaptersError && aiChapters.length === 0 && (
+              <div className="text-gray-400 text-center py-8">
+                Select a subject and class to load chapters.
+              </div>
+            )}
+            {aiChapters.map((unit) => (
+              <div
+                key={unit.unit}
+                className="mb-3 bg-black/40 rounded-xl border border-white/10 p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-bold text-white text-base">
+                    {unit.unit}
+                  </span>
+                  <span className="text-xs font-mono bg-neon-blue/20 text-neon-blue px-2 py-1 rounded">
+                    {unit.weightage} Marks
+                  </span>
                 </div>
                 {/* Chapters directly under unit */}
                 {unit.chapters && unit.chapters.length > 0 && (
-                  <div className="space-y-1 ml-4">
-                    {unit.chapters.map(ch => (
-                      <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
+                  <div className="space-y-2 ml-2">
+                    {unit.chapters.map((ch) => (
+                      <label
+                        key={ch.name}
+                        className="flex items-start gap-3 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition border border-transparent hover:border-white/10"
+                      >
                         <input
                           type="checkbox"
                           checked={selectedChapters.includes(ch.name)}
-                          onChange={e => {
-                            if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
-                            else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
+                          onChange={(e) => {
+                            if (e.target.checked)
+                              setSelectedChapters([
+                                ...selectedChapters,
+                                ch.name,
+                              ]);
+                            else
+                              setSelectedChapters(
+                                selectedChapters.filter((c) => c !== ch.name),
+                              );
                           }}
-                          className="text-primary-500"
+                          className="mt-1 w-4 h-4 rounded border-gray-500 text-neon-blue focus:ring-neon-blue bg-gray-800"
                         />
-                        <span className="font-semibold text-gray-900">{ch.name}</span>
-                        <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
+                        <div>
+                          <span className="font-medium text-gray-200 block">
+                            {ch.name}
+                          </span>
+                          {ch.clo && <span className="text-xs text-gray-500 block mt-0.5">
+                            {ch.clo}
+                          </span>}
+                        </div>
                       </label>
                     ))}
                   </div>
                 )}
                 {/* Subunits and their chapters */}
-                {unit.subunits && unit.subunits.length > 0 && (
-                  <div className="ml-4">
-                    {unit.subunits.map(su => (
-                      <div key={su.subunit} className="mb-2">
-                        <div className="font-semibold text-primary-300 mb-1">{su.subunit}</div>
-                        <div className="space-y-1 ml-4">
-                          {su.chapters.map(ch => (
-                            <label key={ch.name} className="flex items-center gap-2 bg-gray-700/50 rounded p-2 cursor-pointer hover:bg-primary-500/10 transition">
-                              <input
-                                type="checkbox"
-                                checked={selectedChapters.includes(ch.name)}
-                                onChange={e => {
-                                  if (e.target.checked) setSelectedChapters([...selectedChapters, ch.name]);
-                                  else setSelectedChapters(selectedChapters.filter(c => c !== ch.name));
-                                }}
-                                className="text-primary-500"
-                              />
-                              <span className="font-semibold text-gray-900">{ch.name}</span>
-                              <span className="ml-2 text-xs text-gray-400">({ch.clo})</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                {unit.subunits && unit.subunits.map((sub) => (
+                  <div key={sub.subunit} className="mt-3 ml-2 border-l-2 border-white/10 pl-3">
+                    <div className="text-sm font-semibold text-gray-400 mb-2">{sub.subunit}</div>
+                    <div className="space-y-2">
+                      {sub.chapters.map((ch) => (
+                        <label
+                          key={ch.name}
+                          className="flex items-start gap-3 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition border border-transparent hover:border-white/10"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChapters.includes(ch.name)}
+                            onChange={(e) => {
+                              if (e.target.checked)
+                                setSelectedChapters([
+                                  ...selectedChapters,
+                                  ch.name,
+                                ]);
+                              else
+                                setSelectedChapters(
+                                  selectedChapters.filter((c) => c !== ch.name),
+                                );
+                            }}
+                            className="mt-1 w-4 h-4 rounded border-gray-500 text-neon-blue focus:ring-neon-blue bg-gray-800"
+                          />
+                          <div>
+                            <span className="font-medium text-gray-200 block">
+                              {ch.name}
+                            </span>
+                            {ch.clo && <span className="text-xs text-gray-500 block mt-0.5">
+                              {ch.clo}
+                            </span>}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             ))}
           </div>
         </div>
-        <div className="space-y-4">
-          <div className="card-elevated">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Exam Settings</h3>
-            <div className="space-y-4">
+
+        <div className="space-y-6">
+          <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-neon-yellow" />
+              Exam Parameters
+            </h3>
+
+            <div className="space-y-5">
               <div>
-                <label className="block mb-2 font-semibold text-gray-900">Difficulty</label>
-                <select
-                  className="form-input w-full"
-                  value={difficulty}
-                  onChange={e => setDifficulty(e.target.value)}
-                >
-                  <option>Easy</option>
-                  <option>Medium</option>
-                  <option>Hard</option>
-                </select>
+                <label className="block mb-2 font-semibold text-gray-300">
+                  Difficulty Level
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Easy", "Medium", "Hard"].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDifficulty(d)}
+                      className={`py-2 rounded-lg font-medium transition-all duration-200 ${difficulty === d
+                        ? "bg-neon-blue text-black shadow-lg shadow-neon-blue/20"
+                        : "bg-black/40 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10"
+                        }`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
               </div>
+
               <div>
-                <label className="block mb-2 font-semibold text-gray-900">Section Types</label>
-                <div className="flex gap-4">
-                  {SECTION_TYPES.map(s => (
-                    <label key={s.value} className="flex items-center gap-2">
+                <label className="block mb-2 font-semibold text-gray-300">
+                  Question Types
+                </label>
+                <div className="space-y-2 bg-black/40 p-4 rounded-xl border border-white/10">
+                  {SECTION_TYPES.map((type) => (
+                    <label key={type.value} className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedSections.includes(s.value)}
-                        onChange={e => {
-                          if (e.target.checked) setSelectedSections([...selectedSections, s.value]);
-                          else setSelectedSections(selectedSections.filter(sec => sec !== s.value));
+                        checked={selectedSections.includes(type.value)}
+                        onChange={(e) => {
+                          if (e.target.checked)
+                            setSelectedSections([
+                              ...selectedSections,
+                              type.value,
+                            ]);
+                          else
+                            setSelectedSections(
+                              selectedSections.filter((s) => s !== type.value),
+                            );
                         }}
-                        className="text-primary-500"
+                        className="w-5 h-5 rounded border-gray-500 text-neon-green focus:ring-neon-green bg-gray-800"
                       />
-                      <span className="text-gray-900">{s.label}</span>
+                      <span className="text-gray-200">{type.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
+
               <div>
-                <label className="block mb-2 font-semibold text-gray-900">Total Marks</label>
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 p-2 rounded hover:bg-gray-800 cursor-pointer">
+                <label className="block mb-2 font-semibold text-gray-300">
+                  Total Marks
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="number"
+                    value={customMarks}
+                    onChange={(e) => setCustomMarks(Number(e.target.value))}
+                    disabled={!useCustomMarks}
+                    className={`w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none ${!useCustomMarks ? 'opacity-50' : ''}`}
+                  />
+                  <label className="flex items-center gap-2 whitespace-nowrap cursor-pointer">
                     <input
-                      type="radio"
-                      checked={!useCustomMarks}
-                      onChange={() => setUseCustomMarks(false)}
-                      className="text-primary-500"
-                    />
-                    <span className={!useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-900"}>
-                      Use Default ({SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80} marks)
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 p-2 rounded hover:bg-gray-800 cursor-pointer">
-                    <input
-                      type="radio"
+                      type="checkbox"
                       checked={useCustomMarks}
-                      onChange={() => setUseCustomMarks(true)}
-                      className="text-primary-500"
+                      onChange={(e) => setUseCustomMarks(e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-500 text-neon-blue focus:ring-neon-blue bg-gray-800"
                     />
-                    <span className={useCustomMarks ? "text-primary-400 font-semibold" : "text-gray-900"}>
-                      Custom Marks
-                    </span>
+                    <span className="text-gray-300 text-sm">Custom</span>
                   </label>
-                  {useCustomMarks && (
-                    <div className="ml-6 p-3 bg-primary-500/10 rounded-lg border border-primary-500/30">
-                      <input
-                        type="number"
-                        min="1"
-                        max="200"
-                        value={customMarks}
-                        onChange={(e) => setCustomMarks(parseInt(e.target.value) || 80)}
-                        className="form-input w-full"
-                        placeholder="Enter custom marks"
-                      />
-                      <div className="text-xs text-primary-300 mt-1">
-                        Enter the total marks for your custom paper (1-200). The AI will generate fewer questions for lower marks and more questions for higher marks.
-                      </div>
-                      {selectedSubject && selectedClass && (
-                        <div className="text-xs text-warning-300 mt-2">
-                          Estimated questions: ~{Math.max(5, Math.min(50, Math.round(35 * (customMarks / (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)))))} 
-                          (vs {SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80} marks default)
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
+                {!useCustomMarks && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Using standard marks for Class {selectedClass} {selectedSubject}
+                  </p>
+                )}
               </div>
             </div>
           </div>
+
+          <div className="flex justify-between gap-4">
+            <button
+              className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 px-6 rounded-xl border border-white/10 transition-all"
+              onClick={() => setStep(1)}
+            >
+              Back
+            </button>
+            <button
+              className="flex-1 bg-gradient-to-r from-neon-purple to-pink-600 hover:from-neon-purple/80 hover:to-pink-600/80 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-neon-purple/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={selectedChapters.length === 0 || selectedSections.length === 0}
+              onClick={() => {
+                setStep(3);
+                generatePaper();
+              }}
+            >
+              Generate Paper
+              <Zap className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="flex gap-4 mt-6 justify-center">
-        <button
-          className="btn-secondary px-6 py-3"
-          onClick={() => setStep(1)}
-        >
-          Back
-        </button>
-        <button
-          className="btn-primary px-6 py-3"
-          disabled={selectedChapters.length === 0}
-          onClick={() => setStep(3)}
-        >
-          Next: Generate Paper
-        </button>
       </div>
     </div>
   );
 
+  const generatePaper = async () => {
+    setAssembling(true);
+    setQuestions([]);
+    try {
+      // Prepare weightage data
+      const relevantUnits = aiChapters.filter(unit =>
+        unit.chapters?.some(ch => selectedChapters.includes(ch.name)) ||
+        unit.subunits?.some(sub => sub.chapters.some(ch => selectedChapters.includes(ch.name)))
+      ).map(unit => ({
+        unit: unit.unit,
+        weightage: unit.weightage,
+        chapters: [
+          ...(unit.chapters?.map(c => c.name) || []),
+          ...(unit.subunits?.flatMap(s => s.chapters.map(c => c.name)) || [])
+        ]
+      }));
+
+      // Use client-side RAG generation for best quality
+      const paper = await generatePaperWithRAG({
+        classLevel: selectedClass,
+        subject: selectedSubject,
+        chapters: selectedChapters,
+        difficulty: difficulty,
+        totalMarks: customMarks,
+        sections: selectedSections,
+        // If using custom marks, disable strict weightage enforcement to avoid contradictions
+        chapterWeightage: useCustomMarks ? undefined : relevantUnits
+      });
+
+      if (paper && paper.questions) {
+        setQuestions(paper.questions);
+      }
+    } catch (err) {
+      console.error("Paper generation failed:", err);
+      // Fallback or error handling
+      setChaptersError("Failed to generate paper. Please try again.");
+    } finally {
+      setAssembling(false);
+    }
+  };
+
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Preview Question Paper</h2>
-        <p className="text-gray-900">Review and generate your CBSE-style exam paper</p>
+        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+          <CheckCircle className="w-8 h-8 text-neon-green" />
+          Preview & Start
+        </h2>
+        <p className="text-gray-400">Review your generated paper before starting</p>
       </div>
-      {isTeacher && (
-        <div className="mx-auto max-w-3xl mb-2 p-3 rounded-lg border border-primary-500/30 bg-primary-500/10 text-primary-300 text-sm">
-          Teacher mode: You’ll get a downloadable Word document containing the question paper and the official-style answer key. No exam submission is required.
+
+      {assembling ? (
+        <div className="glass-panel p-12 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-neon-blue mb-6"></div>
+          <h3 className="text-xl font-bold text-white mb-2">Generating Your Exam Paper...</h3>
+          <p className="text-gray-400 max-w-md">
+            Our AI is assembling questions based on the latest CBSE patterns, selected chapters, and difficulty level.
+          </p>
         </div>
-      )}
-      <div ref={previewRef} className="card-elevated">
-        <div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-lg font-semibold text-gray-900">{selectedSubject} - Class {selectedClass} ({examType} Exam)</div>
-            <div className="text-sm text-gray-400">Chapters: {selectedChapters.join(', ')}</div>
-            <div className="text-sm text-gray-400">
-              Difficulty: {difficulty} | Sections: {selectedSections.join(', ')} | Total Questions: {questions.length} | 
-              Total Marks: {useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)}
-              {useCustomMarks && (
-                <span className="text-warning-400"> (Custom - ~{Math.max(5, Math.min(50, Math.round(35 * (customMarks / (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80)))))} questions)</span>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10 max-h-[600px] overflow-y-auto custom-scrollbar" ref={previewRef}>
+              <div className="text-center border-b border-white/10 pb-6 mb-6">
+                <h1 className="text-2xl font-bold text-black dark:text-white uppercase tracking-wider mb-2">
+                  CBSE {examType} Examination
+                </h1>
+                <div className="flex justify-center gap-6 text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <span>Class: {selectedClass}</span>
+                  <span>Subject: {selectedSubject}</span>
+                  <span>Max Marks: {customMarks}</span>
+                  <span>Time: 3 Hours</span>
+                </div>
+              </div>
+
+              {questions.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  No questions generated. Please try again.
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {/* Group by section if needed, for now flat list */}
+                  {questions.map((q, idx) => (
+                    <div key={idx} className="relative">
+                      <div className="flex gap-4">
+                        <span className="font-bold text-neon-blue min-w-[2rem]">{idx + 1}.</span>
+                        <div className="flex-1">
+                          <div className="text-gray-800 dark:text-gray-200 mb-2">
+                            {parseMathInline(q.question)}
+                          </div>
+                          {q.type === "mcq" && q.options && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 pl-2">
+                              {q.options.map((opt: string, i: number) => (
+                                <div key={i} className="flex gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                  <span className="font-semibold">({String.fromCharCode(65 + i)})</span>
+                                  <span>{parseMathInline(opt)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="font-bold text-gray-500 dark:text-gray-500 text-sm whitespace-nowrap">
+                          [{q.marks}]
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
+
+          <div className="space-y-6">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4">Actions</h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    navigate("/cbse-exam-session", {
+                      state: {
+                        questions,
+                        selectedSubject,
+                        totalMarks: customMarks,
+                        useCustomMarks,
+                      },
+                    });
+                  }}
+                  className="w-full bg-neon-green hover:bg-neon-green/80 text-black font-bold py-3 px-4 rounded-xl shadow-lg shadow-neon-green/20 transition-all flex items-center justify-center gap-2"
+                >
+                  <Clock className="w-5 h-5" />
+                  Start Exam Now
+                </button>
+
+                <button
+                  onClick={handleExportPDF}
+                  className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 px-4 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Download PDF
+                </button>
+
+                {isTeacher && (
+                  <button
+                    onClick={async () => {
+                      setDocxDownloading(true);
+                      setDocxError(null);
+                      try {
+                        const answers = await generateAnswerKeyWithGemini({
+                          subject: selectedSubject,
+                          classLevel: selectedClass,
+                          questions,
+                        });
+                        await exportTeacherDocx({
+                          subject: selectedSubject,
+                          classLevel: selectedClass,
+                          examType,
+                          questions,
+                          answers,
+                        });
+                      } catch (e: any) {
+                        setDocxError(e.message);
+                      } finally {
+                        setDocxDownloading(false);
+                      }
+                    }}
+                    disabled={docxDownloading}
+                    className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-neon-purple/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {docxDownloading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <>
+                        <Download className="w-5 h-5" />
+                        Teacher Pack (DOCX)
+                      </>
+                    )}
+                  </button>
+                )}
+                {docxError && <p className="text-red-400 text-sm text-center">{docxError}</p>}
+              </div>
+            </div>
+
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h3 className="text-lg font-bold text-white mb-4">Exam Summary</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-gray-400">
+                  <span>Total Questions</span>
+                  <span className="text-white font-medium">{questions.length}</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>Total Marks</span>
+                  <span className="text-white font-medium">{customMarks}</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>Difficulty</span>
+                  <span className="text-white font-medium">{difficulty}</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
+                  <span>Sections</span>
+                  <span className="text-white font-medium">{selectedSections.length}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setStep(2)}
+              className="w-full text-gray-400 hover:text-white py-2 transition-colors text-sm"
+            >
+              Back to Settings
+            </button>
+          </div>
         </div>
-        {questions.length > 0 ? questions.map((q, i) => (
-          <div key={i} className="py-6 px-4 bg-gradient-to-r from-primary-500/5 via-gray-800/50 to-primary-500/5 rounded-xl mb-4 border border-primary-500/20 animate-fade-in">
-            <div className="flex items-center gap-4 mb-2">
-              <span className="bg-primary-600 text-gray-900 px-3 py-1 rounded-full text-xs font-bold tracking-widest shadow">Section {q.section}</span>
-              <span className="bg-gray-700 text-primary-200 px-2 py-1 rounded text-xs uppercase tracking-wide">{q.type}</span>
-              <span className="ml-auto text-warning-400 font-bold">[{q.marks} mark{q.marks > 1 ? 's' : ''}]</span>
-            </div>
-            <div className="text-gray-900 text-lg font-medium pl-2 border-l-4 border-primary-600 question-math">
-              {i + 1}. {parseMathInline(q.question)}
-            </div>
-            {q.type === 'mcq' && q.options && Array.isArray(q.options) && (
-              <div className="mt-4 ml-6 space-y-2">
-                {q.options.map((option: string, optIndex: number) => (
-                  <div key={optIndex} className="flex items-center gap-3 text-gray-900">
-                    <span className="font-bold text-primary-400 w-6">({String.fromCharCode(65 + optIndex)})</span>
-                    <span>{parseMathInline(option)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {q.type === 'mcq' && (!q.options || !Array.isArray(q.options)) && (
-              <div className="mt-4 ml-6 text-warning-400 text-sm">
-                ⚠️ MCQ options not properly generated. Please regenerate the paper.
-              </div>
-            )}
-          </div>
-        )) : (
-          <div className="text-center text-gray-400 py-8">
-            No questions generated yet. Click "Generate with AI" to create a CBSE-style question paper.
-          </div>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-4 justify-center">
-        <button
-          className="btn-secondary px-4 py-2"
-          onClick={handleExportPDF}
-        >
-          Export as PDF
-        </button>
-        <button
-          className="btn-secondary px-6 py-2"
-          onClick={() => setStep(2)}
-        >
-          Back
-        </button>
-        <button
-          className="btn-primary px-6 py-2"
-          onClick={async () => {
-            setGenerating(true);
-            setQuestions([]);
-            try {
-              const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
-              const aiQuestions = await generateQuestionsWithGemini({
-                subject: selectedSubject,
-                classLevel: selectedClass,
-                chapters: selectedChapters,
-                examType,
-                difficulty,
-                sectionTypes: selectedSections,
-                totalMarks,
-              });
-              setQuestions(aiQuestions);
-            } catch (err) {
-              alert('AI generation failed: ' + err);
-            }
-            setGenerating(false);
-          }}
-          disabled={generating}
-        >
-          {generating ? (
-            <div className="flex items-center gap-2">
-              <div className="loading-spinner w-4 h-4"></div>
-              Generating...
-            </div>
-          ) : (
-            'Generate with AI'
-          )}
-        </button>
-        {isTeacher && (
-          <button
-            className="btn-accent px-6 py-2"
-            onClick={async () => {
-              if (questions.length === 0) return;
-              setDocxError(null);
-              setDocxDownloading(true);
-              try {
-                const answers = await generateAnswerKeyWithGemini({
-                  subject: selectedSubject,
-                  classLevel: selectedClass,
-                  questions,
-                });
-                await exportTeacherDocx({
-                  subject: selectedSubject,
-                  classLevel: selectedClass,
-                  examType,
-                  questions,
-                  answers,
-                });
-              } catch (e: any) {
-                setDocxError(e.message || 'Failed to build teacher pack');
-              } finally {
-                setDocxDownloading(false);
-              }
-            }}
-            disabled={questions.length === 0 || docxDownloading}
-          >
-            {docxDownloading ? (
-              <div className="flex items-center gap-2">
-                <div className="loading-spinner w-4 h-4" />
-                Building Word Doc...
-              </div>
-            ) : (
-              'Download Word (Questions + Answer Key)'
-            )}
-          </button>
-        )}
-        {!isTeacher && (
-          <button
-            className="btn-accent px-6 py-2"
-            onClick={() => {
-              const totalMarks = useCustomMarks ? customMarks : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80);
-              navigate('/cbse-exam-session', { 
-                state: { 
-                  questions,
-                  selectedSubject,
-                  totalMarks,
-                  useCustomMarks
-                } 
-              });
-            }}
-            disabled={questions.length === 0}
-          >
-            Start Exam
-          </button>
-        )}
-      </div>
-      {docxError && (
-        <div className="text-center text-red-400 mt-2">{docxError}</div>
       )}
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
-            <BookOpen className="w-8 h-8 text-gray-900" />
+    <div className="min-h-screen relative p-4 md:p-8 animate-fade-in">
+      {/* Background Glow */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-neon-purple/10 rounded-full blur-3xl -z-10"></div>
+
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <Brain className="w-8 h-8 text-neon-blue" />
+              CBSE Exam Simulator
+            </h1>
+            <p className="text-gray-400">Generate and practice with AI-powered CBSE papers</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            CBSE <span className="gradient-text">Exam Simulator</span>
-          </h1>
-        </div>
-        <p className="text-xl text-gray-900 max-w-3xl mx-auto leading-relaxed">
-          Generate authentic CBSE-style question papers with AI-powered questions that follow the latest syllabus and marking schemes.
-        </p>
-      </div>
 
-      {/* Official CBSE Syllabus Link */}
-      <div className="text-center mb-8">
-        <a
-          href="https://cbseacademic.nic.in/curriculum_2026.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-gray-900 font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
-        >
-          📄 View the Latest Official CBSE Syllabus (2025-26)
-        </a>
-        <p className="text-xs text-primary-300 mt-2">Always refer to the official CBSE website for the most accurate and up-to-date syllabus.</p>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto">
-        {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-gray-700">
-          {TABS.map(tab => (
-            <button
-              key={tab}
-              className={`px-4 py-2 font-semibold focus:outline-none transition-colors duration-200 ${activeTab === tab ? 'border-b-2 border-primary-500 text-primary-400' : 'text-gray-400 hover:text-gray-900'}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === tab
+                  ? "bg-neon-blue text-black shadow-lg shadow-neon-blue/20"
+                  : "text-gray-400 hover:text-white"
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'Exam Simulator' && (
-          <div className="card-elevated">
+        {activeTab === "Exam Simulator" ? (
+          <>
             {renderProgress()}
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
-          </div>
-        )}
+          </>
+        ) : (
+          <div className="space-y-6 animate-fade-in">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <Clock className="w-6 h-6 text-neon-green" />
+                Past Exam Results
+              </h2>
 
-        {activeTab === 'Saved Results' && (
-          <div className="card-elevated animate-fade-in">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Saved Results</h2>
-            {/* Handwriting extraction with GPT-4 Vision */}
-            <div className="mb-8 p-4 rounded-xl border border-gray-700 bg-gray-800/50">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Extract Handwritten Answers from PDF</h3>
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleExtractHandwritingFromPdf(f);
-                  }}
-                  className="form-input"
-                />
-                {visionLoading && (
-                  <div className="flex items-center gap-2 text-gray-900">
-                    <div className="loading-spinner w-4 h-4" /> Processing PDF with GPT‑4 Vision…
-                  </div>
-                )}
-              </div>
-              {visionError && (
-                <div className="mt-3 text-red-400 text-sm">{visionError}</div>
-              )}
-              {visionText && (
-                <div className="mt-4 max-h-64 overflow-auto whitespace-pre-wrap text-gray-200 bg-gray-900/60 p-3 rounded-lg text-sm">
-                  {visionText}
+              {resultsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
                 </div>
-              )}
-              {!visionText && !visionLoading && (
-                <p className="mt-2 text-xs text-gray-400">Tip: Large PDFs can be slow and costly. We process up to 6 pages by default.</p>
+              ) : savedResults.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  No past exams found. Start a new exam to see results here.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left">
+                    <thead>
+                      <tr className="text-gray-400 border-b border-white/10">
+                        <th className="px-4 py-3 font-medium">Date</th>
+                        <th className="px-4 py-3 font-medium">Score</th>
+                        <th className="px-4 py-3 font-medium">Questions</th>
+                        <th className="px-4 py-3 font-medium">Weaknesses</th>
+                        <th className="px-4 py-3 font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {savedResults.map((res) => (
+                        <tr key={res.id} className="hover:bg-white/5 transition-colors">
+                          <td className="px-4 py-3 text-white">
+                            {new Date(res.exam_date).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-neon-green font-mono font-bold">
+                              {res.total_score} / {res.max_score}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-300">
+                            {res.questions_count}
+                          </td>
+                          <td className="px-4 py-3 text-gray-400 max-w-xs truncate">
+                            {res.student_weaknesses || '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button className="text-neon-blue hover:text-neon-blue/80 text-sm font-medium">
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
-            {resultsLoading ? (
-              <div className="text-center py-8">
-                <div className="loading-spinner w-8 h-8 mx-auto mb-4"></div>
-                <p className="text-gray-400">Loading results...</p>
-              </div>
-            ) : resultsError ? (
-              <div className="text-red-400 text-center py-8">{resultsError}</div>
-            ) : savedResults.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-400">No saved results found.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-left text-gray-900">
-                  <thead className="bg-primary-500/20 text-primary-200">
-                    <tr>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Subject</th>
-                      <th className="px-4 py-3">Class</th>
-                      <th className="px-4 py-3">Score</th>
-                      <th className="px-4 py-3">Sheet</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {savedResults.map((r, i) => (
-                      <tr key={r.id || i} className="border-b border-gray-700 hover:bg-gray-800/50 transition-colors">
-                        <td className="px-4 py-3">{r.exam_date ? new Date(r.exam_date).toLocaleString() : ''}</td>
-                        <td className="px-4 py-3">{r.subject || '-'}</td>
-                        <td className="px-4 py-3">{r.class_level || '-'}</td>
-                        <td className="px-4 py-3">{r.total_score} / {r.max_score}</td>
-                        <td className="px-4 py-3">
-                          {r.answer_sheet_url && (
-                            <a 
-                              href={r.answer_sheet_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-primary-400 hover:text-primary-300 underline transition-colors"
-                            >
-                              View
-                            </a>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         )}
       </div>
-
-      
     </div>
   );
 };
 
-export default CBSEExamSimulator; 
+export default CBSEExamSimulator;

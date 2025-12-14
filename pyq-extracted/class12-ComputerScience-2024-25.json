@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "ComputerScience",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:05:31.058Z",
+    "total_questions": 21
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "State True or False: The Python interpreter handles logical errors during code execution.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct_index": null,
+      "chapter": "Python Basics"
+    },
+    {
+      "question_number": "2",
+      "question": "Identify the output of the following code snippet: text = 'PYTHONPROGRAM' text=text.replace('PY','#') print(text)",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "#THONPROGRAM",
+        "##THON#ROGRAM",
+        "#THON#ROGRAM",
+        "#YTHON#ROGRAM"
+      ],
+      "correct_index": null,
+      "chapter": "String Manipulation"
+    },
+    {
+      "question_number": "3",
+      "question": "Which of the following expressions evaluates to False?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "not(True) and False",
+        "True or False",
+        "not(False and True)",
+        "True and not(False)"
+      ],
+      "correct_index": null,
+      "chapter": "Boolean Logic"
+    },
+    {
+      "question_number": "4",
+      "question": "What is the output of the expression? country ='International' print(country.split('n'))",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "('I', 'ter', 'atio', 'al')",
+        "['I', 'ter', 'atio', 'al']",
+        "['I', 'n', 'ter', 'n', 'atio', 'n', 'al']",
+        "Error"
+      ],
+      "correct_index": null,
+      "chapter": "String Methods"
+    },
+    {
+      "question_number": "5",
+      "question": "What will be the output of the following code snippet? message = 'World Peace' print(message[-2::-2])",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "String Slicing"
+    },
+    {
+      "question_number": "6",
+      "question": "What will be the output of the following code? tuple1 = (1, 2, 3) tuple2 = tuple1 tuple1 += (4,) print(tuple1 == tuple2)",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "True",
+        "False",
+        "tuple1",
+        "Error"
+      ],
+      "correct_index": null,
+      "chapter": "Tuples"
+    },
+    {
+      "question_number": "7",
+      "question": "If my_dict is a dictionary as defined below, then which of the following statements will raise an exception? my_dict = {'apple': 10, 'banana': 20, 'orange': 30}",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "my_dict.get('orange')",
+        "print(my_dict['apple', 'banana'])",
+        "my_dict['apple']=20",
+        "print(str(my_dict))"
+      ],
+      "correct_index": null,
+      "chapter": "Dictionaries"
+    },
+    {
+      "question_number": "8",
+      "question": "What does the list.remove(x) method do in Python?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Removes the element at index x from the list",
+        "Removes the first occurrence of value x from the list",
+        "Removes all occurrences of value x from the list",
+        "Removes the last occurrence of value x from the list"
+      ],
+      "correct_index": null,
+      "chapter": "List Methods"
+    },
+    {
+      "question_number": "9",
+      "question": "If a table which has one Primary key and two alternate keys. How many Candidate keys will this table have?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct_index": null,
+      "chapter": "Database Keys"
+    },
+    {
+      "question_number": "10",
+      "question": "Write the missing statement to complete the following code: file = open('example.txt', 'r') data = file.read(100) ____________________ #Move the file pointer to the beginning of the file next_data = file.read(50) file.close()",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "File Handling"
+    },
+    {
+      "question_number": "11",
+      "question": "State whether the following statement is True or False: The finally block in Python is executed only if no exception occurs in the try block.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct_index": null,
+      "chapter": "Exception Handling"
+    },
+    {
+      "question_number": "12",
+      "question": "What will be the output of the following code? c = 10 def add(): global c c = c + 2 print(c,end='#') add() c=15 print(c,end='%')",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "12%15#",
+        "15#12%",
+        "12#15%",
+        "12%15#"
+      ],
+      "correct_index": null,
+      "chapter": "Functions and Scope"
+    },
+    {
+      "question_number": "13",
+      "question": "Which SQL command can change the degree of an existing relation?",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "SQL Commands"
+    },
+    {
+      "question_number": "14",
+      "question": "What will be the output of the query? SELECT * FROM products WHERE product_name LIKE 'App%';",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Details of all products whose names start with 'App'",
+        "Details of all products whose names end with 'App'",
+        "Names of all products whose names start with 'App'",
+        "Names of all products whose names end with 'App'"
+      ],
+      "correct_index": null,
+      "chapter": "SQL Queries"
+    },
+    {
+      "question_number": "15",
+      "question": "In which datatype the value stored is padded with spaces to fit the specified length.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "DATE",
+        "VARCHAR",
+        "FLOAT",
+        "CHAR"
+      ],
+      "correct_index": null,
+      "chapter": "Data Types"
+    },
+    {
+      "question_number": "16",
+      "question": "Which aggregate function can be used to find the cardinality of a table?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "sum()",
+        "count()",
+        "avg()",
+        "max()"
+      ],
+      "correct_index": null,
+      "chapter": "SQL Functions"
+    },
+    {
+      "question_number": "17",
+      "question": "Which protocol is used to transfer files over the Internet?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "HTTP",
+        "FTP",
+        "PPP",
+        "HTTPS"
+      ],
+      "correct_index": null,
+      "chapter": "Networking Protocols"
+    },
+    {
+      "question_number": "18",
+      "question": "Which network device is used to connect two networks that use different protocols?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Modem",
+        "Gateway",
+        "Switch",
+        "Repeater"
+      ],
+      "correct_index": null,
+      "chapter": "Networking Devices"
+    },
+    {
+      "question_number": "19",
+      "question": "Which switching technique breaks data into smaller packets for transmission, allowing multiple packets to share the same network resources.",
+      "type": "short",
+      "marks": 1,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Networking Techniques"
+    },
+    {
+      "question_number": "20",
+      "question": "Assertion (A): Positional arguments in Python functions must be passed in the exact order in which they are defined in the function signature. Reasoning (R): This is because Python functions automatically assign default values to positional arguments.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation for A",
+        "Both A and R are true and R is not the correct explanation for A",
+        "A is True but R is False",
+        "A is False but R is True"
+      ],
+      "correct_index": null,
+      "chapter": "Function Arguments"
+    },
+    {
+      "question_number": "21",
+      "question": "Assertion (A): A SELECT command in SQL can have both WHERE and HAVING clauses. Reasoning (R): WHERE and HAVING clauses are used to check conditions, therefore, these can be used interchangeably.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation for A",
+        "Both A and R are true and R is not the correct explanation for A",
+        "A is True but R is False",
+        "A is False but R is True"
+      ],
+      "correct_index": null,
+      "chapter": "SQL Clauses"
+    }
+  ]
+}

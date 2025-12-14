@@ -213,7 +213,7 @@ export function StudyPlans() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="text-4xl font-bold text-white mb-4">
           My <span className="gradient-text-primary">Study Plans</span>
         </h1>
         <p className="text-gray-400 text-lg">Manage and track your personalized study schedules</p>
@@ -221,40 +221,40 @@ export function StudyPlans() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card-elevated">
+        <div className="glass-card p-6 border border-white/10">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-gray-900" />
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Total Plans</p>
-              <p className="text-2xl font-bold text-gray-900">{studyPlans.length}</p>
+              <p className="text-2xl font-bold text-white">{studyPlans.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="card-elevated">
+        <div className="glass-card p-6 border border-white/10">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center">
-              <Target className="w-6 h-6 text-gray-900" />
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+              <Target className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Active Plans</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {studyPlans.filter(plan => new Date(plan.exam_date) > new Date()).length}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="card-elevated">
+        <div className="glass-card p-6 border border-white/10">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-gray-900" />
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+              <AlertCircle className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">This Week</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {studyPlans.filter(plan => {
                   const daysUntil = differenceInDays(new Date(plan.exam_date), new Date());
                   return daysUntil <= 7 && daysUntil >= 0;
@@ -264,14 +264,14 @@ export function StudyPlans() {
           </div>
         </div>
 
-        <div className="card-elevated">
+        <div className="glass-card p-6 border border-white/10">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-gray-900" />
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-400 font-medium">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {studyPlans.filter(plan => new Date(plan.exam_date) < new Date()).length}
               </p>
             </div>
@@ -290,11 +290,11 @@ export function StudyPlans() {
 
       {/* Study Plans Grid */}
       {studyPlans.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-24 h-24 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-12 h-12 text-gray-400" />
+        <div className="text-center py-16 glass-panel rounded-3xl border border-white/10">
+          <div className="w-24 h-24 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <BookOpen className="w-12 h-12 text-gray-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">No Study Plans Yet</h3>
+          <h3 className="text-2xl font-bold text-white mb-4">No Study Plans Yet</h3>
           <p className="text-gray-400 mb-8 text-lg">Create your first study plan to get started with personalized learning</p>
           <Link to="/create">
             <Button variant="primary" size="lg" icon={<Sparkles className="w-5 h-5" />}>
@@ -310,142 +310,149 @@ export function StudyPlans() {
             const daysUntil = differenceInDays(new Date(plan.exam_date), new Date());
 
             return (
-              <div key={plan.id} className="card-elevated group">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 min-w-0">
-                    {editingPlanId === plan.id ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={newPlanName}
-                          onChange={(e) => setNewPlanName(e.target.value)}
-                          className="flex-1"
-                          placeholder="Enter plan name"
-                        />
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => updatePlanName(plan.id)}
-                          icon={<Check className="w-4 h-4" />}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={cancelEditing}
-                          icon={<X className="w-4 h-4" />}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <h3 className="text-lg font-bold text-gray-900 truncate">
-                        {plan.plan_name || `${plan.subject} Study Plan`}
-                      </h3>
+              <div key={plan.id} className="glass-card p-6 border border-white/10 hover:border-neon-blue/30 transition-all duration-300 group relative overflow-hidden">
+                {/* Glow Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-neon-blue/0 via-neon-blue/10 to-neon-purple/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
+
+                <div className="relative z-10">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 min-w-0">
+                      {editingPlanId === plan.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={newPlanName}
+                            onChange={(e) => setNewPlanName(e.target.value)}
+                            className="flex-1 bg-black/40 border-white/20 text-white"
+                            placeholder="Enter plan name"
+                          />
+                          <Button
+                            variant="success"
+                            size="sm"
+                            onClick={() => updatePlanName(plan.id)}
+                            icon={<Check className="w-4 h-4" />}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={cancelEditing}
+                            icon={<X className="w-4 h-4" />}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <h3 className="text-lg font-bold text-white truncate group-hover:text-neon-blue transition-colors">
+                          {plan.plan_name || `${plan.subject} Study Plan`}
+                        </h3>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => startEditing(plan)}
+                        className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deletePlan(plan.id)}
+                        className="p-2 rounded-lg hover:bg-red-500/20 transition-colors text-gray-400 hover:text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Plan Details */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <BookOpen className="w-4 h-4 text-neon-purple" />
+                      <span>{plan.subject}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Calendar className="w-4 h-4 text-neon-blue" />
+                      <span>Exam: {format(new Date(plan.exam_date), 'MMM dd, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <Clock className="w-4 h-4 text-neon-green" />
+                      <span>{plan.plan.daily_schedule.length} study sessions</span>
+                    </div>
+
+                    {/* Upcoming preview */}
+                    {(() => {
+                      const upcoming = getUpcoming(plan);
+                      return (
+                        <div className="mt-4 p-3 rounded-xl bg-black/20 border border-white/5">
+                          <div className="text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">Upcoming Sessions</div>
+                          {upcoming.length > 0 ? (
+                            <ul className="text-sm text-gray-400 space-y-2">
+                              {upcoming.map((d) => (
+                                <li key={`${plan.id}-${d.date}-${d.topic}`} className="flex items-start gap-2">
+                                  <span className="text-neon-blue font-mono text-xs mt-0.5">
+                                    {format(new Date(`${d.date}T00:00:00`), 'dd MMM')}
+                                  </span>
+                                  <span className="truncate text-gray-300">{d.topic}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="text-sm text-gray-500 italic">No upcoming sessions</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                      <span>Progress</span>
+                      <span className="text-white font-medium">{Math.round(progress)}%</span>
+                    </div>
+                    <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 shadow-[0_0_10px_currentColor] ${status.status === 'completed'
+                            ? 'bg-green-500 text-green-500'
+                            : status.status === 'urgent'
+                              ? 'bg-yellow-500 text-yellow-500'
+                              : 'bg-neon-blue text-neon-blue'
+                          }`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex items-center justify-between mb-6">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${status.color === 'success' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                        status.color === 'warning' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                          status.color === 'primary' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                      }`}>
+                      {status.text}
+                    </span>
+                    {daysUntil >= 0 && (
+                      <span className="text-sm text-gray-400 font-medium">
+                        {daysUntil === 0 ? 'Today' : `${daysUntil} days left`}
+                      </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => startEditing(plan)}
-                      className="p-2 rounded-lg hover:bg-gray-700/50 transition-colors text-gray-400 hover:text-gray-900"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => deletePlan(plan.id)}
-                      className="p-2 rounded-lg hover:bg-red-500/20 transition-colors text-gray-400 hover:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
 
-                {/* Plan Details */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <BookOpen className="w-4 h-4" />
-                    <span>{plan.subject}</span>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <Link to={`/study/${plan.id}`} className="flex-1">
+                      <Button variant="primary" size="sm" className="w-full shadow-lg shadow-primary-500/20" icon={<Eye className="w-4 h-4" />}>
+                        View Plan
+                      </Button>
+                    </Link>
+                    <Link to={`/study/${plan.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full hover:bg-white/5 border-white/20 text-white">
+                        Start Study
+                      </Button>
+                    </Link>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>Exam: {format(new Date(plan.exam_date), 'MMM dd, yyyy')}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    <span>{plan.plan.daily_schedule.length} study sessions</span>
-                  </div>
-                  {/* Upcoming preview (reflects reschedules) */}
-                  {(() => {
-                    const upcoming = getUpcoming(plan);
-                    return (
-                      <div className="mt-2 p-3 rounded-lg bg-gray-900/40">
-                        <div className="text-xs text-gray-900 mb-1">Upcoming</div>
-                        {upcoming.length > 0 ? (
-                          <ul className="text-sm text-gray-300 space-y-1">
-                            {upcoming.map((d) => (
-                              <li key={`${plan.id}-${d.date}-${d.topic}`}>
-                                {format(new Date(`${d.date}T00:00:00`), 'MMM dd')}: {d.topic}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <div className="text-sm text-gray-400">No upcoming sessions</div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-                    <span>Progress</span>
-                    <span>{Math.round(progress)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        status.status === 'completed'
-                          ? 'bg-gradient-to-r from-success-500 to-success-600'
-                          : status.status === 'urgent'
-                          ? 'bg-gradient-to-r from-warning-500 to-warning-600'
-                          : 'bg-gradient-to-r from-primary-500 to-accent-500'
-                      }`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Status Badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    status.color === 'success' ? 'bg-success-500/20 text-success-300' :
-                    status.color === 'warning' ? 'bg-warning-500/20 text-warning-300' :
-                    status.color === 'primary' ? 'bg-primary-500/20 text-primary-300' :
-                    'bg-gray-500/20 text-gray-300'
-                  }`}>
-                    {status.text}
-                  </span>
-                  {daysUntil >= 0 && (
-                    <span className="text-sm text-gray-400">
-                      {daysUntil === 0 ? 'Today' : `${daysUntil} days left`}
-                    </span>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Link to={`/study/${plan.id}`} className="flex-1">
-                    <Button variant="primary" size="sm" className="w-full" icon={<Eye className="w-4 h-4" />}>
-                      View Plan
-                    </Button>
-                  </Link>
-                  <Link to={`/study/${plan.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      Start Study
-                    </Button>
-                  </Link>
                 </div>
               </div>
             );

@@ -34,9 +34,9 @@ Your identity:
 - You are always "Ranjan Sir"—a caring mentor guiding the student daily.`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+    <div className="min-h-screen">
       {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-blue-100">
+      <div className="sticky top-0 z-10 border-blue-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="inline-block h-6 w-6 rounded-full bg-blue-500" />
@@ -54,8 +54,8 @@ Your identity:
       </div>
 
       {/* Chat panel */}
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        <div className="rounded-2xl border border-blue-100 bg-white/80 backdrop-blur overflow-hidden h-[70vh]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 h-full">
+        <div className="rounded-2xl border border-blue-100 bg-white/80 backdrop-blur overflow-hidden h-[calc(100vh-140px)] shadow-xl shadow-blue-500/5">
           <AIStudyBuddy
             title="RANJAN SIR"
             subtitle="AI Mentor System v2.0"

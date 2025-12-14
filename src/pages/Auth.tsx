@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Brain, Mail, Lock, User, GraduationCap, Sparkles, Star } from 'lucide-react';
+import { Brain, Mail, Lock, User, GraduationCap, Sparkles, Star, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
-import { supabase } from '../lib/supabase';
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -19,20 +18,13 @@ export function Auth() {
   const { signIn, signUp } = useAuth();
   const { showToast } = useToast();
 
-  // Debug: log when the role selector should appear
-  React.useEffect(() => {
-    if (false) { // Removed showRoleSelect from here
-      console.log('Role selection modal should be visible');
-    }
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isSignUp) {
-        const { data, error } = await signUp(formData.email, formData.password, {
+        const { error } = await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
           grade: selectedRole === 'student' ? formData.grade : null,
           school: formData.school,
@@ -40,7 +32,6 @@ export function Auth() {
         });
         if (error) throw error;
         showToast('Account created successfully!', 'success');
-        // Optionally, redirect or refresh context here
       } else {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
@@ -53,148 +44,130 @@ export function Auth() {
     }
   };
 
-  // Remove handleRoleSelect and showRoleSelect logic
-
   return (
-    <div className="min-h-screen animated-gradient flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Floating elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0a0b14]">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-neon-blue/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-neon-purple/10 rounded-full blur-[120px] animate-pulse animation-delay-2000"></div>
       </div>
 
-      <div className="w-full relative z-10 px-0 sm:px-8 md:px-16 lg:px-32 xl:px-64">
+      <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="relative">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-2xl glow-blue">
-                <Brain className="h-10 w-10 text-white" />
+            <div className="relative group">
+              <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,243,255,0.3)] group-hover:scale-110 transition-transform duration-300">
+                <Brain className="h-8 w-8 text-white" />
               </div>
-              <Sparkles className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400 animate-bounce" />
-              <Star className="absolute -bottom-1 -left-1 h-4 w-4 text-cyan-400 animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold gradient-text">
-                AI Study Planner
-              </h1>
-              <p className="text-blue-300 text-sm">Powered by Advanced AI</p>
+              <Sparkles className="absolute -top-3 -right-3 h-6 w-6 text-neon-yellow animate-bounce" />
+              <Star className="absolute -bottom-2 -left-2 h-5 w-5 text-neon-purple animate-pulse" />
             </div>
           </div>
-          <p className="text-gray-300 text-lg">
-            {isSignUp ? 'Join thousands of successful students' : 'Welcome back, future achiever!'}
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+            ElevenFolks
+          </h1>
+          <p className="text-neon-blue font-medium tracking-wider text-sm uppercase mb-4">Future Learning</p>
+          <p className="text-gray-400">
+            {isSignUp ? 'Join the future of education today.' : 'Welcome back, future achiever.'}
           </p>
         </div>
 
-        {/* Form */}
-        {!false && ( // Removed showRoleSelect &&
-        <div className="glass rounded-2xl border border-gray-700/50 p-8 card-hover">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form Card */}
+        <div className="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {isSignUp && (
               <>
-                {/* Role selection radio */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
-                    Role
-                  </label>
-                  <div className="flex gap-6 mb-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="student"
-                        checked={selectedRole === 'student'}
-                        onChange={() => setSelectedRole('student')}
-                      />
-                      Student
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="teacher"
-                        checked={selectedRole === 'teacher'}
-                        onChange={() => setSelectedRole('teacher')}
-                      />
-                      Teacher
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
+                {/* Role Selection */}
+                <div className="grid grid-cols-2 gap-4 p-1 bg-black/40 rounded-xl border border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('student')}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedRole === 'student'
+                        ? 'bg-neon-blue text-black shadow-lg shadow-neon-blue/20'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRole('teacher')}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedRole === 'teacher'
+                        ? 'bg-neon-purple text-white shadow-lg shadow-neon-purple/20'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
                     <User className="h-4 w-4" />
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                    placeholder="Enter your full name"
-                  />
+                    Teacher
+                  </button>
                 </div>
 
-                {/* Only show and require grade field if student is selected */}
-                {selectedRole === 'student' && (
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
-                      <GraduationCap className="h-4 w-4" />
-                      Grade/Class
-                    </label>
+                <div className="space-y-4 animate-fade-in">
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
                     <input
                       type="text"
                       required
-                      value={formData.grade}
-                      onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                      className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                      placeholder="e.g., 12"
+                      value={formData.full_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                      placeholder="Full Name"
                     />
                   </div>
-                )}
-                <div>
-                  <label className="text-sm font-semibold text-gray-300 mb-3 block">
-                    School
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.school}
-                    onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                    className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                    placeholder="School name"
-                  />
+
+                  {selectedRole === 'student' && (
+                    <div className="relative group">
+                      <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
+                      <input
+                        type="text"
+                        required
+                        value={formData.grade}
+                        onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                        placeholder="Grade / Class (e.g., 12)"
+                      />
+                    </div>
+                  )}
+
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-building-2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.school}
+                      onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                      placeholder="School Name (Optional)"
+                    />
+                  </div>
                 </div>
               </>
             )}
 
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
-                <Mail className="h-4 w-4" />
-                Email
-              </label>
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
               <input
                 type="email"
                 required
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                placeholder="Enter your email"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                placeholder="Email Address"
               />
             </div>
 
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
-                <Lock className="h-4 w-4" />
-                Password
-              </label>
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-neon-blue transition-colors" />
               <input
                 type="password"
                 required
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-4 py-4 rounded-xl bg-gray-800/50 border border-gray-600 focus:border-blue-500 focus:outline-none transition-all duration-300 text-white placeholder-gray-400"
-                placeholder="Enter your password"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                placeholder="Password"
                 minLength={6}
               />
             </div>
@@ -202,15 +175,18 @@ export function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed shadow-2xl glow-blue btn-pulse"
+              className="w-full bg-gradient-to-r from-neon-blue to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-lg shadow-neon-blue/25 hover:shadow-neon-blue/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
             >
               {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Please wait...
-                </div>
+                </>
               ) : (
-                isSignUp ? 'Create Account' : 'Sign In'
+                <>
+                  {isSignUp ? 'Create Account' : 'Sign In'}
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
               )}
             </button>
           </form>
@@ -218,27 +194,30 @@ export function Auth() {
           <div className="mt-6 text-center">
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
+              className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
             >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+              {isSignUp ? (
+                <>Already have an account? <span className="text-neon-blue">Sign in</span></>
+              ) : (
+                <>Don't have an account? <span className="text-neon-blue">Sign up</span></>
+              )}
             </button>
           </div>
         </div>
-        )}
 
-        {/* Features */}
-        <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-          <div className="glass rounded-xl p-4 border border-gray-700/50">
-            <Brain className="h-6 w-6 text-blue-400 mx-auto mb-2" />
-            <p className="text-xs text-gray-300">AI Powered</p>
+        {/* Footer Features */}
+        <div className="mt-8 grid grid-cols-3 gap-4">
+          <div className="glass-panel p-4 rounded-xl border border-white/5 text-center hover:border-neon-blue/30 transition-colors">
+            <Brain className="h-6 w-6 text-neon-blue mx-auto mb-2" />
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">AI Powered</p>
           </div>
-          <div className="glass rounded-xl p-4 border border-gray-700/50">
-            <Star className="h-6 w-6 text-yellow-400 mx-auto mb-2" />
-            <p className="text-xs text-gray-300">Personalized</p>
+          <div className="glass-panel p-4 rounded-xl border border-white/5 text-center hover:border-neon-yellow/30 transition-colors">
+            <Star className="h-6 w-6 text-neon-yellow mx-auto mb-2" />
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Personalized</p>
           </div>
-          <div className="glass rounded-xl p-4 border border-gray-700/50">
-            <Sparkles className="h-6 w-6 text-purple-400 mx-auto mb-2" />
-            <p className="text-xs text-gray-300">Smart Plans</p>
+          <div className="glass-panel p-4 rounded-xl border border-white/5 text-center hover:border-neon-purple/30 transition-colors">
+            <Sparkles className="h-6 w-6 text-neon-purple mx-auto mb-2" />
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Smart Plans</p>
           </div>
         </div>
       </div>

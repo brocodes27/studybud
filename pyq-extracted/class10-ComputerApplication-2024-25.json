@@ -1,0 +1,305 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "ComputerApplication",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:54:28.418Z",
+    "total_questions": 26
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Which of the following is NOT a web service?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Sending an email via a webmail client",
+        "Making online transactions through a banking portal",
+        "Sharing files through Bluetooth",
+        "Conducting online classes for students"
+      ],
+      "correct_index": 2,
+      "chapter": "Web Services"
+    },
+    {
+      "question_number": "2",
+      "question": "What does TCP/IP stand for?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Transmission Control Program/Internet Protocol",
+        "Transfer Control Program/Internet Protocol",
+        "Transfer Control Protocol/Internet Provider",
+        "Transmission Control Protocol/Internet Protocol"
+      ],
+      "correct_index": 3,
+      "chapter": "Networking"
+    },
+    {
+      "question_number": "3",
+      "question": "Information retrieval refers to the process of:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Locating and accessing information through search engines",
+        "Sending and receiving emails using different email protocols",
+        "Transferring files from one device to another using protocols",
+        "Fetching web pages from a server"
+      ],
+      "correct_index": 0,
+      "chapter": "Information Retrieval"
+    },
+    {
+      "question_number": "4",
+      "question": "Which of the following is an attribute of the <body> tag?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "vlink",
+        "face",
+        "color",
+        "font-size"
+      ],
+      "correct_index": 0,
+      "chapter": "HTML Attributes"
+    },
+    {
+      "question_number": "5",
+      "question": "In HTML, the bgcolor attribute is used to:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Set the background color of the webpage",
+        "Set the text color of the webpage",
+        "Set the background image of the webpage",
+        "Set the background text of the webpage"
+      ],
+      "correct_index": 0,
+      "chapter": "HTML Attributes"
+    },
+    {
+      "question_number": "6",
+      "question": "Which of the following is the use of VoIP technology?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Transmitting multimedia content over the internet",
+        "Sending and receiving emails",
+        "Making voice calls over the internet",
+        "Hosting websites on servers"
+      ],
+      "correct_index": 2,
+      "chapter": "VoIP Technology"
+    },
+    {
+      "question_number": "7",
+      "question": "Which of the following best describes the main responsibility of a web server?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Storing files on a local device",
+        "Transmitting data across the internet",
+        "Hosting websites and delivering content to web browsers",
+        "Encrypting files to ensure secure transfer"
+      ],
+      "correct_index": 2,
+      "chapter": "Web Servers"
+    },
+    {
+      "question_number": "8",
+      "question": "The digital divide refers to:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "The difference in privacy laws across different countries",
+        "The gap between those who have access to digital devices and those who do not",
+        "The issue of intellectual property rights in the digital world",
+        "The security measures taken to protect digital transactions in e-commerce"
+      ],
+      "correct_index": 1,
+      "chapter": "Digital Divide"
+    },
+    {
+      "question_number": "9",
+      "question": "Which of the following is a characteristic of open-source software?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "It is free of cost and can be modified by anyone.",
+        "It is free of cost, but cannot be modified.",
+        "It requires a fee for usage and modification.",
+        "It is available for purchase and cannot be shared."
+      ],
+      "correct_index": 0,
+      "chapter": "Open Source Software"
+    },
+    {
+      "question_number": "10",
+      "question": "Rahul wants to access another computer system remotely. Which protocol should he use?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "SMTP",
+        "POP3",
+        "HTTP",
+        "TELNET"
+      ],
+      "correct_index": 3,
+      "chapter": "Networking Protocols"
+    },
+    {
+      "question_number": "11",
+      "question": "Assertion (A): FTP is used for transferring files over a network. Reason (R): FTP encrypts all file transfers for secure communication.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are True, and R correctly explains A.",
+        "Both A and R are True, but R does not correctly explain A.",
+        "A is True, but R is False.",
+        "A is False, but R is True."
+      ],
+      "correct_index": 2,
+      "chapter": "File Transfer Protocol"
+    },
+    {
+      "question_number": "12",
+      "question": "Assertion (A): When we enter the URL of a website in the address bar, the web browser retrieves the web page from a web server. Reason (R): The web browser uses the HTTP protocol to interact with web servers and retrieve web pages.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are True, and R correctly explains A.",
+        "Both A and R are True, but R does not correctly explain A.",
+        "A is True, but R is False.",
+        "A is False, but R is True."
+      ],
+      "correct_index": 0,
+      "chapter": "Web Browsing"
+    },
+    {
+      "question_number": "13",
+      "question": "What is the importance of comments? Write the syntax for writing comments in an HTML page.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Basics"
+    },
+    {
+      "question_number": "14",
+      "question": "Sanaya, a Class X student, enjoys learning through online platforms. What is this approach of studying called? Mention any two advantages of using this approach. OR What do you understand by the term web-address? How is it different from an email address?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Online Learning"
+    },
+    {
+      "question_number": "15",
+      "question": "Aarav is designing a webpage and wants to set the background color and text color. Write code to achieve this using HTML attributes.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Styling"
+    },
+    {
+      "question_number": "16",
+      "question": "Explain the purpose of the rowspan and colspan attributes in an HTML table. Provide an example. OR Shruti wants to create a numbered list on her webpage. Explain the purpose of the type and start attributes in the <ol> tag with an example.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Tables and Lists"
+    },
+    {
+      "question_number": "17",
+      "question": "What is the purpose of Hyper-link in an HTML Page? Explain the use of the href attribute with an example.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Links"
+    },
+    {
+      "question_number": "18",
+      "question": "An incomplete HTML code of a webpage is given below. Fill in the empty spaces in the <style> tag to meet the specifications given. OR Nisha, a Class X student, is designing an HTML page to display a description list and an ordered list for her project. She writes the following code: Based on the above code, fill in the blanks in line 1, line 2, and line 3 as per specifications given below.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Styling and Lists"
+    },
+    {
+      "question_number": "19",
+      "question": "Ravi is trying to make an online payment on an e-commerce website. He sees that the website's URL starts with \"http\". Should he continue with the payment? Give reasons to support your answer.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Web Security"
+    },
+    {
+      "question_number": "20",
+      "question": "The following HTML statements contain errors. Rewrite the correct versions of these statements with underlined corrections, following the given specifications.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Error Correction"
+    },
+    {
+      "question_number": "21",
+      "question": "Suchita is examining a URL https://www.data.gov.in/ and has a few questions. Help her by providing answers to the following questions.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "URL and Protocols"
+    },
+    {
+      "question_number": "22",
+      "question": "Write suitable HTML Code to Embed audio and video in a webpage. OR What is a Hypertext link? Write the HTML code to create a hyperlink that refers to an external website in a webpage.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Multimedia and Links"
+    },
+    {
+      "question_number": "23",
+      "question": "Raghav wants to add the following text to a webpage. Help him by writing the suitable HTML statements for the following: i. CO2 ii. (X+Y)^2 iii. A^4",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Text Formatting"
+    },
+    {
+      "question_number": "24",
+      "question": "Write the HTML code to design the web page as shown below, considering the specifications as given below. OR Answer the following Questions.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "HTML Page Design"
+    },
+    {
+      "question_number": "25",
+      "question": "Mr. Ravi recently bought a new smartphone and began exploring online platforms. He decided to book a train ticket to visit his hometown and searched for a booking website which looks very much like the original website. After entering his personal and payment details, he noticed that money had been deducted from his account, but he didn't receive any booking confirmation. He then realized that he has been a victim of fraud. Based on the above information, answer the following questions.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Online Fraud"
+    },
+    {
+      "question_number": "26",
+      "question": "Meera is a creative student who loves to design posters for her school events. While preparing a poster for a cultural festival, she downloaded images and content from the internet without seeking permission or giving credit to the original creators. Based on the above information, answer the following questions.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Intellectual Property Rights"
+    }
+  ]
+}

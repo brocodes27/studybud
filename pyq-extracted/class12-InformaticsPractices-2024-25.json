@@ -1,0 +1,301 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "InformaticsPractices",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:08:17.686Z",
+    "total_questions": 21
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "State whether the following statement is True or False: Slicing can be used to extract a specific portion from a Pandas Series.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct_index": null,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "2",
+      "question": "The purpose of WHERE clause in a SQL statement is to:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Create a table",
+        "Filter rows based on a specific condition",
+        "Specify the columns to be displayed",
+        "Sort the result based on a column"
+      ],
+      "correct_index": 1,
+      "chapter": "SQL"
+    },
+    {
+      "question_number": "3",
+      "question": "Identify the networking device responsible for routing data packets based on their destination addresses.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Modem",
+        "Hub",
+        "Repeater",
+        "Router"
+      ],
+      "correct_index": 3,
+      "chapter": "Networking"
+    },
+    {
+      "question_number": "4",
+      "question": "Identify the SQL command used to delete a relation (table) from a relational database.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "DROP TABLE",
+        "REMOVE TABLE",
+        "DELETE TABLE",
+        "ERASE TABLE"
+      ],
+      "correct_index": 0,
+      "chapter": "SQL"
+    },
+    {
+      "question_number": "5",
+      "question": "e-waste refers to:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Software that has become obsolete",
+        "Data that has been deleted from a storage device",
+        "Viruses that infect computers",
+        "Electronic devices that are no longer in use"
+      ],
+      "correct_index": 3,
+      "chapter": "E-waste Management"
+    },
+    {
+      "question_number": "6",
+      "question": "Which of the following Python statements can be used to select a column 'column_name' from a DataFrame df?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "df.getcolumn('column_name')",
+        "df['column_name']",
+        "df.select('column_name')",
+        "df(column_name)"
+      ],
+      "correct_index": 1,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "7",
+      "question": "By default, the plot() function of Matplotlib draws a ______ plot.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "histogram",
+        "column",
+        "bar",
+        "line"
+      ],
+      "correct_index": 3,
+      "chapter": "Matplotlib"
+    },
+    {
+      "question_number": "8",
+      "question": "State whether the following statement is True or False: In SQL, the HAVING clause is used to apply filter on groups formed by the GROUP BY clause.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct_index": null,
+      "chapter": "SQL"
+    },
+    {
+      "question_number": "9",
+      "question": "Which of the following Python statements is used to import data from a CSV file into a Pandas DataFrame (Note: pd is an alias for pandas)?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "pd.open_csv('filename.csv')",
+        "pd.read_csv('filename.csv')",
+        "pd.load_csv('filename.csv')",
+        "pd.import_csv('filename.csv')"
+      ],
+      "correct_index": 1,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "10",
+      "question": "What is plagiarism?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Using copyrighted material without giving proper acknowledgement to the source",
+        "Downloading illegal software.",
+        "Spreading misinformation online.",
+        "Hacking into computer systems."
+      ],
+      "correct_index": 0,
+      "chapter": "Ethics"
+    },
+    {
+      "question_number": "11",
+      "question": "Fill in the Blank: The COUNT(*) function provides the total number of __________ within a relation (table) in a relational database.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Columns",
+        "Unique values",
+        "Not-null values",
+        "Rows"
+      ],
+      "correct_index": 3,
+      "chapter": "SQL"
+    },
+    {
+      "question_number": "12",
+      "question": "In which of the network topologies do all devices connect to a central point, such as a switch or hub?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Star",
+        "Bus",
+        "Tree",
+        "Mesh"
+      ],
+      "correct_index": 0,
+      "chapter": "Networking"
+    },
+    {
+      "question_number": "13",
+      "question": "In a Pandas DataFrame, if the tail() function is used without specifying the optional argument indicating the number of rows to display, what is the default number of rows displayed, considering the DataFrame has 10 entries?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "0",
+        "1",
+        "4",
+        "5"
+      ],
+      "correct_index": 3,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "14",
+      "question": "Identify the type of cybercrime that involves sending fraudulent emails to deceive individuals into revealing sensitive information.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Hacking",
+        "Phishing",
+        "Cyberbullying",
+        "Cyberstalking"
+      ],
+      "correct_index": 1,
+      "chapter": "Cybersecurity"
+    },
+    {
+      "question_number": "15",
+      "question": "While creating a Series using a dictionary, the keys of the dictionary become:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Values of the Series",
+        "Indices of the Series",
+        "Data type of the Series",
+        "Name of the Series"
+      ],
+      "correct_index": 1,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "16",
+      "question": "Match the following SQL functions/clauses with their descriptions: SQL Function Description P. MAX() 1. Find the position of a substring in a string. Q. SUBSTRING() 2. Returns the maximum value in a column. R. INSTR() 3. Sorts the data based on a column. S. ORDER BY 4. Extracts a portion of a string.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "P - 2, Q - 4, R - 3, S - 1",
+        "P - 2, Q - 4, R - 1, S - 3",
+        "P - 4, Q - 3, R - 2, S - 1",
+        "P - 4, Q - 2, R - 1, S - 3"
+      ],
+      "correct_index": 1,
+      "chapter": "SQL"
+    },
+    {
+      "question_number": "17",
+      "question": "Fill in the Blank: Boolean indexing in Pandas DataFrame can be used for _______.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Creating a new DataFrame",
+        "Sorting data based on index labels",
+        "Joining data using labels",
+        "Filtering data based on condition"
+      ],
+      "correct_index": 3,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "18",
+      "question": "Which Matplotlib plot is best suited to represent changes in data over time?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Bar plot",
+        "Histogram",
+        "Line plot",
+        "Histogram & Bar plot"
+      ],
+      "correct_index": 2,
+      "chapter": "Matplotlib"
+    },
+    {
+      "question_number": "19",
+      "question": "Which type of network covers a small geographical area like a single office, building, or school campus?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "PAN",
+        "MAN",
+        "LAN",
+        "WAN"
+      ],
+      "correct_index": 2,
+      "chapter": "Networking"
+    },
+    {
+      "question_number": "20",
+      "question": "Assertion (A): We can add a new column in an existing DataFrame. Reason (R): DataFrames are size mutable.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A)",
+        "Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A)",
+        "Assertion (A) is True, but Reason (R) is False",
+        "Assertion (A) is False, but Reason (R) is True"
+      ],
+      "correct_index": 0,
+      "chapter": "Pandas"
+    },
+    {
+      "question_number": "21",
+      "question": "Assertion (A): In SQL, INSERT INTO is a Data Definition Language (DDL) Command. Reason (R): DDL commands are used to create, modify, or remove database structures, such as tables.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both Assertion (A) and Reason (R) are true, and Reason (R) is the correct explanation of Assertion (A)",
+        "Both Assertion (A) and Reason (R) are true, but Reason (R) is not the correct explanation of Assertion (A)",
+        "Assertion (A) is True, but Reason (R) is False",
+        "Assertion (A) is False, but Reason (R) is True"
+      ],
+      "correct_index": 3,
+      "chapter": "SQL"
+    }
+  ]
+}

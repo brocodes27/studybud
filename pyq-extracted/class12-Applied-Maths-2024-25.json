@@ -1,0 +1,263 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Applied-Maths",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:03:44.946Z",
+    "total_questions": 18
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "The area (in sq units) bounded by the curve $y = \\sqrt{x}$, the x-axis, $x = 1$ and $x = 4$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{11}{3}",
+        "\\frac{1}{4}",
+        "\\frac{14}{3}",
+        "\\frac{13}{3}"
+      ],
+      "correct_index": null,
+      "chapter": "Integration"
+    },
+    {
+      "question_number": "2",
+      "question": "Sampling which provides for a known non-zero equal chance of selection is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Systematic sampling",
+        "Convenience sampling",
+        "Quota sampling",
+        "Purposive sampling"
+      ],
+      "correct_index": null,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "3",
+      "question": "Let the cost function for a manufacturer is given by $C(x) = x^3 - 3x^2 + 2x$ (In rupees). Which of the following statement is correct based on the above information?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "The marginal cost decreases from 0 to 1 and then increases onwards.",
+        "The marginal cost increases from 0 to 1 and then decreases onwards.",
+        "Marginal cost decreases as production level increases from zero.",
+        "Marginal cost increases as production level increases from zero."
+      ],
+      "correct_index": null,
+      "chapter": "Calculus"
+    },
+    {
+      "question_number": "4",
+      "question": "The absolute minimum value of the function $f(x) = x^2 - 4x + 1$ in the interval $[-2, 2]$ is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "-8",
+        "-9",
+        "-10",
+        "-16"
+      ],
+      "correct_index": null,
+      "chapter": "Calculus"
+    },
+    {
+      "question_number": "5",
+      "question": "For the purpose of t-test of significance, a random sample of size $n = 2025$ is drawn from a normal population, then the degree of freedom ($\\nu$) is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2025",
+        "2024",
+        "2025",
+        "2024"
+      ],
+      "correct_index": null,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "6",
+      "question": "The constraints of a linear programming problem along with their graphs is shown below: $x + 2y \\geq 3$, $x \\geq 10$, $y \\geq 0$, $x \\geq 0$. Which of the following inequality may be removed so that the feasible region remains the same in above graph?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$x + 2y \\geq 3$",
+        "$x \\geq 10$",
+        "$y \\geq 0$",
+        "$x \\geq 0$"
+      ],
+      "correct_index": null,
+      "chapter": "Linear Programming"
+    },
+    {
+      "question_number": "7",
+      "question": "A player rolls one fair die. If the die shows an odd number, the player wins the value that appears on the die, else loses half the value that appears on it. The expected gain of the player is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "-\\frac{1}{2}",
+        "0",
+        "\\frac{1}{2}",
+        "1"
+      ],
+      "correct_index": null,
+      "chapter": "Probability"
+    },
+    {
+      "question_number": "8",
+      "question": "The original cost of a machine is ₹1200000 and the scrap value of the machine after a useful life of 3 years is ₹300000, then the book value of the machine at the end of 2 years is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹100000",
+        "₹250000",
+        "₹600000",
+        "₹800000"
+      ],
+      "correct_index": null,
+      "chapter": "Depreciation"
+    },
+    {
+      "question_number": "9",
+      "question": "A fish jumps out of the water surface and follows the parabolic path $y = -x^2 + 6x - 8; 2 \\leq x \\leq 4$. The fish reaches the highest height in its path at $(3,1)$. The slope of the path of the fish at $(3,1)$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "correct_index": null,
+      "chapter": "Calculus"
+    },
+    {
+      "question_number": "10",
+      "question": "In a large consignment of electric bulbs 5% of a batch of batteries are defective. A random sample of 80 is taken for inspection with replacement. Then the Variance of the number of defectives in the sample is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{18}{5}",
+        "\\frac{19}{5}",
+        "4.555",
+        "8"
+      ],
+      "correct_index": null,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "11",
+      "question": "If it is currently 6:00 pm in 12 hours clock then what will be the time after 375 hours?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "6 am",
+        "6 pm",
+        "9 am",
+        "9 pm"
+      ],
+      "correct_index": null,
+      "chapter": "Time Calculation"
+    },
+    {
+      "question_number": "12",
+      "question": "The values of $\\frac{1}{x}$ for the given values of $x \\in (-1, 3) - \\{0\\}$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "(-1, \\frac{1}{3}) \\cup (3, \\infty)",
+        "(-\\infty, -1) \\cup (\\frac{1}{3}, \\infty)",
+        "(-\\frac{1}{3}, 1)",
+        "(-\\frac{1}{3}, -1)"
+      ],
+      "correct_index": null,
+      "chapter": "Functions"
+    },
+    {
+      "question_number": "13",
+      "question": "The component of a time series attached to long term variations is termed as",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Seasonal variations",
+        "Irregular variations",
+        "Secular trend variations",
+        "Cyclic variations"
+      ],
+      "correct_index": null,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "14",
+      "question": "The present value of a sequence of payments of ₹800 made at the end of every 6 month and continuing forever. If money is worth 4% per annum compounded semi-annually, then the present value of the sequence is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹20000",
+        "₹40000",
+        "₹60000",
+        "₹80000"
+      ],
+      "correct_index": null,
+      "chapter": "Finance"
+    },
+    {
+      "question_number": "15",
+      "question": "Shown below is a curve. $L_1$ is the tangent to any point $(x, y)$ on the curve. $L_2$ is the line that connects the point $(x, y)$ to the origin. The slope of $L_1$ is one third of the slope of $L_2$. Then the differential equation, using the given conditions is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{dy}{dx} = \\frac{y}{3x}",
+        "\\frac{dy}{dx} = \\frac{y}{x}",
+        "\\frac{dy}{dx} = \\frac{x}{3y}",
+        "\\frac{dy}{dx} = \\frac{3y}{x}"
+      ],
+      "correct_index": null,
+      "chapter": "Differential Equations"
+    },
+    {
+      "question_number": "16",
+      "question": "For a $3 \\times 3$ matrix if $\\text{adj } A = 2A - 1$, find $|3A A^T|$",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "108",
+        "12",
+        "54",
+        "8"
+      ],
+      "correct_index": null,
+      "chapter": "Matrices"
+    },
+    {
+      "question_number": "17",
+      "question": "For two matrices $P = \\begin{bmatrix} 3 & 4 \\\\ 1 & 2 \\\\ 0 & 1 \\end{bmatrix}$ and $Q = \\begin{bmatrix} 1 & 2 & 1 \\\\ 1 & 2 & 3 \\end{bmatrix}$, where $T$ is the transpose of the matrix $Q$, $P - Q^T$ is:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$\\begin{bmatrix} 2 & 3 & 3 \\\\ 0 & 0 & 3 \\\\ -1 & -1 & -1 \\end{bmatrix}$",
+        "$\\begin{bmatrix} 4 & 3 & 3 \\\\ 0 & 1 & 2 \\\\ -1 & -1 & -1 \\end{bmatrix}$",
+        "$\\begin{bmatrix} 4 & 3 & 0 \\\\ 3 & 1 & 2 \\\\ -1 & -1 & -1 \\end{bmatrix}$",
+        "$\\begin{bmatrix} 2 & 3 & 0 \\\\ 3 & 0 & 3 \\\\ -1 & -1 & -1 \\end{bmatrix}$"
+      ],
+      "correct_index": null,
+      "chapter": "Matrices"
+    },
+    {
+      "question_number": "18",
+      "question": "The order and degree of a differential equation $\\left(\\frac{d^2y}{dx^2}\\right)^4 + 2\\left(\\frac{dy}{dx}\\right)^5 + 2 = 0$; respectively, are",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2 and 4",
+        "2 and 1",
+        "2 and 3",
+        "3 and 3"
+      ],
+      "correct_index": null,
+      "chapter": "Differential Equations"
+    }
+  ]
+}

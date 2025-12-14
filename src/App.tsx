@@ -41,7 +41,9 @@ import ElliotVoiceTest from './components/ElliotVoiceTest';
 import { Sparkles, Crown, X, Zap } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
 import { RanjanSir } from './pages/RanjanSir';
+import { VideoLessons } from './pages/VideoLessons';
 import { Curriculum } from './pages/Curriculum';
+import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
 
@@ -169,7 +171,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="relative z-10">
         {/* Offline Indicator */}
         {!isFullscreen && !isOnline && (
@@ -177,7 +179,7 @@ function AppContent() {
             📱 You're offline. Some features may be limited.
           </div>
         )}
-        
+
         {/* Improved Subscribe Button for Free Users */}
         {!isFullscreen && isPremium === false && showSubscribeBanner && (
           <div className="w-full flex justify-center sticky top-0 z-50">
@@ -202,7 +204,7 @@ function AppContent() {
             </div>
           </div>
         )}
-        
+
         {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
         <main className={isFullscreen ? "w-full h-screen p-0 m-0" : "w-full px-6 py-8 page-with-sidebar"}>
           <Routes>
@@ -210,7 +212,9 @@ function AppContent() {
             <Route path="/" element={<RanjanSir />} />
             <Route path="/create" element={<CreatePlan />} />
             <Route path="/plans" element={<StudyPlans />} />
+            <Route path="/videos" element={<VideoLessons />} />
             <Route path="/curriculum" element={<Curriculum />} />
+            <Route path="/ai-buddy" element={<AIStudyBuddyPage />} />
             <Route path="/tools" element={<StudyTools />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/analytics" element={<Analytics />} />
@@ -243,7 +247,7 @@ function AppContent() {
           </Routes>
         </main>
       </div>
-      
+
       {/* Global Components */}
       <GlobalTourManager />
       <PersonalTipsManager />

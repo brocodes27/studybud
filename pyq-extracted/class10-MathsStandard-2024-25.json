@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "MathsStandard",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:57:50.054Z",
+    "total_questions": 20
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "If $a = 2^2 \\times 3^x$, $b = 2^2 \\times 3 \\times 5$, $c = 2^2 \\times 3 \\times 7$ and LCM$(a, b, c) = 3780$, then $x$ is equal to",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1",
+        "2",
+        "3",
+        "0"
+      ],
+      "correct_index": null,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "2",
+      "question": "The shortest distance (in units) of the point (2,3) from y-axis is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2",
+        "3",
+        "5",
+        "1"
+      ],
+      "correct_index": null,
+      "chapter": "Coordinate Geometry"
+    },
+    {
+      "question_number": "3",
+      "question": "If the lines given by $3x + 2ky = 2$ and $2x + 5y + 1 = 0$ are not parallel, then $k$ has to be",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{15}{4}",
+        "\\neq \\frac{15}{4}",
+        "any rational number",
+        "any rational number having 4 as denominator"
+      ],
+      "correct_index": null,
+      "chapter": "Pair of Linear Equations in Two Variables"
+    },
+    {
+      "question_number": "4",
+      "question": "A quadrilateral ABCD is drawn to circumscribe a circle. If BC=7cm, CD=4cm and AD=3cm, then the length of AB is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "3cm",
+        "4cm",
+        "6cm",
+        "7cm"
+      ],
+      "correct_index": null,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "5",
+      "question": "If $\\sec\\theta + \\tan\\theta = x$, then $\\sec\\theta - \\tan\\theta$ will be",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "x",
+        "$x^2$",
+        "$\\frac{2}{x}$",
+        "$\\frac{1}{x}$"
+      ],
+      "correct_index": null,
+      "chapter": "Trigonometric Identities"
+    },
+    {
+      "question_number": "6",
+      "question": "Which one of the following is not a quadratic equation?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$(x + 2)^2 = 2(x + 3)$",
+        "$x^2 + 3x = (-1)(1 - 3x)^2$",
+        "$x^3 - x^2 + 2x + 1 = (x + 1)^3$",
+        "$(x + 2)(x + 1) = x^2 + 2x + 3$"
+      ],
+      "correct_index": null,
+      "chapter": "Quadratic Equations"
+    },
+    {
+      "question_number": "7",
+      "question": "Given below is the picture of the Olympic rings made by taking five congruent circles of radius 1cm each, intersecting in such a way that the chord formed by joining the point of intersection of two circles is also of length 1cm. Total area of all the dotted regions (assuming the thickness of the rings to be negligible) is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$4[\\frac{\\pi}{12} - \\frac{\\sqrt{3}}{4}] \\text{ cm}^2$",
+        "$[\\frac{\\pi}{6} - \\frac{\\sqrt{3}}{4}] \\text{ cm}^2$",
+        "$4[\\frac{\\pi}{6} - \\frac{\\sqrt{3}}{4}] \\text{ cm}^2$",
+        "$8[\\frac{\\pi}{6} - \\frac{\\sqrt{3}}{4}] \\text{ cm}^2$"
+      ],
+      "correct_index": null,
+      "chapter": "Areas Related to Circles"
+    },
+    {
+      "question_number": "8",
+      "question": "A pair of dice is tossed. The probability of not getting the sum eight is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{5}{36}",
+        "\\frac{31}{36}",
+        "\\frac{5}{18}",
+        "\\frac{5}{9}"
+      ],
+      "correct_index": null,
+      "chapter": "Probability"
+    },
+    {
+      "question_number": "9",
+      "question": "If $2\\sin5x = \\sqrt{3}$, $0^\\circ \\leq x \\leq 90^\\circ$, then $x$ is equal to",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "10^\\circ",
+        "12^\\circ",
+        "20^\\circ",
+        "50^\\circ"
+      ],
+      "correct_index": null,
+      "chapter": "Trigonometric Ratios"
+    },
+    {
+      "question_number": "10",
+      "question": "The sum of two numbers is 1215 and their HCF is 81, then the possible pairs of such numbers are",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correct_index": null,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "11",
+      "question": "If the area of the base of a right circular cone is 51cm$^2$ and its volume is 85cm$^3$, then the height of the cone is given as",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{5}{6} \\text{ cm}",
+        "\\frac{5}{3} \\text{ cm}",
+        "\\frac{5}{2} \\text{ cm}",
+        "5 \\text{ cm}"
+      ],
+      "correct_index": null,
+      "chapter": "Surface Areas and Volumes"
+    },
+    {
+      "question_number": "12",
+      "question": "If zeroes of the quadratic polynomial $ax^2 + bx + c$ ($a, c \\neq 0$) are equal, then",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "c and b must have opposite signs",
+        "c and a must have opposite signs",
+        "c and b must have same signs",
+        "c and a must have same signs"
+      ],
+      "correct_index": null,
+      "chapter": "Polynomials"
+    },
+    {
+      "question_number": "13",
+      "question": "The area (in cm$^2$) of a sector of a circle of radius 21cm cut off by an arc of length 22cm is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "441",
+        "321",
+        "231",
+        "221"
+      ],
+      "correct_index": null,
+      "chapter": "Areas Related to Circles"
+    },
+    {
+      "question_number": "14",
+      "question": "If $\\triangle ABC \\sim \\triangle DEF$, $AB=6\\text{ cm}$, $DE=9\\text{ cm}$, $EF=6\\text{ cm}$ and $FD=12\\text{ cm}$, then the perimeter of $\\triangle ABC$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "28\\text{ cm}",
+        "28.5\\text{ cm}",
+        "18\\text{ cm}",
+        "23\\text{ cm}"
+      ],
+      "correct_index": null,
+      "chapter": "Triangles"
+    },
+    {
+      "question_number": "15",
+      "question": "If the probability of the letter chosen at random from the letters of the word 'Mathematics' to be a vowel is $\\frac{2}{2x + 1}$, then $x$ is equal to",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "\\frac{4}{11}",
+        "\\frac{9}{4}",
+        "\\frac{11}{4}",
+        "\\frac{4}{9}"
+      ],
+      "correct_index": null,
+      "chapter": "Probability"
+    },
+    {
+      "question_number": "16",
+      "question": "The points A(9,0), B(9,-6), C(-9,0) and D(-9,6) are the vertices of a",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Square",
+        "Rectangle",
+        "Parallelogram",
+        "Trapezium"
+      ],
+      "correct_index": null,
+      "chapter": "Coordinate Geometry"
+    },
+    {
+      "question_number": "17",
+      "question": "The median of a set of 9 distinct observations is 20.5. If each of the observations of a set is increased by 2, then the median of a new set",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "is increased by 2",
+        "is decreased by 2",
+        "is two times the original number",
+        "Remains same as that of original observations"
+      ],
+      "correct_index": null,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "18",
+      "question": "The length of a tangent drawn to a circle of radius 9 cm from a point at a distance of 41cm from the centre of the circle is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "40cm",
+        "9cm",
+        "41cm",
+        "50cm"
+      ],
+      "correct_index": null,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "19",
+      "question": "Assertion (A): The number $5^n$ cannot end with the digit 0, where n is a natural number. Reason (R): A number ends with 0, if its prime factorization contains both 2 and 5.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both assertion (A) and reason (R) are true and reason (R) is the correct explanation of assertion (A)",
+        "Both assertion (A) and reason (R) are true and reason (R) is not the correct explanation of assertion (A)",
+        "Assertion (A) is true but reason (R) is false.",
+        "Assertion (A) is false but reason (R) is true."
+      ],
+      "correct_index": null,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "20",
+      "question": "Assertion (A): If $\\cos A + \\cos^2 A = 1$, then $\\sin^2 A + \\sin^4 A = 1$. Reason (R): $\\sin^2 A + \\cos^2 A = 1$.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both assertion (A) and reason (R) are true and reason (R) is the correct explanation of assertion (A)",
+        "Both assertion (A) and reason (R) are true and reason (R) is not the correct explanation of assertion (A)",
+        "Assertion (A) is true but reason (R) is false.",
+        "Assertion (A) is false but reason (R) is true."
+      ],
+      "correct_index": null,
+      "chapter": "Trigonometric Identities"
+    }
+  ]
+}

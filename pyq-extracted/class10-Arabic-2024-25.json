@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "Arabic",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T12:39:27.176Z",
+    "total_questions": 14
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Read the following passages carefully and attempt any two of them, by filling the blanks with appropriate words given in the bracket, each question carries one mark.",
+      "type": "mcq",
+      "marks": 10,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Reading Skills"
+    },
+    {
+      "question_number": "2",
+      "question": "Write a paragraph in about 50 words in Arabic on any one of the following topics: (a) زيارة مع الأسرة (b) مكتبة المدرسة (c) قرية",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "3",
+      "question": "Make two sentences with any two words of the following: (a) محطة (b) ماء (c) مزدحم (d) تذكرة",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "4",
+      "question": "Fill any two of the following blanks: (a) --------- ماهرة (أنت, نحن, هي) (b) ------- مديران (هما, هو) (c) ------- أزواج (هم, هو) (d) --------- طالب (نحن, أنا, هو)",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "5",
+      "question": "Correct any two of the following sentences: (a) أخذ الدارسة كتبهن من المكتبة (b) كتبت خمسة قصص (c) صار الجو باردة (d) وصل المسافرات إلى المسجد",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Writing Skills"
+    },
+    {
+      "question_number": "6",
+      "question": "Define and illustrate any one of the following with example: (a) العدد والمعدود (b) الضمير المتصل (c) كان وأخواتها",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Grammar & Translation"
+    },
+    {
+      "question_number": "7",
+      "question": "Choose any five correct answers from the bracket: (a) ساعة الولد ------------ (كبير, كبار, كبيرة) (b) درست في المدرسة -------- (المشهورتان, المشهورة) (c) ----- العاملون إلى المكتب (ذهبوا, ذهب, ذهبت) (d) ----- الدراسة مخلص (أنت, هي, هن) (e) الحوض مملوء بالماء -------- (النظيفة, نظيف) (f) أنا ------ معك (موافقون, موافقات, موافق)",
+      "type": "mcq",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Grammar & Translation"
+    },
+    {
+      "question_number": "8",
+      "question": "Translate any five of the following into English: (a) وصلت الحافلة إلى الميدان (b) أنت تقرأ الكتاب (c) ماذا في جيبك؟ (d) نحن رجعنا مساء (e) أبوه مدير (f) هذه الغرفة نظيفة (g) هل هم عم؟ (h) أولى خمسة كتب على الطاولة",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Grammar & Translation"
+    },
+    {
+      "question_number": "9",
+      "question": "Translate any five of the following into Arabic: 1. They are our teachers 2. That is a wide library 3. Do you know them? 4. When is your holiday? 5. I bought a new bag 6. Where is your mother? 7. I like red car 8. Yes, you are my best friend",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Grammar & Translation"
+    },
+    {
+      "question_number": "10",
+      "question": "Translate any two of the following passages",
+      "type": "long",
+      "marks": 10,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "11",
+      "question": "Read the passage question no: 10 section (ج) and answer any four of the following questions",
+      "type": "long",
+      "marks": 8,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "12",
+      "question": "Choose any four correct answers.",
+      "type": "mcq",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "13",
+      "question": "Explain any four of the following verses",
+      "type": "long",
+      "marks": 15,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    },
+    {
+      "question_number": "14",
+      "question": "Write the central idea of any one of the following: (a) عيد استقلال الهند (b) من حنيا الغريب (c) وصف القلم",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literature"
+    }
+  ]
+}

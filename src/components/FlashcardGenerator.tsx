@@ -87,7 +87,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
       if (error) throw error;
       setAvailablePlans(data || []);
-      
+
       // Auto-select the first plan if no planId is provided
       if (!planId && data && data.length > 0) {
         setSelectedPlan(data[0].id);
@@ -132,7 +132,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
 
   const organizeFlashcardsByTopic = () => {
     const topicMap = new Map<string, Flashcard[]>();
-    
+
     flashcards.forEach(card => {
       const topic = card.topic;
       if (!topicMap.has(topic)) {
@@ -267,7 +267,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
       </div>
     );
   }
@@ -278,13 +278,13 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   // Show paywall if not subscribed
   if (isPremium === false) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-          <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all flashcard and study features.</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="glass-card p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
+          <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
+          <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all flashcard and study features.</p>
           <button
             onClick={() => initiatePayment()}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+            className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
           >
             Subscribe Now
           </button>
@@ -296,34 +296,32 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   return (
     <div className="space-y-6 relative">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-lg">
-            <Brain className="h-6 w-6 text-gray-900" />
+          <div className="bg-gradient-to-br from-neon-blue to-blue-600 p-2 rounded-lg shadow-lg shadow-neon-blue/20">
+            <Brain className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">AI Flashcards</h3>
+            <h3 className="text-xl font-bold text-white">AI Flashcards</h3>
             <p className="text-gray-400">Smart spaced repetition learning</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setStudyMode('topics')}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-              studyMode === 'topics'
-                ? 'bg-blue-500 text-gray-900'
-                : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'topics'
+                ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
+                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
           >
             Topics ({topicGroups.length})
           </button>
           <button
             onClick={() => setStudyMode('generate')}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-              studyMode === 'generate'
-                ? 'bg-blue-500 text-gray-900'
-                : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'generate'
+                ? 'bg-neon-purple/20 border-neon-purple text-neon-purple'
+                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
           >
             Generate
           </button>
@@ -332,11 +330,10 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               setFlashcards(allFlashcards);
               setStudyMode('review');
             }}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-              studyMode === 'review'
-                ? 'bg-blue-500 text-gray-900'
-                : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'review'
+                ? 'bg-neon-green/20 border-neon-green text-neon-green'
+                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
           >
             Review All ({allFlashcards.length})
           </button>
@@ -349,25 +346,23 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         <div className="space-y-6">
           {/* View Controls */}
           <div className="flex items-center justify-between">
-            <h4 className="text-lg font-semibold text-gray-900">Study by Topic</h4>
+            <h4 className="text-lg font-semibold text-white">Study by Topic</h4>
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-500 text-gray-900'
-                    : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-                }`}
+                className={`p-2 rounded-lg transition-all duration-200 border ${viewMode === 'grid'
+                    ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
+                    : 'bg-black/20 border-white/10 text-gray-400 hover:text-white'
+                  }`}
               >
                 <Grid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  viewMode === 'list'
-                    ? 'bg-blue-500 text-gray-900'
-                    : 'bg-gray-700 text-gray-900 hover:bg-gray-600'
-                }`}
+                className={`p-2 rounded-lg transition-all duration-200 border ${viewMode === 'list'
+                    ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
+                    : 'bg-black/20 border-white/10 text-gray-400 hover:text-white'
+                  }`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -375,15 +370,15 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           </div>
           {/* Show No Flashcards Yet only in content area */}
           {topicGroups.length === 0 ? (
-            <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-              <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-                <BookOpen className="h-16 w-16 text-gray-400 mx-auto" />
+            <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
+              <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
+                <BookOpen className="h-16 w-16 text-gray-500 mx-auto" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-2">No Flashcards Yet</h4>
+              <h4 className="text-xl font-semibold text-white mb-2">No Flashcards Yet</h4>
               <p className="text-gray-400 mb-6">Generate AI-powered flashcards from your study plans</p>
               <button
                 onClick={() => setStudyMode('generate')}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
               >
                 <Plus className="h-5 w-5 inline mr-2" />
                 Generate Flashcards
@@ -394,32 +389,30 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
               {topicGroups.map((group, index) => (
                 <div
                   key={index}
-                  className={`glass rounded-2xl p-6 border border-gray-700/50 card-hover ${
-                    viewMode === 'list' ? 'flex items-center justify-between' : ''
-                  }`}
+                  className={`glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-blue/30 transition-all duration-300 ${viewMode === 'list' ? 'flex items-center justify-between' : ''
+                    }`}
                 >
                   <div className={viewMode === 'list' ? 'flex-grow' : ''}>
                     <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-lg font-semibold text-gray-900">{group.topic}</h5>
+                      <h5 className="text-lg font-semibold text-white">{group.topic}</h5>
                       <button
-                        className="text-red-400 hover:text-red-600 text-xs font-semibold ml-4"
+                        className="text-red-400 hover:text-red-300 text-xs font-semibold ml-4 transition-colors"
                         onClick={() => handleDeleteTopic(group.topic)}
                       >
                         Delete Topic
                       </button>
                     </div>
-                    <div className={`${viewMode === 'list' ? 'flex items-center gap-6' : 'space-y-3'}`}> 
+                    <div className={`${viewMode === 'list' ? 'flex items-center gap-6' : 'space-y-3'}`}>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <BookOpen className="h-4 w-4" />
+                        <BookOpen className="h-4 w-4 text-neon-blue" />
                         {group.totalCards} cards
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => startTopicReview(group.topic)}
-                    className={`bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-all duration-200 ${
-                      viewMode === 'list' ? 'ml-4' : 'w-full mt-4'
-                    }`}
+                    className={`bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-neon-blue/50 font-semibold py-3 px-6 rounded-xl transition-all duration-200 ${viewMode === 'list' ? 'ml-4' : 'w-full mt-4'
+                      }`}
                   >
                     Study Topic
                   </button>
@@ -430,23 +423,23 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
         </div>
       ) : studyMode === 'generate' ? (
         /* Generate Mode */
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Generate New Flashcards</h4>
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
           <div className="space-y-4">
             {/* Study Plan Selection */}
             {!planId && availablePlans.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Select Study Plan
                 </label>
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-gray-400 border border-gray-600 text-gray-900 focus:border-blue-500 focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
                 >
-                  <option value="">Choose a study plan...</option>
+                  <option value="" className="bg-gray-900">Choose a study plan...</option>
                   {availablePlans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
+                    <option key={plan.id} value={plan.id} className="bg-gray-900">
                       {plan.subject} - Class {plan.class} (Exam: {new Date(plan.exam_date).toLocaleDateString()})
                     </option>
                   ))}
@@ -455,7 +448,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             )}
             {/* No Plans Available Message */}
             {availablePlans.length === 0 && (
-              <div className="glass rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/10">
+              <div className="glass-card rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/10">
                 <p className="text-yellow-400 text-sm">
                   No study plans found. Please create a study plan first to generate contextual flashcards.
                 </p>
@@ -463,25 +456,25 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
             )}
             {/* Topic Dropdown Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Select Topic <span className="text-red-400">*</span>
               </label>
               <select
                 value={selectedTopic}
                 onChange={e => setSelectedTopic(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl text-gray-400 border border-gray-600 text-gray-900 focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
                 required
               >
-                <option value="">Choose a topic...</option>
+                <option value="" className="bg-gray-900">Choose a topic...</option>
                 {availableTopics.map((topic, idx) => (
-                  <option key={idx} value={topic}>{topic}</option>
+                  <option key={idx} value={topic} className="bg-gray-900">{topic}</option>
                 ))}
               </select>
             </div>
             <button
               onClick={generateFlashcards}
               disabled={isGenerating || (!selectedPlan && !planId) || !selectedTopic}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-neon-purple to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed disabled:text-gray-500 shadow-lg shadow-neon-purple/20"
             >
               {isGenerating ? (
                 <div className="flex items-center justify-center gap-2">
@@ -503,7 +496,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           {/* Review Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">
+              <h4 className="text-lg font-semibold text-white">
                 {activeTopicFilter === 'all' ? 'Reviewing All Cards' : `Reviewing: ${activeTopicFilter}`}
               </h4>
               <p className="text-gray-400">Card {currentCard + 1} of {flashcards.length}</p>
@@ -511,15 +504,15 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           </div>
           {/* Show No Flashcards Yet only in content area for review mode */}
           {flashcards.length === 0 ? (
-            <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-              <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-                <BookOpen className="h-16 w-16 text-gray-400 mx-auto" />
+            <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
+              <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
+                <BookOpen className="h-16 w-16 text-gray-500 mx-auto" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-2">No Flashcards Yet</h4>
+              <h4 className="text-xl font-semibold text-white mb-2">No Flashcards Yet</h4>
               <p className="text-gray-400 mb-6">Generate AI-powered flashcards from your study plans</p>
               <button
                 onClick={() => setStudyMode('generate')}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
               >
                 <Plus className="h-5 w-5 inline mr-2" />
                 Generate Flashcards
@@ -528,35 +521,32 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[300px]">
               <div
-                className={`glass rounded-2xl p-8 border border-blue-700/50 text-center max-w-xl w-full cursor-pointer transition-transform duration-300 ${isFlipped ? 'bg-blue-900' : 'text-gray-400'}`}
+                className={`glass-card rounded-2xl p-8 border border-white/10 text-center max-w-xl w-full cursor-pointer transition-all duration-500 transform perspective-1000 ${isFlipped ? 'bg-neon-blue/10 border-neon-blue/50' : 'bg-black/40 hover:border-white/20'}`}
                 onClick={() => setIsFlipped(f => !f)}
-                style={{ minHeight: '180px' }}
+                style={{ minHeight: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}
               >
-                <div className="text-lg font-bold text-gray-900 mb-4">
+                <div className="text-xl font-bold text-white mb-6">
                   {flashcards[currentCard].question}
                 </div>
-                <div className="text-gray-900 mb-6">
-                  {isFlipped ? flashcards[currentCard].answer : <span className="italic">Click to reveal answer</span>}
+                <div className={`text-lg transition-opacity duration-300 ${isFlipped ? 'opacity-100 text-neon-blue' : 'opacity-0'}`}>
+                  {isFlipped ? flashcards[currentCard].answer : ''}
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); setIsFlipped(f => !f); }}
-                  className="bg-blue-600 text-gray-900 px-6 py-2 rounded-lg font-semibold mt-2"
-                >
-                  {isFlipped ? 'Hide Answer' : 'Show Answer'}
-                </button>
+                {!isFlipped && (
+                  <div className="text-gray-500 text-sm mt-4 italic">Click to reveal answer</div>
+                )}
               </div>
-              <div className="flex justify-between w-full max-w-xl mt-6">
+              <div className="flex justify-between w-full max-w-xl mt-6 gap-4">
                 <button
                   onClick={() => { setCurrentCard(c => Math.max(0, c - 1)); setIsFlipped(false); }}
                   disabled={currentCard === 0}
-                  className="text-gray-400 hover:text-gray-900 px-4 py-2 rounded-lg disabled:opacity-50"
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => { setCurrentCard(c => Math.min(flashcards.length - 1, c + 1)); setIsFlipped(false); }}
                   disabled={currentCard === flashcards.length - 1}
-                  className="text-gray-400 hover:text-gray-900 px-4 py-2 rounded-lg disabled:opacity-50"
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Next
                 </button>

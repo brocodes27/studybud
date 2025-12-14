@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Clock, CheckCircle, X, RotateCcw, Trophy, Target, Play, Pause, XCircle, BarChart3, Brain, Zap, Plus, Settings, Users, Calendar, TrendingUp, BookOpen, Star, Award, Copy, Share2, Download, Eye, EyeOff, Filter, Search, SortAsc, SortDesc, ChevronLeft, ChevronRight, Home, Book, Clock as ClockIcon, Target as TargetIcon, TrendingUp as TrendingUpIcon, BarChart3 as BarChart3Icon, Users as UsersIcon, Trophy as TrophyIcon, Calendar as CalendarIcon, Star as StarIcon, Award as AwardIcon, Copy as CopyIcon, Share2 as Share2Icon, Download as DownloadIcon, Eye as EyeIcon, EyeOff as EyeOffIcon, Filter as FilterIcon, Search as SearchIcon, SortAsc as SortAscIcon, SortDesc as SortDescIcon, ChevronLeft as ChevronLeftIcon, ChevronRight as ChevronRightIcon, Home as HomeIcon, Book as BookIcon } from 'lucide-react';
+import { FileText, Clock, CheckCircle, X, RotateCcw, Trophy, Target, Play, Pause, XCircle, BarChart3, Brain, Zap, Plus, Settings, Users, Calendar, TrendingUp, BookOpen, Star, Award, Copy, Share2, Download, Eye, EyeOff, Filter, Search, SortAsc, SortDesc, ChevronLeft, ChevronRight, Home, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -102,7 +102,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
       if (error) throw error;
       setAvailablePlans(data || []);
-      
+
       // Auto-select the first plan if no planId is provided
       if (!planId && data && data.length > 0) {
         setSelectedPlan(data[0].id);
@@ -171,7 +171,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     setIsGenerating(true);
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-practice-test`;
-      
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -250,7 +250,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     if (!currentTest) return;
 
     setIsActive(false);
-    
+
     // Calculate score
     let correct = 0;
     currentTest.questions.forEach((question, index) => {
@@ -321,7 +321,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-green"></div>
       </div>
     );
   }
@@ -330,11 +330,11 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     return (
       <div className="space-y-6">
         {/* Results Header */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50 text-center">
-          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-4 inline-block">
-            <Trophy className="h-12 w-12 text-gray-900" />
+        <div className="glass-panel rounded-2xl p-6 border border-white/10 text-center">
+          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-4 inline-block shadow-lg shadow-orange-500/20">
+            <Trophy className="h-12 w-12 text-white" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Test Completed!</h3>
+          <h3 className="text-2xl font-bold text-white mb-2">Test Completed!</h3>
           <div className="flex items-center justify-center gap-8 text-center">
             <div>
               <p className={`text-4xl font-bold ${getScoreColor(testResults.percentage)}`}>
@@ -343,43 +343,41 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
               <p className="text-gray-400">Score</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-blue-400">{testResults.percentage}%</p>
+              <p className="text-4xl font-bold text-neon-blue">{testResults.percentage}%</p>
               <p className="text-gray-400">Accuracy</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-purple-400">{testResults.timeTaken}m</p>
+              <p className="text-4xl font-bold text-neon-purple">{testResults.timeTaken}m</p>
               <p className="text-gray-400">Time Taken</p>
             </div>
           </div>
         </div>
 
         {/* Question Review */}
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Question Review</h4>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h4 className="text-lg font-semibold text-white mb-4">Question Review</h4>
+          <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
             {testResults.questions.map((question: Question, index: number) => {
               const userAnswer = testResults.userAnswers[index];
               const isCorrect = userAnswer === question.correct_answer;
-              
+
               return (
-                <div key={index} className={`p-4 rounded-lg border ${
-                  isCorrect ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'
-                }`}>
+                <div key={index} className={`p-4 rounded-lg border ${isCorrect ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'
+                  }`}>
                   <div className="flex items-start gap-3">
                     <div className={`p-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                      {isCorrect ? <CheckCircle className="h-4 w-4 text-gray-900" /> : <X className="h-4 w-4 text-gray-900" />}
+                      {isCorrect ? <CheckCircle className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-white" />}
                     </div>
                     <div className="flex-grow">
-                      <p className="text-gray-900 font-medium mb-2">{question.question}</p>
+                      <p className="text-white font-medium mb-2">{question.question}</p>
                       <div className="space-y-1">
                         {question.options.map((option, optionIndex) => (
-                          <div key={optionIndex} className={`p-2 rounded text-sm ${
-                            optionIndex === question.correct_answer 
-                              ? 'bg-green-500/20 text-green-400' 
+                          <div key={optionIndex} className={`p-2 rounded text-sm ${optionIndex === question.correct_answer
+                              ? 'bg-green-500/20 text-green-400'
                               : optionIndex === userAnswer && !isCorrect
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'text-gray-400'
-                          }`}>
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'text-gray-400'
+                            }`}>
                             {option}
                           </div>
                         ))}
@@ -398,13 +396,13 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
               setShowResults(false);
               setCurrentTest(null);
             }}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-gray-900 py-3 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+            className="flex-1 bg-gradient-to-r from-neon-blue to-neon-purple text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg shadow-neon-blue/20"
           >
             Back to Tests
           </button>
           <button
             onClick={() => startTest(currentTest!)}
-            className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-900 py-3 px-6 rounded-xl transition-colors duration-200"
+            className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 px-6 rounded-xl transition-colors duration-200 border border-white/10"
           >
             Retake Test
           </button>
@@ -415,19 +413,18 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
   if (currentTest && isActive) {
     const question = currentTest.questions[currentQuestion];
-    
+
     return (
       <div className="space-y-6">
         {/* Test Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">{currentTest.title}</h3>
+            <h3 className="text-xl font-bold text-white">{currentTest.title}</h3>
             <p className="text-gray-400">Question {currentQuestion + 1} of {currentTest.total_questions}</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className={`px-4 py-2 rounded-lg ${
-              timeLeft < 300 ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'
-            }`}>
+            <div className={`px-4 py-2 rounded-lg border ${timeLeft < 300 ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-neon-blue/20 border-neon-blue/50 text-neon-blue'
+              }`}>
               <Clock className="h-4 w-4 inline mr-2" />
               {formatTime(timeLeft)}
             </div>
@@ -435,29 +432,28 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+        <div className="w-full bg-white/10 rounded-full h-2">
+          <div
+            className="bg-gradient-to-r from-neon-blue to-neon-purple h-2 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
             style={{ width: `${((currentQuestion + 1) / currentTest.total_questions) * 100}%` }}
           ></div>
         </div>
 
         {/* Question */}
-        <div className="glass rounded-2xl p-8 border border-gray-700/50">
-          <h4 className="text-xl font-semibold text-gray-900 mb-6">{question.question}</h4>
-          
+        <div className="glass-card rounded-2xl p-8 border border-white/10">
+          <h4 className="text-xl font-semibold text-white mb-6">{question.question}</h4>
+
           <div className="space-y-3">
             {question.options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => selectAnswer(index)}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
-                  answers[currentQuestion] === index
-                    ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                    : 'border-gray-600 hover:border-gray-500 text-gray-300 hover:bg-gray-400/50'
-                }`}
+                className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${answers[currentQuestion] === index
+                    ? 'border-neon-blue bg-neon-blue/20 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                    : 'border-white/10 hover:border-white/30 text-gray-300 hover:bg-white/5'
+                  }`}
               >
-                <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
+                <span className="font-medium mr-3 text-gray-500">{String.fromCharCode(65 + index)}.</span>
                 {option}
               </button>
             ))}
@@ -469,23 +465,22 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           <button
             onClick={previousQuestion}
             disabled={currentQuestion === 0}
-            className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-400 disabled:text-gray-500 text-gray-900 px-6 py-3 rounded-xl transition-colors duration-200"
+            className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:text-gray-600 text-white px-6 py-3 rounded-xl transition-colors duration-200 border border-white/10"
           >
             Previous
           </button>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto max-w-[50%] pb-2 custom-scrollbar">
             {Array.from({ length: currentTest.total_questions }, (_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentQuestion(i)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  i === currentQuestion
-                    ? 'bg-blue-500 text-gray-900'
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 ${i === currentQuestion
+                    ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/30'
                     : answers[i] !== -1
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                }`}
+                      ? 'bg-neon-green/20 text-neon-green border border-neon-green/30'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
+                  }`}
               >
                 {i + 1}
               </button>
@@ -495,14 +490,14 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           {currentQuestion === currentTest.total_questions - 1 ? (
             <button
               onClick={submitTest}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-gray-900 px-6 py-3 rounded-xl transition-all duration-200"
+              className="bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg shadow-neon-green/20"
             >
               Submit Test
             </button>
           ) : (
             <button
               onClick={nextQuestion}
-              className="bg-blue-600 hover:bg-blue-700 text-gray-900 px-6 py-3 rounded-xl transition-colors duration-200"
+              className="bg-neon-blue hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-colors duration-200 shadow-lg shadow-neon-blue/20"
             >
               Next
             </button>
@@ -518,13 +513,13 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     <div className="space-y-6 relative">
       {/* Razorpay Paywall Overlay */}
       {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Unlock All Features</h2>
-            <p className="mb-6 text-gray-700">Subscribe for <span className="font-bold">₹199</span> to access all features.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="glass-card rounded-2xl p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
+            <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
+            <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all features.</p>
             <button
               onClick={handleSubscribe}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-gray-900 px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+              className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
             >
               Go to Subscription
             </button>
@@ -534,20 +529,20 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-2 rounded-lg">
-            <FileText className="h-6 w-6 text-gray-900" />
+          <div className="bg-gradient-to-br from-neon-green to-emerald-600 p-2 rounded-lg shadow-lg shadow-neon-green/20">
+            <FileText className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Practice Tests</h3>
+            <h3 className="text-xl font-bold text-white">Practice Tests</h3>
             <p className="text-gray-400">AI-generated practice exams from your study plans</p>
           </div>
         </div>
       </div>
 
       {/* Plan Selection and Generation */}
-      <div className="glass rounded-2xl p-6 border border-gray-700/50">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Generate New Practice Test</h4>
-        
+      <div className="glass-panel rounded-2xl p-6 border border-white/10">
+        <h4 className="text-lg font-semibold text-white mb-4">Generate New Practice Test</h4>
+
         <div className="space-y-4">
           {/* Study Plan Selection */}
           {!planId && availablePlans.length > 0 && (
@@ -558,11 +553,11 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
               <select
                 value={selectedPlan}
                 onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-400 border border-gray-600 text-gray-900 focus:border-blue-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-green focus:outline-none focus:ring-1 focus:ring-neon-green"
               >
-                <option value="">Choose a study plan...</option>
+                <option value="" className="bg-gray-900">Choose a study plan...</option>
                 {availablePlans.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
+                  <option key={plan.id} value={plan.id} className="bg-gray-900">
                     {plan.subject} - Class {plan.class} (Exam: {new Date(plan.exam_date).toLocaleDateString()})
                   </option>
                 ))}
@@ -572,20 +567,20 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
           {/* Plan Details Display */}
           {selectedPlanData && (
-            <div className="glass rounded-xl p-4 border border-gray-700/50 bg-green-500/10">
-              <h5 className="font-semibold text-green-400 mb-2">Selected Plan Details</h5>
+            <div className="glass-card rounded-xl p-4 border border-neon-green/30 bg-neon-green/5">
+              <h5 className="font-semibold text-neon-green mb-2">Selected Plan Details</h5>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-400">Subject:</span>
-                  <span className="text-gray-900 ml-2">{selectedPlanData.subject}</span>
+                  <span className="text-white ml-2">{selectedPlanData.subject}</span>
                 </div>
                 <div>
                   <span className="text-gray-400">Class:</span>
-                  <span className="text-gray-900 ml-2">{selectedPlanData.class}</span>
+                  <span className="text-white ml-2">{selectedPlanData.class}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-gray-400">Chapters:</span>
-                  <span className="text-gray-900 ml-2">{selectedPlanData.chapters}</span>
+                  <span className="text-white ml-2">{selectedPlanData.chapters}</span>
                 </div>
               </div>
             </div>
@@ -594,7 +589,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           <button
             onClick={generateTest}
             disabled={isGenerating || (!selectedPlan && !planId)}
-            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-gray-900 font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-gray-700 disabled:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed disabled:text-gray-500 shadow-lg shadow-neon-green/20"
           >
             {isGenerating ? (
               <div className="flex items-center justify-center gap-2">
@@ -613,30 +608,30 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
       {/* Available Tests */}
       {tests.length === 0 ? (
-        <div className="glass rounded-2xl p-8 border border-gray-700/50 text-center">
-          <div className="bg-gradient-to-br from-gray-700 to-gray-800 p-6 rounded-2xl mb-6 inline-block">
-            <FileText className="h-16 w-16 text-gray-400 mx-auto" />
+        <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
+          <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
+            <FileText className="h-16 w-16 text-gray-500 mx-auto" />
           </div>
-          <h4 className="text-xl font-semibold text-gray-900 mb-2">No Practice Tests</h4>
+          <h4 className="text-xl font-semibold text-white mb-2">No Practice Tests</h4>
           <p className="text-gray-400 mb-6">Generate AI-powered practice tests from your study plans</p>
         </div>
       ) : (
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Available Practice Tests</h4>
+          <h4 className="text-lg font-semibold text-white mb-4">Available Practice Tests</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tests.map((test) => (
-              <div key={test.id} className="glass rounded-2xl p-6 border border-gray-700/50 card-hover">
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">{test.title}</h4>
+              <div key={test.id} className="glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-green/30 transition-all duration-300">
+                <h4 className="text-lg font-semibold text-white mb-2">{test.title}</h4>
                 <p className="text-gray-400 mb-4">{test.subject}</p>
-                
+
                 <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                  <span>{test.total_questions} questions</span>
-                  <span>{test.duration_minutes} minutes</span>
+                  <span className="flex items-center gap-1"><Target className="h-3 w-3" /> {test.total_questions} questions</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {test.duration_minutes} mins</span>
                 </div>
 
                 <button
                   onClick={() => startTest(test)}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-gray-900 py-3 px-6 rounded-xl transition-all duration-200"
+                  className="w-full bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-neon-green/20"
                 >
                   Start Test
                 </button>
@@ -648,13 +643,13 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
       {/* Recent Attempts */}
       {attempts.length > 0 && (
-        <div className="glass rounded-2xl p-6 border border-gray-700/50">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Recent Attempts</h4>
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h4 className="text-lg font-semibold text-white mb-4">Recent Attempts</h4>
           <div className="space-y-3">
             {attempts.slice(0, 5).map((attempt) => (
-              <div key={attempt.id} className="flex items-center justify-between p-3 bg-gray-400/50 rounded-lg">
+              <div key={attempt.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
                 <div>
-                  <p className="text-gray-900 font-medium">
+                  <p className="text-white font-medium">
                     Score: {attempt.score}/{attempt.total_questions}
                   </p>
                   <p className="text-gray-400 text-sm">

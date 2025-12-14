@@ -1,0 +1,449 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "PhysicalEducation",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:09:11.119Z",
+    "total_questions": 37
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "How many total matches will be played in a knock out fixture of 19 teams?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "18",
+        "17",
+        "20",
+        "16"
+      ],
+      "correct_index": null,
+      "chapter": "Tournament Fixtures"
+    },
+    {
+      "question_number": "2",
+      "question": "Given below are the two statements labeled Assertion (A) and Reason (R). Read the statements and choose the appropriate option from the options given below: Assertion: The knock out tournament is an elimination tournament. Reason: In knock out tournament, winner of each match advances in the tournament and the loser gets eliminated. In the context of the above two statements, which one of the following is correct?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both (A) and (R) are true and (R) is the correct explanation of (A).",
+        "Both (A) and (R) are true, but (R) is not the correct explanation of (A).",
+        "(A) is true, but (R) is false.",
+        "(A) is false, but (R) is true."
+      ],
+      "correct_index": null,
+      "chapter": "Tournament Formats"
+    },
+    {
+      "question_number": "3",
+      "question": "Match the following: List I: I Knock Knee, II Kyphosis, III Lordosis, IV Bow legs; List II: 1 Increase exaggeration of backward curve, 2 Wide gap between the knees when standing with feet together, 3 Knees touch each other in normal standing position, 4 Inward curvature of the spine.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "I - 3, II - 1, III - 4, IV - 2",
+        "I - 1, II - 3, III - 4, IV - 2",
+        "I - 4, II - 2, III - 1, IV - 3",
+        "I - 2, II - 3, III - 4, IV - 1"
+      ],
+      "correct_index": null,
+      "chapter": "Postural Deformities"
+    },
+    {
+      "question_number": "4",
+      "question": "For developing muscles, which nutrient should be increased in diet?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Vitamins",
+        "Protein",
+        "Minerals",
+        "Carbohydrates"
+      ],
+      "correct_index": null,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "5",
+      "question": "Identify the asana.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Paschimottanasana",
+        "Halasana",
+        "Vajrasana",
+        "Dhanurasana"
+      ],
+      "correct_index": null,
+      "chapter": "Yoga"
+    },
+    {
+      "question_number": "6",
+      "question": "Which asana is pose like cobra?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Bhujangasana",
+        "Dhanurasana",
+        "Vajrasana",
+        "Ardhmatsyendrasana"
+      ],
+      "correct_index": null,
+      "chapter": "Yoga"
+    },
+    {
+      "question_number": "7",
+      "question": "Deaflympics Games was first organized in the year...",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1896",
+        "1960",
+        "1924",
+        "1951"
+      ],
+      "correct_index": null,
+      "chapter": "Sports Events"
+    },
+    {
+      "question_number": "8",
+      "question": "Menarche is defined as the:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Ending of menstrual period of women",
+        "Beginning of menstrual period in women",
+        "Time of pregnancy",
+        "Missing of menstrual cycle"
+      ],
+      "correct_index": null,
+      "chapter": "Human Physiology"
+    },
+    {
+      "question_number": "9",
+      "question": "Which of the following are fat soluble vitamins?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Vitamin D & K",
+        "Vitamin B & C",
+        "Vitamin A & E",
+        "Both option A & C"
+      ],
+      "correct_index": null,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "10",
+      "question": "Match the following: I Plate Tapping Test, II Push up, III Partial Curl up, IV Modified pushup.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "I - 2, II - 1, III - 4, IV - 3",
+        "I - 2, II - 3, III - 1, IV - 4",
+        "I - 1, II - 3, III - 2, IV - 4",
+        "I - 2, II - 3, III - 4, IV - 1"
+      ],
+      "correct_index": null,
+      "chapter": "Fitness Tests"
+    },
+    {
+      "question_number": "11",
+      "question": "Which of the following is a physiological factor determining flexibility?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Bone density",
+        "Joint structure",
+        "Cardiac output",
+        "Tidal Volume"
+      ],
+      "correct_index": null,
+      "chapter": "Flexibility"
+    },
+    {
+      "question_number": "12",
+      "question": "The ability to tolerate higher concentration of ... can help in improving endurance performance.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Lactic acid",
+        "Hydrochloric acid",
+        "Acetic acid",
+        "Sulphuric acid"
+      ],
+      "correct_index": null,
+      "chapter": "Endurance"
+    },
+    {
+      "question_number": "13",
+      "question": "If a ball is hit and it is stopped by gravitational force, this is an example of which law of Motion?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Law of Inertia",
+        "Law of acceleration",
+        "Law of action and reaction",
+        "Both a & b"
+      ],
+      "correct_index": null,
+      "chapter": "Physics in Sports"
+    },
+    {
+      "question_number": "14",
+      "question": "In which of the following sport friction plays the least important role?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Car race",
+        "Football",
+        "Ice skating",
+        "Hockey"
+      ],
+      "correct_index": null,
+      "chapter": "Physics in Sports"
+    },
+    {
+      "question_number": "15",
+      "question": "Instrumental aggression is related to",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Accepting defeat",
+        "Achieving goal",
+        "Only performance",
+        "Hurting someone to gain something"
+      ],
+      "correct_index": null,
+      "chapter": "Sports Psychology"
+    },
+    {
+      "question_number": "16",
+      "question": "Given below are the two statements labeled Assertion (A) and Reason (R). Assertion: Aggression is part of human behavior and is necessary for an individual to live and struggle for higher achievements. Reason: Aggression is inevitable and inseparable in sport activities. In the context of the above two statements, which one of the following is correct?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both (A) and (R) are true and (R) is the correct explanation of (A).",
+        "Both (A) and (R) are true, but (R) is not the correct explanation of (A).",
+        "(A) is true, but (R) is false.",
+        "(A) is false, but (R) is true."
+      ],
+      "correct_index": null,
+      "chapter": "Sports Psychology"
+    },
+    {
+      "question_number": "17",
+      "question": "Which of these is a type of endurance?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Static",
+        "Specific",
+        "Dynamic",
+        "Relative"
+      ],
+      "correct_index": null,
+      "chapter": "Endurance"
+    },
+    {
+      "question_number": "18",
+      "question": "Which type of coordinative ability is required in games like judo and wrestling?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Orientation ability",
+        "Coupling ability",
+        "Adaptation ability",
+        "Differentiation ability"
+      ],
+      "correct_index": null,
+      "chapter": "Coordinative Abilities"
+    },
+    {
+      "question_number": "19",
+      "question": "Enlist any two exercise guidelines by WHO for different age groups.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Exercise Guidelines"
+    },
+    {
+      "question_number": "20",
+      "question": "How can we say that protein is an essential component of diet?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "21",
+      "question": "Mention the test performed on 9 to 18 yrs. of age group in SAI Khelo India fitness test and explain any one.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Fitness Tests"
+    },
+    {
+      "question_number": "22",
+      "question": "List down the types of bone injuries.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Injuries"
+    },
+    {
+      "question_number": "23",
+      "question": "What do you understand by the term goal setting?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Sports Psychology"
+    },
+    {
+      "question_number": "24",
+      "question": "Define Flexibility and list down its type.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Flexibility"
+    },
+    {
+      "question_number": "25",
+      "question": "Specify the purpose of specific sports programme organised for community services.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Community Services"
+    },
+    {
+      "question_number": "26",
+      "question": "What are the health problems faced by a woman due to female athlete triad in its sports and athletic performance?",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Health Issues"
+    },
+    {
+      "question_number": "27",
+      "question": "Write in detail the aims and objectives of Special Olympic Bharat.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Special Olympics"
+    },
+    {
+      "question_number": "28",
+      "question": "Differentiate between nutritive and non-nutritive components of a diet on the basis of their functions.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Nutrition"
+    },
+    {
+      "question_number": "29",
+      "question": "With the help of suitable sports example explain the application of Newton's third law in sports.",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Physics in Sports"
+    },
+    {
+      "question_number": "30",
+      "question": "How can we enhance the performance with the help of self-talk and self-esteem?",
+      "type": "short",
+      "marks": 3,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Sports Psychology"
+    },
+    {
+      "question_number": "31",
+      "question": "Choose the function of boarding committee.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "To take teams to the venue of match",
+        "To provide them meals",
+        "To take care of their stay",
+        "To arrange opening ceremony"
+      ],
+      "correct_index": null,
+      "chapter": "Event Management"
+    },
+    {
+      "question_number": "32",
+      "question": "The first paralympics was organised in",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1960",
+        "1970",
+        "1965",
+        "1985"
+      ],
+      "correct_index": null,
+      "chapter": "Paralympics"
+    },
+    {
+      "question_number": "33",
+      "question": "What is the primary effect of exercise on cardio respiratory system?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Decreased heart rate",
+        "Increased stroke volume",
+        "Decreased lung capacity",
+        "Decreased blood pressure"
+      ],
+      "correct_index": null,
+      "chapter": "Exercise Physiology"
+    },
+    {
+      "question_number": "34",
+      "question": "List down any four asanas used for prevention of Hypertension. Explain the procedure, benefits and contraindicate of any one of them with help of a stick diagram.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Yoga"
+    },
+    {
+      "question_number": "35",
+      "question": "Discuss the purpose of Rikli & Jones fitness test and explain procedure of any two test batteries in detail.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Fitness Tests"
+    },
+    {
+      "question_number": "36",
+      "question": "Define strength and differentiate between Isometric, Iso-tonic and Iso-kinetic exercises.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Exercise Physiology"
+    },
+    {
+      "question_number": "37",
+      "question": "What are the various types of friction? With the help of suitable example explain why friction is necessary in sports.",
+      "type": "long",
+      "marks": 5,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Physics in Sports"
+    }
+  ]
+}

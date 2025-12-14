@@ -35,15 +35,13 @@ export function CreatePlan() {
 
   const { session } = useAuth() as any;
 
-
-
   const handleFormSubmit = async (data: FormData) => {
     setLoading(true);
     setError(null);
 
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`;
-      
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -64,7 +62,7 @@ export function CreatePlan() {
 
       // Persist the custom plan name if it exists and wasn't stored by the edge function
       if (data.plan_name) {
-                let updateErr = null;
+        let updateErr = null;
         if (plan && (plan as any).id) {
           const { error: nameErr } = await supabase
             .from('exam_plans')
@@ -95,7 +93,7 @@ export function CreatePlan() {
           console.warn('Could not save plan_name:', updateErr.message);
         }
       }
-      
+
     } catch (err) {
       console.error('Error generating study plan:', err);
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -116,25 +114,23 @@ export function CreatePlan() {
       {/* Header */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl flex items-center justify-center glow-blue">
-            <Brain className="w-8 h-8 text-gray-900" />
+          <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-neon-purple rounded-2xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
+            <Brain className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900">
-            Create <span className="gradient-text">Study Plan</span>
+          <h1 className="text-4xl md:text-5xl font-bold text-white">
+            Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Study Plan</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
           Generate a personalized AI-powered study schedule with practice questions tailored to your learning style and exam dates.
         </p>
       </div>
 
-
-
       {/* Error Display */}
       {error && (
         <div className="max-w-4xl mx-auto">
-          <div className="card-elevated bg-red-500/10 border-red-500/20">
-            <div className="flex items-center gap-3 p-4">
+          <div className="glass-card bg-red-500/10 border-red-500/20 p-4 rounded-xl">
+            <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold text-red-300">Error</h3>
@@ -148,20 +144,19 @@ export function CreatePlan() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto">
         {!studyPlan ? (
-          <div className="card-elevated">
+          <div className="glass-card border border-white/10 rounded-2xl overflow-hidden">
             <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
           </div>
         ) : (
           <div className="space-y-6">
-            <StudyPlanDisplay 
-              plan={studyPlan} 
-              formData={formData!} 
+            <StudyPlanDisplay
+              plan={studyPlan}
+              formData={formData!}
               onReset={handleCreateNew}
             />
           </div>
         )}
       </div>
-
     </div>
   );
 }

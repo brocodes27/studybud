@@ -1,0 +1,417 @@
+{
+  "metadata": {
+    "class_level": "10",
+    "subject": "MathsBasic",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:19:39.294Z",
+    "total_questions": 38
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "The exponent of 3 in the prime factorization of 2025 is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct_index": 2,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "2",
+      "question": "If $2024x + 2025y = 1$; $2025x + 2024y = -1$, then $x - y =$",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "0",
+        "-2",
+        "2",
+        "-1"
+      ],
+      "correct_index": 1,
+      "chapter": "Pair of Linear Equations in Two Variables"
+    },
+    {
+      "question_number": "3",
+      "question": "The number of polynomials having -2 and 5 as its zeroes is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "one",
+        "two",
+        "three",
+        "Infinitely many"
+      ],
+      "correct_index": 3,
+      "chapter": "Polynomials"
+    },
+    {
+      "question_number": "4",
+      "question": "Which of the following is not a quadratic equation?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$(x + 2)^2 = 2(x + 3)$",
+        "$x^2 + 3x = (-1)(1 - 3x^2)$",
+        "$(x + 2)(x - 1) = x^2 - 2x - 3$",
+        "$x^3 - x^2 + 2x + 1 = (x + 1)^3$"
+      ],
+      "correct_index": 3,
+      "chapter": "Quadratic Equations"
+    },
+    {
+      "question_number": "5",
+      "question": "The value of x for which 2x, (x + 10) and (3x + 2) are the three consecutive terms of an AP is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "6",
+        "-6",
+        "-2",
+        "2"
+      ],
+      "correct_index": 0,
+      "chapter": "Arithmetic Progressions"
+    },
+    {
+      "question_number": "6",
+      "question": "If $1 + 2 + 3 + 4 + \\cdots + 50 = 25k$, then $k =$",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "50",
+        "51",
+        "49",
+        "26"
+      ],
+      "correct_index": 1,
+      "chapter": "Arithmetic Progressions"
+    },
+    {
+      "question_number": "7",
+      "question": "The distance between the points $(\\cos 30^\\circ, \\sin 30^\\circ)$ and $(\\cos 60^\\circ, -\\sin 60^\\circ)$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "0 unit",
+        "$\\sqrt{3}$ units",
+        "1 unit",
+        "$\\sqrt{2}$ units"
+      ],
+      "correct_index": 2,
+      "chapter": "Coordinate Geometry"
+    },
+    {
+      "question_number": "8",
+      "question": "The coordinates of the point which is mirror image of the point (-3, 5) about x-axis are",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "(3, 5)",
+        "(3, -5)",
+        "(-3, -5)",
+        "(-3, 5)"
+      ],
+      "correct_index": 2,
+      "chapter": "Coordinate Geometry"
+    },
+    {
+      "question_number": "9",
+      "question": "If in $\\triangle ABC$ and $\\triangle DEF$, $\\frac{AB}{EF} = \\frac{AC}{DE}$ then they will be similar when",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$\\angle A = \\angle D$",
+        "$\\angle A = \\angle E$",
+        "$\\angle C = \\angle F$",
+        "$\\angle B = \\angle E$"
+      ],
+      "correct_index": 1,
+      "chapter": "Triangles"
+    },
+    {
+      "question_number": "10",
+      "question": "If $\\triangle ABC \\sim \\triangle PQR$, then perimeter of the triangle PQR (in cm) is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "12",
+        "24",
+        "18",
+        "20"
+      ],
+      "correct_index": 1,
+      "chapter": "Triangles"
+    },
+    {
+      "question_number": "11",
+      "question": "In the figure given below, radius $r$ of the circle which touches the sides of the triangle is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "3 cm",
+        "6 cm",
+        "7 cm",
+        "4 cm"
+      ],
+      "correct_index": 1,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "12",
+      "question": "Which one of the following is not equal to Unity?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "$\\sin^2 x + \\cos^2 x$",
+        "$\\cot^2 x - \\csc^2 x$",
+        "$\\sec^2 x - \\tan^2 x$",
+        "$\\tan x \\cdot \\cot x$"
+      ],
+      "correct_index": 1,
+      "chapter": "Trigonometry"
+    },
+    {
+      "question_number": "13",
+      "question": "Consider the following frequency distribution. The upper limit of median class is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "10",
+        "13",
+        "15",
+        "20"
+      ],
+      "correct_index": 2,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "14",
+      "question": "Let empirical relationship between the three measures of central tendency be $a \\times \\text{Median} = \\text{Mode} + b \\times \\text{Mean}$, then $(2b + 3a) =$",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "11",
+        "12",
+        "13",
+        "14"
+      ],
+      "correct_index": 2,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "15",
+      "question": "From an external point Q, the length of tangent to a circle is 12 cm and the distance of Q from the centre of circle is 13 cm. The radius of circle (in cm) is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "10",
+        "5",
+        "12",
+        "7"
+      ],
+      "correct_index": 3,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "16",
+      "question": "In the given figure, PA is a tangent from an external point P to a circle with centre O and diameter AB. If $\\angle POB = 115^\\circ$, then measure of $\\angle APO$ is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "25°",
+        "30°",
+        "20°",
+        "65°"
+      ],
+      "correct_index": 0,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "17",
+      "question": "The circumferences of two circles are in the ratio 3 : 4. The ratio of their areas is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "3 : 4",
+        "4 : 3",
+        "9 : 16",
+        "16 : 9"
+      ],
+      "correct_index": 2,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "18",
+      "question": "An event is most unlikely to happen. Its probability is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "0.0001",
+        "0.001",
+        "0.01",
+        "0.1"
+      ],
+      "correct_index": 0,
+      "chapter": "Probability"
+    },
+    {
+      "question_number": "19",
+      "question": "ASSERTION (A): Line joining the midpoints of two sides of triangle is parallel to the third side. REASON (R): If a line divides two sides of a triangle in the same ratio then it is parallel to the third side.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both assertion (A) and reason (R) are true and reason (R) is the correct explanation of assertion (A).",
+        "Both assertion (A) and reason (R) are true but reason (R) is not the correct explanation of assertion (A).",
+        "Assertion (A) is true but reason (R) is false.",
+        "Assertion (A) is false but reason (R) is true."
+      ],
+      "correct_index": 0,
+      "chapter": "Triangles"
+    },
+    {
+      "question_number": "20",
+      "question": "ASSERTION (A): Two coins are tossed simultaneously. Possible outcomes are two heads, one head and one tail, two tails. Hence, the probability of getting two heads is $\\frac{1}{3}$. REASON (R): Probabilities of ‘equally likely’ outcomes of an experiment are always equal.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both assertion (A) and reason (R) are true and reason (R) is the correct explanation of assertion (A).",
+        "Both assertion (A) and reason (R) are true but reason (R) is not the correct explanation of assertion (A).",
+        "Assertion (A) is true but reason (R) is false.",
+        "Assertion (A) is false but reason (R) is true."
+      ],
+      "correct_index": 3,
+      "chapter": "Probability"
+    },
+    {
+      "question_number": "21",
+      "question": "Show that the number $2 \\times 5 \\times 7 \\times 11 + 11 \\times 13$ is a composite number.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "22",
+      "question": "Find the radius of the circle with centre at origin, if line $l$ given by $x + y = 5$ is tangent to the circle at point P.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "23",
+      "question": "If the zeroes of the quadratic polynomial $x^2 + (a + 1)x + b$ are 2 and -3, then find the values of $a$ and $b$.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Polynomials"
+    },
+    {
+      "question_number": "24",
+      "question": "Find the nature of roots of the quadratic equation $x^2 + 4x - 3\\sqrt{2} = 0$.",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Quadratic Equations"
+    },
+    {
+      "question_number": "25",
+      "question": "Evaluate: $2 \\sin 30^\\circ \\tan 60^\\circ - 3 \\cos^2 60^\\circ \\sec^2 30^\\circ$",
+      "type": "short",
+      "marks": 2,
+      "chapter": "Trigonometry"
+    },
+    {
+      "question_number": "26",
+      "question": "Show that $\\sqrt{2} - \\sqrt{5}$ is an irrational number.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Real Numbers"
+    },
+    {
+      "question_number": "27",
+      "question": "Find the modal agriculture holdings of the village given the frequency distribution table.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Statistics"
+    },
+    {
+      "question_number": "28",
+      "question": "A quadrilateral ABCD is drawn to circumscribe a circle. Show that $AB + CD = AD + BC$.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Circles"
+    },
+    {
+      "question_number": "29",
+      "question": "On a particular day, 50000 people attended a Cricket Test Match between India and Australia in Sydney Cricket Ground. Let $x$ be the number of adults attended the cricket match and $y$ be the number of children attended the cricket match. Cost of an adult ticket was ₹1000 while cost of a child ticket was ₹200. On that day Revenue earned by selling all 50,000 tickets, was ₹4,20,00,000. Find how many adults and how many children attended the cricket match?",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Pair of Linear Equations in Two Variables"
+    },
+    {
+      "question_number": "30",
+      "question": "Prove that: $(\\sin x - \\cos x + 1)(\\sec x - \\tan x) = (\\sin x + \\cos x - 1)$",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Trigonometry"
+    },
+    {
+      "question_number": "31",
+      "question": "The sum of first $n$ terms of an AP is $5n^2 - n$. Find the $n$th term of the AP.",
+      "type": "short",
+      "marks": 3,
+      "chapter": "Arithmetic Progressions"
+    },
+    {
+      "question_number": "32",
+      "question": "Prove that a line drawn parallel to one side of a triangle intersecting other two sides in distinct points, divides the other two sides in the same ratio.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Triangles"
+    },
+    {
+      "question_number": "33",
+      "question": "The numerator of a fraction is 3 less than its denominator. If 2 is added to both of its numerator and denominator then the sum of the new fraction and original fraction is $\\frac{29}{20}$. Find the original fraction.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Pair of Linear Equations in Two Variables"
+    },
+    {
+      "question_number": "34",
+      "question": "The angle of elevation of the top of a chimney from the foot of a tower is 60° and the angle of depression of the foot of the chimney from the top of the tower is 30°. If the height of the tower is 40 meters, find the height of the chimney. Also, find the length of the wire tied from the top of the chimney to the top of tower.",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Trigonometry"
+    },
+    {
+      "question_number": "35",
+      "question": "A solid toy is in the form of a hemisphere surmounted by a right circular cone of height 2cm and diameter of base 4 cm. If a right circular cylinder circumscribes the toy, find the difference of the volumes of the cylinder and the toy. [Use $\\pi = 3.14$]",
+      "type": "long",
+      "marks": 5,
+      "chapter": "Surface Areas and Volumes"
+    },
+    {
+      "question_number": "36",
+      "question": "Carpooling is the sharing of car journeys so that more than one person travels in a car, and prevents the need for others to have to drive to a location themselves. By having more people using one vehicle, carpooling reduces each person’s travel costs such as: fuel costs, tolls, and the stress of driving. Carpooling is also a more environmentally friendly and sustainable way to travel as sharing journeys reduces air pollution, carbon emissions, traffic congestion on the roads, and the need for parking spaces. Three friends Amar, Bhavin and Chetanya live in societies represented by the points A (4,5), B (6,2) and C (2,6) respectively. They all work in offices located in a same building represented by the point O (0,0). Since they all go to same building every day, they decided to do carpooling to save money on petrol. Based on the above information, answer the following questions.",
+      "type": "case-study",
+      "marks": 4,
+      "chapter": "Coordinate Geometry"
+    },
+    {
+      "question_number": "37",
+      "question": "A water sprinkler is set to shoot a stream of water a distance of 21 m and rotate through an angle which is equal to complementary angle of 10°. What is the area of sector in terms of arc length?",
+      "type": "case-study",
+      "marks": 4,
+      "chapter": "Areas Related to Circles"
+    },
+    {
+      "question_number": "38",
+      "question": "One of four main blood types can be found in a human body. They are known as A, B, AB and O. Each blood type can be further classified as either a Rhesus positive (+) or Rhesus negative (−). For example, a possible combination is blood type O and Rhesus negative which is written as O−. The data below shows the distribution of the blood types and Rhesus types of given blood type for a Blood Donation Center recorded (in percentages) for the year 2023. Find the value of x.",
+      "type": "case-study",
+      "marks": 4,
+      "chapter": "Probability"
+    }
+  ]
+}

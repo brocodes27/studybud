@@ -51,7 +51,7 @@ export class OpenAIService {
     const body = {
       model: this.model,
       messages,
-      max_tokens: 2048,
+      max_tokens: 8192,  // Increased for exam paper generation
       temperature: 0.7,
     };
     const data = await this.authorizedFetch(body);
@@ -82,6 +82,56 @@ export class OpenAIService {
 
     const data = await this.authorizedFetch(body);
     return data?.choices?.[0]?.message?.content || '';
+  }
+
+  /**
+   * Generate embedding for text using OpenAI text-embedding-3-small
+   */
+  async getEmbedding(text: string): Promise<number[]> {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) throw new Error('VITE_OPENAI_API_KEY is not set');
+
+    const res = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`OpenAI Embedding Error: ${res.status} ${err}`);
+    }
+
+    const data = await res.json();
+    return data.data[0].embedding;
+  }
+
+  /**
+   * Search for similar questions using vector similarity
+   */
+  async searchSimilarQuestions(
+    embedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filterClass?: string,
+    filterSubject?: string
+  ) {
+    const { data, error } = await supabase.rpc('match_questions', {
+      query_embedding: embedding,
+      match_threshold: matchThreshold,
+      match_count: matchCount,
+      filter_class: filterClass,
+      filter_subject: filterSubject,
+    });
+
+    if (error) throw new Error(`Vector Search Error: ${error.message}`);
+    return data;
   }
 }
 

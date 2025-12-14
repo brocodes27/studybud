@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
 import { generateMonthlyCurriculum } from '../lib/curriculumApi';
-import { Calendar, CheckCircle, Clock, Loader2, RefreshCw, Sparkles, ListChecks, AlertTriangle } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, Loader2, RefreshCw, Sparkles, ListChecks, AlertTriangle, Filter } from 'lucide-react';
 import CurriculumTour from '../components/CurriculumTour.tsx';
 
 interface CurriculumPlan {
@@ -174,39 +174,43 @@ export function Curriculum() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <ListChecks className="h-7 w-7 text-blue-600" /> Curriculum
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-gradient-to-br from-neon-blue to-blue-600 p-3 rounded-xl shadow-lg shadow-neon-blue/20">
+              <ListChecks className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-white">Curriculum</h1>
+          </div>
           {plan ? (
-            <p className="text-gray-600 mt-1">
-              Aim: <span className="font-semibold uppercase">{plan.aim}</span>
-              {plan.class_level ? <> • Class {plan.class_level}</> : null}
+            <p className="text-gray-400 ml-1">
+              Aim: <span className="font-semibold text-neon-blue uppercase">{plan.aim}</span>
+              {plan.class_level ? <span className="text-gray-500"> • </span> : null}
+              {plan.class_level ? <>Class {plan.class_level}</> : null}
               {plan.subjects && plan.subjects.length ? (
                 <>
-                  {' '}• Subjects: {plan.subjects.join(', ')}
+                  <span className="text-gray-500"> • </span> Subjects: {plan.subjects.join(', ')}
                 </>
               ) : null}
             </p>
           ) : (
-            <p className="text-gray-600 mt-1">No active curriculum plan found.</p>
+            <p className="text-gray-400 mt-1">No active curriculum plan found.</p>
           )}
         </div>
 
         {/* Month Navigator */}
-        <div className="flex items-center gap-2">
+        <div className="glass-panel p-1 rounded-xl flex items-center gap-1 border border-white/10">
           <button
             onClick={() => setMonthCursor(prev => subMonths(prev, 1))}
-            className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700"
+            className="px-3 py-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
             data-tour="month-prev"
           >
             ‹ Prev
           </button>
-          <div className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold flex items-center gap-2" data-tour="month-label">
-            <Calendar className="h-4 w-4" /> {format(monthStart, 'MMMM yyyy')}
+          <div className="px-4 py-2 rounded-lg bg-white/5 text-white font-semibold flex items-center gap-2 border border-white/5" data-tour="month-label">
+            <Calendar className="h-4 w-4 text-neon-blue" /> {format(monthStart, 'MMMM yyyy')}
           </div>
           <button
             onClick={() => setMonthCursor(prev => addMonths(prev, 1))}
-            className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700"
+            className="px-3 py-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
             data-tour="month-next"
           >
             Next ›
@@ -216,44 +220,46 @@ export function Curriculum() {
 
       {/* Actions / Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card-elevated">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-              <Clock className="h-5 w-5" />
+        <div className="glass-card p-5 border border-white/10 hover:border-neon-blue/30 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+              <Clock className="h-6 w-6 text-blue-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-500">Tasks this month</div>
-              <div className="text-xl font-bold text-gray-900">{counts.total}
-                <span className="text-sm font-medium text-gray-500 ml-2">({counts.completed} completed)</span>
+              <div className="text-sm text-gray-400">Tasks this month</div>
+              <div className="text-2xl font-bold text-white">{counts.total}
+                <span className="text-sm font-medium text-gray-500 ml-2">({counts.completed} done)</span>
               </div>
             </div>
           </div>
         </div>
-        <div className="card-elevated">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
-              <CheckCircle className="h-5 w-5" />
+        <div className="glass-card p-5 border border-white/10 hover:border-neon-green/30 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center border border-green-500/30">
+              <CheckCircle className="h-6 w-6 text-green-400" />
             </div>
             <div>
-              <div className="text-sm text-gray-500">By Source</div>
-              <div className="text-sm text-gray-700">Monthly: {counts.monthly} • Exam: {counts.exam} • Manual: {counts.manual}</div>
+              <div className="text-sm text-gray-400">By Source</div>
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="text-blue-400">Monthly: {counts.monthly}</span> • <span className="text-purple-400">Exam: {counts.exam}</span> • <span className="text-amber-400">Manual: {counts.manual}</span>
+              </div>
             </div>
           </div>
         </div>
-        <div className="card-elevated">
+        <div className="glass-card p-5 border border-white/10 flex flex-col justify-center">
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm">
               {hasMonthlyPlan ? (
-                <span className="inline-flex items-center gap-2 text-green-700"><Sparkles className="h-4 w-4" /> Monthly plan exists</span>
+                <span className="inline-flex items-center gap-2 text-neon-green"><Sparkles className="h-4 w-4" /> Monthly plan active</span>
               ) : (
-                <span className="inline-flex items-center gap-2 text-amber-700"><AlertTriangle className="h-4 w-4" /> No monthly plan yet</span>
+                <span className="inline-flex items-center gap-2 text-amber-400"><AlertTriangle className="h-4 w-4" /> No monthly plan</span>
               )}
             </div>
             {plan && (
               <button
                 onClick={handleGenerateMonth}
                 disabled={generating}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 transition-all"
                 data-tour="generate-btn"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -265,29 +271,36 @@ export function Curriculum() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4" data-tour="filters">
+      <div className="glass-panel p-4 rounded-2xl border border-white/10" data-tour="filters">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="text-sm font-semibold text-gray-700">Filter</div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-300">
+            <Filter className="h-4 w-4 text-neon-blue" />
+            Filter
+          </div>
           <div className="flex items-center gap-3">
-            {(['monthly','exam','manual'] as const).map(key => (
-              <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-700">
+            {(['monthly', 'exam', 'manual'] as const).map(key => (
+              <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white cursor-pointer transition-colors">
                 <input
                   type="checkbox"
                   checked={filterSource[key]}
                   onChange={(e) => setFilterSource(s => ({ ...s, [key]: e.target.checked }))}
-                /> {key}
+                  className="rounded border-gray-600 bg-black/40 text-neon-blue focus:ring-neon-blue/50"
+                />
+                <span className="capitalize">{key}</span>
               </label>
             ))}
           </div>
-          <div className="w-px h-5 bg-gray-200" />
+          <div className="w-px h-5 bg-white/10" />
           <div className="flex items-center gap-3">
-            {(['pending','completed','skipped','rescheduled'] as const).map(key => (
-              <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-700">
+            {(['pending', 'completed', 'skipped', 'rescheduled'] as const).map(key => (
+              <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white cursor-pointer transition-colors">
                 <input
                   type="checkbox"
                   checked={filterStatus[key]}
                   onChange={(e) => setFilterStatus(s => ({ ...s, [key]: e.target.checked }))}
-                /> {key}
+                  className="rounded border-gray-600 bg-black/40 text-neon-blue focus:ring-neon-blue/50"
+                />
+                <span className="capitalize">{key}</span>
               </label>
             ))}
           </div>
@@ -297,60 +310,60 @@ export function Curriculum() {
       {/* Content */}
       {loading ? (
         <div className="min-h-[200px] flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-neon-blue" />
         </div>
       ) : !plan ? (
-        <div className="text-center py-16">
-          <div className="w-20 h-20 rounded-2xl bg-gray-100 mx-auto mb-4 flex items-center justify-center">
-            <ListChecks className="h-8 w-8 text-gray-500" />
+        <div className="text-center py-16 glass-panel rounded-3xl border border-white/5">
+          <div className="w-20 h-20 rounded-2xl bg-white/5 mx-auto mb-6 flex items-center justify-center border border-white/10">
+            <ListChecks className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No active curriculum plan</h3>
-          <p className="text-gray-600 max-w-xl mx-auto">Go to the home page to set your aim and create a curriculum, or use the AI Study Buddy to generate a monthly plan.</p>
+          <h3 className="text-xl font-bold text-white mb-2">No active curriculum plan</h3>
+          <p className="text-gray-400 max-w-xl mx-auto">Go to the home page to set your aim and create a curriculum, or use the AI Study Buddy to generate a monthly plan.</p>
         </div>
       ) : groupedTasks.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-20 h-20 rounded-2xl bg-gray-100 mx-auto mb-4 flex items-center justify-center">
-            <Calendar className="h-8 w-8 text-gray-500" />
+        <div className="text-center py-16 glass-panel rounded-3xl border border-white/5">
+          <div className="w-20 h-20 rounded-2xl bg-white/5 mx-auto mb-6 flex items-center justify-center border border-white/10">
+            <Calendar className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No tasks this month</h3>
-          <p className="text-gray-600 max-w-xl mx-auto">{hasMonthlyPlan ? 'Try adjusting filters or regenerate the month.' : 'Generate the monthly curriculum to see tasks here.'}</p>
+          <h3 className="text-xl font-bold text-white mb-2">No tasks this month</h3>
+          <p className="text-gray-400 max-w-xl mx-auto">{hasMonthlyPlan ? 'Try adjusting filters or regenerate the month.' : 'Generate the monthly curriculum to see tasks here.'}</p>
         </div>
       ) : (
         <div className="space-y-6">
           {groupedTasks.map(([date, dayTasks]) => (
-            <div key={date} className="bg-white rounded-2xl shadow-xl border border-gray-100">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <div className="font-semibold text-gray-900">{format(new Date(`${date}T00:00:00`), 'EEEE, MMM dd')}</div>
-                <div className="text-sm text-gray-600">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''}</div>
+            <div key={date} className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
+                <div className="font-bold text-white">{format(new Date(`${date}T00:00:00`), 'EEEE, MMM dd')}</div>
+                <div className="text-sm text-gray-400">{dayTasks.length} task{dayTasks.length > 1 ? 's' : ''}</div>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-white/5">
                 {dayTasks.map(t => (
-                  <div key={t.id} className="p-4 flex items-start gap-4">
+                  <div key={t.id} className="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors">
                     <button
                       onClick={() => toggleTaskCompleted(t)}
-                      className={`mt-1 w-5 h-5 rounded border flex items-center justify-center ${t.status === 'completed' ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 text-transparent hover:text-gray-300'}`}
+                      className={`mt-1 w-6 h-6 rounded-full border flex items-center justify-center transition-all ${t.status === 'completed' ? 'bg-neon-green/20 border-neon-green text-neon-green' : 'border-gray-600 text-transparent hover:border-neon-blue hover:text-neon-blue/50'}`}
                       title={t.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
                       data-tour="task-toggle"
                     >
                       <CheckCircle className="w-4 h-4" />
                     </button>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-1">
                         {t.subject && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs font-medium border border-blue-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 text-xs font-medium border border-blue-500/20">
                             {t.subject}
                           </span>
                         )}
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${t.source === 'exam' ? 'bg-purple-50 text-purple-700 border-purple-200' : t.source === 'manual' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-700 border-gray-200' }`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${t.source === 'exam' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' : t.source === 'manual' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-gray-500/10 text-gray-300 border-gray-500/20'}`}>
                           {t.source}
                         </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${t.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' : t.status === 'pending' ? 'bg-gray-50 text-gray-700 border-gray-200' : t.status === 'skipped' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200' }`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${t.status === 'completed' ? 'bg-green-500/10 text-green-300 border-green-500/20' : t.status === 'pending' ? 'bg-gray-500/10 text-gray-300 border-gray-500/20' : t.status === 'skipped' ? 'bg-red-500/10 text-red-300 border-red-500/20' : 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'}`}>
                           {t.status}
                         </span>
                       </div>
-                      <div className="mt-1 font-medium text-gray-900 truncate">{t.title || 'Untitled task'}</div>
+                      <div className={`font-medium text-lg ${t.status === 'completed' ? 'text-gray-500 line-through' : 'text-white'} truncate`}>{t.title || 'Untitled task'}</div>
                       {t.description && (
-                        <div className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">{t.description}</div>
+                        <div className="mt-1 text-sm text-gray-400 whitespace-pre-wrap">{t.description}</div>
                       )}
                     </div>
                   </div>

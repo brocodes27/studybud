@@ -1,0 +1,291 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Accountancy",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:03:20.505Z",
+    "total_questions": 20
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Anthony, a partner, was guaranteed that his share of profits will not be less than ₹60,000 p.a. Deficiency, if any, was to be borne by other partners Amar and Akbar equally. For the year ended 31st March, 2024, the firm incurred a loss of ₹1,80,000. What amount will be debited to Amar’s Capital Account in total at the end of the year?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹60,000",
+        "₹1,20,000",
+        "₹90,000",
+        "₹80,000"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Partnership Firms"
+    },
+    {
+      "question_number": "2",
+      "question": "Assertion: Partner’s current accounts are opened when their capital are fluctuating. Reasoning: In case of Fixed capitals all the transactions other than Capital are done through Current account of the partner.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false",
+        "A is false but R is true"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Partnership Firms"
+    },
+    {
+      "question_number": "3",
+      "question": "Forfeiture of shares leads to reduction of _________________ Capital.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Authorised",
+        "Issued",
+        "Subscribed",
+        "Called up"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Companies"
+    },
+    {
+      "question_number": "4",
+      "question": "At the time of admission of new partner Vasu, Old partners Paresh and Prabhav had debtors of ₹6,20,000 and a provision for doubtful debts (PDD) of ₹20,000 in their books. As per terms of admission, assets were revalued, and it was found that debtors worth ₹15,000 had turned bad and hence should be written off. Which journal entry reflects the correct accounting treatment of the above situation?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Bad Debts A/c Dr. To Debtors A/c Prov for D. debts A/c Dr. To Bad Debts A/c 15,000 15,000 15,000 15,000",
+        "Bad Debts A/c Dr. To Debtors A/c Revaluation A/c Dr. To Prov for doubt debts A/c 15,000 15,000 15,000 15,000",
+        "Revaluation A/c Dr. To Debtors A/c 15,000 15,000",
+        "Bad Debts A/c Dr. To Revaluation A/c 15,000 15,000"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Partnership Firms"
+    },
+    {
+      "question_number": "5",
+      "question": "The profit earned by a firm after retaining ₹15,000 to its reserve was ₹75,000. The firm had total tangible assets worth ₹10,00,000 and outside liabilities ₹3,00,000. The value of the goodwill as per capitalization of average profit method was valued as ₹50,000. Determine the rate of Normal Rate of Return.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "10%",
+        "5%",
+        "12%",
+        "8%"
+      ],
+      "correct_index": null,
+      "chapter": "Valuation of Goodwill"
+    },
+    {
+      "question_number": "6",
+      "question": "Mohit had applied for 900 shares, and was allotted in the ratio 3:2. He had paid application money of ₹3 per share and couldn’t pay allotment money of ₹5 per share. First and Final call of ₹2 per share was not yet made by the company. His shares were forfeited. The following entry will be passed: Share Capital A/c Dr. X To Share Forfeited A/c Y To Share Allotment A/c Z Here X, Y and Z are:",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹6,000; ₹2,700; ₹3,300",
+        "₹4,800; ₹2,700; ₹2,100",
+        "₹4,800; ₹1,800; ₹3,000",
+        "₹6,000; ₹1,800; ₹4,200"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Companies"
+    },
+    {
+      "question_number": "7",
+      "question": "On 1st April 2019 a company took a loan of ₹80,00,000 on security of land and building. This loan was further secured by issue of 40,000, 12% Debentures of ₹100 each as collateral security. On 31st March 2024 the company defaulted on repayment of the principal amount of this loan consequently on 1st April 2024 the land and building were taken over and sold by the bank for ₹70,00,000. For the balance amount debentures were sold in the market on 1st May 2024. From which date would the interest on debentures become payable by the company?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "1st April 2019",
+        "31st March 2024",
+        "1st April 2024",
+        "1st May 2024"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Debentures"
+    },
+    {
+      "question_number": "8",
+      "question": "Rama, a partner took over Machinery of ₹50,000 in full settlement of her Loan of ₹60,000. Machinery was already transferred to Realisation Account. How it will affect the Realisation Account?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Realisation Account will be credited by ₹60,000",
+        "Realisation Account will be credited by ₹10,000",
+        "Realisation Account will be credited by ₹50,000",
+        "No effect on Realisation Account"
+      ],
+      "correct_index": null,
+      "chapter": "Dissolution of Partnership Firms"
+    },
+    {
+      "question_number": "9",
+      "question": "Ikka, Dukka and Teeka were partners sharing profits and losses in the ratio of 2:2:1. Their fixed Capital balances were ₹5,00,000; ₹4,00,000 and ₹3,00,000 respectively. For the year ended March 31, 2024 profits of ₹84,000 were distributed without providing for Interest on Capital @ 10% p.a as per the partnership deed. While passing an adjustment entry, which of the following is correct?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Teeka will be debited by ₹4,200",
+        "Teeka will be credited by ₹4,200",
+        "Teeka will be credited by ₹6,000",
+        "Teeka will be debited by ₹6,000"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Partnership Firms"
+    },
+    {
+      "question_number": "10",
+      "question": "At the time of dissolution Machinery appears at ₹10,00,000 and accumulated depreciation for the machinery appears at ₹6,00,000 in the balance sheet of a firm. This machine is taken over by a creditor of ₹5,40,000 at 5% below the net value. The balance amount of the creditor was paid through bank. By what amount should the bank account be credited for this transaction?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹60,000",
+        "₹1,60,000",
+        "₹5,40,000",
+        "₹4,00,000"
+      ],
+      "correct_index": null,
+      "chapter": "Dissolution of Partnership Firms"
+    },
+    {
+      "question_number": "11",
+      "question": "Rahul, Samarth and Ayaan were partners sharing profits and losses in the ratio of 5:4:3. Ayaan’s fixed Capital balance as on March 31, 2024 was ₹2,70,000. Which of the following items would have affected this Capital balance?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Profit/Loss for the year",
+        "Additional Capital introduced",
+        "Reduction in Capital due to Capital Adjustment",
+        "Both B and C"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Partnership Firms"
+    },
+    {
+      "question_number": "12",
+      "question": "Shares issued as sweat equity can be (I) Issued at par. (ii) Issued at discount. (iii) Issued at a premium. Which of the following is correct?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Only (i) is correct.",
+        "Both (i) and (iii) are correct.",
+        "All are correct.",
+        "Only (ii) is correct."
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Companies"
+    },
+    {
+      "question_number": "13",
+      "question": "2,000 shares allotted to Ms. Regal, on which ₹80 each called up and ₹50 paid were forfeited and reissued for ₹70 each as ₹90 paid up. Amount transferred to capital reserve A/c is",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹1,00,000",
+        "₹60,000",
+        "₹40,000",
+        "₹20,000"
+      ],
+      "correct_index": null,
+      "chapter": "Accounting for Companies"
+    },
+    {
+      "question_number": "14",
+      "question": "Joey, Sam and Tex were partners sharing profits and losses in the ratio 5:3:2. W.e.f 01 April, 2024 they decided to share future profits and losses in the ratio 2:1:1. For which of the following balances Tex will be credited at the time of reconstitution of firm, if the firm decided to continue with available accumulated profits and losses balances.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "General Reserve ₹2,00,000 and Profit and Loss (Dr.) ₹1,20,000",
+        "General Reserve ₹2,00,000 and Profit and Loss (Cr.) ₹2,50,000",
+        "Deferred Revenue Expenditure ₹50,000 and Profit and Loss (Cr.) ₹80,000",
+        "Deferred Revenue Expenditure ₹50,000 and Profit and Loss (Dr.) ₹80,000"
+      ],
+      "correct_index": null,
+      "chapter": "Reconstitution of Partnership Firms"
+    },
+    {
+      "question_number": "15",
+      "question": "Rohit, Virat and Shikhar were partners sharing profits and losses in the ratio 3:1:1. Their Capital balance as on March 31, 2024 was ₹3,00,000; ₹2,70,000 and ₹2,50,000 respectively. On the same date, they admitted Hardik as a new partner for 20% share. Hardik was to bring ₹80,000 for his share of goodwill and 1/5 of the combined capital of all the partners of new firm. What will be the amount of capital brought in by Hardik on his admission as a new partner?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "₹2,25,000",
+        "₹1,80,000",
+        "₹2,60,000",
+        "₹3,05,000"
+      ],
+      "correct_index": null,
+      "chapter": "Admission of a Partner"
+    },
+    {
+      "question_number": "16",
+      "question": "String and Kite were partners sharing profits and losses in the ratio 5:3. They admitted spinner as a new partner. String sacrificed ¼ from his share and Kite sacrificed 1/6 of his share. What will be the new ratio?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "6:5:5",
+        "9:5:10",
+        "15:10:7",
+        "35:21:40"
+      ],
+      "correct_index": null,
+      "chapter": "Admission of a Partner"
+    },
+    {
+      "question_number": "27",
+      "question": "When an analyst analyzes the financial statements of an enterprise over a number of years, the analysis is called ______________ analysis.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Static",
+        "External",
+        "Horizontal",
+        "Vertical"
+      ],
+      "correct_index": null,
+      "chapter": "Analysis of Financial Statements"
+    },
+    {
+      "question_number": "28",
+      "question": "As on 31.02.2024 the following information of Bartan Manufacturing Ltd. is available. Net profit ratio 40%, Operating profit ratio 50%. On 1st April 2024 it was noticed that the accountant had omitted recording the interest received on investment of Rs. 2,00,000 for the financial year 2023-24. The required rectification was done. What will be the effect of the same on Net Profit and operating profit ratio?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Net Profit ratio will increase and Operating Profit ratio will decrease",
+        "Both Net Profit ratio and Operating Profit ratio will increase",
+        "Net Profit ratio will increase and Operating Profit ratio will have no change",
+        "Net Profit ratio will remain same and Operating Profit ratio will increase"
+      ],
+      "correct_index": null,
+      "chapter": "Analysis of Financial Statements"
+    },
+    {
+      "question_number": "29",
+      "question": "While computing cash from operating activities, which of the following item(s) will be added to the net profit? (i) Decrease in value of inventory (ii) Increase in share capital (iii) Increase in the value of trade receivables (iv) Increase in the amount of outstanding expenses",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Only (i)",
+        "Only (i) and (ii)",
+        "Only (i) and (iii)",
+        "Only (i) and (iv)"
+      ],
+      "correct_index": null,
+      "chapter": "Cash Flow Statement"
+    },
+    {
+      "question_number": "30",
+      "question": "Statement - I: ‘Shree Ltd.’ was carrying on a business of packaging in Delhi and earned good profits in the past years. The company wanted to expand its business and required additional funds. To meet its requirements the company issued equity shares of ₹30,00,000. It purchased a computerized machine of ₹20,00,000. During the current year the Net Profit of the company was ₹15,00,000. Cash flows from operating, investing and financing activities from the above transactions will be ₹15,00,000: (₹20,00,000); ₹30,00,000 respectively. Statement - II: The patents of X Ltd. increased from ₹3,00,000 in 2021-22 to ₹3,50,000 in 2022-23. It will be taken as purchase of Patents of 50,000 and will be shown under Cash outflow from Investing Activities.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Both the statements are true.",
+        "Both the statements are false.",
+        "Only Statement - I is true.",
+        "Only Statement - II is true."
+      ],
+      "correct_index": null,
+      "chapter": "Cash Flow Statement"
+    }
+  ]
+}

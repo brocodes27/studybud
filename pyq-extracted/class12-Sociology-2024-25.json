@@ -1,0 +1,406 @@
+{
+  "metadata": {
+    "class_level": "12",
+    "subject": "Sociology",
+    "year": "2024-25",
+    "extracted_at": "2025-11-23T13:24:13.408Z",
+    "total_questions": 35
+  },
+  "questions": [
+    {
+      "question_number": "1",
+      "question": "Assertion(A): The modern state had begun to take an active interest in the development of early forms of public health management, policing and maintenance of law and order. Reason (R): This new and constantly expanding sphere of state activity required the systematic science of statistics.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "State and Society"
+    },
+    {
+      "question_number": "2",
+      "question": "Assertion(A): For most of us who are born and live in India, social inequality and exclusion no longer are facts of our lives. Reason(R): The everydayness of social inequality and exclusion often make them appear inevitable, almost natural.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Social Inequality"
+    },
+    {
+      "question_number": "3",
+      "question": "While population rises in geometric progression, agricultural production can only grow in arithmetic progression. Which of the following appropriately explains the progressions?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "2,4,8,16 and 2,4,6,8 respectively",
+        "2,4,6,8 and 2,4,8,16 respectively",
+        "3,6,12,24 and 3,6,9,12 respectively",
+        "3,6,9,12 and 3,6,12,24 respectively"
+      ],
+      "correct_index": null,
+      "chapter": "Population and Resources"
+    },
+    {
+      "question_number": "4",
+      "question": "Assertion(A): It was in the cultural and domestic spheres that caste has proved strongest. Reason(R): While some boundaries may have become more flexible or porous, the borders between groups of castes of similar socio-economic status are still heavily patrolled.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Caste and Society"
+    },
+    {
+      "question_number": "5",
+      "question": "Which of the following statements is not true with regard to colonialism and caste?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "All major social institutions and specially the institution of caste underwent major changes during the colonial period.",
+        "All of the changes brought about by colonialism were intended or deliberate.",
+        "Initially, the British administrators began by trying to understand the complexities of caste in an effort to learn how to govern the country efficiently.",
+        "The 1901 Census under the direction of Herbert Risley was particularly important as it sought to collect information on the social hierarchy of caste."
+      ],
+      "correct_index": null,
+      "chapter": "Colonialism and Caste"
+    },
+    {
+      "question_number": "6",
+      "question": "Cultural diversity can often be perceived as a source of threat to states because -",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "States see all forms of community identity as dangerous rivals.",
+        "Control is difficult in case of heterogeneous identities.",
+        "Suppressing cultural diversity can be very costly in terms of the subdued community.",
+        "Community identities cannot act as the basis of nation-formation."
+      ],
+      "correct_index": null,
+      "chapter": "Cultural Diversity and State"
+    },
+    {
+      "question_number": "7",
+      "question": "Which of the following is not true for a community conflict?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Communities become reversed mirror images of each other in a community conflict.",
+        "People often react emotionally in case of any perceived threat to their community identity.",
+        "Community identities provide a sense of security and satisfaction to its members.",
+        "Community conflicts can be resolved easily."
+      ],
+      "correct_index": null,
+      "chapter": "Community Conflicts"
+    },
+    {
+      "question_number": "8",
+      "question": "Assertion(A): Today, barring the North-Eastern states, there are no areas of the country that are inhabited exclusively by tribal people. Reason (R): The term Adivasi connotes political awareness and the assertion of rights.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Tribal Societies"
+    },
+    {
+      "question_number": "9",
+      "question": "Which of the following statements is incorrect?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "The rights we enjoy just happened to exist.",
+        "Social movements not only change societies; they also inspire other social movements.",
+        "Movements are directed against the state and takes the form of demanding changes in state policy or practice.",
+        "A social movement requires sustained collective action over time."
+      ],
+      "correct_index": null,
+      "chapter": "Social Movements"
+    },
+    {
+      "question_number": "10",
+      "question": "Social Movements is an important subject matter of Sociology because -",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "These protests were perceived by elites as a major threat to the established order of society.",
+        "‘Crowd’ and the ‘mob’ were not made up of anarchic hooligans out to destroy society. Instead, they too had a ‘moral economy’.",
+        "Public resorted to protest because they had no other way of expressing their anger and resentment against deprivation.",
+        "There was an anxiety among people to maintain the prevailing social order."
+      ],
+      "correct_index": null,
+      "chapter": "Social Movements"
+    },
+    {
+      "question_number": "11",
+      "question": "Which of the following statements is not true for the Indian government’s policy of liberalisation?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "Private companies, especially foreign firms, are encouraged to invest in sectors earlier reserved for the government.",
+        "Foreign products are now easily available in Indian shops.",
+        "Indian companies have ensured that they work within national boundaries.",
+        "Licenses are no longer required to open industries."
+      ],
+      "correct_index": null,
+      "chapter": "Liberalisation"
+    },
+    {
+      "question_number": "12",
+      "question": "Which of the following is not true for stereotypes?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "In a country such as India, many of these stereotypes are partly colonial creations.",
+        "They are flexible characterisations of a group of people.",
+        "Stereotypes are often applied to ethnic and racial groups and to women.",
+        "Prejudices are often grounded in stereotypes."
+      ],
+      "correct_index": null,
+      "chapter": "Stereotypes"
+    },
+    {
+      "question_number": "13",
+      "question": "Assertion (A): Sanskritisation normally presupposes either an improvement in the economic or political position of the group concerned or a higher group self-consciousness resulting from its contact with a source of the ‘Great Tradition’. Reason (R): In a highly unequal society such as India there were and still are obstacles to any easy taking over of the customs of the higher castes by the lower.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Sanskritisation"
+    },
+    {
+      "question_number": "14",
+      "question": "Assertion (A): No social group howsoever weak or oppressed is only a victim. Reason (R): Human beings are always capable of organising and acting on their own – often against very heavy odds – to struggle for justice and dignity.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "A and R are true and R is the correct explanation of A.",
+        "Both A and R are true but R is not the correct explanation of A.",
+        "A is true but R is false.",
+        "A is false and R is true."
+      ],
+      "correct_index": null,
+      "chapter": "Social Justice"
+    },
+    {
+      "question_number": "15",
+      "question": "Which of the following statements is true for the tea plantations established by the British in India?",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "The colonial administrators were clear that the measures taken on the plantation for labourers was different vis-à-vis the planters.",
+        "Coolies lived a comfortable life on the tea plantations.",
+        "Planters and coolies had a cordial relationship.",
+        "Colonial administration stuck to democratic norms."
+      ],
+      "correct_index": null,
+      "chapter": "Colonialism and Labour"
+    },
+    {
+      "question_number": "16",
+      "question": "Put the following statements in the correct order. I. The worker works without wages until the loan is repaid. II. He will loan them some money. III. The contractor goes to villages and asks if people want work. IV. They can break the contract and find another employer.",
+      "type": "mcq",
+      "marks": 1,
+      "options": [
+        "III., II., I., IV.",
+        "I., II., III., IV.",
+        "IV., III., II., I.",
+        "I., II., IV., III."
+      ],
+      "correct_index": null,
+      "chapter": "Labour and Employment"
+    },
+    {
+      "question_number": "17",
+      "question": "The dependency ratio is equal to the population below 15 or above 64, divided by population in the 15-64 age group. This is usually expressed as a percentage. In 2020, the average Indian was only 29 years old, compared with an average age of 37 in China and the United States, 45 in Western Europe, and 48 in Japan. What inference can you draw from this statement?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Demographics"
+    },
+    {
+      "question_number": "18",
+      "question": "Prejudice can be either positive or negative. Support the statement with suitable examples. OR Discrimination can be very hard to prove because it may not be open or explicitly stated. Support the statement with suitable examples.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Prejudice and Discrimination"
+    },
+    {
+      "question_number": "19",
+      "question": "State how communalism is all about politics, not about religion.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Communalism"
+    },
+    {
+      "question_number": "20",
+      "question": "Give an example of an anomalous instance with regard to minority groups. OR People constituting a nation may actually be citizens or residents of different states.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Minority Groups"
+    },
+    {
+      "question_number": "21",
+      "question": "Begum Rokeya Sakhawat Hossain was born in a well-to-do Bengali Muslim family, and was lucky to have a husband who was very liberal in outlook and encouraged her education first in Urdu and later in Bengali and English. She was already a successful author in Urdu and Bengali when she wrote Sultana’s Dream to test her abilities in English. Why was Sultana’s Dream considered a remarkable short story, in context of struggle for women’s equality and rights?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Women's Rights"
+    },
+    {
+      "question_number": "22",
+      "question": "Agrarian society can be understood in terms of its class structure. But we must also remember the structure is itself through the caste system. In rural areas, there is a complex relationship between caste and class. This relationship is not always straightforward. Give two examples to prove that the relationship is not straightforward.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Agrarian Society"
+    },
+    {
+      "question_number": "23",
+      "question": "In the old social movements, the role of political parties was central. Political scientist Rajni Kothari attributes the surge of social movements in India in the 1970s to people’s growing dissatisfaction with parliamentary democracy. As a result of this people joined social movements or non-political party formations. What were the reasons for this growing dissatisfaction?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Social Movements"
+    },
+    {
+      "question_number": "24",
+      "question": "“You need energy. The eyes move, the neck, the legs and the hands, each part moves. Weaving is done under a continuous gaze - one cannot go anywhere, the focus must be on the machine. When four machines run all four must move together, they must not stop. (Joshi 2003) The more mechanised an industry gets; the fewer people are employed.” What are the reasons for this?",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Industrialisation"
+    },
+    {
+      "question_number": "25",
+      "question": "“Someone may be endowed with exceptional intelligence or talent, or may have worked very hard to achieve their wealth and status.” Does this statement reflect social stratification? Give reasons for your answer.",
+      "type": "short",
+      "marks": 2,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Social Stratification"
+    },
+    {
+      "question_number": "26",
+      "question": "“An alternative to the nation-state, then, is the “state nation”, where various “nations” — be they ethnic, religious, linguistic or indigenous identities — can co-exist peacefully and cooperatively in a single state polity.” What factors are required to build enduring state-nations?",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Nation-State"
+    },
+    {
+      "question_number": "27",
+      "question": "“The present form of caste as a social institution has been shaped very strongly by both the colonial period as well as the rapid changes that have come about in independent India. The development activity of the state and the growth of private industry affected caste indirectly through the speeding up and intensification of economic change.” How has economic change affected caste?",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Caste and Economy"
+    },
+    {
+      "question_number": "28",
+      "question": "“In traditional India caste system operated within a religious framework. Belief systems of purity and pollution were central to its practice. Today it often functions as political pressure groups.” Illustrate the process of secularisation of caste. OR “The term modernisation has a long history. From the 19th and more so the 20th century, the term began to be associated with positive and desirable values. People and societies wanted to be modern. In the early years, modernisation referred to improvement in technology and production processes. Increasingly, however, the term had a wider usage.” What, according to sociologists, constitutes the modernisation process?",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Caste and Modernisation"
+    },
+    {
+      "question_number": "29",
+      "question": "“A significant change in rural society that is linked to the commercialisation of agriculture has been the growth of migrant agricultural labour. As ‘traditional’ bonds of patronage between labourers or tenants and landlords broke down, and as the seasonal demand for agricultural labour increased in prosperous Green Revolution regions, a pattern of seasonal migration emerged.” Elaborate on this pattern of migration.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Agricultural Labour"
+    },
+    {
+      "question_number": "30",
+      "question": "Enumerate the indicators of the process of globalisation of agriculture.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Globalisation and Agriculture"
+    },
+    {
+      "question_number": "31",
+      "question": "Industrialisation in the west is associated with the growth of a middle class. Discuss the Indian experience of the growth of this middle class.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Industrialisation and Middle Class"
+    },
+    {
+      "question_number": "32",
+      "question": "“The argument for a tribe-caste distinction was founded on an assumed cultural difference between Hindu castes, with their beliefs in purity and pollution and hierarchical integration, and ‘animist’ tribals with their more egalitarian and kinship-based modes of social organisation.” Is this distinction between tribes and caste viable? Give reasons for your answer.",
+      "type": "long",
+      "marks": 4,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Tribe and Caste"
+    },
+    {
+      "question_number": "33",
+      "question": "Answer the questions given below based on the reading of the data given in the table. a) What are the different factors which determine literacy rates in our country? b) How do inequalities in literacy rate lead to inequality across generations?",
+      "type": "long",
+      "marks": 6,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Literacy and Inequality"
+    },
+    {
+      "question_number": "34",
+      "question": "‘Job recruitment as factory worker takes a different pattern’. Discuss.",
+      "type": "long",
+      "marks": 6,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Labour and Employment"
+    },
+    {
+      "question_number": "35",
+      "question": "How did peasant movements evolve from pre-colonial days to post-colonial times?",
+      "type": "long",
+      "marks": 6,
+      "options": [],
+      "correct_index": null,
+      "chapter": "Peasant Movements"
+    }
+  ]
+}
