@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Play, RotateCcw } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
 
 interface BlackboardPlayerProps {
@@ -49,6 +50,28 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const generateScript = async () => {
         try {
             setLoading(true);
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                const { data: saved } = await supabase
+                    .from('saved_videos')
+                    .select('script')
+                    .eq('user_id', user.id)
+                    .eq('topic', topic)
+                    .eq('subject', subject)
+                    .maybeSingle();
+
+                if (saved && saved.script) {
+                    setScript(saved.script);
+                    setTimeout(() => {
+                        setLoading(false);
+                        setCurrentIndex(0);
+                        setIsPlaying(true);
+                    }, 500);
+                    return;
+                }
+            }
+
             const isStem = ['science', 'physics', 'chemistry', 'biology', 'math', 'mathematics'].some(s => subject.toLowerCase().includes(s));
             const visualPrompt = isStem
                 ? "For visualContent, generate 3D ISOMETRIC or PERSPECTIVE SVG diagrams with depth. Use embedded <style> or <animateTransform> to create subtle 3D ROTATION, PULSING, or FLOATING animations. Use gradients only for chalk shading effect. Prioritize clarity. Use <svg viewBox='0 0 500 350'>. Palette: #ffeb3b, #4fc3f7, #ff8a80, #b9f6ca, #ffffff. Make it look like a high-tech 3D hologram lesson."
@@ -72,6 +95,17 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             if (jsonMatch) {
                 const parsed = JSON.parse(jsonMatch[0]);
                 setScript(parsed.segments);
+
+                // Save to DB
+                if (user) {
+                    await supabase.from('saved_videos').insert({
+                        user_id: user.id,
+                        topic,
+                        subject,
+                        script: parsed.segments
+                    });
+                }
+
                 // Auto-play after loading
                 setTimeout(() => {
                     setLoading(false);
