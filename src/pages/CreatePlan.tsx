@@ -53,8 +53,20 @@ export function CreatePlan() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate study plan');
+        let errorMessage = 'Failed to generate study plan';
+        try {
+          const errorData = await response.json();
+          // Include detailed error information if available
+          if (errorData.details) {
+            errorMessage = `${errorData.error || errorMessage}: ${errorData.details}`;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (parseError) {
+          // If response isn't JSON, use status text
+          errorMessage = `${errorMessage} (Status: ${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const plan = await response.json();

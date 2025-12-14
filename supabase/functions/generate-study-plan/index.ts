@@ -211,7 +211,7 @@ Return the response in this exact JSON format:
 Make sure to include actual, specific practice questions that are appropriate for the subject and class level. Keep responses concise to avoid truncation.`;
 
       const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
         {
           method: "POST",
           headers: {

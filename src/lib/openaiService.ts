@@ -34,7 +34,22 @@ export class OpenAIService {
     });
     const text = await res.text();
     if (!res.ok) {
-      throw new Error(`OpenAI proxy error: ${res.status} ${text}`);
+      // Try to parse error response for more details
+      let errorMessage = `OpenAI proxy error: ${res.status}`;
+      try {
+        const errorData = JSON.parse(text);
+        if (errorData.details) {
+          errorMessage += ` - ${errorData.error || 'Unknown error'}: ${errorData.details}`;
+        } else if (errorData.error) {
+          errorMessage += ` - ${errorData.error}`;
+        } else {
+          errorMessage += ` - ${text}`;
+        }
+      } catch {
+        errorMessage += ` - ${text}`;
+      }
+      console.error('OpenAI Proxy Error:', errorMessage);
+      throw new Error(errorMessage);
     }
     try {
       return JSON.parse(text);
