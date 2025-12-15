@@ -22,6 +22,11 @@ interface SavedVideoRecord {
     heygen_video_id?: string | null;
     heygen_video_url?: string | null;
     heygen_status?: string | null;
+    heygen_error?: string | null;
+    heygen_last_checked_at?: string | null;
+    heygen_notified?: boolean | null;
+    heygen_notified_at?: string | null;
+    heygen_requested_at?: string | null;
 }
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
@@ -263,7 +268,12 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                         script: computedSegments,
                         heygen_status: 'pending',
                         heygen_video_id: null,
-                        heygen_video_url: null
+                        heygen_video_url: null,
+                        heygen_error: null,
+                        heygen_requested_at: new Date().toISOString(),
+                        heygen_notified: false,
+                        heygen_notified_at: null,
+                        heygen_last_checked_at: new Date().toISOString()
                     }, { onConflict: 'user_id,topic,subject' });
                 }
 
@@ -402,6 +412,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             topic,
             subject,
             script,
+            heygen_last_checked_at: new Date().toISOString(),
             ...patch
         }, { onConflict: 'user_id,topic,subject' });
     }, [userId, script, topic, subject]);
@@ -423,17 +434,17 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 setHeygenUrl(url);
                 setHeygenStatus('ready');
                 setSavedVideoId(videoId);
-                await upsertSavedVideo({ heygen_video_id: videoId, heygen_video_url: url, heygen_status: 'ready' });
+                await upsertSavedVideo({ heygen_video_id: videoId, heygen_video_url: url, heygen_status: 'ready', heygen_error: null });
             } else {
                 setHeygenStatus('error');
                 setHeygenError('HeyGen did not return a video URL. Tap retry.');
-                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error' });
+                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: 'No video URL from HeyGen' });
             }
         } catch (e: any) {
             if (controller.signal.aborted) return;
             setHeygenStatus('error');
             setHeygenError(e?.message || 'HeyGen video generation failed');
-            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error' });
+            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen video generation failed' });
         }
     }, [upsertSavedVideo]);
 
@@ -461,13 +472,19 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
 
             setSavedVideoId(videoId);
-            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'processing', heygen_video_url: null });
+            await upsertSavedVideo({
+                heygen_video_id: videoId,
+                heygen_status: 'processing',
+                heygen_video_url: null,
+                heygen_error: null,
+                heygen_requested_at: new Date().toISOString()
+            });
             await pollExistingHeygenVideo(videoId);
         } catch (e: any) {
             if (controller.signal.aborted) return;
             setHeygenStatus('error');
             setHeygenError(e?.message || 'HeyGen video generation failed');
-            if (savedVideoId) await upsertSavedVideo({ heygen_video_id: savedVideoId, heygen_status: 'error' });
+            if (savedVideoId) await upsertSavedVideo({ heygen_video_id: savedVideoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen video generation failed' });
         }
     }, [heygenStatus, script, upsertSavedVideo, pollExistingHeygenVideo, savedVideoId]);
 
@@ -533,6 +550,15 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             <p className="text-sm text-gray-400">
                                 {videoWorking ? 'Generating HeyGen video now...' : 'Waiting for video generation to finish.'}
                             </p>
+                            <p className="text-xs text-gray-500 max-w-xl">
+                                You can close this window and keep studying; we will notify you once the HeyGen video is ready.
+                            </p>
+                            <button
+                                onClick={handleClose}
+                                className="mt-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10"
+                            >
+                                Close and continue elsewhere
+                            </button>
                         </div>
                     ) : !isPlaying && currentIndex === -1 ? (
                         <div className="flex flex-col items-center justify-center h-full animate-fade-in">
