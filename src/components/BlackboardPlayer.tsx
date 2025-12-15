@@ -154,7 +154,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     }
                     if (!targetCanvas.isConnected || !container.isConnected) return;
                     drawer
-                        .draw(tree, canvasId, 'light', false)
+                        .draw(tree, targetCanvas, 'light', false)
                         .then(() => {
                             if (!plan.reactions?.length || !container.isConnected) return;
                             const r = plan.reactions[0];
@@ -597,7 +597,20 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             ? segment.subtitles
             : [segment.textToSpeak || ""];
 
-        // Loop through subtitles and play sequentially
+        const speakFallback = async (text: string) => {
+            await new Promise<void>((resolve) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'));
+                if (preferredVoice) utterance.voice = preferredVoice;
+
+                utterance.onend = () => resolve();
+                speechRef.current = utterance;
+                window.speechSynthesis.speak(utterance);
+            });
+        };
+
         for (let i = 0; i < subtitlesToPlay.length; i++) {
             // CRITICAL: Check session ID
             if (playbackSessionRef.current !== sessionId || !isPlayingRef.current) return;
@@ -606,50 +619,31 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             setCurrentSubtitleText(line);
 
             try {
-                // Try OpenAI TTS
                 const audioBuffer = await OpenAIService.getInstance().generateSpeech(line);
+                if (!(audioBuffer instanceof ArrayBuffer) || audioBuffer.byteLength === 0) {
+                    throw new Error('Empty audio buffer');
+                }
 
-                // Double check after async
                 if (playbackSessionRef.current !== sessionId || !isPlayingRef.current) return;
 
-                const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-                const url = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(new Blob([audioBuffer], { type: 'audio/mpeg' }));
 
-                await new Promise<void>((resolve) => {
+                await new Promise<void>((resolve, reject) => {
                     const audio = new Audio(url);
                     audioRef.current = audio;
-                    audio.onended = () => {
+                    const cleanup = () => {
                         URL.revokeObjectURL(url);
-                        resolve();
+                        audioRef.current = null;
                     };
-                    audio.onerror = (e) => {
-                        URL.revokeObjectURL(url); // clean up
-                        console.warn("Audio error", e);
-                        resolve(); // Resolve anyway to continue
-                    };
-                    audio.play().catch(e => {
-                        console.warn("Audio play failed", e);
-                        resolve();
-                    });
+                    audio.onended = () => { cleanup(); resolve(); };
+                    audio.onerror = (e) => { cleanup(); reject(e); };
+                    audio.play().catch(err => { cleanup(); reject(err); });
                 });
 
             } catch (e) {
-                console.warn('TTS Error, falling back to browser voice:', e);
-                // Double check after async
+                console.warn('Audio playback failed, falling back to browser voice:', e);
                 if (playbackSessionRef.current !== sessionId || !isPlayingRef.current) return;
-
-                // Fallback
-                await new Promise<void>((resolve) => {
-                    const utterance = new SpeechSynthesisUtterance(line);
-                    utterance.rate = 1.0;
-                    const voices = window.speechSynthesis.getVoices();
-                    const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'));
-                    if (preferredVoice) utterance.voice = preferredVoice;
-
-                    utterance.onend = () => resolve();
-                    speechRef.current = utterance;
-                    window.speechSynthesis.speak(utterance);
-                });
+                await speakFallback(line);
             }
         }
 
