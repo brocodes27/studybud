@@ -96,11 +96,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Prepare Gemini API request
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
+    // Prepare OpenAI API request
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "OpenAI API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -210,45 +210,50 @@ Return the response in this exact JSON format:
 
 Make sure to include actual, specific practice questions that are appropriate for the subject and class level. Keep responses concise to avoid truncation.`;
 
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+      const openaiResponse = await fetch(
+        "https://api.openai.com/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${openaiApiKey}`,
           },
           body: JSON.stringify({
-            contents: [
+            model: "gpt-4o",
+            messages: [
               {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
+                role: "system",
+                content: "You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested."
+              },
+              {
+                role: "user",
+                content: prompt,
               },
             ],
+            temperature: 0.7,
+            max_completion_tokens: 8192,
           }),
         }
       );
 
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini API error: ${geminiResponse.status}`);
+      if (!openaiResponse.ok) {
+        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
       }
 
-      const geminiData = await geminiResponse.json();
-      const generatedText = geminiData.candidates[0].content.parts[0].text;
+      const openaiData = await openaiResponse.json();
+      const generatedText = openaiData.choices[0].message.content;
 
       // Validate response size and content
       if (!generatedText || generatedText.length < 50) {
-        throw new Error("Gemini response is too short or empty");
+        throw new Error("OpenAI response is too short or empty");
       }
 
       // Check if response might be truncated (look for incomplete JSON)
       if (generatedText.length > 10000) {
-        console.warn("Large Gemini response detected, may be truncated");
+        console.warn("Large OpenAI response detected, may be truncated");
       }
 
-      // Parse the JSON response from Gemini with improved error handling
+      // Parse the JSON response from OpenAI with improved error handling
       let studyPlan;
       try {
         // First, try to extract JSON from the response
@@ -286,7 +291,7 @@ Make sure to include actual, specific practice questions that are appropriate fo
         return studyPlan;
 
       } catch (parseError) {
-        console.error("Failed to parse Gemini response:", {
+        console.error("Failed to parse OpenAI response:", {
           error: parseError.message,
           responseLength: generatedText.length,
           responsePreview: generatedText.substring(0, 500) + "...",

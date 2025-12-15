@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
+import rough from 'roughjs/bundled/rough.esm.js';
+import SmilesDrawer from 'smiles-drawer';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
 
@@ -14,7 +16,38 @@ interface ScriptSegment {
     textToSpeak: string;
     subtitles: string[]; // Added for sentence-level sync
     visualContent: string;
+    visualPlan?: VisualPlan;
 }
+
+type VisualPlan =
+    | {
+        kind: 'chemistry';
+        molecules?: { smiles: string; label?: string }[];
+        reactions?: { reactants: string[]; products: string[]; arrowLabel?: string }[];
+        notes?: string;
+    }
+    | {
+        kind: 'physics';
+        axes?: boolean;
+        objects?: { shape: 'block' | 'circle' | 'pulley' | 'incline'; x: number; y: number; w?: number; h?: number; r?: number; label?: string }[];
+        forces?: { from: [number, number]; to: [number, number]; label?: string }[];
+        paths?: { points: [number, number][]; label?: string }[];
+        notes?: string;
+    }
+    | {
+        kind: 'math';
+        axes?: boolean;
+        functions?: { samples: { x: number; y: number }[]; color?: string; label?: string }[];
+        points?: { x: number; y: number; label?: string }[];
+        notes?: string;
+    }
+    | {
+        kind: 'general';
+        notes?: string;
+    };
+
+const CANVAS_W = 1200;
+const CANVAS_H = 800;
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
     const [loading, setLoading] = useState(true);
@@ -22,6 +55,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [currentIndex, setCurrentIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [displayedText, setDisplayedText] = useState('');
+    const [renderedPlan, setRenderedPlan] = useState<VisualPlan | null>(null);
 
     const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
@@ -31,6 +65,263 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isPlayingRef = useRef(false);
     const playbackSessionRef = useRef(0); // Unique ID for current playback session
+
+    const renderChemistryPlan = (container: HTMLDivElement, plan: Extract<VisualPlan, { kind: 'chemistry' }>) => {
+        if (!container) return;
+        container.innerHTML = '';
+        container.style.background = '#0b1a13';
+        container.style.border = '1px solid rgba(255,255,255,0.08)';
+        container.style.borderRadius = '14px';
+        container.style.padding = '12px';
+        container.style.minHeight = '70vh';
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+
+        const targetCanvas = document.createElement('canvas');
+        targetCanvas.width = CANVAS_W;
+        targetCanvas.height = CANVAS_H;
+        targetCanvas.style.width = '100%';
+        targetCanvas.style.maxHeight = '85vh';
+        targetCanvas.style.minHeight = '65vh';
+        targetCanvas.style.background = '#0b1a13';
+        targetCanvas.style.borderRadius = '12px';
+        container.appendChild(targetCanvas);
+
+        const pickSmiles = (s?: string) => {
+            if (!s) return '';
+            // Split on whitespace/commas/semicolons to avoid leading labels
+            const tokens = s.split(/[\s,;]+/).filter(Boolean);
+            return tokens.find(t =>
+                t.length >= 2 &&
+                !t.startsWith('(') &&
+                !t.startsWith(')') &&
+                /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(t) &&
+                /[BCNOSPFIclbr]/i.test(t)
+            ) || '';
+        };
+
+        const smilesSource =
+            pickSmiles(plan.molecules?.find(m => !!m.smiles)?.smiles) ||
+            pickSmiles(plan.reactions?.find(r => r.reactants?.[0])?.reactants?.[0]) ||
+            pickSmiles(plan.reactions?.find(r => r.products?.[0])?.products?.[0]) ||
+            '';
+
+        if (!smilesSource) {
+            container.innerHTML = `<div style="color:#39ff14;font:32px 'Kalam','Comic Sans MS',cursive;">No molecule/reaction data provided by AI</div>`;
+            return;
+        }
+
+        // SmilesDrawer export handling (UMD/ESM)
+        const SmilesLib: any = (SmilesDrawer as any)?.Drawer ? SmilesDrawer : (SmilesDrawer as any)?.default || SmilesDrawer;
+        const DrawerClass = SmilesLib.Drawer;
+        const parseFn = SmilesLib.parse;
+
+        if (!DrawerClass || !parseFn) {
+            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">SmilesDrawer unavailable</div>`;
+            return;
+        }
+
+        const isLikelySmiles = (s: string) =>
+            !!s &&
+            s.length >= 2 &&
+            /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(s) &&
+            /[BCNOSPFIclbr]/i.test(s) &&
+            !s.startsWith('(') &&
+            !s.startsWith(')');
+
+        if (!isLikelySmiles(smilesSource)) {
+            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Invalid SMILES provided by AI</div>`;
+            return;
+        }
+
+        const drawer = new DrawerClass({
+            width: CANVAS_W,
+            height: CANVAS_H,
+            padding: 10,
+            compactDrawing: false
+        });
+
+        try {
+            parseFn(
+                smilesSource,
+                (tree: any) => {
+                    if (!tree) {
+                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Empty molecule</div>`;
+                        return;
+                    }
+                    try {
+                        if (!targetCanvas.isConnected) return;
+                        drawer.draw(tree, targetCanvas, 'light', false);
+                    } catch (err) {
+                        console.warn('SmilesDrawer draw error', err);
+                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
+                        return;
+                    }
+                    if (plan.reactions?.length) {
+                        const r = plan.reactions[0];
+                        const label = document.createElement('div');
+                        label.style.color = '#facc15';
+                        label.style.font = '28px "Kalam","Comic Sans MS",cursive';
+                        label.style.marginTop = '12px';
+                        label.textContent = r.arrowLabel || 'reaction';
+                        container.appendChild(label);
+                    }
+                },
+                (err: any) => {
+                    console.warn('SmilesDrawer parse error', err);
+                    container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not parse SMILES</div>`;
+                }
+            );
+        } catch (e) {
+            console.warn('SmilesDrawer render failed', e);
+            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
+        }
+    };
+
+    const renderPhysicsMathPlan = (canvas: HTMLCanvasElement, plan: Extract<VisualPlan, { kind: 'physics' | 'math' | 'general' }>) => {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+        ctx.fillStyle = '#0b1a13';
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+        const rc = rough.canvas(canvas);
+        const sx = (x: number) => x * CANVAS_W;
+        const sy = (y: number) => y * CANVAS_H;
+
+        // Background grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= CANVAS_W; x += 80) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, CANVAS_H);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= CANVAS_H; y += 80) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(CANVAS_W, y);
+            ctx.stroke();
+        }
+
+        const drawLabel = (text: string, x: number, y: number, color = '#facc15') => {
+            ctx.fillStyle = color;
+            ctx.font = '28px "Kalam", "Comic Sans MS", cursive';
+            ctx.fillText(text, x, y);
+        };
+
+        if (plan.axes) {
+            rc.line(sx(0.1), sy(0.9), sx(0.9), sy(0.9), { stroke: '#39ff14', roughness: 1.2 });
+            rc.line(sx(0.1), sy(0.9), sx(0.1), sy(0.1), { stroke: '#00f3ff', roughness: 1.2 });
+            drawLabel('x', sx(0.9) + 10, sy(0.9) + 5, '#39ff14');
+            drawLabel('y', sx(0.08), sy(0.12), '#00f3ff');
+        }
+
+        if (plan.kind === 'physics' && plan.objects) {
+            plan.objects.forEach(obj => {
+                const color = '#e5e7eb';
+                if (obj.shape === 'block') {
+                    rc.rectangle(sx(obj.x), sy(obj.y), (obj.w || 0.18) * CANVAS_W, (obj.h || 0.12) * CANVAS_H, { stroke: color, fill: 'transparent', strokeWidth: 3 });
+                }
+                if (obj.shape === 'circle') {
+                    rc.circle(sx(obj.x), sy(obj.y), (obj.r || 0.1) * CANVAS_W, { stroke: color, fill: 'transparent', strokeWidth: 3 });
+                }
+                if (obj.shape === 'pulley') {
+                    rc.circle(sx(obj.x), sy(obj.y), (obj.r || 0.1) * CANVAS_W, { stroke: '#facc15', fill: 'transparent', strokeWidth: 3 });
+                    rc.line(sx(obj.x), sy(obj.y - (obj.r || 0.1)), sx(obj.x), sy(obj.y + (obj.r || 0.1)), { stroke: '#facc15' });
+                }
+                if (obj.shape === 'incline') {
+                    rc.line(sx(obj.x - 0.2), sy(obj.y + 0.2), sx(obj.x + 0.2), sy(obj.y - 0.2), { stroke: '#f97316', strokeWidth: 3 });
+                }
+                if (obj.label) drawLabel(obj.label, sx(obj.x) + 10, sy(obj.y) - 10, '#facc15');
+            });
+        }
+
+        if (plan.kind === 'physics' && plan.forces) {
+            plan.forces.forEach(f => {
+                rc.line(sx(f.from[0]), sy(f.from[1]), sx(f.to[0]), sy(f.to[1]), { stroke: '#ff00ff', strokeWidth: 3, roughness: 1 });
+                const midX = (sx(f.from[0]) + sx(f.to[0])) / 2;
+                const midY = (sy(f.from[1]) + sy(f.to[1])) / 2;
+                if (f.label) drawLabel(f.label, midX + 6, midY - 6, '#ff00ff');
+            });
+        }
+
+        if (plan.kind === 'physics' && plan.paths) {
+            plan.paths.forEach(p => {
+                if (!p.points?.length) return;
+                for (let i = 0; i < p.points.length - 1; i++) {
+                    const a = p.points[i];
+                    const b = p.points[i + 1];
+                    rc.line(sx(a[0]), sy(a[1]), sx(b[0]), sy(b[1]), { stroke: '#00f3ff', strokeWidth: 2 });
+                }
+                if (p.label) {
+                    const last = p.points[p.points.length - 1];
+                    drawLabel(p.label, sx(last[0]) + 6, sy(last[1]) - 6, '#00f3ff');
+                }
+            });
+        }
+
+        if (plan.kind === 'math' && plan.functions) {
+            plan.functions.forEach(fn => {
+                const pts = fn.samples || [];
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const a = pts[i];
+                    const b = pts[i + 1];
+                    rc.line(sx(a.x), sy(1 - a.y), sx(b.x), sy(1 - b.y), { stroke: fn.color || '#39ff14', strokeWidth: 3, roughness: 1 });
+                }
+                if (fn.label && pts.length) {
+                    const last = pts[pts.length - 1];
+                    drawLabel(fn.label, sx(last.x) + 8, sy(1 - last.y) - 8, fn.color || '#39ff14');
+                }
+            });
+        }
+
+        if (plan.kind === 'math' && plan.points) {
+            plan.points.forEach(p => {
+                rc.circle(sx(p.x), sy(1 - p.y), 12, { stroke: '#facc15', fill: '#facc15', fillStyle: 'solid' });
+                if (p.label) drawLabel(p.label, sx(p.x) + 8, sy(1 - p.y) - 8, '#facc15');
+            });
+        }
+    };
+
+    const LibraryVisual: React.FC<{ plan: VisualPlan }> = ({ plan }) => {
+        const canvasRef = useRef<HTMLCanvasElement>(null);
+        const chemRef = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+            if (plan.kind === 'chemistry') {
+                if (chemRef.current) renderChemistryPlan(chemRef.current, plan);
+                return;
+            }
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            canvas.width = CANVAS_W;
+            canvas.height = CANVAS_H;
+            renderPhysicsMathPlan(canvas, plan as Extract<VisualPlan, { kind: 'physics' | 'math' | 'general' }>);
+        }, [plan]);
+
+        if (plan.kind === 'chemistry') {
+            return (
+                <div className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in">
+                    <div
+                        ref={chemRef}
+                        className="w-[90%] max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10 overflow-hidden"
+                    />
+                </div>
+            );
+        }
+
+        return (
+            <div className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in">
+                <canvas
+                    ref={canvasRef}
+                    className="w-[90%] max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10"
+                />
+            </div>
+        );
+    };
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -53,6 +344,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         playbackSessionRef.current += 1;
         isPlayingRef.current = false;
         setIsPlaying(false);
+        setRenderedPlan(null);
 
         // 2. Stop Browser TTS
         window.speechSynthesis.cancel();
@@ -124,37 +416,80 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
             const getSubjectVisualPrompt = (subject: string): string => {
                 const s = subject.toLowerCase();
-                const base = "Generate CLEAN, MINIMALIST, HIGH-CONTRAST SVGs. Style: Professional Chalkboard Art. Stroke width: 2px minimum. Avoid clutter. Use 'filter: drop-shadow(0 0 5px currentColor)' for neon glow. Neons: #00f3ff, #ff00ff, #39ff14. Use <animate> for smooth motion. SCENE: Center the main subject. Leave ample negative space.";
 
-                if (s.includes('physics')) return `${base} FORCE CRITICAL: Draw simple, clear Free-Body Diagrams. disjointed components. CLEAR SEPARATION between pulleys/blocks. scalable vectors.`;
+                // Strong base style: much more dynamic + layered visuals
+                const base = [
+                    "Generate a HIGHLY VISUAL, DYNAMIC SVG scene in neon chalkboard style.",
+                    "Overall look: cinematic blackboard shot with colored chalk lines.",
+                    "Use multiple layers of elements, arrows and highlights so the scene feels ALIVE.",
+                    "Use smooth <animate>, <animateTransform> or small motion on key elements (but avoid chaos).",
+                    "Colors: mainly neon chalk tones (#00f3ff, #ff00ff, #39ff14, #facc15, #f97316) on a dark background.",
+                    "Stroke width: 2.5–3px, rounded line caps, no fills except for small emphasis areas.",
+                    "Composition: clear foreground focus + subtle background guidelines / grids.",
+                    "SIZE RULES: include viewBox='0 0 1200 800' and preserveAspectRatio='xMidYMid meet'. Center the MAIN SUBJECT; it should occupy ~60–75% of the frame. Avoid tiny elements; avoid huge empty margins.",
+                    "Avoid walls of text. Prefer symbols, icons, shapes, arrows, curves, labels near objects.",
+                    "No external assets. STRICTLY inline SVG code only."
+                ].join(" ");
 
-                if (s.includes('chemistry')) return `${base} MOLECULE CRITICAL: Draw CLEAN skeletal structures. Large spacing between atoms. Distinct bonds. legible element symbols.`;
+                if (s.includes('physics')) {
+                    return `${base} THEME: physics chalkboard. Show objects, forces and motion with arrows. Include at least ONE animated arrow or vector that gently pulses or moves. Add subtle grid or reference lines. Use classic physics diagrams (free-body with normal/weight/force vectors, pulley/tension, motion graphs). Keep the main diagram large and centered.`;
+                }
 
-                if (s.includes('biology')) return `${base} ORGANIC CRITICAL: Draw simplified, iconic smooth shapes. Avoid noisy textures. distinct membranes.`;
+                if (s.includes('chemistry')) {
+                    return `${base} THEME: chemistry lab chalkboard. Draw LARGE, CLEAR skeletal structures (explicit atoms + bonds) and/or beakers/flasks with glowing liquids. Show reaction arrows with animated flow/bubbles. Separate reactants, arrow, and products clearly with labels near objects. Keep structures centered and filling the majority of the frame. In visualPlan include at least one VALID SMILES (no placeholders, no "X", only real atoms) for the main molecule.`;
+                }
 
-                if (s.includes('math') || s.includes('calculus') || s.includes('algebra')) return `${base} GRAPH CRITICAL: Use a clean, simple coordinate system. scalable axis lines. smooth, continuous gesture-like curves.`;
+                if (s.includes('biology')) {
+                    return `${base} THEME: biology lecture. Use smooth organic shapes (cells, organs, processes) with clear boundaries. Add animated arrows to show flows (like blood, air, signals). Use labels around the edges, not inside shapes.`;
+                }
 
-                if (s.includes('history') || s.includes('literature')) return "Generate elegant, simple symbolic lines. Iconic representations. Minimal strokes.";
+                if (s.includes('math') || s.includes('calculus') || s.includes('algebra')) {
+                    return `${base} THEME: math blackboard. Draw a big coordinate grid or number line as background. Emphasize 1–3 key curves or shapes using thick neon strokes. Animate a point moving along a curve OR an area being filled to show change over time.`;
+                }
 
-                return `${base} Create clear, educational diagrams. Simple shapes only.`;
+                if (s.includes('history') || s.includes('literature')) {
+                    return [
+                        "Generate an expressive symbolic SVG scene for history / literature.",
+                        "Use iconic silhouettes (e.g., books, quills, monuments, timelines, character symbols).",
+                        "Add a clear visual timeline or central symbol with supporting icons around it.",
+                        "Use subtle neon chalk highlights and 1–2 animated glows or pulses for emphasis.",
+                        "Avoid realistic faces. Prefer symbols and simplified shapes. STRICTLY SVG code only."
+                    ].join(" ");
+                }
+
+                return `${base} THEME: general education. Create a central concept icon with surrounding related mini‑icons connected by arrows. Use at least one animated element for emphasis.`;
             };
 
             const visualPrompt = getSubjectVisualPrompt(subject);
 
-            const prompt = `Create a visually rich, educational lesson script for: "${topic}" (Subject: "${subject}").
-      Break it down into 6-10 segments.
-      RETURN JSON OBJECT ONLY.
-      CRITICAL RULE: EVERY segment must have a unique, CLEAR SVG. Avoid text inside SVG unless necessary (labels).
-      Structure:
-      {
-        "segments": [
-          {
-            "id": 1,
-            "subtitles": ["Sentence 1.", "Sentence 2."],
-            "visualContent": "${visualPrompt} STRICTLY SVG CODE ONLY."
-          }
-        ]
-      }`;
+            const prompt = `You are an expert blackboard teacher and motion graphics designer.
+Create a VISUALLY RICH, engaging lesson script for: "${topic}" (Subject: "${subject}").
+
+REQUIREMENTS:
+- Break the lesson into 6–10 segments that tell a clear visual story.
+- EACH segment must have a UNIQUE, INTERESTING SVG scene (not just small variations).
+- Use the visual style and constraints described in this subject‑specific visual prompt: "${visualPrompt}".
+- The SVG should feel like a cinematic chalkboard shot with multiple elements, arrows, and subtle motion. Ensure viewBox='0 0 1200 800', preserveAspectRatio='xMidYMid meet', main subject centered and filling ~60–75% of the area.
+- Avoid big text paragraphs in the SVG; use short labels near objects only when needed.
+- Do NOT add explanations or commentary outside JSON. RETURN VALID JSON ONLY.
+- For each segment also include a machine-usable visualPlan to drive libraries:
+  - Chemistry example: {"kind":"chemistry","molecules":[{"smiles":"C1=CC=CC=C1"}],"reactions":[{"reactants":["CCO"],"products":["CC=O"],"arrowLabel":"oxidation"}]}
+  - Physics example: {"kind":"physics","axes":true,"objects":[{"shape":"block","x":0.48,"y":0.62,"w":0.22,"h":0.14,"label":"m"}],"forces":[{"from":[0.48,0.62],"to":[0.48,0.32],"label":"N"}]}
+  - Math example: {"kind":"math","axes":true,"functions":[{"label":"f(x)","samples":[{"x":0,"y":0.2},{"x":0.5,"y":0.6},{"x":1,"y":0.8}]}]}
+  - Use normalized coordinates (0..1) for positions. Keep visualContent as SVG fallback.
+- Chemistry rule: visualPlan.molecules[0].smiles must be VALID SMILES (no placeholders, no "X", only real atoms); prefer common educational molecules or those relevant to the topic.
+
+JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
+{
+  "segments": [
+    {
+      "id": 1,
+      "subtitles": ["Sentence 1.", "Sentence 2."],
+      "visualContent": "<svg>...complex, animated chalkboard diagram for this part...</svg>",
+      "visualPlan": { /* per examples above */ }
+    }
+  ]
+}`;
 
             const response = await OpenAIService.getInstance().generateChatCompletion(prompt, "You are an expert visual teacher. Output valid JSON only.");
 
@@ -216,6 +551,14 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
         const startVisuals = () => {
             // Visual Content Logic
+            // If AI provided a structured visual plan, render via libraries
+            if (segment.visualPlan) {
+                setRenderedPlan(segment.visualPlan);
+                setDisplayedText('');
+                return;
+            }
+
+            setRenderedPlan(null);
             // Safety check
             if (!segment.visualContent) return;
 
@@ -388,16 +731,18 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
                             {/* Current Segment */}
                             {currentIndex >= 0 && currentIndex < script.length && (
-                                <div className="mb-4 text-white scroll-mt-4" id={`segment-${currentIndex}`}>
-                                    {/<svg/i.test(displayedText) ? (
+                                <div className="mb-4 text-white scroll-mt-4 flex items-center justify-center" id={`segment-${currentIndex}`}>
+                                    {renderedPlan ? (
+                                        <LibraryVisual plan={renderedPlan} />
+                                    ) : /<svg/i.test(displayedText) ? (
                                         <div
                                             dangerouslySetInnerHTML={{ __html: displayedText }}
-                                            className="w-full h-auto min-h-[60vh] flex justify-center animate-fade-in [&>svg]:w-full [&>svg]:h-auto [&>svg]:max-h-[75vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl"
+                                            className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in [&>svg]:w-[90%] [&>svg]:h-auto [&>svg]:max-h-[85vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl [&>svg]:mx-auto"
                                         />
                                     ) : (
-                                        <span className="drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] text-5xl leading-relaxed tracking-wide">
+                                        <span className="drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] text-6xl leading-relaxed tracking-wide text-center">
                                             {displayedText}
-                                            <span className="inline-block w-3 h-8 ml-2 bg-neon-green/80 animate-pulse shadow-[0_0_15px_#39ff14] align-middle"></span>
+                                            <span className="inline-block w-3 h-10 ml-2 bg-neon-green/80 animate-pulse shadow-[0_0_15px_#39ff14] align-middle"></span>
                                         </span>
                                     )}
                                 </div>
