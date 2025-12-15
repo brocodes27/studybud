@@ -77,6 +77,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         container.style.display = 'flex';
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
+        container.style.flexDirection = 'column';
+        container.style.gap = '12px';
 
         const pickSmiles = (s?: string) => {
             if (!s) return '';
@@ -89,6 +91,28 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(t) &&
                 /[BCNOSPFIclbr]/i.test(t)
             ) || '';
+        };
+
+        const formatReactionText = () => {
+            if (!plan.reactions?.length) return '';
+            const r = plan.reactions.find(r => (r.reactants?.length || 0) && (r.products?.length || 0));
+            if (!r) return '';
+            const left = (r.reactants || []).filter(Boolean).join(' + ');
+            const right = (r.products || []).filter(Boolean).join(' + ');
+            const mid = r.arrowLabel ? `${r.arrowLabel} →` : '→';
+            return `${left}  ${mid}  ${right}`.trim();
+        };
+
+        const appendTextNote = () => {
+            const summary = plan.notes || formatReactionText();
+            if (!summary) return;
+            const note = document.createElement('div');
+            note.style.color = '#e5e7eb';
+            note.style.font = '22px "Kalam","Comic Sans MS",cursive';
+            note.style.textAlign = 'center';
+            note.style.maxWidth = '90%';
+            note.textContent = summary;
+            container.appendChild(note);
         };
 
         const buildReactionSmiles = () => {
@@ -110,8 +134,9 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             pickSmiles(plan.reactions?.find(r => r.products?.[0])?.products?.[0]) ||
             '';
 
-        if (!smilesSource) {
+        if (!smilesSource && !reactionSmiles) {
             container.innerHTML = `<div style="color:#39ff14;font:32px 'Kalam','Comic Sans MS',cursive;">No molecule/reaction data provided by AI</div>`;
+            appendTextNote();
             return;
         }
 
@@ -140,7 +165,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 );
 
                 const arrowText = plan.reactions?.[0]?.arrowLabel || '';
-                const svg = reactionDrawer.draw(reactionObj, null, 'light', null, arrowText, '', false);
+                const svg = reactionDrawer.draw(reactionObj, null, 'dark', null, arrowText, '', false);
                 svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
                 svg.setAttribute('width', `${CANVAS_W}`);
                 svg.setAttribute('height', `${CANVAS_H}`);
@@ -149,7 +174,9 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 svg.style.maxHeight = '85vh';
                 svg.style.background = '#0b1a13';
                 svg.style.borderRadius = '12px';
+                svg.style.filter = 'drop-shadow(0 0 16px rgba(57,255,20,0.35))';
                 container.appendChild(svg);
+                appendTextNote();
                 return;
             } catch (err) {
                 console.warn('SmilesDrawer reaction draw error', err);
@@ -177,7 +204,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             !s.startsWith(')');
 
         if (!isLikelySmiles(smilesSource)) {
-            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Invalid SMILES provided by AI</div>`;
+            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Showing notes only (no valid SMILES)</div>`;
+            appendTextNote();
             return;
         }
 
@@ -200,26 +228,20 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     try {
                         drawer.draw(tree, targetCanvas, 'light', false);
 
-                        if (plan.reactions?.length && container.isConnected) {
-                            const r = plan.reactions[0];
-                            const label = document.createElement('div');
-                            label.style.color = '#facc15';
-                            label.style.font = '28px "Kalam","Comic Sans MS",cursive';
-                            label.style.marginTop = '12px';
-                            label.textContent = r.arrowLabel || 'reaction';
-                            container.appendChild(label);
-                        }
+                        appendTextNote();
                     } catch (err) {
                         console.warn('SmilesDrawer draw error', err);
                         if (container.isConnected) {
                             container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
+                            appendTextNote();
                         }
                     }
                 },
                 (err: any) => {
                     console.warn('SmilesDrawer parse error', err);
                     if (container.isConnected) {
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not parse SMILES</div>`;
+                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Showing notes only (could not parse SMILES)</div>`;
+                        appendTextNote();
                     }
                 }
             );
@@ -227,6 +249,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             console.warn('SmilesDrawer render failed', e);
             if (container.isConnected) {
                 container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
+                appendTextNote();
             }
         }
     };
