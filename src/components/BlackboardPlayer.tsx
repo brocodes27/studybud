@@ -614,7 +614,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 <div className="bg-gray-950 border-t border-gray-800 px-6 py-5 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <p className="text-sm text-gray-400">Avatar video</p>
+                            <p className="text-sm text-gray-400">HeyGen audio (avatar hidden)</p>
                             <p className="text-lg font-semibold text-white">HeyGen</p>
                         </div>
                         <button
@@ -626,18 +626,21 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                         </button>
                     </div>
                     {heygenStatus === 'ready' && heygenUrl ? (
-                        <video
-                            key={heygenUrl}
-                            controls
-                            className="w-full rounded-xl border border-gray-800 shadow-lg bg-black"
-                            src={heygenUrl}
-                        />
+                        <div className="space-y-2">
+                            <audio
+                                key={heygenUrl}
+                                controls
+                                className="w-full"
+                                src={heygenUrl}
+                            />
+                            <p className="text-xs text-gray-500">Avatar visuals are suppressed; audio only.</p>
+                        </div>
                     ) : (
                         <div className="text-gray-400 text-sm bg-black/30 border border-gray-800 rounded-lg px-4 py-3">
-                            {heygenStatus === 'generating' && 'Sending script to HeyGen...'}
-                            {heygenStatus === 'polling' && 'Rendering video...'}
+                            {heygenStatus === 'generating' && 'Sending script to HeyGen (audio-only)...'}
+                            {heygenStatus === 'polling' && 'Rendering audio...'}
                             {heygenStatus === 'error' && heygenError}
-                            {heygenStatus === 'idle' && 'Preparing video...'}
+                            {heygenStatus === 'idle' && 'Preparing audio...'}
                         </div>
                     )}
                 </div>
