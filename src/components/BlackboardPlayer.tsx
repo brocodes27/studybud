@@ -151,14 +151,16 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                         return;
                     }
                     try {
-                        if (!targetCanvas.isConnected) return;
+                        if (!targetCanvas.isConnected || !container.isConnected) return;
                         drawer.draw(tree, targetCanvas, 'light', false);
                     } catch (err) {
                         console.warn('SmilesDrawer draw error', err);
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
+                        if (container.isConnected) {
+                            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
+                        }
                         return;
                     }
-                    if (plan.reactions?.length) {
+                    if (plan.reactions?.length && container.isConnected) {
                         const r = plan.reactions[0];
                         const label = document.createElement('div');
                         label.style.color = '#facc15';
@@ -170,12 +172,16 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 },
                 (err: any) => {
                     console.warn('SmilesDrawer parse error', err);
-                    container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not parse SMILES</div>`;
+                    if (container.isConnected) {
+                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not parse SMILES</div>`;
+                    }
                 }
             );
         } catch (e) {
             console.warn('SmilesDrawer render failed', e);
-            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
+            if (container.isConnected) {
+                container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
+            }
         }
     };
 
