@@ -78,16 +78,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         container.style.alignItems = 'center';
         container.style.justifyContent = 'center';
 
-        const targetCanvas = document.createElement('canvas');
-        targetCanvas.width = CANVAS_W;
-        targetCanvas.height = CANVAS_H;
-        targetCanvas.style.width = '100%';
-        targetCanvas.style.maxHeight = '85vh';
-        targetCanvas.style.minHeight = '65vh';
-        targetCanvas.style.background = '#0b1a13';
-        targetCanvas.style.borderRadius = '12px';
-        container.appendChild(targetCanvas);
-
         const pickSmiles = (s?: string) => {
             if (!s) return '';
             // Split on whitespace/commas/semicolons to avoid leading labels
@@ -100,6 +90,19 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 /[BCNOSPFIclbr]/i.test(t)
             ) || '';
         };
+
+        const buildReactionSmiles = () => {
+            if (!plan.reactions?.length) return '';
+            const rxn = plan.reactions.find(r => (r.reactants?.length || 0) && (r.products?.length || 0));
+            if (!rxn) return '';
+            const reactants = (rxn.reactants || []).map(pickSmiles).filter(Boolean);
+            const products = (rxn.products || []).map(pickSmiles).filter(Boolean);
+            const agents = Array.isArray((rxn as any).agents) ? (rxn as any).agents.map(pickSmiles).filter(Boolean) : [];
+            if (!reactants.length || !products.length) return '';
+            return `${reactants.join('.')}>${agents.join('.')}>${products.join('.')}`;
+        };
+
+        const reactionSmiles = buildReactionSmiles();
 
         const smilesSource =
             pickSmiles(plan.molecules?.find(m => !!m.smiles)?.smiles) ||
@@ -116,11 +119,54 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         const SmilesLib: any = (SmilesDrawer as any)?.Drawer ? SmilesDrawer : (SmilesDrawer as any)?.default || SmilesDrawer;
         const DrawerClass = SmilesLib.Drawer;
         const parseFn = SmilesLib.parse;
+        const ReactionDrawerClass = SmilesLib.ReactionDrawer;
+        const ReactionParserClass = SmilesLib.ReactionParser;
 
         if (!DrawerClass || !parseFn) {
             container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">SmilesDrawer unavailable</div>`;
             return;
         }
+
+        // Try full reaction rendering first (vector SVG, crisp)
+        if (reactionSmiles && ReactionDrawerClass && ReactionParserClass) {
+            try {
+                const reactionObj = typeof ReactionParserClass.parse === 'function'
+                    ? ReactionParserClass.parse(reactionSmiles)
+                    : new ReactionParserClass(reactionSmiles);
+
+                const reactionDrawer = new ReactionDrawerClass(
+                    { arrow: { length: CANVAS_W * 0.28 } },
+                    { width: CANVAS_W, height: CANVAS_H, padding: 16, compactDrawing: false }
+                );
+
+                const arrowText = plan.reactions?.[0]?.arrowLabel || '';
+                const svg = reactionDrawer.draw(reactionObj, null, 'light', null, arrowText, '', false);
+                svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
+                svg.setAttribute('width', `${CANVAS_W}`);
+                svg.setAttribute('height', `${CANVAS_H}`);
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxHeight = '85vh';
+                svg.style.background = '#0b1a13';
+                svg.style.borderRadius = '12px';
+                container.appendChild(svg);
+                return;
+            } catch (err) {
+                console.warn('SmilesDrawer reaction draw error', err);
+                container.innerHTML = '';
+            }
+        }
+
+        const targetCanvas = document.createElement('canvas');
+        const pixelRatio = typeof window !== 'undefined' ? Math.min(2.5, window.devicePixelRatio || 1.5) : 2;
+        targetCanvas.width = CANVAS_W * pixelRatio;
+        targetCanvas.height = CANVAS_H * pixelRatio;
+        targetCanvas.style.width = '100%';
+        targetCanvas.style.maxHeight = '85vh';
+        targetCanvas.style.minHeight = '65vh';
+        targetCanvas.style.background = '#0b1a13';
+        targetCanvas.style.borderRadius = '12px';
+        container.appendChild(targetCanvas);
 
         const isLikelySmiles = (s: string) =>
             !!s &&
@@ -136,9 +182,9 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         }
 
         const drawer = new DrawerClass({
-            width: CANVAS_W,
-            height: CANVAS_H,
-            padding: 10,
+            width: CANVAS_W * pixelRatio,
+            height: CANVAS_H * pixelRatio,
+            padding: 14,
             compactDrawing: false
         });
 
@@ -152,13 +198,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     }
                     if (!targetCanvas.isConnected || !container.isConnected) return;
                     try {
-                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                        svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
-
-                        // NOTE: Drawer.draw has a parameter ordering bug; use the svgDrawer directly.
-                        drawer.svgDrawer.draw(tree, svg, 'light', null, false, [], false);
-                        drawer.svgDrawer.svgWrapper.toCanvas(targetCanvas, CANVAS_W, CANVAS_H);
+                        drawer.draw(tree, targetCanvas, 'light', false);
 
                         if (plan.reactions?.length && container.isConnected) {
                             const r = plan.reactions[0];
