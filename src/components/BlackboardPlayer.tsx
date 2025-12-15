@@ -107,7 +107,12 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             pickSmiles(plan.reactions?.find(r => r.products?.[0])?.products?.[0]) ||
             '';
 
-        if (!smilesSource) {
+        const reaction = plan.reactions?.find(r => (r.reactants?.length || r.products?.length));
+        const reactantSmiles = pickSmiles(reaction?.reactants?.find(Boolean));
+        const productSmiles = pickSmiles(reaction?.products?.find(Boolean));
+        const hasReaction = !!(reactantSmiles && productSmiles);
+
+        if (!smilesSource && !hasReaction) {
             container.innerHTML = `<div style="color:#39ff14;font:32px 'Kalam','Comic Sans MS',cursive;">No molecule/reaction data provided by AI</div>`;
             return;
         }
@@ -125,70 +130,98 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         const isLikelySmiles = (s: string) =>
             !!s &&
             s.length >= 2 &&
-            /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(s) &&
+            /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/.%]+$/.test(s) &&
             /[BCNOSPFIclbr]/i.test(s) &&
             !s.startsWith('(') &&
             !s.startsWith(')');
 
-        if (!isLikelySmiles(smilesSource)) {
-            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Invalid SMILES provided by AI</div>`;
+        const drawSmiles = (smiles: string, canvas: HTMLCanvasElement, onError: (msg: string) => void) => {
+            const drawer = new DrawerClass({
+                width: canvas.width,
+                height: canvas.height,
+                padding: 10,
+                compactDrawing: false
+            });
+
+            if (!isLikelySmiles(smiles)) {
+                onError('Invalid SMILES provided by AI');
+                return;
+            }
+
+            try {
+                parseFn(
+                    smiles,
+                    (tree: any) => {
+                        if (!tree || !canvas.isConnected || !container.isConnected) return;
+                        try {
+                            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                            svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                            svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+
+                            // NOTE: Drawer.draw has a parameter ordering bug; use the svgDrawer directly.
+                            drawer.svgDrawer.draw(tree, svg, 'light', null, false, [], false);
+                            drawer.svgDrawer.svgWrapper.toCanvas(canvas, canvas.width, canvas.height);
+                        } catch (err) {
+                            console.warn('SmilesDrawer draw error', err);
+                            if (canvas.parentElement?.isConnected) onError('Could not render molecule');
+                        }
+                    },
+                    (err: any) => {
+                        console.warn('SmilesDrawer parse error', err);
+                        if (canvas.parentElement?.isConnected) onError('Could not parse SMILES');
+                    }
+                );
+            } catch (e) {
+                console.warn('SmilesDrawer render failed', e);
+                if (canvas.parentElement?.isConnected) onError('Render failed');
+            }
+        };
+
+        if (hasReaction) {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.flexWrap = 'wrap';
+            row.style.alignItems = 'center';
+            row.style.justifyContent = 'center';
+            row.style.gap = '16px';
+            row.style.width = '100%';
+            container.appendChild(row);
+
+            const reactantPanel = makePanel('Reactant');
+            const productPanel = makePanel('Product');
+
+            const arrow = document.createElement('div');
+            arrow.style.color = '#facc15';
+            arrow.style.font = '32px "Kalam","Comic Sans MS",cursive';
+            arrow.style.display = 'flex';
+            arrow.style.alignItems = 'center';
+            arrow.style.justifyContent = 'center';
+            arrow.style.padding = '12px 16px';
+            arrow.style.minWidth = '70px';
+            arrow.style.border = '1px dashed rgba(255,255,255,0.12)';
+            arrow.style.borderRadius = '12px';
+            arrow.textContent = reaction?.arrowLabel || '→';
+
+            row.appendChild(reactantPanel.panel);
+            row.appendChild(arrow);
+            row.appendChild(productPanel.panel);
+
+            drawSmiles(reactantSmiles!, reactantPanel.canvas, (msg) => {
+                reactantPanel.panel.innerHTML = `<div style="color:#f97316;font:22px 'Kalam','Comic Sans MS',cursive;text-align:center;">${msg}</div>`;
+            });
+            drawSmiles(productSmiles!, productPanel.canvas, (msg) => {
+                productPanel.panel.innerHTML = `<div style="color:#f97316;font:22px 'Kalam','Comic Sans MS',cursive;text-align:center;">${msg}</div>`;
+            });
             return;
         }
 
-        const drawer = new DrawerClass({
-            width: CANVAS_W,
-            height: CANVAS_H,
-            padding: 10,
-            compactDrawing: false
+        const singlePanel = makePanel(plan.molecules?.[0]?.label || 'Molecule');
+        singlePanel.canvas.style.width = '100%';
+        singlePanel.canvas.style.maxWidth = '100%';
+        container.appendChild(singlePanel.panel);
+        drawSmiles(smilesSource, singlePanel.canvas, (msg) => {
+            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">${msg}</div>`;
         });
-
-        try {
-            parseFn(
-                smilesSource,
-                (tree: any) => {
-                    if (!tree) {
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Empty molecule</div>`;
-                        return;
-                    }
-                    if (!targetCanvas.isConnected || !container.isConnected) return;
-                    try {
-                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                        svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
-
-                        // NOTE: Drawer.draw has a parameter ordering bug; use the svgDrawer directly.
-                        drawer.svgDrawer.draw(tree, svg, 'light', null, false, [], false);
-                        drawer.svgDrawer.svgWrapper.toCanvas(targetCanvas, CANVAS_W, CANVAS_H);
-
-                        if (plan.reactions?.length && container.isConnected) {
-                            const r = plan.reactions[0];
-                            const label = document.createElement('div');
-                            label.style.color = '#facc15';
-                            label.style.font = '28px "Kalam","Comic Sans MS",cursive';
-                            label.style.marginTop = '12px';
-                            label.textContent = r.arrowLabel || 'reaction';
-                            container.appendChild(label);
-                        }
-                    } catch (err) {
-                        console.warn('SmilesDrawer draw error', err);
-                        if (container.isConnected) {
-                            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
-                        }
-                    }
-                },
-                (err: any) => {
-                    console.warn('SmilesDrawer parse error', err);
-                    if (container.isConnected) {
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not parse SMILES</div>`;
-                    }
-                }
-            );
-        } catch (e) {
-            console.warn('SmilesDrawer render failed', e);
-            if (container.isConnected) {
-                container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
-            }
-        }
     };
 
     const renderPhysicsMathPlan = (canvas: HTMLCanvasElement, plan: Extract<VisualPlan, { kind: 'physics' | 'math' | 'general' }>) => {
