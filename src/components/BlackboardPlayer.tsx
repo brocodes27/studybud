@@ -17,6 +17,13 @@ interface ScriptSegment {
     visualContent: string;
 }
 
+interface SavedVideoRecord {
+    script: ScriptSegment[];
+    heygen_video_id?: string | null;
+    heygen_video_url?: string | null;
+    heygen_status?: string | null;
+}
+
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [script, setScript] = useState<ScriptSegment[]>([]);
@@ -25,6 +32,9 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [displayedText, setDisplayedText] = useState('');
 
     const [currentSubtitleText, setCurrentSubtitleText] = useState('');
+
+    const [userId, setUserId] = useState<string | null>(null);
+    const [savedVideoId, setSavedVideoId] = useState<string | null>(null);
 
     const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -37,6 +47,32 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [heygenError, setHeygenError] = useState('');
     const heygenRequestIdRef = useRef(0);
     const heygenAbortRef = useRef<AbortController | null>(null);
+
+    const sanitizeText = (text: string) => {
+        if (!text) return '';
+        return text
+            .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
+    const sanitizeSegment = (segment: any): ScriptSegment => {
+        const rawSubtitles = Array.isArray(segment.subtitles) ? segment.subtitles : [];
+        const cleanSubtitles = rawSubtitles.map((s: string) => sanitizeText(s)).filter(Boolean);
+        const cleanText = sanitizeText(segment.textToSpeak || cleanSubtitles.join(' '));
+
+        return {
+            ...segment,
+            textToSpeak: cleanText,
+            subtitles: cleanSubtitles.length ? cleanSubtitles : [cleanText || ''],
+            visualContent: sanitizeText(segment.visualContent || cleanText)
+        };
+    };
+
+    const videoReady = heygenStatus === 'ready' && !!heygenUrl;
+    const videoWorking = heygenStatus === 'generating' || heygenStatus === 'polling';
+    const lessonLocked = !videoReady;
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -100,30 +136,39 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         try {
             setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
+            setUserId(user?.id || null);
 
             if (user) {
                 const { data: saved } = await supabase
                     .from('saved_videos')
-                    .select('script')
+                    .select('script, heygen_video_id, heygen_video_url, heygen_status')
                     .eq('user_id', user.id)
                     .eq('topic', topic)
                     .eq('subject', subject)
                     .maybeSingle();
 
                 if (saved && saved.script) {
+                    const casted = saved as SavedVideoRecord;
                     // Backfill subtitles for legacy cached videos
-                    const backfilledScript = saved.script.map((s: any) => ({
+                    const backfilledScript = casted.script.map((s: any) => sanitizeSegment({
                         ...s,
                         subtitles: Array.isArray(s.subtitles) && s.subtitles.length > 0
                             ? s.subtitles
                             : [s.textToSpeak || '']
                     }));
                     setScript(backfilledScript);
-                    setTimeout(() => {
-                        setLoading(false);
-                        setCurrentIndex(0);
-                        setIsPlaying(true);
-                    }, 500);
+                    setSavedVideoId(casted.heygen_video_id || null);
+
+                    if (casted.heygen_video_url) {
+                        setHeygenUrl(casted.heygen_video_url);
+                        setHeygenStatus('ready');
+                    } else if (casted.heygen_video_id) {
+                        setHeygenStatus('polling');
+                    }
+
+                    setLoading(false);
+                    setCurrentIndex(-1);
+                    setIsPlaying(false);
                     return;
                 }
             }
@@ -132,59 +177,50 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 const s = subject.toLowerCase();
 
                 const base = [
-                    "Generate a HIGHLY VISUAL, DYNAMIC SVG scene in neon chalkboard style.",
+                    "Generate vivid, concise chalkboard cues in neon style (plain text only, no SVG/HTML).",
                     "Overall look: cinematic blackboard shot with colored chalk lines.",
-                    "Use multiple layers of elements, arrows and highlights so the scene feels ALIVE.",
-                    "Use smooth <animate>, <animateTransform> or small motion on key elements (but avoid chaos).",
+                    "Use short, descriptive phrases and arrows described in words (no markup).",
                     "Colors: mainly neon chalk tones (#00f3ff, #ff00ff, #39ff14, #facc15, #f97316) on a dark background.",
-                    "Stroke width: 2.5–3px, rounded line caps, no fills except for small emphasis areas.",
-                    "Composition: clear foreground focus + subtle background guidelines / grids.",
-                    "SIZE RULES: include viewBox='0 0 1200 800' and preserveAspectRatio='xMidYMid meet'. Center the MAIN SUBJECT; it should occupy ~60–75% of the frame. Avoid tiny elements; avoid huge empty margins.",
-                    "Avoid walls of text. Prefer symbols, icons, shapes, arrows, curves, labels near objects.",
-                    "No external assets. STRICTLY inline SVG code only."
+                    "Keep notes compact (one line per cue) so they fit on a blackboard.",
+                    "No markup, no SVG, no HTML. Plain text only."
                 ].join(" ");
 
                 if (s.includes('physics')) {
-                    return `${base} THEME: physics chalkboard. Show objects, forces and motion with arrows. Include at least ONE animated arrow or vector that gently pulses or moves. Add subtle grid or reference lines. Use classic physics diagrams (free-body with normal/weight/force vectors, pulley/tension, motion graphs). Keep the main diagram large and centered.`;
+                    return `${base} THEME: physics chalkboard. Describe objects, forces and motion with short text cues (e.g., "block on incline", "arrow: gravity down").`;
                 }
 
                 if (s.includes('chemistry')) {
-                    return `${base} THEME: chemistry lab chalkboard. Draw LARGE, CLEAR skeletal structures and/or beakers/flasks with glowing liquids. Show reaction arrows with animated flow/bubbles. Separate reactants, arrow, and products clearly with labels near objects. Keep structures centered and filling the majority of the frame.`;
+                    return `${base} THEME: chemistry lab chalkboard. Use textual cues like molecules or reaction steps (e.g., "H2 + O2 -> H2O", "label: combustion").`;
                 }
 
                 if (s.includes('biology')) {
-                    return `${base} THEME: biology lecture. Use smooth organic shapes (cells, organs, processes) with clear boundaries. Add animated arrows to show flows (like blood, air, signals). Use labels around the edges, not inside shapes.`;
+                    return `${base} THEME: biology lecture. Describe flows and parts in words (e.g., "cell membrane", "arrow: nutrients in", "arrow: waste out").`;
                 }
 
                 if (s.includes('math') || s.includes('calculus') || s.includes('algebra')) {
-                    return `${base} THEME: math blackboard. Draw a big coordinate grid or number line as background. Emphasize 1–3 key curves or shapes using thick neon strokes. Animate a point moving along a curve OR an area being filled to show change over time.`;
+                    return `${base} THEME: math blackboard. Describe the main objects in text (e.g., "graph of y = sin(x)", "arrow: shift right", "area under curve").`;
                 }
 
                 if (s.includes('history') || s.includes('literature')) {
                     return [
-                        "Generate an expressive symbolic SVG scene for history / literature.",
-                        "Use iconic silhouettes (e.g., books, quills, monuments, timelines, character symbols).",
-                        "Add a clear visual timeline or central symbol with supporting icons around it.",
-                        "Use subtle neon chalk highlights and 1–2 animated glows or pulses for emphasis.",
-                        "Avoid realistic faces. Prefer symbols and simplified shapes. STRICTLY SVG code only."
+                        "Generate an expressive symbolic chalkboard cue for history / literature (text only).",
+                        "Use short labels or timeline steps (e.g., 'Renaissance -> Industrial Age').",
+                        "No markup, icons described in words only."
                     ].join(" ");
                 }
 
-                return `${base} THEME: general education. Create a central concept icon with surrounding related mini‑icons connected by arrows. Use at least one animated element for emphasis.`;
+                return `${base} THEME: general education. Give concise concept + 2–3 supporting text cues; arrows described in words.`;
             };
 
             const visualPrompt = getSubjectVisualPrompt(subject);
 
-            const prompt = `You are an expert blackboard teacher and motion graphics designer.
-Create a VISUALLY RICH, engaging lesson script for: "${topic}" (Subject: "${subject}").
+            const prompt = `You are an expert blackboard teacher creating a narrated lesson for: "${topic}" (Subject: "${subject}").
 
 REQUIREMENTS:
-- Break the lesson into 6–10 segments that tell a clear visual story.
-- EACH segment must have a UNIQUE, INTERESTING SVG scene in visualContent (inline <svg> only). If you skip SVG, include a one-line visual cue instead.
-- Use the visual style and constraints described in this subject‑specific visual prompt: "${visualPrompt}".
-- The SVG should feel like a cinematic chalkboard shot with multiple elements, arrows, and subtle motion. Ensure viewBox='0 0 1200 800', preserveAspectRatio='xMidYMid meet', main subject centered and filling ~60–75% of the area.
-- Avoid big text paragraphs in the SVG; use short labels near objects only when needed.
-- Do NOT add explanations or commentary outside JSON. RETURN VALID JSON ONLY.
+- Break the lesson into 6–10 coherent segments.
+- Each segment must provide rich narration in textToSpeak and matching subtitles (array of sentences).
+- visualContent must be a short chalkboard-friendly text cue ONLY (plain text, no SVG/HTML/markup). Use this subject tone: "${visualPrompt}".
+- Do NOT return any <svg> tags or markup. JSON only.
 
 JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 {
@@ -193,7 +229,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
       "id": 1,
       "subtitles": ["Sentence 1.", "Sentence 2."],
       "textToSpeak": "Full narration for this segment",
-      "visualContent": "<svg>...complex, animated chalkboard diagram for this part...</svg>"
+      "visualContent": "Short chalkboard note (plain text only)"
     }
   ]
 }`;
@@ -211,7 +247,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 
             if (parsed.segments) {
                 // Ensure textToSpeak exists for backward compat and subtitles is array
-                const computedSegments = parsed.segments.map((s: any) => ({
+                const computedSegments = parsed.segments.map((s: any) => sanitizeSegment({
                     ...s,
                     textToSpeak: s.textToSpeak || (Array.isArray(s.subtitles) ? s.subtitles.join(' ') : s.textToSpeak),
                     subtitles: Array.isArray(s.subtitles) ? s.subtitles : [s.textToSpeak || '']
@@ -220,12 +256,15 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 
                 // Save to DB
                 if (user) {
-                    await supabase.from('saved_videos').insert({
+                    await supabase.from('saved_videos').upsert({
                         user_id: user.id,
                         topic,
                         subject,
-                        script: computedSegments
-                    });
+                        script: computedSegments,
+                        heygen_status: 'pending',
+                        heygen_video_id: null,
+                        heygen_video_url: null
+                    }, { onConflict: 'user_id,topic,subject' });
                 }
 
                 setLoading(false);
@@ -257,18 +296,13 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
         }
 
         const startVisuals = () => {
-            const svgMatch = segment.visualContent ? segment.visualContent.match(/<svg[\s\S]*?<\/svg>/i) : null;
-
-            // Prefer inline SVG from AI; otherwise type out whatever text we have
-            if (svgMatch) {
-                setDisplayedText(svgMatch[0]);
-                return;
-            }
-
-            const fallbackContent = segment.visualContent
+            const fallbackContent =
+                segment.textToSpeak
                 || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
-                || segment.textToSpeak;
-            if (!fallbackContent) return;
+                || segment.visualContent
+                || '';
+            const safeText = sanitizeText(fallbackContent);
+            if (!safeText) { setDisplayedText(''); return; }
 
             // Typing animation for text
             let i = 0;
@@ -278,9 +312,9 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 // Stop if session changed
                 if (playbackSessionRef.current !== sessionId) { clearInterval(interval); return; }
 
-                setDisplayedText(fallbackContent.slice(0, i + 1));
+                setDisplayedText(safeText.slice(0, i + 1));
                 i++;
-                if (i > fallbackContent.length) clearInterval(interval);
+                if (i > safeText.length) clearInterval(interval);
             }, 30); // Faster typing
         };
 
@@ -361,6 +395,48 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
         }
     };
 
+    const upsertSavedVideo = useCallback(async (patch: Partial<SavedVideoRecord>) => {
+        if (!userId || !script.length) return;
+        await supabase.from('saved_videos').upsert({
+            user_id: userId,
+            topic,
+            subject,
+            script,
+            ...patch
+        }, { onConflict: 'user_id,topic,subject' });
+    }, [userId, script, topic, subject]);
+
+    const pollExistingHeygenVideo = useCallback(async (videoId: string) => {
+        setHeygenStatus('polling');
+        setHeygenError('');
+        heygenAbortRef.current?.abort();
+        const controller = new AbortController();
+        heygenAbortRef.current = controller;
+        const requestId = ++heygenRequestIdRef.current;
+
+        try {
+            const heygen = HeygenService.getInstance();
+            const url = await heygen.waitForVideoUrl(videoId, { signal: controller.signal });
+            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
+
+            if (url) {
+                setHeygenUrl(url);
+                setHeygenStatus('ready');
+                setSavedVideoId(videoId);
+                await upsertSavedVideo({ heygen_video_id: videoId, heygen_video_url: url, heygen_status: 'ready' });
+            } else {
+                setHeygenStatus('error');
+                setHeygenError('HeyGen did not return a video URL. Tap retry.');
+                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error' });
+            }
+        } catch (e: any) {
+            if (controller.signal.aborted) return;
+            setHeygenStatus('error');
+            setHeygenError(e?.message || 'HeyGen video generation failed');
+            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error' });
+        }
+    }, [upsertSavedVideo]);
+
     const requestHeygenVideo = useCallback(async (force = false) => {
         if (heygenStatus === 'generating' || heygenStatus === 'polling') return;
         if (!force && heygenStatus === 'ready') return;
@@ -384,23 +460,16 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             const videoId = await heygen.generateVideoFromText(allText, { caption: true });
             if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
 
-            setHeygenStatus('polling');
-            const url = await heygen.waitForVideoUrl(videoId, { signal: controller.signal });
-            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
-
-            if (url) {
-                setHeygenUrl(url);
-                setHeygenStatus('ready');
-            } else {
-                setHeygenStatus('error');
-                setHeygenError('HeyGen did not return a video URL. Tap retry.');
-            }
+            setSavedVideoId(videoId);
+            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'processing', heygen_video_url: null });
+            await pollExistingHeygenVideo(videoId);
         } catch (e: any) {
             if (controller.signal.aborted) return;
             setHeygenStatus('error');
             setHeygenError(e?.message || 'HeyGen video generation failed');
+            if (savedVideoId) await upsertSavedVideo({ heygen_video_id: savedVideoId, heygen_status: 'error' });
         }
-    }, [heygenStatus, script]);
+    }, [heygenStatus, script, upsertSavedVideo, pollExistingHeygenVideo, savedVideoId]);
 
     useEffect(() => {
         if (!loading && script.length > 0 && heygenStatus === 'idle') {
@@ -411,6 +480,12 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             heygenAbortRef.current?.abort();
         };
     }, [loading, script, heygenStatus, requestHeygenVideo]);
+
+    useEffect(() => {
+        if (savedVideoId && heygenStatus === 'polling') {
+            pollExistingHeygenVideo(savedVideoId);
+        }
+    }, [savedVideoId, heygenStatus, pollExistingHeygenVideo]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -451,24 +526,43 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
                             <span className="animate-pulse text-gray-400 font-mono">Generative AI is crafting your lesson... (~15-30s)</span>
                         </div>
+                    ) : lessonLocked ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+                            <span className="text-xl font-semibold text-white">Lesson locked while HeyGen blackboard video renders</span>
+                            <p className="text-sm text-gray-400">
+                                {videoWorking ? 'Generating HeyGen video now...' : 'Waiting for video generation to finish.'}
+                            </p>
+                        </div>
                     ) : !isPlaying && currentIndex === -1 ? (
                         <div className="flex flex-col items-center justify-center h-full animate-fade-in">
                             <button
-                                onClick={() => { setCurrentIndex(0); setIsPlaying(true); }}
-                                className="group flex flex-col items-center gap-4 p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:scale-105"
+                                onClick={() => {
+                                    if (!videoReady) return;
+                                    setCurrentIndex(0);
+                                    setIsPlaying(true);
+                                }}
+                                disabled={!videoReady}
+                                className="group flex flex-col items-center gap-4 p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 <div className="w-20 h-20 rounded-full bg-neon-green/20 flex items-center justify-center border border-neon-green/50 shadow-[0_0_30px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_50px_rgba(34,197,94,0.5)] transition-all">
                                     <Play className="w-10 h-10 fill-neon-green text-neon-green ml-1" />
                                 </div>
-                                <span className="text-2xl font-bold text-white tracking-wide">Start Lesson</span>
+                                <span className="text-2xl font-bold text-white tracking-wide">
+                                    {videoReady ? 'Start Lesson' : 'Lesson locked until HeyGen video is ready'}
+                                </span>
                             </button>
+                            <p className="mt-3 text-sm text-gray-400">
+                                {videoWorking && 'Generating HeyGen video...'}
+                                {!videoWorking && !videoReady && 'Video must finish generating before you can start.'}
+                                {videoReady && 'Video ready. Press start to begin.'}
+                            </p>
                         </div>
                     ) : (
                         <div className="whitespace-pre-wrap leading-relaxed w-full">
                             {/* Previous segments matched for context */}
                             {script.slice(0, currentIndex).map(s => {
-                                // Strip SVG tags to show only text summary for history
-                                const textContent = s.visualContent.replace(/<svg[\s\S]*?<\/svg>/i, '').trim() || "Diagram completed.";
+                                const textContent = (s.textToSpeak || (Array.isArray(s.subtitles) ? s.subtitles.join(' ') : '') || '').trim() || "Lesson segment completed.";
                                 return (
                                     <div key={s.id} className="opacity-40 mb-4 max-w-[90%] transition-opacity duration-500 border-l-2 border-gray-700 pl-4">
                                         <p className="text-2xl font-handwriting text-gray-400">{textContent}</p>
@@ -479,17 +573,10 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             {/* Current Segment */}
                             {currentIndex >= 0 && currentIndex < script.length && (
                                 <div className="mb-4 text-white scroll-mt-4 flex items-center justify-center" id={`segment-${currentIndex}`}>
-                                    {/<svg/i.test(displayedText) ? (
-                                        <div
-                                            dangerouslySetInnerHTML={{ __html: displayedText }}
-                                            className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in [&>svg]:w-[90%] [&>svg]:h-auto [&>svg]:max-h-[85vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl [&>svg]:mx-auto"
-                                        />
-                                    ) : (
-                                        <span className="drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] text-6xl leading-relaxed tracking-wide text-center">
-                                            {displayedText}
-                                            <span className="inline-block w-3 h-10 ml-2 bg-neon-green/80 animate-pulse shadow-[0_0_15px_#39ff14] align-middle"></span>
-                                        </span>
-                                    )}
+                                    <span className="drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] text-6xl leading-relaxed tracking-wide text-center">
+                                        {displayedText || currentSubtitleText || '...'}
+                                        <span className="inline-block w-3 h-10 ml-2 bg-neon-green/80 animate-pulse shadow-[0_0_15px_#39ff14] align-middle"></span>
+                                    </span>
                                 </div>
                             )}
                             <div id="scroll-anchor" className="h-4"></div>
@@ -544,10 +631,12 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 <div className="h-16 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-8 gap-6 z-20 relative">
                     <button
                         onClick={() => {
+                            if (!videoReady) return;
                             setCurrentIndex(0);
                             setIsPlaying(true);
                         }}
-                        className="text-white hover:text-neon-blue transition-colors"
+                        disabled={!videoReady}
+                        className="text-white hover:text-neon-blue transition-colors disabled:opacity-30"
                         title="Restart"
                     >
                         <RotateCcw className="w-6 h-6" />
@@ -565,14 +654,15 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                     <div className="flex items-center gap-4">
                         <button
                             onClick={prevSegment}
-                            disabled={currentIndex <= 0}
+                            disabled={!isPlaying || currentIndex <= 0}
                             className="text-white hover:text-neon-blue disabled:opacity-30 disabled:hover:text-white transition-colors px-4 py-2 rounded-lg hover:bg-white/5"
                         >
                             Previous
                         </button>
                         <button
                             onClick={nextSegment}
-                            className="text-white hover:text-neon-green transition-colors px-4 py-2 rounded-lg hover:bg-white/5 flex items-center gap-2"
+                            disabled={!isPlaying}
+                            className="text-white hover:text-neon-green transition-colors px-4 py-2 rounded-lg hover:bg-white/5 flex items-center gap-2 disabled:opacity-30 disabled:hover:text-white"
                         >
                             Next <Play className="w-4 h-4" />
                         </button>
