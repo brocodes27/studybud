@@ -79,6 +79,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         container.style.justifyContent = 'center';
 
         const targetCanvas = document.createElement('canvas');
+        const canvasId = `chem-canvas-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        targetCanvas.id = canvasId;
         targetCanvas.width = CANVAS_W;
         targetCanvas.height = CANVAS_H;
         targetCanvas.style.width = '100%';
@@ -150,25 +152,25 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                         container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Empty molecule</div>`;
                         return;
                     }
-                    try {
-                        if (!targetCanvas.isConnected || !container.isConnected) return;
-                        drawer.draw(tree, targetCanvas, 'light', false);
-                    } catch (err) {
-                        console.warn('SmilesDrawer draw error', err);
-                        if (container.isConnected) {
-                            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
-                        }
-                        return;
-                    }
-                    if (plan.reactions?.length && container.isConnected) {
-                        const r = plan.reactions[0];
-                        const label = document.createElement('div');
-                        label.style.color = '#facc15';
-                        label.style.font = '28px "Kalam","Comic Sans MS",cursive';
-                        label.style.marginTop = '12px';
-                        label.textContent = r.arrowLabel || 'reaction';
-                        container.appendChild(label);
-                    }
+                    if (!targetCanvas.isConnected || !container.isConnected) return;
+                    drawer
+                        .draw(tree, canvasId, 'light', false)
+                        .then(() => {
+                            if (!plan.reactions?.length || !container.isConnected) return;
+                            const r = plan.reactions[0];
+                            const label = document.createElement('div');
+                            label.style.color = '#facc15';
+                            label.style.font = '28px "Kalam","Comic Sans MS",cursive';
+                            label.style.marginTop = '12px';
+                            label.textContent = r.arrowLabel || 'reaction';
+                            container.appendChild(label);
+                        })
+                        .catch((err: any) => {
+                            console.warn('SmilesDrawer draw error', err);
+                            if (container.isConnected) {
+                                container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
+                            }
+                        });
                 },
                 (err: any) => {
                     console.warn('SmilesDrawer parse error', err);
