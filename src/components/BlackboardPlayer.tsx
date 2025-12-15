@@ -69,8 +69,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const renderChemistryPlan = (container: HTMLDivElement, plan: Extract<VisualPlan, { kind: 'chemistry' }>) => {
         if (!container) return;
         container.innerHTML = '';
-        container.style.background = '#0b1a13';
-        container.style.border = '1px solid rgba(255,255,255,0.08)';
+        container.style.background = '#0d1f18';
+        container.style.border = '1px solid rgba(255,255,255,0.12)';
         container.style.borderRadius = '14px';
         container.style.padding = '12px';
         container.style.minHeight = '70vh';
@@ -103,17 +103,25 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             return `${left}  ${mid}  ${right}`.trim();
         };
 
+        const summary = plan.notes || formatReactionText();
+
         const appendTextNote = () => {
-            const summary = plan.notes || formatReactionText();
             if (!summary) return;
             const note = document.createElement('div');
-            note.style.color = '#e5e7eb';
-            note.style.font = '22px "Kalam","Comic Sans MS",cursive';
+            note.style.color = '#f8fafc';
+            note.style.font = '24px "Kalam","Comic Sans MS",cursive';
             note.style.textAlign = 'center';
-            note.style.maxWidth = '90%';
+            note.style.maxWidth = '96%';
+            note.style.padding = '12px 18px';
+            note.style.borderRadius = '14px';
+            note.style.background = 'rgba(255,255,255,0.05)';
+            note.style.border = '1px solid rgba(255,255,255,0.12)';
             note.textContent = summary;
             container.appendChild(note);
         };
+
+        // Always show the summary text up front for readability
+        appendTextNote();
 
         const buildReactionSmiles = () => {
             if (!plan.reactions?.length) return '';
@@ -165,16 +173,27 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 );
 
                 const arrowText = plan.reactions?.[0]?.arrowLabel || '';
-                const svg = reactionDrawer.draw(reactionObj, null, 'dark', null, arrowText, '', false);
+                const svg = reactionDrawer.draw(reactionObj, null, 'light', null, arrowText, '', false);
                 svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
                 svg.setAttribute('width', `${CANVAS_W}`);
                 svg.setAttribute('height', `${CANVAS_H}`);
                 svg.style.width = '100%';
                 svg.style.height = 'auto';
                 svg.style.maxHeight = '85vh';
-                svg.style.background = '#0b1a13';
+                svg.style.background = '#0d1f18';
                 svg.style.borderRadius = '12px';
-                svg.style.filter = 'drop-shadow(0 0 16px rgba(57,255,20,0.35))';
+                svg.style.filter = 'drop-shadow(0 0 18px rgba(57,255,20,0.45))';
+                // Force high-contrast strokes/text
+                const strokeTargets = svg.querySelectorAll('path,line,polyline,polygon,rect,circle,ellipse');
+                strokeTargets.forEach(el => {
+                    (el as any).setAttribute('stroke', '#e8f5ff');
+                    (el as any).setAttribute('stroke-width', '2.2');
+                });
+                svg.querySelectorAll('text').forEach(t => {
+                    t.setAttribute('fill', '#f8fafc');
+                    t.setAttribute('font-size', '28');
+                    t.setAttribute('font-family', 'Kalam, "Comic Sans MS", cursive');
+                });
                 container.appendChild(svg);
                 appendTextNote();
                 return;
@@ -191,7 +210,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         targetCanvas.style.width = '100%';
         targetCanvas.style.maxHeight = '85vh';
         targetCanvas.style.minHeight = '65vh';
-        targetCanvas.style.background = '#0b1a13';
+        targetCanvas.style.background = '#0d1f18';
         targetCanvas.style.borderRadius = '12px';
         container.appendChild(targetCanvas);
 
@@ -226,7 +245,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     }
                     if (!targetCanvas.isConnected || !container.isConnected) return;
                     try {
-                        drawer.draw(tree, targetCanvas, 'light', false);
+                        drawer.draw(tree, targetCanvas, 'dark', false);
 
                         appendTextNote();
                     } catch (err) {
@@ -380,10 +399,17 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         if (plan.kind === 'chemistry') {
             return (
                 <div className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in">
-                    <div
-                        ref={chemRef}
-                        className="w-[90%] max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10 overflow-hidden"
-                    />
+                    <div className="w-[90%] flex flex-col items-center gap-4">
+                        {plan.notes ? (
+                            <div className="w-full text-center text-white text-2xl leading-snug bg-white/5 border border-white/10 rounded-xl px-6 py-4 shadow-lg">
+                                {plan.notes}
+                            </div>
+                        ) : null}
+                        <div
+                            ref={chemRef}
+                            className="w-full max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10 overflow-hidden"
+                        />
+                    </div>
                 </div>
             );
         }
