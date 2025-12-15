@@ -628,7 +628,14 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             // Visual Content Logic
             // If AI provided a structured visual plan, render via libraries
             if (segment.visualPlan) {
-                setRenderedPlan(segment.visualPlan);
+                const noteText = (segment.visualPlan as any).notes
+                    || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
+                    || segment.textToSpeak
+                    || '';
+                const planWithNotes = noteText
+                    ? { ...segment.visualPlan, notes: (segment.visualPlan as any).notes || noteText }
+                    : segment.visualPlan;
+                setRenderedPlan(planWithNotes);
                 setDisplayedText('');
                 return;
             }
