@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
-import rough from 'roughjs/bundled/rough.esm.js';
-import SmilesDrawer from 'smiles-drawer';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
 
@@ -46,16 +44,12 @@ type VisualPlan =
         notes?: string;
     };
 
-const CANVAS_W = 1200;
-const CANVAS_H = 800;
-
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [script, setScript] = useState<ScriptSegment[]>([]);
     const [currentIndex, setCurrentIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [displayedText, setDisplayedText] = useState('');
-    const [renderedPlan, setRenderedPlan] = useState<VisualPlan | null>(null);
 
     const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
@@ -65,364 +59,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isPlayingRef = useRef(false);
     const playbackSessionRef = useRef(0); // Unique ID for current playback session
-
-    const renderChemistryPlan = (container: HTMLDivElement, plan: Extract<VisualPlan, { kind: 'chemistry' }>) => {
-        if (!container) return;
-        container.innerHTML = '';
-        container.style.background = '#0d1f18';
-        container.style.border = '1px solid rgba(255,255,255,0.12)';
-        container.style.borderRadius = '14px';
-        container.style.padding = '12px';
-        container.style.minHeight = '70vh';
-        container.style.display = 'flex';
-        container.style.alignItems = 'center';
-        container.style.justifyContent = 'center';
-        container.style.flexDirection = 'column';
-        container.style.gap = '12px';
-
-        const pickSmiles = (s?: string) => {
-            if (!s) return '';
-            // Split on whitespace/commas/semicolons to avoid leading labels
-            const tokens = s.split(/[\s,;]+/).filter(Boolean);
-            return tokens.find(t =>
-                t.length >= 2 &&
-                !t.startsWith('(') &&
-                !t.startsWith(')') &&
-                /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(t) &&
-                /[BCNOSPFIclbr]/i.test(t)
-            ) || '';
-        };
-
-        const formatReactionText = () => {
-            if (!plan.reactions?.length) return '';
-            const r = plan.reactions.find(r => (r.reactants?.length || 0) && (r.products?.length || 0));
-            if (!r) return '';
-            const left = (r.reactants || []).filter(Boolean).join(' + ');
-            const right = (r.products || []).filter(Boolean).join(' + ');
-            const mid = r.arrowLabel ? `${r.arrowLabel} →` : '→';
-            return `${left}  ${mid}  ${right}`.trim();
-        };
-
-        const summary = plan.notes || formatReactionText();
-
-        const appendTextNote = () => {
-            if (!summary) return;
-            const note = document.createElement('div');
-            note.style.color = '#f8fafc';
-            note.style.font = '24px "Kalam","Comic Sans MS",cursive';
-            note.style.textAlign = 'center';
-            note.style.maxWidth = '96%';
-            note.style.padding = '12px 18px';
-            note.style.borderRadius = '14px';
-            note.style.background = 'rgba(255,255,255,0.05)';
-            note.style.border = '1px solid rgba(255,255,255,0.12)';
-            note.textContent = summary;
-            container.appendChild(note);
-        };
-
-        // Always show the summary text up front for readability
-        appendTextNote();
-
-        const buildReactionSmiles = () => {
-            if (!plan.reactions?.length) return '';
-            const rxn = plan.reactions.find(r => (r.reactants?.length || 0) && (r.products?.length || 0));
-            if (!rxn) return '';
-            const reactants = (rxn.reactants || []).map(pickSmiles).filter(Boolean);
-            const products = (rxn.products || []).map(pickSmiles).filter(Boolean);
-            const agents = Array.isArray((rxn as any).agents) ? (rxn as any).agents.map(pickSmiles).filter(Boolean) : [];
-            if (!reactants.length || !products.length) return '';
-            return `${reactants.join('.')}>${agents.join('.')}>${products.join('.')}`;
-        };
-
-        const reactionSmiles = buildReactionSmiles();
-
-        const smilesSource =
-            pickSmiles(plan.molecules?.find(m => !!m.smiles)?.smiles) ||
-            pickSmiles(plan.reactions?.find(r => r.reactants?.[0])?.reactants?.[0]) ||
-            pickSmiles(plan.reactions?.find(r => r.products?.[0])?.products?.[0]) ||
-            '';
-
-        if (!smilesSource && !reactionSmiles) {
-            container.innerHTML = `<div style="color:#39ff14;font:32px 'Kalam','Comic Sans MS',cursive;">No molecule/reaction data provided by AI</div>`;
-            appendTextNote();
-            return;
-        }
-
-        // SmilesDrawer export handling (UMD/ESM)
-        const SmilesLib: any = (SmilesDrawer as any)?.Drawer ? SmilesDrawer : (SmilesDrawer as any)?.default || SmilesDrawer;
-        const DrawerClass = SmilesLib.Drawer;
-        const parseFn = SmilesLib.parse;
-        const ReactionDrawerClass = SmilesLib.ReactionDrawer;
-        const ReactionParserClass = SmilesLib.ReactionParser;
-
-        if (!DrawerClass || !parseFn) {
-            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">SmilesDrawer unavailable</div>`;
-            return;
-        }
-
-        // Try full reaction rendering first (vector SVG, crisp)
-        if (reactionSmiles && ReactionDrawerClass && ReactionParserClass) {
-            try {
-                const reactionObj = typeof ReactionParserClass.parse === 'function'
-                    ? ReactionParserClass.parse(reactionSmiles)
-                    : new ReactionParserClass(reactionSmiles);
-
-                const reactionDrawer = new ReactionDrawerClass(
-                    { arrow: { length: CANVAS_W * 0.28 } },
-                    { width: CANVAS_W, height: CANVAS_H, padding: 16, compactDrawing: false }
-                );
-
-                const arrowText = plan.reactions?.[0]?.arrowLabel || '';
-                const svg = reactionDrawer.draw(reactionObj, null, 'light', null, arrowText, '', false);
-                svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
-                svg.setAttribute('width', `${CANVAS_W}`);
-                svg.setAttribute('height', `${CANVAS_H}`);
-                svg.style.width = '100%';
-                svg.style.height = 'auto';
-                svg.style.maxHeight = '85vh';
-                svg.style.background = '#0d1f18';
-                svg.style.borderRadius = '12px';
-                svg.style.filter = 'drop-shadow(0 0 18px rgba(57,255,20,0.45))';
-                // Force high-contrast strokes/text
-                const strokeTargets = svg.querySelectorAll('path,line,polyline,polygon,rect,circle,ellipse');
-                strokeTargets.forEach(el => {
-                    (el as any).setAttribute('stroke', '#e8f5ff');
-                    (el as any).setAttribute('stroke-width', '2.2');
-                });
-                svg.querySelectorAll('text').forEach(t => {
-                    t.setAttribute('fill', '#f8fafc');
-                    t.setAttribute('font-size', '28');
-                    t.setAttribute('font-family', 'Kalam, "Comic Sans MS", cursive');
-                });
-                container.appendChild(svg);
-                appendTextNote();
-                return;
-            } catch (err) {
-                console.warn('SmilesDrawer reaction draw error', err);
-                container.innerHTML = '';
-            }
-        }
-
-        const targetCanvas = document.createElement('canvas');
-        const pixelRatio = typeof window !== 'undefined' ? Math.min(2.5, window.devicePixelRatio || 1.5) : 2;
-        targetCanvas.width = CANVAS_W * pixelRatio;
-        targetCanvas.height = CANVAS_H * pixelRatio;
-        targetCanvas.style.width = '100%';
-        targetCanvas.style.maxHeight = '85vh';
-        targetCanvas.style.minHeight = '65vh';
-        targetCanvas.style.background = '#0d1f18';
-        targetCanvas.style.borderRadius = '12px';
-        container.appendChild(targetCanvas);
-
-        const isLikelySmiles = (s: string) =>
-            !!s &&
-            s.length >= 2 &&
-            /^[A-Za-z0-9@\+\-\[\]\(\)=#$\\\/%.]+$/.test(s) &&
-            /[BCNOSPFIclbr]/i.test(s) &&
-            !s.startsWith('(') &&
-            !s.startsWith(')');
-
-        if (!isLikelySmiles(smilesSource)) {
-            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Showing notes only (no valid SMILES)</div>`;
-            appendTextNote();
-            return;
-        }
-
-        const drawer = new DrawerClass({
-            width: CANVAS_W * pixelRatio,
-            height: CANVAS_H * pixelRatio,
-            padding: 14,
-            compactDrawing: false
-        });
-
-        try {
-            parseFn(
-                smilesSource,
-                (tree: any) => {
-                    if (!tree) {
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Empty molecule</div>`;
-                        return;
-                    }
-                    if (!targetCanvas.isConnected || !container.isConnected) return;
-                    try {
-                        drawer.draw(tree, targetCanvas, 'dark', false);
-
-                        appendTextNote();
-                    } catch (err) {
-                        console.warn('SmilesDrawer draw error', err);
-                        if (container.isConnected) {
-                            container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Could not render molecule</div>`;
-                            appendTextNote();
-                        }
-                    }
-                },
-                (err: any) => {
-                    console.warn('SmilesDrawer parse error', err);
-                    if (container.isConnected) {
-                        container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Showing notes only (could not parse SMILES)</div>`;
-                        appendTextNote();
-                    }
-                }
-            );
-        } catch (e) {
-            console.warn('SmilesDrawer render failed', e);
-            if (container.isConnected) {
-                container.innerHTML = `<div style="color:#f97316;font:28px 'Kalam','Comic Sans MS',cursive;">Render failed</div>`;
-                appendTextNote();
-            }
-        }
-    };
-
-    const renderPhysicsMathPlan = (canvas: HTMLCanvasElement, plan: Extract<VisualPlan, { kind: 'physics' | 'math' | 'general' }>) => {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-        ctx.fillStyle = '#0b1a13';
-        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-        const rc = rough.canvas(canvas);
-        const sx = (x: number) => x * CANVAS_W;
-        const sy = (y: number) => y * CANVAS_H;
-
-        // Background grid
-        ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= CANVAS_W; x += 80) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, CANVAS_H);
-            ctx.stroke();
-        }
-        for (let y = 0; y <= CANVAS_H; y += 80) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(CANVAS_W, y);
-            ctx.stroke();
-        }
-
-        const drawLabel = (text: string, x: number, y: number, color = '#facc15') => {
-            ctx.fillStyle = color;
-            ctx.font = '28px "Kalam", "Comic Sans MS", cursive';
-            ctx.fillText(text, x, y);
-        };
-
-        if (plan.axes) {
-            rc.line(sx(0.1), sy(0.9), sx(0.9), sy(0.9), { stroke: '#39ff14', roughness: 1.2 });
-            rc.line(sx(0.1), sy(0.9), sx(0.1), sy(0.1), { stroke: '#00f3ff', roughness: 1.2 });
-            drawLabel('x', sx(0.9) + 10, sy(0.9) + 5, '#39ff14');
-            drawLabel('y', sx(0.08), sy(0.12), '#00f3ff');
-        }
-
-        if (plan.kind === 'physics' && plan.objects) {
-            plan.objects.forEach(obj => {
-                const color = '#e5e7eb';
-                if (obj.shape === 'block') {
-                    rc.rectangle(sx(obj.x), sy(obj.y), (obj.w || 0.18) * CANVAS_W, (obj.h || 0.12) * CANVAS_H, { stroke: color, fill: 'transparent', strokeWidth: 3 });
-                }
-                if (obj.shape === 'circle') {
-                    rc.circle(sx(obj.x), sy(obj.y), (obj.r || 0.1) * CANVAS_W, { stroke: color, fill: 'transparent', strokeWidth: 3 });
-                }
-                if (obj.shape === 'pulley') {
-                    rc.circle(sx(obj.x), sy(obj.y), (obj.r || 0.1) * CANVAS_W, { stroke: '#facc15', fill: 'transparent', strokeWidth: 3 });
-                    rc.line(sx(obj.x), sy(obj.y - (obj.r || 0.1)), sx(obj.x), sy(obj.y + (obj.r || 0.1)), { stroke: '#facc15' });
-                }
-                if (obj.shape === 'incline') {
-                    rc.line(sx(obj.x - 0.2), sy(obj.y + 0.2), sx(obj.x + 0.2), sy(obj.y - 0.2), { stroke: '#f97316', strokeWidth: 3 });
-                }
-                if (obj.label) drawLabel(obj.label, sx(obj.x) + 10, sy(obj.y) - 10, '#facc15');
-            });
-        }
-
-        if (plan.kind === 'physics' && plan.forces) {
-            plan.forces.forEach(f => {
-                rc.line(sx(f.from[0]), sy(f.from[1]), sx(f.to[0]), sy(f.to[1]), { stroke: '#ff00ff', strokeWidth: 3, roughness: 1 });
-                const midX = (sx(f.from[0]) + sx(f.to[0])) / 2;
-                const midY = (sy(f.from[1]) + sy(f.to[1])) / 2;
-                if (f.label) drawLabel(f.label, midX + 6, midY - 6, '#ff00ff');
-            });
-        }
-
-        if (plan.kind === 'physics' && plan.paths) {
-            plan.paths.forEach(p => {
-                if (!p.points?.length) return;
-                for (let i = 0; i < p.points.length - 1; i++) {
-                    const a = p.points[i];
-                    const b = p.points[i + 1];
-                    rc.line(sx(a[0]), sy(a[1]), sx(b[0]), sy(b[1]), { stroke: '#00f3ff', strokeWidth: 2 });
-                }
-                if (p.label) {
-                    const last = p.points[p.points.length - 1];
-                    drawLabel(p.label, sx(last[0]) + 6, sy(last[1]) - 6, '#00f3ff');
-                }
-            });
-        }
-
-        if (plan.kind === 'math' && plan.functions) {
-            plan.functions.forEach(fn => {
-                const pts = fn.samples || [];
-                for (let i = 0; i < pts.length - 1; i++) {
-                    const a = pts[i];
-                    const b = pts[i + 1];
-                    rc.line(sx(a.x), sy(1 - a.y), sx(b.x), sy(1 - b.y), { stroke: fn.color || '#39ff14', strokeWidth: 3, roughness: 1 });
-                }
-                if (fn.label && pts.length) {
-                    const last = pts[pts.length - 1];
-                    drawLabel(fn.label, sx(last.x) + 8, sy(1 - last.y) - 8, fn.color || '#39ff14');
-                }
-            });
-        }
-
-        if (plan.kind === 'math' && plan.points) {
-            plan.points.forEach(p => {
-                rc.circle(sx(p.x), sy(1 - p.y), 12, { stroke: '#facc15', fill: '#facc15', fillStyle: 'solid' });
-                if (p.label) drawLabel(p.label, sx(p.x) + 8, sy(1 - p.y) - 8, '#facc15');
-            });
-        }
-    };
-
-    const LibraryVisual: React.FC<{ plan: VisualPlan }> = ({ plan }) => {
-        const canvasRef = useRef<HTMLCanvasElement>(null);
-        const chemRef = useRef<HTMLDivElement>(null);
-
-        useEffect(() => {
-            if (plan.kind === 'chemistry') {
-                if (chemRef.current) renderChemistryPlan(chemRef.current, plan);
-                return;
-            }
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-            canvas.width = CANVAS_W;
-            canvas.height = CANVAS_H;
-            renderPhysicsMathPlan(canvas, plan as Extract<VisualPlan, { kind: 'physics' | 'math' | 'general' }>);
-        }, [plan]);
-
-        if (plan.kind === 'chemistry') {
-            return (
-                <div className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in">
-                    <div className="w-[90%] flex flex-col items-center gap-4">
-                        {plan.notes ? (
-                            <div className="w-full text-center text-white text-2xl leading-snug bg-white/5 border border-white/10 rounded-xl px-6 py-4 shadow-lg">
-                                {plan.notes}
-                            </div>
-                        ) : null}
-                        <div
-                            ref={chemRef}
-                            className="w-full max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10 overflow-hidden"
-                        />
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in">
-                <canvas
-                    ref={canvasRef}
-                    className="w-[90%] max-h-[85vh] bg-[#0b1a13] rounded-xl shadow-2xl border border-white/10"
-                />
-            </div>
-        );
-    };
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -445,7 +81,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         playbackSessionRef.current += 1;
         isPlayingRef.current = false;
         setIsPlaying(false);
-        setRenderedPlan(null);
 
         // 2. Stop Browser TTS
         window.speechSynthesis.cancel();
@@ -652,42 +287,32 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 
         const startVisuals = () => {
             const svgMatch = segment.visualContent ? segment.visualContent.match(/<svg[\s\S]*?<\/svg>/i) : null;
+            const noteText = (segment.visualPlan as any)?.notes
+                || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
+                || segment.textToSpeak
+                || '';
 
-            // Visual Content Logic
-            // If AI provided a structured visual plan, render via libraries (but keep SVG fallback visible if present)
-            if (segment.visualPlan) {
-                const noteText = (segment.visualPlan as any).notes
-                    || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
-                    || segment.textToSpeak
-                    || '';
-                const planWithNotes = noteText
-                    ? { ...segment.visualPlan, notes: (segment.visualPlan as any).notes || noteText }
-                    : segment.visualPlan;
-                setRenderedPlan(planWithNotes);
-                setDisplayedText(svgMatch ? svgMatch[0] : '');
+            // Prefer inline SVG from AI; otherwise type out whatever text we have
+            if (svgMatch) {
+                setDisplayedText(svgMatch[0]);
                 return;
             }
 
-            setRenderedPlan(null);
-            // Safety check
-            if (!segment.visualContent) return;
+            const fallbackContent = segment.visualContent || noteText;
+            if (!fallbackContent) return;
 
-            if (svgMatch) {
-                setDisplayedText(svgMatch[0]); // Show ONLY the SVG code
-            } else {
-                // Typing animation for text
-                let i = 0;
-                setDisplayedText('');
+            // Typing animation for text
+            let i = 0;
+            setDisplayedText('');
 
-                const interval = setInterval(() => {
-                    // Stop if session changed
-                    if (playbackSessionRef.current !== sessionId) { clearInterval(interval); return; }
+            const interval = setInterval(() => {
+                // Stop if session changed
+                if (playbackSessionRef.current !== sessionId) { clearInterval(interval); return; }
 
-                    setDisplayedText(segment.visualContent.slice(0, i + 1));
-                    i++;
-                    if (i > segment.visualContent.length) clearInterval(interval);
-                }, 30); // Faster typing
-            }
+                setDisplayedText(fallbackContent.slice(0, i + 1));
+                i++;
+                if (i > fallbackContent.length) clearInterval(interval);
+            }, 30); // Faster typing
         };
 
         startVisuals();
@@ -834,17 +459,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             {/* Current Segment */}
                             {currentIndex >= 0 && currentIndex < script.length && (
                                 <div className="mb-4 text-white scroll-mt-4 flex items-center justify-center" id={`segment-${currentIndex}`}>
-                                    {renderedPlan ? (
-                                        <div className="w-full flex flex-col items-center gap-6">
-                                            {/<svg/i.test(displayedText) ? (
-                                                <div
-                                                    dangerouslySetInnerHTML={{ __html: displayedText }}
-                                                    className="w-full h-auto min-h-[40vh] flex items-center justify-center animate-fade-in [&>svg]:w-[92%] [&>svg]:h-auto [&>svg]:max-h-[70vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl [&>svg]:mx-auto"
-                                                />
-                                            ) : null}
-                                            <LibraryVisual plan={renderedPlan} />
-                                        </div>
-                                    ) : /<svg/i.test(displayedText) ? (
+                                    {/<svg/i.test(displayedText) ? (
                                         <div
                                             dangerouslySetInnerHTML={{ __html: displayedText }}
                                             className="w-full h-auto min-h-[70vh] flex items-center justify-center animate-fade-in [&>svg]:w-[90%] [&>svg]:h-auto [&>svg]:max-h-[85vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl [&>svg]:mx-auto"
