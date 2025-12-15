@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
+import { HeygenService } from '../lib/heygenService';
 
 interface BlackboardPlayerProps {
     topic: string;
@@ -14,35 +15,7 @@ interface ScriptSegment {
     textToSpeak: string;
     subtitles: string[]; // Added for sentence-level sync
     visualContent: string;
-    visualPlan?: VisualPlan;
 }
-
-type VisualPlan =
-    | {
-        kind: 'chemistry';
-        molecules?: { smiles: string; label?: string }[];
-        reactions?: { reactants: string[]; products: string[]; arrowLabel?: string }[];
-        notes?: string;
-    }
-    | {
-        kind: 'physics';
-        axes?: boolean;
-        objects?: { shape: 'block' | 'circle' | 'pulley' | 'incline'; x: number; y: number; w?: number; h?: number; r?: number; label?: string }[];
-        forces?: { from: [number, number]; to: [number, number]; label?: string }[];
-        paths?: { points: [number, number][]; label?: string }[];
-        notes?: string;
-    }
-    | {
-        kind: 'math';
-        axes?: boolean;
-        functions?: { samples: { x: number; y: number }[]; color?: string; label?: string }[];
-        points?: { x: number; y: number; label?: string }[];
-        notes?: string;
-    }
-    | {
-        kind: 'general';
-        notes?: string;
-    };
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
     const [loading, setLoading] = useState(true);
@@ -59,6 +32,11 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isPlayingRef = useRef(false);
     const playbackSessionRef = useRef(0); // Unique ID for current playback session
+    const [heygenStatus, setHeygenStatus] = useState<'idle' | 'generating' | 'polling' | 'ready' | 'error'>('idle');
+    const [heygenUrl, setHeygenUrl] = useState<string | null>(null);
+    const [heygenError, setHeygenError] = useState('');
+    const heygenRequestIdRef = useRef(0);
+    const heygenAbortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -153,7 +131,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             const getSubjectVisualPrompt = (subject: string): string => {
                 const s = subject.toLowerCase();
 
-                // Strong base style: much more dynamic + layered visuals
                 const base = [
                     "Generate a HIGHLY VISUAL, DYNAMIC SVG scene in neon chalkboard style.",
                     "Overall look: cinematic blackboard shot with colored chalk lines.",
@@ -172,7 +149,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                 }
 
                 if (s.includes('chemistry')) {
-                    return `${base} THEME: chemistry lab chalkboard. Draw LARGE, CLEAR skeletal structures (explicit atoms + bonds) and/or beakers/flasks with glowing liquids. Show reaction arrows with animated flow/bubbles. Separate reactants, arrow, and products clearly with labels near objects. Keep structures centered and filling the majority of the frame. In visualPlan include at least one VALID SMILES (no placeholders, no "X", only real atoms) for the main molecule.`;
+                    return `${base} THEME: chemistry lab chalkboard. Draw LARGE, CLEAR skeletal structures and/or beakers/flasks with glowing liquids. Show reaction arrows with animated flow/bubbles. Separate reactants, arrow, and products clearly with labels near objects. Keep structures centered and filling the majority of the frame.`;
                 }
 
                 if (s.includes('biology')) {
@@ -203,17 +180,11 @@ Create a VISUALLY RICH, engaging lesson script for: "${topic}" (Subject: "${subj
 
 REQUIREMENTS:
 - Break the lesson into 6–10 segments that tell a clear visual story.
-- EACH segment must have a UNIQUE, INTERESTING SVG scene (not just small variations).
+- EACH segment must have a UNIQUE, INTERESTING SVG scene in visualContent (inline <svg> only). If you skip SVG, include a one-line visual cue instead.
 - Use the visual style and constraints described in this subject‑specific visual prompt: "${visualPrompt}".
 - The SVG should feel like a cinematic chalkboard shot with multiple elements, arrows, and subtle motion. Ensure viewBox='0 0 1200 800', preserveAspectRatio='xMidYMid meet', main subject centered and filling ~60–75% of the area.
 - Avoid big text paragraphs in the SVG; use short labels near objects only when needed.
 - Do NOT add explanations or commentary outside JSON. RETURN VALID JSON ONLY.
-- For each segment also include a machine-usable visualPlan to drive libraries:
-  - Chemistry example: {"kind":"chemistry","molecules":[{"smiles":"C1=CC=CC=C1"}],"reactions":[{"reactants":["CCO"],"products":["CC=O"],"arrowLabel":"oxidation"}]}
-  - Physics example: {"kind":"physics","axes":true,"objects":[{"shape":"block","x":0.48,"y":0.62,"w":0.22,"h":0.14,"label":"m"}],"forces":[{"from":[0.48,0.62],"to":[0.48,0.32],"label":"N"}]}
-  - Math example: {"kind":"math","axes":true,"functions":[{"label":"f(x)","samples":[{"x":0,"y":0.2},{"x":0.5,"y":0.6},{"x":1,"y":0.8}]}]}
-  - Use normalized coordinates (0..1) for positions. Keep visualContent as SVG fallback.
-- Chemistry rule: visualPlan.molecules[0].smiles must be VALID SMILES (no placeholders, no "X", only real atoms); prefer common educational molecules or those relevant to the topic.
 
 JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 {
@@ -221,8 +192,8 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
     {
       "id": 1,
       "subtitles": ["Sentence 1.", "Sentence 2."],
-      "visualContent": "<svg>...complex, animated chalkboard diagram for this part...</svg>",
-      "visualPlan": { /* per examples above */ }
+      "textToSpeak": "Full narration for this segment",
+      "visualContent": "<svg>...complex, animated chalkboard diagram for this part...</svg>"
     }
   ]
 }`;
@@ -287,10 +258,6 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 
         const startVisuals = () => {
             const svgMatch = segment.visualContent ? segment.visualContent.match(/<svg[\s\S]*?<\/svg>/i) : null;
-            const noteText = (segment.visualPlan as any)?.notes
-                || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
-                || segment.textToSpeak
-                || '';
 
             // Prefer inline SVG from AI; otherwise type out whatever text we have
             if (svgMatch) {
@@ -298,7 +265,9 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 return;
             }
 
-            const fallbackContent = segment.visualContent || noteText;
+            const fallbackContent = segment.visualContent
+                || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
+                || segment.textToSpeak;
             if (!fallbackContent) return;
 
             // Typing animation for text
@@ -392,6 +361,57 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
         }
     };
 
+    const requestHeygenVideo = useCallback(async (force = false) => {
+        if (heygenStatus === 'generating' || heygenStatus === 'polling') return;
+        if (!force && heygenStatus === 'ready') return;
+
+        const allText = script
+            .map(s => s.textToSpeak || (Array.isArray(s.subtitles) ? s.subtitles.join(' ') : ''))
+            .join(' ')
+            .trim();
+
+        if (!allText || allText.length < 16) return;
+
+        setHeygenStatus('generating');
+        setHeygenError('');
+        heygenAbortRef.current?.abort();
+        const controller = new AbortController();
+        heygenAbortRef.current = controller;
+        const requestId = ++heygenRequestIdRef.current;
+
+        try {
+            const heygen = HeygenService.getInstance();
+            const videoId = await heygen.generateVideoFromText(allText, { caption: true });
+            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
+
+            setHeygenStatus('polling');
+            const url = await heygen.waitForVideoUrl(videoId, { signal: controller.signal });
+            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
+
+            if (url) {
+                setHeygenUrl(url);
+                setHeygenStatus('ready');
+            } else {
+                setHeygenStatus('error');
+                setHeygenError('HeyGen did not return a video URL. Tap retry.');
+            }
+        } catch (e: any) {
+            if (controller.signal.aborted) return;
+            setHeygenStatus('error');
+            setHeygenError(e?.message || 'HeyGen video generation failed');
+        }
+    }, [heygenStatus, script]);
+
+    useEffect(() => {
+        if (!loading && script.length > 0 && heygenStatus === 'idle') {
+            requestHeygenVideo();
+        }
+
+        return () => {
+            heygenAbortRef.current?.abort();
+        };
+    }, [loading, script, heygenStatus, requestHeygenVideo]);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
             <div ref={containerRef} className="w-full max-w-[98vw] bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl overflow-hidden flex flex-col relative h-[95vh]">
@@ -473,6 +493,38 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                                 </div>
                             )}
                             <div id="scroll-anchor" className="h-4"></div>
+                        </div>
+                    )}
+                </div>
+
+                {/* HeyGen Video Section */}
+                <div className="bg-gray-950 border-t border-gray-800 px-6 py-5 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-gray-400">Avatar video</p>
+                            <p className="text-lg font-semibold text-white">HeyGen</p>
+                        </div>
+                        <button
+                            onClick={() => requestHeygenVideo(true)}
+                            disabled={heygenStatus === 'generating' || heygenStatus === 'polling'}
+                            className="px-4 py-2 rounded-lg bg-neon-green/20 text-neon-green border border-neon-green/50 hover:bg-neon-green/30 disabled:opacity-60"
+                        >
+                            {heygenStatus === 'generating' || heygenStatus === 'polling' ? 'Working...' : 'Retry' }
+                        </button>
+                    </div>
+                    {heygenStatus === 'ready' && heygenUrl ? (
+                        <video
+                            key={heygenUrl}
+                            controls
+                            className="w-full rounded-xl border border-gray-800 shadow-lg bg-black"
+                            src={heygenUrl}
+                        />
+                    ) : (
+                        <div className="text-gray-400 text-sm bg-black/30 border border-gray-800 rounded-lg px-4 py-3">
+                            {heygenStatus === 'generating' && 'Sending script to HeyGen...'}
+                            {heygenStatus === 'polling' && 'Rendering video...'}
+                            {heygenStatus === 'error' && heygenError}
+                            {heygenStatus === 'idle' && 'Preparing video...'}
                         </div>
                     )}
                 </div>
