@@ -651,8 +651,10 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
         }
 
         const startVisuals = () => {
+            const svgMatch = segment.visualContent ? segment.visualContent.match(/<svg[\s\S]*?<\/svg>/i) : null;
+
             // Visual Content Logic
-            // If AI provided a structured visual plan, render via libraries
+            // If AI provided a structured visual plan, render via libraries (but keep SVG fallback visible if present)
             if (segment.visualPlan) {
                 const noteText = (segment.visualPlan as any).notes
                     || (Array.isArray(segment.subtitles) ? segment.subtitles.join(' ') : '')
@@ -662,15 +664,13 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                     ? { ...segment.visualPlan, notes: (segment.visualPlan as any).notes || noteText }
                     : segment.visualPlan;
                 setRenderedPlan(planWithNotes);
-                setDisplayedText('');
+                setDisplayedText(svgMatch ? svgMatch[0] : '');
                 return;
             }
 
             setRenderedPlan(null);
             // Safety check
             if (!segment.visualContent) return;
-
-            const svgMatch = segment.visualContent.match(/<svg[\s\S]*?<\/svg>/i);
 
             if (svgMatch) {
                 setDisplayedText(svgMatch[0]); // Show ONLY the SVG code
@@ -835,7 +835,15 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             {currentIndex >= 0 && currentIndex < script.length && (
                                 <div className="mb-4 text-white scroll-mt-4 flex items-center justify-center" id={`segment-${currentIndex}`}>
                                     {renderedPlan ? (
-                                        <LibraryVisual plan={renderedPlan} />
+                                        <div className="w-full flex flex-col items-center gap-6">
+                                            {/<svg/i.test(displayedText) ? (
+                                                <div
+                                                    dangerouslySetInnerHTML={{ __html: displayedText }}
+                                                    className="w-full h-auto min-h-[40vh] flex items-center justify-center animate-fade-in [&>svg]:w-[92%] [&>svg]:h-auto [&>svg]:max-h-[70vh] [&>svg]:fill-none [&>svg]:stroke-2 [&>svg]:drop-shadow-2xl [&>svg]:mx-auto"
+                                                />
+                                            ) : null}
+                                            <LibraryVisual plan={renderedPlan} />
+                                        </div>
                                     ) : /<svg/i.test(displayedText) ? (
                                         <div
                                             dangerouslySetInnerHTML={{ __html: displayedText }}
