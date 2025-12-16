@@ -103,13 +103,21 @@ const ensureChemDoodle = async (): Promise<boolean> => {
   return chemLoadPromise;
 };
 
-const normalizeText = (value: unknown) => {
+const safeString = (value: unknown) => {
   if (value === null || value === undefined) return '';
-  const text = typeof value === 'string'
-    ? value
-    : typeof value === 'number' || typeof value === 'boolean'
-      ? String(value)
-      : '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    const str = JSON.stringify(value);
+    return typeof str === 'string' ? str : '';
+  } catch {
+    return '';
+  }
+};
+
+const normalizeText = (value: unknown) => {
+  const text = safeString(value);
+  if (!text) return '';
   return text.replace(/\s+/g, ' ').trim();
 };
 
@@ -322,19 +330,12 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
 };
 
 const sanitizeText = (input: unknown) => {
-  if (input === null || input === undefined) return '';
-  let text = '';
-  if (typeof input === 'string') {
-    text = input;
-  } else if (typeof input === 'number' || typeof input === 'boolean') {
-    text = String(input);
-  } else if (typeof input === 'object') {
-    try { text = JSON.stringify(input); } catch { text = ''; }
-  }
-  if (!text) return '';
+  const raw = safeString(input);
+  if (!raw) return '';
 
-  const fenced = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/i);
-  if (fenced?.[1]) text = fenced[1];
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]+?)\s*```/i);
+  let text = fenced?.[1] ?? raw;
+  if (typeof text !== 'string') text = safeString(text);
 
   return text
     .replace(/<svg[\s\S]*?<\/svg>/gi, '')
@@ -546,6 +547,26 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     }
   };
 
+  const extractJsonCandidate = (response: string) => {
+    const fenced = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fenced?.[1]) return fenced[1];
+
+    const start = response.search(/[\[{]/);
+    if (start === -1) return null;
+    const stack: string[] = [];
+    for (let i = start; i < response.length; i++) {
+      const ch = response[i];
+      if (ch === '{' || ch === '[') stack.push(ch);
+      else if (ch === '}' || ch === ']') {
+        const last = stack.pop();
+        if (!last) return null;
+        if ((last === '{' && ch !== '}') || (last === '[' && ch !== ']')) return null;
+        if (stack.length === 0) return response.slice(start, i + 1);
+      }
+    }
+    return null;
+  };
+
   const generateScript = async () => {
     try {
       setLoading(true);
@@ -582,9 +603,9 @@ Each segment needs:
 Rules: NO HTML, NO SVG, plaintext or JSON only.`;
 
       const response = await OpenAIService.getInstance().generateChatCompletion(prompt, 'Return JSON only for the lesson plan.');
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON found');
-      const parsed = JSON.parse(jsonMatch[0]);
+      const jsonCandidate = extractJsonCandidate(response);
+      if (!jsonCandidate) throw new Error('No JSON found');
+      const parsed = JSON.parse(jsonCandidate);
       if (parsed.segments) {
         const computed = parsed.segments.map((s: any) => sanitizeSegment({
           ...s,
