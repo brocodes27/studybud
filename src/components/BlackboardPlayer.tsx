@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
-import { HeygenService } from '../lib/heygenService';
 
 interface BlackboardPlayerProps {
     topic: string;
@@ -19,14 +18,6 @@ interface ScriptSegment {
 
 interface SavedVideoRecord {
     script: ScriptSegment[];
-    heygen_video_id?: string | null;
-    heygen_video_url?: string | null;
-    heygen_status?: string | null;
-    heygen_error?: string | null;
-    heygen_last_checked_at?: string | null;
-    heygen_notified?: boolean | null;
-    heygen_notified_at?: string | null;
-    heygen_requested_at?: string | null;
 }
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
@@ -39,7 +30,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
     const [userId, setUserId] = useState<string | null>(null);
-    const [savedVideoId, setSavedVideoId] = useState<string | null>(null);
 
     const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -47,11 +37,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [isFullscreen, setIsFullscreen] = useState(false);
     const isPlayingRef = useRef(false);
     const playbackSessionRef = useRef(0); // Unique ID for current playback session
-    const [heygenStatus, setHeygenStatus] = useState<'idle' | 'generating' | 'polling' | 'ready' | 'error'>('idle');
-    const [heygenUrl, setHeygenUrl] = useState<string | null>(null);
-    const [heygenError, setHeygenError] = useState('');
-    const heygenRequestIdRef = useRef(0);
-    const heygenAbortRef = useRef<AbortController | null>(null);
 
     const sanitizeText = (text: string) => {
         if (!text) return '';
@@ -75,9 +60,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         };
     };
 
-    const videoReady = heygenStatus === 'ready' && !!heygenUrl;
-    const videoWorking = heygenStatus === 'generating' || heygenStatus === 'polling';
-    const lessonLocked = !videoReady;
+    const readyToPlay = !loading && script.length > 0;
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -146,7 +129,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             if (user) {
                 const { data: saved } = await supabase
                     .from('saved_videos')
-                    .select('script, heygen_video_id, heygen_video_url, heygen_status')
+                    .select('script')
                     .eq('user_id', user.id)
                     .eq('topic', topic)
                     .eq('subject', subject)
@@ -162,15 +145,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                             : [s.textToSpeak || '']
                     }));
                     setScript(backfilledScript);
-                    setSavedVideoId(casted.heygen_video_id || null);
-
-                    if (casted.heygen_video_url) {
-                        setHeygenUrl(casted.heygen_video_url);
-                        setHeygenStatus('ready');
-                    } else if (casted.heygen_video_id) {
-                        setHeygenStatus('polling');
-                    }
-
                     setLoading(false);
                     setCurrentIndex(-1);
                     setIsPlaying(false);
@@ -265,15 +239,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                         user_id: user.id,
                         topic,
                         subject,
-                        script: computedSegments,
-                        heygen_status: 'pending',
-                        heygen_video_id: null,
-                        heygen_video_url: null,
-                        heygen_error: null,
-                        heygen_requested_at: new Date().toISOString(),
-                        heygen_notified: false,
-                        heygen_notified_at: null,
-                        heygen_last_checked_at: new Date().toISOString()
+                        script: computedSegments
                     }, { onConflict: 'user_id,topic,subject' });
                 }
 
@@ -405,118 +371,6 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
         }
     };
 
-    const upsertSavedVideo = useCallback(async (patch: Partial<SavedVideoRecord>) => {
-        if (!userId || !script.length) return;
-        await supabase.from('saved_videos').upsert({
-            user_id: userId,
-            topic,
-            subject,
-            script,
-            heygen_last_checked_at: new Date().toISOString(),
-            ...patch
-        }, { onConflict: 'user_id,topic,subject' });
-    }, [userId, script, topic, subject]);
-
-    const pollExistingHeygenVideo = useCallback(async (videoId: string) => {
-        setHeygenStatus('polling');
-        setHeygenError('');
-        heygenAbortRef.current?.abort();
-        const controller = new AbortController();
-        heygenAbortRef.current = controller;
-        const requestId = ++heygenRequestIdRef.current;
-
-        try {
-            const heygen = HeygenService.getInstance();
-            const url = await heygen.waitForVideoUrl(videoId, { signal: controller.signal });
-            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
-
-            if (url) {
-                setHeygenUrl(url);
-                setHeygenStatus('ready');
-                setSavedVideoId(videoId);
-                await upsertSavedVideo({ heygen_video_id: videoId, heygen_video_url: url, heygen_status: 'ready', heygen_error: null });
-                } else {
-                    setHeygenStatus('error');
-                    setHeygenError('HeyGen did not return an audio URL. Tap retry.');
-                    await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: 'No audio URL from HeyGen' });
-                }
-            } catch (e: any) {
-                if (controller.signal.aborted) return;
-                setHeygenStatus('error');
-                setHeygenError(e?.message || 'HeyGen audio generation failed');
-                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen audio generation failed' });
-            }
-        }, [upsertSavedVideo]);
-
-
-    const requestHeygenVideo = useCallback(async (force = false) => {
-        if (heygenStatus === 'generating' || heygenStatus === 'polling') return;
-        if (!force && heygenStatus === 'ready') return;
-
-        const allText = script
-            .map(s => s.textToSpeak || (Array.isArray(s.subtitles) ? s.subtitles.join(' ') : ''))
-            .join(' ')
-            .trim();
-
-        if (!allText || allText.length < 16) return;
-
-        setHeygenStatus('generating');
-        setHeygenError('');
-        heygenAbortRef.current?.abort();
-        const controller = new AbortController();
-        heygenAbortRef.current = controller;
-        const requestId = ++heygenRequestIdRef.current;
-
-        try {
-            const heygen = HeygenService.getInstance();
-            const { id: audioId, url: audioUrl } = await heygen.generateAudioFromText(allText, { format: 'mp3' });
-            if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
-
-            setSavedVideoId(audioId);
-
-            if (audioUrl) {
-                setHeygenUrl(audioUrl);
-                setHeygenStatus('ready');
-                await upsertSavedVideo({
-                    heygen_video_id: audioId,
-                    heygen_status: 'ready',
-                    heygen_video_url: audioUrl,
-                    heygen_error: null,
-                    heygen_requested_at: new Date().toISOString()
-                });
-            } else {
-                await upsertSavedVideo({
-                    heygen_video_id: audioId,
-                    heygen_status: 'processing',
-                    heygen_video_url: null,
-                    heygen_error: null,
-                    heygen_requested_at: new Date().toISOString()
-                });
-                await pollExistingHeygenVideo(audioId);
-            }
-        } catch (e: any) {
-            if (controller.signal.aborted) return;
-            setHeygenStatus('error');
-            setHeygenError(e?.message || 'HeyGen video generation failed');
-            if (savedVideoId) await upsertSavedVideo({ heygen_video_id: savedVideoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen video generation failed' });
-        }
-    }, [heygenStatus, script, upsertSavedVideo, pollExistingHeygenVideo, savedVideoId]);
-
-    useEffect(() => {
-        if (!loading && script.length > 0 && heygenStatus === 'idle') {
-            requestHeygenVideo();
-        }
-
-        return () => {
-            heygenAbortRef.current?.abort();
-        };
-    }, [loading, script, heygenStatus, requestHeygenVideo]);
-
-    useEffect(() => {
-        if (savedVideoId && heygenStatus === 'polling') {
-            pollExistingHeygenVideo(savedVideoId);
-        }
-    }, [savedVideoId, heygenStatus, pollExistingHeygenVideo]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -535,7 +389,7 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 </div>
 
                 {/* Blackboard Area */}
-                <div className="flex-1 bg-[#1a2c22] relative p-8 pb-48 font-handwriting text-lg text-gray-200 overflow-y-auto"
+                <div className="flex-1 bg-[#1a2c22] relative p-8 pb-36 font-handwriting text-lg text-gray-200 overflow-y-auto"
                     id="blackboard-scroll-container"
                     style={{
                         fontFamily: '"Kalam", "Comic Sans MS", cursive',
@@ -557,46 +411,27 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
                             <span className="animate-pulse text-gray-400 font-mono">Generative AI is crafting your lesson... (~15-30s)</span>
                         </div>
-                    ) : lessonLocked ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
-                            <span className="text-xl font-semibold text-white">Lesson locked while HeyGen audio renders</span>
-                            <p className="text-sm text-gray-400">
-                                {videoWorking ? 'Generating HeyGen audio now...' : 'Waiting for audio generation to finish.'}
-                            </p>
-                            <p className="text-xs text-gray-500 max-w-xl">
-                                You can close this window and keep studying; we will notify you once the HeyGen audio is ready.
-                            </p>
-                            <button
-                                onClick={handleClose}
-                                className="mt-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10"
-                            >
-                                Close and continue elsewhere
-                            </button>
-                        </div>
                     ) : !isPlaying && currentIndex === -1 ? (
                         <div className="flex flex-col items-center justify-center h-full animate-fade-in">
                             <button
                                 onClick={() => {
-                                    if (!videoReady) return;
+                                    if (!readyToPlay) return;
                                     setCurrentIndex(0);
                                     setIsPlaying(true);
                                 }}
-                                disabled={!videoReady}
+                                disabled={!readyToPlay}
                                 className="group flex flex-col items-center gap-4 p-8 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 <div className="w-20 h-20 rounded-full bg-neon-green/20 flex items-center justify-center border border-neon-green/50 shadow-[0_0_30px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_50px_rgba(34,197,94,0.5)] transition-all">
                                     <Play className="w-10 h-10 fill-neon-green text-neon-green ml-1" />
                                 </div>
-                                    <span className="text-2xl font-bold text-white tracking-wide">
-                                        {videoReady ? 'Start Lesson' : 'Lesson locked until HeyGen audio is ready'}
-                                    </span>
-                                </button>
-                                <p className="mt-3 text-sm text-gray-400">
-                                    {videoWorking && 'Generating HeyGen audio...'}
-                                    {!videoWorking && !videoReady && 'Audio must finish generating before you can start.'}
-                                    {videoReady && 'Audio ready. Press start to begin.'}
-                                </p>
+                                <span className="text-2xl font-bold text-white tracking-wide">
+                                    {readyToPlay ? 'Start Lesson' : 'Preparing lesson plan...'}
+                                </span>
+                            </button>
+                            <p className="mt-3 text-sm text-gray-400 text-center max-w-xl">
+                                {readyToPlay ? 'Press start to hear the AI voice while the board animates.' : 'Generating the chalkboard plan and voice...' }
+                            </p>
 
                         </div>
                     ) : (
@@ -625,41 +460,6 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                     )}
                 </div>
 
-                {/* HeyGen Video Section */}
-                <div className="bg-gray-950 border-t border-gray-800 px-6 py-5 flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-sm text-gray-400">HeyGen audio (avatar hidden)</p>
-                            <p className="text-lg font-semibold text-white">HeyGen</p>
-                        </div>
-                        <button
-                            onClick={() => requestHeygenVideo(true)}
-                            disabled={heygenStatus === 'generating' || heygenStatus === 'polling'}
-                            className="px-4 py-2 rounded-lg bg-neon-green/20 text-neon-green border border-neon-green/50 hover:bg-neon-green/30 disabled:opacity-60"
-                        >
-                            {heygenStatus === 'generating' || heygenStatus === 'polling' ? 'Working...' : 'Retry' }
-                        </button>
-                    </div>
-                    {heygenStatus === 'ready' && heygenUrl ? (
-                        <div className="space-y-2">
-                            <audio
-                                key={heygenUrl}
-                                controls
-                                className="w-full"
-                                src={heygenUrl}
-                            />
-                            <p className="text-xs text-gray-500">Avatar visuals are suppressed; audio only.</p>
-                        </div>
-                    ) : (
-                        <div className="text-gray-400 text-sm bg-black/30 border border-gray-800 rounded-lg px-4 py-3">
-                            {heygenStatus === 'generating' && 'Sending script to HeyGen (audio-only)...'}
-                            {heygenStatus === 'polling' && 'Rendering audio...'}
-                            {heygenStatus === 'error' && heygenError}
-                            {heygenStatus === 'idle' && 'Preparing audio...'}
-                        </div>
-                    )}
-                </div>
-
                 {/* Subtitles Area (Dedicated Section) */}
                 <div className="bg-gray-900 border-t border-gray-800 p-6 min-h-[8rem] flex items-center justify-center z-20">
                     <div className="bg-black/40 backdrop-blur-sm text-white text-3xl font-sans px-8 py-4 rounded-2xl max-w-6xl text-center border border-white/5 w-full animate-fade-in shadow-xl">
@@ -675,11 +475,11 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 <div className="h-16 bg-gray-800 border-t border-gray-700 flex items-center justify-between px-8 gap-6 z-20 relative">
                     <button
                         onClick={() => {
-                            if (!videoReady) return;
+                            if (!readyToPlay) return;
                             setCurrentIndex(0);
                             setIsPlaying(true);
                         }}
-                        disabled={!videoReady}
+                        disabled={!readyToPlay}
                         className="text-white hover:text-neon-blue transition-colors disabled:opacity-30"
                         title="Restart"
                     >
