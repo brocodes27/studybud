@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles } from 'lucide-react';
+import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles, Dna } from 'lucide-react';
 import { BlackboardPlayer } from '../components/BlackboardPlayer';
 import { format } from 'date-fns';
 
@@ -32,6 +32,12 @@ interface ChapterFolder {
 type SubjectVisual = {
     gradient: string;
     accent: string;
+    icon: JSX.Element;
+};
+
+type VisualSetup = {
+    subject: string;
+    method: string;
     icon: JSX.Element;
 };
 
@@ -77,6 +83,14 @@ const getSubjectVisual = (subject: string): SubjectVisual => {
     if (key.includes('geo') || key.includes('earth')) return subjectVisuals.geography;
     return subjectVisuals.general;
 };
+
+const recommendedSetups: VisualSetup[] = [
+    { subject: 'Chemistry', method: 'ChemDoodle / RDKit', icon: <FlaskConical className="w-5 h-5 text-orange-200" /> },
+    { subject: 'Physics', method: 'Coordinate-based Canvas', icon: <Atom className="w-5 h-5 text-emerald-200" /> },
+    { subject: 'Math', method: 'Function plotting', icon: <Calculator className="w-5 h-5 text-indigo-200" /> },
+    { subject: 'Biology', method: 'SVG layers', icon: <Dna className="w-5 h-5 text-green-200" /> },
+    { subject: 'Animation', method: 'Stroke reveal', icon: <Sparkles className="w-5 h-5 text-yellow-200" /> }
+];
 
 export const VideoLessons = () => {
     const { user } = useAuth() as any;
@@ -325,65 +339,93 @@ export const VideoLessons = () => {
                         </div>
                     )}
 
-                      {/* LESSONS VIEW */}
-                      {viewMode === 'lessons' && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-                              {currentLessons.map((lesson, index) => {
-                                  const visual = getSubjectVisual(lesson.subject);
-                                  return (
-                                      <div key={`${lesson.plan_id}-${index}`} className={`glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col h-full group bg-black/20 hover:bg-black/40 ${visual.accent}`}>
-                                          <div className="relative mb-4 h-32 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-                                              <div className={`absolute inset-0 bg-gradient-to-br ${visual.gradient}`}></div>
-                                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_38%)] opacity-60"></div>
-                                              <div className="relative flex h-full items-start justify-between p-4">
-                                                  <div className="space-y-2">
-                                                      <span className="text-[11px] uppercase tracking-wider text-white/80 bg-black/30 px-2 py-1 rounded-md border border-white/10 inline-flex w-fit">
-                                                          {lesson.chapter}
-                                                      </span>
-                                                      <p className="text-sm text-white/90 font-semibold leading-tight line-clamp-2 max-w-[16rem]">
-                                                          {lesson.topic}
-                                                      </p>
-                                                      <span className="text-xs text-white/70 flex items-center gap-2">
-                                                          <span className="inline-flex w-2 h-2 rounded-full bg-white/80"></span>
-                                                          {lesson.subject}
-                                                      </span>
-                                                  </div>
-                                                  <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
-                                                      {visual.icon}
-                                                  </div>
-                                              </div>
-                                          </div>
+                    {/* LESSONS VIEW */}
+                    {viewMode === 'lessons' && (
+                        <div className="space-y-4 animate-fade-in-up">
+                            <div className="glass-card border border-white/10 rounded-2xl p-4 bg-black/30">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.2em] text-white/60">Recommended visual setup</p>
+                                        <h3 className="text-lg font-bold text-white">Use these subject-specific rendering methods</h3>
+                                    </div>
+                                    <div className="text-xs text-white/70 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                                        From your brief
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {recommendedSetups.map((item) => (
+                                        <div key={item.subject} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                                            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
+                                                {item.icon}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-white">{item.subject}</p>
+                                                <p className="text-xs text-gray-400">{item.method}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                                          <div className="flex justify-between items-start mb-4">
-                                              <div className="flex items-center gap-2">
-                                                  <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded-md">{format(new Date(lesson.date), 'MMM d')}</span>
-                                                  <span className="text-xs font-bold text-neon-blue bg-neon-blue/10 px-2 py-1 rounded-md border border-neon-blue/20">{lesson.subject}</span>
-                                              </div>
-                                              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(lesson.question_type)}`}>
-                                                  {lesson.question_type}
-                                              </span>
-                                          </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {currentLessons.map((lesson, index) => {
+                                    const visual = getSubjectVisual(lesson.subject);
+                                    return (
+                                        <div key={`${lesson.plan_id}-${index}`} className={`glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col h-full group bg-black/20 hover:bg-black/40 ${visual.accent}`}>
+                                            <div className="relative mb-4 h-32 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
+                                                <div className={`absolute inset-0 bg-gradient-to-br ${visual.gradient}`}></div>
+                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_38%)] opacity-60"></div>
+                                                <div className="relative flex h-full items-start justify-between p-4">
+                                                    <div className="space-y-2">
+                                                        <span className="text-[11px] uppercase tracking-wider text-white/80 bg-black/30 px-2 py-1 rounded-md border border-white/10 inline-flex w-fit">
+                                                            {lesson.chapter}
+                                                        </span>
+                                                        <p className="text-sm text-white/90 font-semibold leading-tight line-clamp-2 max-w-[16rem]">
+                                                            {lesson.topic}
+                                                        </p>
+                                                        <span className="text-xs text-white/70 flex items-center gap-2">
+                                                            <span className="inline-flex w-2 h-2 rounded-full bg-white/80"></span>
+                                                            {lesson.subject}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+                                                        {visual.icon}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                          <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-neon-green transition-colors">
-                                              {lesson.topic}
-                                          </h3>
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded-md">{format(new Date(lesson.date), 'MMM d')}</span>
+                                                    <span className="text-xs font-bold text-neon-blue bg-neon-blue/10 px-2 py-1 rounded-md border border-neon-blue/20">{lesson.subject}</span>
+                                                </div>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(lesson.question_type)}`}>
+                                                    {lesson.question_type}
+                                                </span>
+                                            </div>
 
-                                          <p className="text-sm text-gray-400 line-clamp-3 mb-6 flex-grow">
-                                              {lesson.description}
-                                          </p>
+                                            <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-neon-green transition-colors">
+                                                {lesson.topic}
+                                            </h3>
 
-                                          <button
-                                              onClick={() => setPlayingLesson({ topic: lesson.topic, subject: lesson.subject })}
-                                              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all group-hover:scale-[1.02]"
-                                          >
-                                              <Play className="w-4 h-4 fill-current" />
-                                              Watch Lesson
-                                          </button>
-                                      </div>
-                                  );
-                              })}
-                          </div>
-                      )}
+                                            <p className="text-sm text-gray-400 line-clamp-3 mb-6 flex-grow">
+                                                {lesson.description}
+                                            </p>
+
+                                            <button
+                                                onClick={() => setPlayingLesson({ topic: lesson.topic, subject: lesson.subject })}
+                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all group-hover:scale-[1.02]"
+                                            >
+                                                <Play className="w-4 h-4 fill-current" />
+                                                Watch Lesson
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                   </>
               )}
           </div>
