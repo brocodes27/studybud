@@ -156,6 +156,15 @@ const buildNoisePattern = (ctx: CanvasRenderingContext2D) => {
 };
 
 const jitter = (value: number, amt = 1.4) => value + (Math.random() * amt - amt / 2);
+const stableRand = (seed: string) => {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return (Math.sin(h) + 1) / 2;
+};
+const stableJitter = (seed: string, amt = 1.4) => {
+  const r = stableRand(seed);
+  return (r * amt) - amt / 2;
+};
 
 const BOARD_LAYOUT = {
   marginX: 110,
@@ -173,15 +182,17 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
   const partial = text.slice(0, len);
 
   partial.split('').forEach((ch, idx) => {
-    const weight = 0.94 + Math.random() * 0.22;
-    const charAlpha = alpha * (0.82 + Math.random() * 0.18);
+    const seed = `${text}-${idx}`;
+    const weight = 0.94 + stableRand(`${seed}-w`) * 0.22;
+    const charAlpha = alpha * (0.82 + stableRand(`${seed}-a`) * 0.18);
     ctx.globalAlpha = charAlpha;
     ctx.fillStyle = 'rgba(242, 255, 235, 0.95)';
     ctx.shadowColor = 'rgba(57, 255, 20, 0.22)';
     ctx.shadowBlur = 7;
-    ctx.font = `${32 + Math.random() * 3}px "Kalam", "Comic Sans MS", cursive`;
-    const dx = x + jitter(idx * 18 * weight, 1.9);
-    const dy = jitter(y, 2.1);
+    const fontJitter = stableRand(`${seed}-f`) * 3;
+    ctx.font = `${32 + fontJitter}px "Kalam", "Comic Sans MS", cursive`;
+    const dx = x + idx * 18 * weight + stableJitter(`${seed}-x`, 1.9);
+    const dy = y + stableJitter(`${seed}-y`, 2.1);
     ctx.lineWidth = 1.4;
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.strokeText(ch, dx, dy);
@@ -192,19 +203,20 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
 
 const drawChalkLine = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, alpha: number, progress = 1) => {
   ctx.save();
-  const brightness = 0.9 + Math.random() * 0.1;
-  ctx.globalAlpha = alpha * (0.82 + Math.random() * 0.18);
+  const seed = `${x1},${y1},${x2},${y2}`;
+  const brightness = 0.9 + stableRand(`${seed}-b`) * 0.1;
+  ctx.globalAlpha = alpha * (0.82 + stableRand(`${seed}-ga`) * 0.18);
   ctx.strokeStyle = `rgba(190, 255, 210, ${brightness})`;
-  ctx.lineWidth = 3.6 + Math.random() * 0.7;
+  ctx.lineWidth = 3.6 + stableRand(`${seed}-lw`) * 0.7;
   ctx.lineCap = 'round';
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const imperfect = Math.random() < 0.18 ? 0.9 : 1;
+  const imperfect = stableRand(`${seed}-imp`) < 0.18 ? 0.9 : 1;
   const px = x1 + dx * progress * imperfect;
   const py = y1 + dy * progress * imperfect;
   ctx.beginPath();
-  ctx.moveTo(jitter(x1, 1.4), jitter(y1, 1.4));
-  ctx.lineTo(jitter(px, 1.4), jitter(py, 1.4));
+  ctx.moveTo(x1 + stableJitter(`${seed}-x1`, 1.4), y1 + stableJitter(`${seed}-y1`, 1.4));
+  ctx.lineTo(px + stableJitter(`${seed}-px`, 1.4), py + stableJitter(`${seed}-py`, 1.4));
   ctx.stroke();
   ctx.restore();
 };
