@@ -379,26 +379,45 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
     ? unfenced
     : unfenced.match(/(\{[\s\S]*\}|\[[\s\S]*\])/m)?.[1];
 
-  if (jsonCandidate) {
-    try {
-      const parsed = JSON.parse(jsonCandidate);
-      const arr = Array.isArray(parsed) ? parsed : parsed?.events;
-      if (Array.isArray(arr)) {
-        return arr.map((ev, i) => ({
-          id: `json-${segmentIndex}-${i}-${ev.type}`,
-          type: (ev.type as BoardEventType) || 'text',
-          content: ev.content || ev.text || '',
-          smiles: ev.smiles,
-          x: ev.x ?? baseX,
-          y: ev.y ?? (baseY + i * 90),
-          delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
-          duration: 0.9,
-        }));
+    if (jsonCandidate) {
+      try {
+        const parsed = JSON.parse(jsonCandidate);
+        const arr = Array.isArray(parsed) ? parsed : parsed?.events;
+        if (Array.isArray(arr)) {
+          const mapped = arr.map((ev, i) => ({
+            id: `json-${segmentIndex}-${i}-${ev.type}`,
+            type: (ev.type as BoardEventType) || 'text',
+            content: ev.content || ev.text || '',
+            smiles: ev.smiles,
+            x: ev.x ?? baseX,
+            y: ev.y ?? (baseY + i * 90),
+            delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
+            duration: typeof ev.duration === 'number' ? ev.duration : 0.9,
+          }));
+
+          if (!mapped.some(ev => ev.type === 'structure')) {
+            const lastY = mapped[mapped.length - 1]?.y ?? baseY;
+            const lastDelay = mapped[mapped.length - 1]?.delay ?? 0.6 * mapped.length;
+            const smiles = extractSmilesCandidate(visualContent);
+            mapped.push({
+              id: `json-structure-${segmentIndex}`,
+              type: 'structure',
+              smiles,
+              content: smiles,
+              x: baseX + BOARD_LAYOUT.diagramOffsetX,
+              y: lastY + 90,
+              delay: lastDelay + 0.8,
+              duration: 1.2,
+            });
+          }
+
+          return mapped;
+        }
+      } catch (err) {
+        console.warn('Failed to parse visualContent JSON; falling back to cues', err);
       }
-    } catch (err) {
-      console.warn('Failed to parse visualContent JSON; falling back to cues', err);
     }
-  }
+
 
   const cues = splitCues(visualContent);
   const smiles = extractSmilesCandidate(visualContent);
@@ -650,14 +669,18 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
               drawArrow(ctx, ev.x, y, ev.x + 140, y - 20, alpha, progress);
               drawChalkText(ctx, ev.content || '', ev.x + 150, y - 10, Math.min(1, progress * 1.4), alpha);
               break;
-            case 'structure':
-              if (!ev.segments || ev.segments.length === 0) break;
-              const per = progress * (ev.segments.length);
-              ev.segments.forEach((seg, idx) => {
-                const local = Math.min(1, Math.max(0, per - idx));
-                if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, alpha, local);
-              });
-              break;
+              case 'structure':
+                if (!ev.segments || ev.segments.length === 0) {
+                  ev.segments = generateSymbolicSegments(ev.content || ev.smiles || 'structure', ev.x, ev.y, 180);
+                }
+                if (!ev.segments || ev.segments.length === 0) break;
+                const per = progress * (ev.segments.length);
+                ev.segments.forEach((seg, idx) => {
+                  const local = Math.min(1, Math.max(0, per - idx));
+                  if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, alpha, local);
+                });
+                break;
+
           }
         });
 
