@@ -181,22 +181,50 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
   const len = Math.max(1, Math.floor(text.length * progress));
   const partial = text.slice(0, len);
 
+  let currentX = x;
+
   partial.split('').forEach((ch, idx) => {
     const seed = `${text}-${idx}`;
-    const weight = 0.94 + stableRand(`${seed}-w`) * 0.22;
-    const charAlpha = alpha * (0.82 + stableRand(`${seed}-a`) * 0.18);
+    // Character specific randomization
+    const fontJitter = stableRand(`${seed}-f`) * 4; // Slight size variation
+    const fontSize = 32 + fontJitter;
+    ctx.font = `${fontSize}px "Kalam", "Comic Sans MS", cursive`;
+    
+    // Measure actual width for proper spacing
+    const metrics = ctx.measureText(ch);
+    const charWidth = metrics.width;
+    
+    // Jitter the position slightly
+    const offsetX = stableJitter(`${seed}-x`, 2);
+    const offsetY = stableJitter(`${seed}-y`, 3);
+    const rotation = stableJitter(`${seed}-rot`, 0.05); // Slight rotation for realism
+    
+    const dx = currentX + offsetX;
+    const dy = y + offsetY;
+
+    ctx.save();
+    ctx.translate(dx, dy);
+    ctx.rotate(rotation);
+
+    const charAlpha = alpha * (0.85 + stableRand(`${seed}-a`) * 0.15);
     ctx.globalAlpha = charAlpha;
     ctx.fillStyle = 'rgba(242, 255, 235, 0.95)';
     ctx.shadowColor = 'rgba(57, 255, 20, 0.22)';
-    ctx.shadowBlur = 7;
-    const fontJitter = stableRand(`${seed}-f`) * 3;
-    ctx.font = `${32 + fontJitter}px "Kalam", "Comic Sans MS", cursive`;
-    const dx = x + idx * 18 * weight + stableJitter(`${seed}-x`, 1.9);
-    const dy = y + stableJitter(`${seed}-y`, 2.1);
-    ctx.lineWidth = 1.4;
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.strokeText(ch, dx, dy);
-    ctx.fillText(ch, dx, dy);
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    
+    ctx.strokeText(ch, 0, 0);
+    ctx.fillText(ch, 0, 0);
+    
+    ctx.restore();
+
+    // Advance cursor - ensure spaces are wide enough
+    // Manual adjustment for spaces as measureText might be small for space? 
+    // MDN says measureText works for space usually.
+    // We add a little tracking jitter
+    const tracking = stableJitter(`${seed}-track`, 2);
+    currentX += charWidth + tracking + 1; // +1 base padding
   });
   ctx.restore();
 };
