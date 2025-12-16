@@ -165,15 +165,18 @@ const stableJitter = (seed: string, amt = 1.4) => {
   const r = stableRand(seed);
   return (r * amt) - amt / 2;
 };
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 const BOARD_LAYOUT = {
-  marginX: 110,
-  titleY: 120,
-  lineStep: 78,
-  bulletGap: 72,
-  sectionGap: 26,
-  diagramOffsetX: 340,
+  marginX: 120,
+  titleY: 140,
+  lineStep: 82,
+  bulletGap: 76,
+  sectionGap: 30,
+  diagramOffsetX: 360,
   gridAlpha: 0.045,
+  columnSpan: 260,
+  safeTop: 120,
 };
 
 const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, progress: number, alpha: number) => {
@@ -325,6 +328,43 @@ const generateChemSegments = async (smiles: string, centerX: number, centerY: nu
     console.warn('ChemDoodle backend failed, fallback to text', err);
     return [];
   }
+};
+
+const generateSymbolicSegments = (seedText: string, centerX: number, centerY: number, radius = 160): LineSegment[] => {
+  const seed = normalizeText(seedText) || 'concept';
+  const segments: LineSegment[] = [];
+  const nodes = 6;
+  const points = Array.from({ length: nodes }, (_, i) => {
+    const angle = (Math.PI * 2 * i) / nodes + stableJitter(`${seed}-angle-${i}`, 0.4);
+    const r = radius * (0.65 + stableRand(`${seed}-r-${i}`) * 0.3);
+    return {
+      x: centerX + Math.cos(angle) * r,
+      y: centerY + Math.sin(angle) * r,
+    };
+  });
+
+  // outer ring
+  for (let i = 0; i < nodes; i++) {
+    const next = (i + 1) % nodes;
+    segments.push({ x1: points[i].x, y1: points[i].y, x2: points[next].x, y2: points[next].y });
+  }
+
+  // spokes to center
+  for (let i = 0; i < nodes; i++) {
+    segments.push({ x1: centerX, y1: centerY, x2: points[i].x, y2: points[i].y });
+  }
+
+  // a smaller inner triangle for extra visual interest
+  const innerR = radius * 0.42;
+  for (let i = 0; i < 3; i++) {
+    const angle = (Math.PI * 2 * i) / 3 + stableJitter(`${seed}-inner-${i}`, 0.25);
+    const nextAngle = (Math.PI * 2 * ((i + 1) % 3)) / 3 + stableJitter(`${seed}-inner-${i + 1}`, 0.25);
+    const p1 = { x: centerX + Math.cos(angle) * innerR, y: centerY + Math.sin(angle) * innerR };
+    const p2 = { x: centerX + Math.cos(nextAngle) * innerR, y: centerY + Math.sin(nextAngle) * innerR };
+    segments.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
+  }
+
+  return segments;
 };
 
 const buildTimelineFromVisual = (visualContent: string, subtitles: string[], segmentIndex: number, baseX: number, baseY: number): BoardEvent[] => {
@@ -670,22 +710,32 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
       };
     };
 
-    const resetBoard = () => {
-      boardEventsRef.current = [];
-      const { h } = getCanvasSize();
-      yCursorRef.current = Math.max(BOARD_LAYOUT.titleY + 40, h * 0.4);
-      cameraRef.current = { y: 0, targetY: 0 };
-    };
-
-    const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
-      const { w, h } = getCanvasSize();
-      const clusterHalfWidth = BOARD_LAYOUT.diagramOffsetX * 0.5;
-      const baseX = Math.max(BOARD_LAYOUT.marginX, w / 2 - clusterHalfWidth);
-      const baseY = yCursorRef.current || Math.max(BOARD_LAYOUT.titleY + 40, h * 0.4);
-      const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
+  const resetBoard = () => {
+    boardEventsRef.current = [];
+    const { h } = getCanvasSize();
+    yCursorRef.current = Math.max(BOARD_LAYOUT.titleY + 60, h * 0.35, BOARD_LAYOUT.safeTop + 40);
+    cameraRef.current = { y: 0, targetY: 0 };
+  };
 
 
-    for (const ev of timeline) {
+  const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
+    const { w, h } = getCanvasSize();
+    const baseX = Math.max(BOARD_LAYOUT.marginX + 20, w * 0.26);
+    const baseY = yCursorRef.current || Math.max(BOARD_LAYOUT.titleY + 60, h * 0.35);
+    const maxX = Math.max(BOARD_LAYOUT.marginX, w - BOARD_LAYOUT.marginX - 80);
+    const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
+
+    const laidOut = timeline.map((ev, idx) => {
+      const isStructure = ev.type === 'structure';
+      const colShift = !isStructure && (idx % 2 === 1) ? BOARD_LAYOUT.columnSpan * 0.6 : 0;
+      const xCandidate = (ev.x ?? baseX) + colShift;
+      const x = clamp(xCandidate, BOARD_LAYOUT.marginX, maxX);
+      const estimatedY = ev.y ?? (baseY + idx * (ev.type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep));
+      const y = clamp(estimatedY, BOARD_LAYOUT.safeTop, estimatedY + BOARD_LAYOUT.lineStep * 0.5);
+      return { ...ev, x, y };
+    });
+
+    for (const ev of laidOut) {
       const active: ActiveEvent = {
         ...ev,
         status: 'pending',
@@ -695,16 +745,21 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
       };
 
       if (ev.type === 'structure') {
-        active.segments = await generateChemSegments(ev.smiles || extractSmilesCandidate(segment.visualContent), ev.x, ev.y, 240);
+        const chemSegments = await generateChemSegments(ev.smiles || extractSmilesCandidate(segment.visualContent), ev.x, ev.y, 240);
+        active.segments = chemSegments.length
+          ? chemSegments
+          : generateSymbolicSegments(segment.visualContent || segment.textToSpeak, ev.x, ev.y, 190);
       }
 
       boardEventsRef.current.push(active);
-      yCursorRef.current = Math.max(yCursorRef.current, ev.y + 120);
+      const padding = ev.type === 'structure' ? 200 : 130;
+      yCursorRef.current = Math.max(yCursorRef.current, ev.y + padding);
       if (yCursorRef.current - cameraRef.current.targetY > (canvasRef.current?.clientHeight || 800) - 260) {
         cameraRef.current.targetY = yCursorRef.current - ((canvasRef.current?.clientHeight || 800) * 0.6);
       }
     }
   };
+
 
   const extractJsonCandidate = (response: string) => {
     const fenced = response.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -754,12 +809,13 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         }
       }
 
-      const prompt = `You are a chalkboard lecturer. Build 6-10 segments for topic "${topic}" (subject: "${subject}").
+        const prompt = `You are an energetic chalkboard lecturer. Build 6-10 segments for topic "${topic}" (subject: "${subject}").
 Each segment needs:
-- subtitles: array of 2-4 short sentences (voice-first).
-- textToSpeak: combined narration (concise).
-- visualContent: a short, plaintext set of cues for a chalkboard, optionally JSON timeline array of events with x,y,delay fields. Allowed types: text, bullet, label, arrow, structure with SMILES.
+- subtitles: array of 3-5 explanatory sentences (10-18 words) that answer why/how with tiny examples.
+- textToSpeak: 2-3 flowing teacherly sentences combining those subtitles (engaging, not just listing terms).
+- visualContent: plaintext cues (or JSON timeline array with x,y,delay) mixing at least 3 items: bullets, arrows, labels, plus one structure cue (SMILES or a simple schematic shape). Accuracy is not critical—doodles and simple shapes are fine. Allowed types: text, bullet, label, arrow, structure with SMILES.
 Rules: NO HTML, NO SVG, plaintext or JSON only.`;
+
 
       const response = await OpenAIService.getInstance().generateChatCompletion(prompt, 'Return JSON only for the lesson plan.');
       const jsonCandidate = extractJsonCandidate(response);
@@ -801,15 +857,17 @@ Rules: NO HTML, NO SVG, plaintext or JSON only.`;
 
     const subtitlesToPlay = Array.isArray(segment.subtitles) && segment.subtitles.length > 0 ? segment.subtitles : [segment.textToSpeak || ''];
 
-    const speakFallback = async (text: string) => {
-      await new Promise<void>((resolve) => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.onend = () => resolve();
-        speechRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
-      });
-    };
+      const speakFallback = async (text: string) => {
+        await new Promise<void>((resolve) => {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 0.92;
+          utterance.pitch = 1.02;
+          utterance.onend = () => resolve();
+          speechRef.current = utterance;
+          window.speechSynthesis.speak(utterance);
+        });
+      };
+
 
     for (let i = 0; i < subtitlesToPlay.length; i++) {
       if (playbackSessionRef.current !== sessionId || !isPlayingRef.current) return;
