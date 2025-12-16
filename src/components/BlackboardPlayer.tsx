@@ -385,48 +385,50 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
     ? unfenced
     : unfenced.match(/(\{[\s\S]*\}|\[[\s\S]*\])/m)?.[1];
 
-    if (jsonCandidate) {
-      try {
-        const parsed = JSON.parse(jsonCandidate);
-        const arr = Array.isArray(parsed) ? parsed : parsed?.events;
-        if (Array.isArray(arr)) {
-          const mapped = arr.map((ev, i) => ({
-            id: `json-${segmentIndex}-${i}-${ev.type}`,
-            type: (ev.type as BoardEventType) || 'text',
-            content: ev.content || ev.text || '',
-            smiles: ev.smiles,
-            x: ev.x ?? baseX,
-            y: ev.y ?? (baseY + i * 90),
-            delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
-            duration: typeof ev.duration === 'number' ? ev.duration : 0.9,
-          }));
+          if (jsonCandidate) {
+            try {
+              const parsed = JSON.parse(jsonCandidate);
+              const arr = Array.isArray(parsed) ? parsed : parsed?.events;
+              if (Array.isArray(arr)) {
+                const mapped = arr.map((ev, i) => ({
+                  id: `json-${segmentIndex}-${i}-${ev.type}`,
+                  type: (ev.type as BoardEventType) || 'text',
+                  content: ev.content || ev.text || '',
+                  smiles: ev.smiles,
+                  x: ev.x ?? baseX,
+                  y: ev.y ?? (baseY + i * 90),
+                  delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
+                  duration: typeof ev.duration === 'number' ? ev.duration : 0.9,
+                }));
 
-          if (!mapped.some(ev => ev.type === 'structure') && structureIntent) {
-            const lastY = mapped[mapped.length - 1]?.y ?? baseY;
-            const lastDelay = mapped[mapped.length - 1]?.delay ?? 0.6 * mapped.length;
-            const smiles = extractSmilesCandidate(visualContent);
-            mapped.push({
-              id: `json-structure-${segmentIndex}`,
-              type: 'structure',
-              smiles,
-              content: smiles,
-              x: baseX + BOARD_LAYOUT.diagramOffsetX,
-              y: lastY + 90,
-              delay: lastDelay + 0.8,
-              duration: 1.2,
-            });
+                const hasVisuals = mapped.some(ev => ['bullet', 'arrow', 'structure', 'label'].includes(ev.type));
+                if (!mapped.some(ev => ev.type === 'structure') && (structureIntent || !hasVisuals)) {
+                  const lastY = mapped[mapped.length - 1]?.y ?? baseY;
+                  const lastDelay = mapped[mapped.length - 1]?.delay ?? 0.6 * mapped.length;
+                  const smiles = extractSmilesCandidate(visualContent);
+                  mapped.push({
+                    id: `json-structure-${segmentIndex}`,
+                    type: 'structure',
+                    smiles,
+                    content: smiles,
+                    x: baseX + BOARD_LAYOUT.diagramOffsetX,
+                    y: lastY + 90,
+                    delay: lastDelay + 0.8,
+                    duration: 1.2,
+                  });
+                }
+
+                return mapped;
+              }
+            } catch (err) {
+              console.warn('Failed to parse visualContent JSON; falling back to cues', err);
+            }
           }
-
-          return mapped;
-        }
-      } catch (err) {
-        console.warn('Failed to parse visualContent JSON; falling back to cues', err);
-      }
-    }
 
 
     const cues = splitCues(visualContent);
-    const wantsStructure = hasStructureIntent(visualContent, cues);
+    let wantsStructure = hasStructureIntent(visualContent, cues);
+    if (!wantsStructure && cues.length === 0) wantsStructure = true;
     const smiles = wantsStructure ? extractSmilesCandidate(visualContent) : '';
 
 
