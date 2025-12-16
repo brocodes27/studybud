@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
@@ -28,8 +28,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     const [displayedText, setDisplayedText] = useState('');
 
     const [currentSubtitleText, setCurrentSubtitleText] = useState('');
-
-    const [userId, setUserId] = useState<string | null>(null);
 
     const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -124,7 +122,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         try {
             setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
-            setUserId(user?.id || null);
 
             if (user) {
                 const { data: saved } = await supabase
