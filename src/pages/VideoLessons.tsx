@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Video, BookOpen, Clock, AlertCircle } from 'lucide-react';
+import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles } from 'lucide-react';
 import { BlackboardPlayer } from '../components/BlackboardPlayer';
 import { format } from 'date-fns';
 
@@ -28,6 +28,55 @@ interface ChapterFolder {
     name: string;
     lessonCount: number;
 }
+
+type SubjectVisual = {
+    gradient: string;
+    accent: string;
+    icon: JSX.Element;
+};
+
+const subjectVisuals: Record<string, SubjectVisual> = {
+    math: {
+        gradient: 'from-purple-500/30 via-indigo-500/25 to-blue-500/30',
+        accent: 'shadow-[0_0_25px_rgba(129,140,248,0.25)]',
+        icon: <Calculator className="w-7 h-7" />
+    },
+    physics: {
+        gradient: 'from-emerald-500/25 via-cyan-500/25 to-blue-500/25',
+        accent: 'shadow-[0_0_25px_rgba(16,185,129,0.25)]',
+        icon: <Atom className="w-7 h-7" />
+    },
+    chemistry: {
+        gradient: 'from-orange-400/25 via-pink-500/25 to-amber-500/25',
+        accent: 'shadow-[0_0_25px_rgba(249,115,22,0.25)]',
+        icon: <FlaskConical className="w-7 h-7" />
+    },
+    biology: {
+        gradient: 'from-green-500/25 via-emerald-500/25 to-lime-500/25',
+        accent: 'shadow-[0_0_25px_rgba(34,197,94,0.25)]',
+        icon: <Sparkles className="w-7 h-7" />
+    },
+    geography: {
+        gradient: 'from-cyan-500/25 via-teal-500/25 to-blue-500/25',
+        accent: 'shadow-[0_0_25px_rgba(6,182,212,0.25)]',
+        icon: <Globe2 className="w-7 h-7" />
+    },
+    general: {
+        gradient: 'from-slate-500/25 via-slate-700/25 to-black/30',
+        accent: 'shadow-[0_0_20px_rgba(148,163,184,0.25)]',
+        icon: <Sparkles className="w-7 h-7" />
+    }
+};
+
+const getSubjectVisual = (subject: string): SubjectVisual => {
+    const key = subject?.toLowerCase() || '';
+    if (key.includes('math') || key.includes('algebra') || key.includes('calculus')) return subjectVisuals.math;
+    if (key.includes('phys')) return subjectVisuals.physics;
+    if (key.includes('chem')) return subjectVisuals.chemistry;
+    if (key.includes('bio')) return subjectVisuals.biology;
+    if (key.includes('geo') || key.includes('earth')) return subjectVisuals.geography;
+    return subjectVisuals.general;
+};
 
 export const VideoLessons = () => {
     const { user } = useAuth() as any;
@@ -276,42 +325,68 @@ export const VideoLessons = () => {
                         </div>
                     )}
 
-                    {/* LESSONS VIEW */}
-                    {viewMode === 'lessons' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-                            {currentLessons.map((lesson, index) => (
-                                <div key={`${lesson.plan_id}-${index}`} className="glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col h-full group bg-black/20 hover:bg-black/40">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded-md">{format(new Date(lesson.date), 'MMM d')}</span>
-                                            <span className="text-xs font-bold text-neon-blue bg-neon-blue/10 px-2 py-1 rounded-md border border-neon-blue/20">{lesson.subject}</span>
-                                        </div>
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(lesson.question_type)}`}>
-                                            {lesson.question_type}
-                                        </span>
-                                    </div>
+                      {/* LESSONS VIEW */}
+                      {viewMode === 'lessons' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
+                              {currentLessons.map((lesson, index) => {
+                                  const visual = getSubjectVisual(lesson.subject);
+                                  return (
+                                      <div key={`${lesson.plan_id}-${index}`} className={`glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col h-full group bg-black/20 hover:bg-black/40 ${visual.accent}`}>
+                                          <div className="relative mb-4 h-32 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
+                                              <div className={`absolute inset-0 bg-gradient-to-br ${visual.gradient}`}></div>
+                                              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_38%)] opacity-60"></div>
+                                              <div className="relative flex h-full items-start justify-between p-4">
+                                                  <div className="space-y-2">
+                                                      <span className="text-[11px] uppercase tracking-wider text-white/80 bg-black/30 px-2 py-1 rounded-md border border-white/10 inline-flex w-fit">
+                                                          {lesson.chapter}
+                                                      </span>
+                                                      <p className="text-sm text-white/90 font-semibold leading-tight line-clamp-2 max-w-[16rem]">
+                                                          {lesson.topic}
+                                                      </p>
+                                                      <span className="text-xs text-white/70 flex items-center gap-2">
+                                                          <span className="inline-flex w-2 h-2 rounded-full bg-white/80"></span>
+                                                          {lesson.subject}
+                                                      </span>
+                                                  </div>
+                                                  <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
+                                                      {visual.icon}
+                                                  </div>
+                                              </div>
+                                          </div>
 
-                                    <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-neon-green transition-colors">
-                                        {lesson.topic}
-                                    </h3>
+                                          <div className="flex justify-between items-start mb-4">
+                                              <div className="flex items-center gap-2">
+                                                  <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded-md">{format(new Date(lesson.date), 'MMM d')}</span>
+                                                  <span className="text-xs font-bold text-neon-blue bg-neon-blue/10 px-2 py-1 rounded-md border border-neon-blue/20">{lesson.subject}</span>
+                                              </div>
+                                              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(lesson.question_type)}`}>
+                                                  {lesson.question_type}
+                                              </span>
+                                          </div>
 
-                                    <p className="text-sm text-gray-400 line-clamp-3 mb-6 flex-grow">
-                                        {lesson.description}
-                                    </p>
+                                          <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-neon-green transition-colors">
+                                              {lesson.topic}
+                                          </h3>
 
-                                    <button
-                                        onClick={() => setPlayingLesson({ topic: lesson.topic, subject: lesson.subject })}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all group-hover:scale-[1.02]"
-                                    >
-                                        <Play className="w-4 h-4 fill-current" />
-                                        Watch Lesson
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </>
-            )}
-        </div>
-    );
-};
+                                          <p className="text-sm text-gray-400 line-clamp-3 mb-6 flex-grow">
+                                              {lesson.description}
+                                          </p>
+
+                                          <button
+                                              onClick={() => setPlayingLesson({ topic: lesson.topic, subject: lesson.subject })}
+                                              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all group-hover:scale-[1.02]"
+                                          >
+                                              <Play className="w-4 h-4 fill-current" />
+                                              Watch Lesson
+                                          </button>
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      )}
+                  </>
+              )}
+          </div>
+      );
+  };
+
