@@ -103,7 +103,15 @@ const ensureChemDoodle = async (): Promise<boolean> => {
   return chemLoadPromise;
 };
 
-const normalizeText = (value: string) => (value || '').replace(/\s+/g, ' ').trim();
+const normalizeText = (value: unknown) => {
+  if (value === null || value === undefined) return '';
+  const text = typeof value === 'string'
+    ? value
+    : typeof value === 'number' || typeof value === 'boolean'
+      ? String(value)
+      : '';
+  return text.replace(/\s+/g, ' ').trim();
+};
 
 const extractSmilesCandidate = (raw: string) => {
   const text = normalizeText(raw);
@@ -221,23 +229,33 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
   const events: BoardEvent[] = [];
   let cursorY = baseY;
 
-  // Try parsing explicit JSON timeline
-  try {
-    const parsed = JSON.parse(visualContent);
-    const arr = Array.isArray(parsed) ? parsed : parsed?.events;
-    if (Array.isArray(arr)) {
-      return arr.map((ev, i) => ({
-        id: `json-${segmentIndex}-${i}-${ev.type}`,
-        type: (ev.type as BoardEventType) || 'text',
-        content: ev.content || ev.text || '',
-        smiles: ev.smiles,
-        x: ev.x ?? baseX,
-        y: ev.y ?? (baseY + i * 90),
-        delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
-        duration: 0.9,
-      }));
+  // Try parsing explicit JSON timeline (supports fenced ```json blocks)
+  const rawVisual = typeof visualContent === 'string' ? visualContent : JSON.stringify(visualContent ?? '');
+  const unfenced = rawVisual.match(/```(?:json)?\s*([\s\S]+?)\s*```/i)?.[1]?.trim() ?? rawVisual.trim();
+  const jsonCandidate = /^[{\[]/.test(unfenced)
+    ? unfenced
+    : unfenced.match(/(\{[\s\S]*\}|\[[\s\S]*\])/m)?.[1];
+
+  if (jsonCandidate) {
+    try {
+      const parsed = JSON.parse(jsonCandidate);
+      const arr = Array.isArray(parsed) ? parsed : parsed?.events;
+      if (Array.isArray(arr)) {
+        return arr.map((ev, i) => ({
+          id: `json-${segmentIndex}-${i}-${ev.type}`,
+          type: (ev.type as BoardEventType) || 'text',
+          content: ev.content || ev.text || '',
+          smiles: ev.smiles,
+          x: ev.x ?? baseX,
+          y: ev.y ?? (baseY + i * 90),
+          delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
+          duration: 0.9,
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to parse visualContent JSON; falling back to cues', err);
     }
-  } catch {}
+  }
 
   const cues = splitCues(visualContent);
   const smiles = extractSmilesCandidate(visualContent);
@@ -303,8 +321,21 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
   return events;
 };
 
-const sanitizeText = (text: string) => {
+const sanitizeText = (input: unknown) => {
+  if (input === null || input === undefined) return '';
+  let text = '';
+  if (typeof input === 'string') {
+    text = input;
+  } else if (typeof input === 'number' || typeof input === 'boolean') {
+    text = String(input);
+  } else if (typeof input === 'object') {
+    try { text = JSON.stringify(input); } catch { text = ''; }
+  }
   if (!text) return '';
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/i);
+  if (fenced?.[1]) text = fenced[1];
+
   return text
     .replace(/<svg[\s\S]*?<\/svg>/gi, '')
     .replace(/<[^>]+>/g, '')
