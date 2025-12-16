@@ -45,35 +45,62 @@ interface LineSegment {
   x1: number; y1: number; x2: number; y2: number;
 }
 
-const chemDoodleScriptSrc = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.js';
-const chemDoodleCssHref = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.css';
+const primaryChemSrc = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.js';
+const primaryChemCss = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.css';
+const fallbackChemSrc = 'https://cdn.jsdelivr.net/npm/chemdoodle@9.5.0/ChemDoodleWeb.js';
+const fallbackChemCss = 'https://cdn.jsdelivr.net/npm/chemdoodle@9.5.0/ChemDoodleWeb.css';
 
-const ensureChemDoodle = (): Promise<void> => {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window.ChemDoodle) return Promise.resolve();
+type ChemLoadState = 'idle' | 'loading' | 'ready' | 'failed';
+let chemLoadState: ChemLoadState = 'idle';
+let chemLoadPromise: Promise<boolean> | null = null;
 
-  return new Promise((resolve, reject) => {
-    const existingScript = document.querySelector(`script[src="${chemDoodleScriptSrc}"]`);
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('ChemDoodle failed to load')), { once: true });
-      return;
-    }
+const attachCssOnce = (href: string) => {
+  if (document.querySelector(`link[href="${href}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  document.head.appendChild(link);
+};
 
-    if (!document.querySelector(`link[href="${chemDoodleCssHref}"]`)) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = chemDoodleCssHref;
-      document.head.appendChild(link);
-    }
+const loadScript = (src: string) => new Promise<boolean>((resolve) => {
+  const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+  if (existing) {
+    if (existing.dataset.loaded === 'true') { resolve(true); return; }
+    existing.addEventListener('load', () => resolve(true), { once: true });
+    existing.addEventListener('error', () => resolve(false), { once: true });
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = src;
+  script.async = true;
+  script.dataset.origin = 'blackboard-chemdoodle';
+  script.onload = () => { script.dataset.loaded = 'true'; resolve(true); };
+  script.onerror = () => resolve(false);
+  document.head.appendChild(script);
+});
 
-    const script = document.createElement('script');
-    script.src = chemDoodleScriptSrc;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('ChemDoodle failed to load'));
-    document.head.appendChild(script);
-  });
+const ensureChemDoodle = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  if (window.ChemDoodle) { chemLoadState = 'ready'; return true; }
+  if (chemLoadState === 'ready') return true;
+  if (chemLoadState === 'failed') return false;
+  if (chemLoadPromise) return chemLoadPromise;
+
+  chemLoadState = 'loading';
+  chemLoadPromise = (async () => {
+    attachCssOnce(primaryChemCss);
+    const primaryOk = await loadScript(primaryChemSrc);
+    if (primaryOk && window.ChemDoodle) { chemLoadState = 'ready'; return true; }
+
+    attachCssOnce(fallbackChemCss);
+    const fallbackOk = await loadScript(fallbackChemSrc);
+    if (fallbackOk && window.ChemDoodle) { chemLoadState = 'ready'; return true; }
+
+    chemLoadState = 'failed';
+    return false;
+  })();
+
+  return chemLoadPromise;
 };
 
 const normalizeText = (value: string) => (value || '').replace(/\s+/g, ' ').trim();
@@ -158,7 +185,8 @@ const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: nu
 
 const generateChemSegments = async (smiles: string, centerX: number, centerY: number, boxSize = 220): Promise<LineSegment[]> => {
   try {
-    await ensureChemDoodle();
+    const ok = await ensureChemDoodle();
+    if (!ok || !window.ChemDoodle) return [];
     const cd = window.ChemDoodle;
     const mol = cd.readSMILES(smiles || 'C');
     if (!mol?.atoms?.length || !mol?.bonds?.length) return [];
@@ -514,15 +542,6 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
           return;
         }
       }
-
-      const subjectTone = (() => {
-        const s = subject.toLowerCase();
-        if (s.includes('chem')) return 'chemistry chalkboard with SMILES and arrows in text';
-        if (s.includes('phys')) return 'physics chalkboard with vectors and forces in text cues';
-        if (s.includes('math')) return 'math chalkboard with equations and axes in text cues';
-        if (s.includes('bio')) return 'biology chalkboard with labeled parts and flows';
-        return 'classroom chalkboard';
-      })();
 
       const prompt = `You are a chalkboard lecturer. Build 6-10 segments for topic "${topic}" (subject: "${subject}").
 Each segment needs:
