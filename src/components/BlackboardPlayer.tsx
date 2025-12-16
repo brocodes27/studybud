@@ -22,7 +22,7 @@ interface ScriptSegment {
 
 type BoardEventType = 'title' | 'text' | 'bullet' | 'label' | 'arrow' | 'structure';
 
-interface BoardEvent {
+type BoardEvent = {
   id: string;
   type: BoardEventType;
   content?: string;
@@ -31,7 +31,7 @@ interface BoardEvent {
   duration: number; // seconds to draw
   x: number;
   y: number;
-}
+};
 
 interface ActiveEvent extends BoardEvent {
   status: 'pending' | 'drawing' | 'done';
@@ -39,10 +39,15 @@ interface ActiveEvent extends BoardEvent {
   segments?: LineSegment[]; // for structures
   progress?: number;
   sessionId: number;
+  notifiedComplete?: boolean;
 }
 
 interface LineSegment {
   x1: number; y1: number; x2: number; y2: number;
+}
+
+interface ChalkParticle {
+  x: number; y: number; vx: number; vy: number; life: number; size: number; alpha: number;
 }
 
 const primaryChemSrc = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.js';
@@ -152,18 +157,34 @@ const buildNoisePattern = (ctx: CanvasRenderingContext2D) => {
 
 const jitter = (value: number, amt = 1.4) => value + (Math.random() * amt - amt / 2);
 
+const BOARD_LAYOUT = {
+  marginX: 110,
+  titleY: 120,
+  lineStep: 78,
+  bulletGap: 72,
+  sectionGap: 26,
+  diagramOffsetX: 340,
+  gridAlpha: 0.045,
+};
+
 const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, progress: number, alpha: number) => {
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = 'rgba(220, 255, 214, 0.95)';
-  ctx.shadowColor = 'rgba(57, 255, 20, 0.18)';
-  ctx.shadowBlur = 6;
-  ctx.font = '34px "Kalam", "Comic Sans MS", cursive';
   const len = Math.max(1, Math.floor(text.length * progress));
   const partial = text.slice(0, len);
+
   partial.split('').forEach((ch, idx) => {
-    const dx = x + jitter(idx * 18, 1.5);
-    const dy = jitter(y, 1.5);
+    const weight = 0.94 + Math.random() * 0.22;
+    const charAlpha = alpha * (0.82 + Math.random() * 0.18);
+    ctx.globalAlpha = charAlpha;
+    ctx.fillStyle = 'rgba(242, 255, 235, 0.95)';
+    ctx.shadowColor = 'rgba(57, 255, 20, 0.22)';
+    ctx.shadowBlur = 7;
+    ctx.font = `${32 + Math.random() * 3}px "Kalam", "Comic Sans MS", cursive`;
+    const dx = x + jitter(idx * 18 * weight, 1.9);
+    const dy = jitter(y, 2.1);
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.strokeText(ch, dx, dy);
     ctx.fillText(ch, dx, dy);
   });
   ctx.restore();
@@ -171,17 +192,19 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
 
 const drawChalkLine = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, alpha: number, progress = 1) => {
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.strokeStyle = 'rgba(140, 255, 186, 0.9)';
-  ctx.lineWidth = 3.4;
+  const brightness = 0.9 + Math.random() * 0.1;
+  ctx.globalAlpha = alpha * (0.82 + Math.random() * 0.18);
+  ctx.strokeStyle = `rgba(190, 255, 210, ${brightness})`;
+  ctx.lineWidth = 3.6 + Math.random() * 0.7;
   ctx.lineCap = 'round';
   const dx = x2 - x1;
   const dy = y2 - y1;
-  const px = x1 + dx * progress;
-  const py = y1 + dy * progress;
+  const imperfect = Math.random() < 0.18 ? 0.9 : 1;
+  const px = x1 + dx * progress * imperfect;
+  const py = y1 + dy * progress * imperfect;
   ctx.beginPath();
-  ctx.moveTo(jitter(x1, 1.2), jitter(y1, 1.2));
-  ctx.lineTo(jitter(px, 1.2), jitter(py, 1.2));
+  ctx.moveTo(jitter(x1, 1.4), jitter(y1, 1.4));
+  ctx.lineTo(jitter(px, 1.4), jitter(py, 1.4));
   ctx.stroke();
   ctx.restore();
 };
@@ -197,6 +220,37 @@ const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: nu
   const hy2 = y2 - head * Math.sin(angle + Math.PI / 7);
   drawChalkLine(ctx, x2, y2, hx1, hy1, alpha, 1);
   drawChalkLine(ctx, x2, y2, hx2, hy2, alpha, 1);
+};
+
+const playChalkTap = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 380 + Math.random() * 40;
+    gain.gain.setValueAtTime(0.02, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+  } catch {
+    // ignore audio errors
+  }
+};
+
+const spawnChalkDust = (particles: ChalkParticle[], x: number, y: number, count = 14) => {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: jitter(x, 6),
+      y: jitter(y, 6),
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: -0.3 + Math.random() * 0.6,
+      life: 24 + Math.random() * 14,
+      size: 1 + Math.random() * 1.5,
+      alpha: 0.28 + Math.random() * 0.25,
+    });
+  }
 };
 
 const generateChemSegments = async (smiles: string, centerX: number, centerY: number, boxSize = 220): Promise<LineSegment[]> => {
@@ -236,6 +290,7 @@ const generateChemSegments = async (smiles: string, centerX: number, centerY: nu
 const buildTimelineFromVisual = (visualContent: string, subtitles: string[], segmentIndex: number, baseX: number, baseY: number): BoardEvent[] => {
   const events: BoardEvent[] = [];
   let cursorY = baseY;
+  let runningDelay = 0.2;
 
   // Try parsing explicit JSON timeline (supports fenced ```json blocks)
   const rawVisual = typeof visualContent === 'string' ? visualContent : JSON.stringify(visualContent ?? '');
@@ -275,10 +330,11 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
       content: subtitles[0] || visualContent || 'Lesson',
       x: baseX,
       y: cursorY,
-      delay: 0,
+      delay: runningDelay,
       duration: 1.2,
     });
-    cursorY += 90;
+    runningDelay += 1.05;
+    cursorY += BOARD_LAYOUT.lineStep + 6;
   }
 
   // If there is an arrow description
@@ -293,10 +349,12 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
       content: cue.replace(/label[:\s]*/i, ''),
       x: baseX,
       y: cursorY,
-      delay: 0.4 + idx * 0.6,
-      duration: 0.8,
+      delay: runningDelay,
+      duration: isArrow ? 1.0 : 0.85,
     });
-    cursorY += 70;
+    runningDelay += isArrow ? 0.8 : 0.55;
+    runningDelay += 0.25; // breathing room between strokes
+    cursorY += type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep;
   });
 
   // Structure event lives below cues
@@ -305,11 +363,12 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
     type: 'structure',
     smiles,
     content: smiles,
-    x: baseX + 260,
+    x: baseX + BOARD_LAYOUT.diagramOffsetX,
     y: cursorY + 40,
-    delay: arrowCue ? 0.5 : 1.0,
+    delay: runningDelay + (arrowCue ? 0.35 : 0.5),
     duration: 1.6,
   });
+  runningDelay += 1.1;
   cursorY += 160;
 
   // Label subtitles as final chalk notes
@@ -320,9 +379,10 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
       content: line,
       x: baseX,
       y: cursorY,
-      delay: 0.6 + idx * 0.8,
-      duration: 0.9,
+      delay: runningDelay,
+      duration: 0.95,
     });
+    runningDelay += 0.6;
     cursorY += 60;
   });
 
@@ -368,8 +428,9 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
   const containerRef = useRef<HTMLDivElement | null>(null);
   const noisePatternRef = useRef<CanvasPattern | null>(null);
   const boardEventsRef = useRef<ActiveEvent[]>([]);
-  const yCursorRef = useRef<number>(140);
+  const yCursorRef = useRef<number>(BOARD_LAYOUT.titleY + 40);
   const cameraRef = useRef<{ y: number; targetY: number; } >({ y: 0, targetY: 0 });
+  const chalkParticlesRef = useRef<ChalkParticle[]>([]);
 
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -440,6 +501,22 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         ctx.fillStyle = noisePatternRef.current;
         ctx.fillRect(0, 0, w, h);
       }
+
+      // subtle padding grid to keep margins respected
+      ctx.save();
+      ctx.globalAlpha = BOARD_LAYOUT.gridAlpha;
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.setLineDash([8, 14]);
+      ctx.beginPath();
+      ctx.moveTo(BOARD_LAYOUT.marginX - 20, 0);
+      ctx.lineTo(BOARD_LAYOUT.marginX - 20, h);
+      ctx.moveTo(w - BOARD_LAYOUT.marginX + 40, 0);
+      ctx.lineTo(w - BOARD_LAYOUT.marginX + 40, h);
+      ctx.moveTo(BOARD_LAYOUT.marginX - 20, BOARD_LAYOUT.titleY - 20);
+      ctx.lineTo(w - BOARD_LAYOUT.marginX + 40, BOARD_LAYOUT.titleY - 20);
+      ctx.stroke();
+      ctx.restore();
+
       const vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) / 3, w / 2, h / 2, Math.max(w, h));
       vignette.addColorStop(0, 'rgba(0,0,0,0)');
       vignette.addColorStop(1, 'rgba(0,0,0,0.55)');
@@ -447,57 +524,87 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
       ctx.fillRect(0, 0, w, h);
 
       cameraRef.current.y += (cameraRef.current.targetY - cameraRef.current.y) * 0.08;
+
       const cameraY = cameraRef.current.y;
 
       const now = performance.now();
       boardEventsRef.current.forEach(ev => {
-        if (ev.sessionId !== playbackSessionRef.current) return;
-        if (ev.status === 'pending' && ev.startTime && now >= ev.startTime) {
-          ev.status = 'drawing';
-        }
-        if (ev.status === 'drawing' && ev.startTime) {
-          const elapsed = (now - ev.startTime) / 1000;
-          const p = Math.min(1, elapsed / ev.duration);
-          ev.progress = p;
-          if (p >= 1) ev.status = 'done';
-        }
+          if (ev.sessionId !== playbackSessionRef.current) return;
+          if (ev.status === 'pending' && ev.startTime && now >= ev.startTime) {
+            ev.status = 'drawing';
+          }
+          if (ev.status === 'drawing' && ev.startTime) {
+            const elapsed = (now - ev.startTime) / 1000;
+            const p = Math.min(1, elapsed / ev.duration);
+            ev.progress = p;
+            if (p >= 1) ev.status = 'done';
+          }
 
-        const progress = ev.status === 'done' ? 1 : ev.progress || 0;
-        const alpha = ev.status === 'done' ? 0.38 : 0.9;
-        const y = ev.y - cameraY;
+          if (ev.status === 'done' && !ev.notifiedComplete) {
+            ev.notifiedComplete = true;
+            spawnChalkDust(chalkParticlesRef.current, ev.x, ev.y - cameraY, ev.type === 'structure' ? 26 : 14);
+            playChalkTap();
+          }
 
-        switch (ev.type) {
-          case 'title':
-          case 'text':
-          case 'label':
-            drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
-            break;
-          case 'bullet':
-            ctx.save();
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = 'rgba(255,255,255,0.8)';
-            ctx.beginPath();
-            ctx.arc(ev.x - 22, y - 12, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
-            break;
-          case 'arrow':
-            drawArrow(ctx, ev.x, y, ev.x + 140, y - 20, alpha, progress);
-            drawChalkText(ctx, ev.content || '', ev.x + 150, y - 10, Math.min(1, progress * 1.4), alpha);
-            break;
-          case 'structure':
-            if (!ev.segments || ev.segments.length === 0) break;
-            const per = progress * (ev.segments.length);
-            ev.segments.forEach((seg, idx) => {
-              const local = Math.min(1, Math.max(0, per - idx));
-              if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, alpha, local);
-            });
-            break;
+          const progress = ev.status === 'done' ? 1 : ev.progress || 0;
+          const alpha = ev.status === 'done' ? 0.38 : 0.9;
+          const y = ev.y - cameraY;
+
+          switch (ev.type) {
+            case 'title':
+            case 'text':
+            case 'label':
+              drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
+              break;
+            case 'bullet':
+              ctx.save();
+              ctx.globalAlpha = alpha;
+              ctx.fillStyle = 'rgba(255,255,255,0.86)';
+              ctx.beginPath();
+              ctx.arc(ev.x - 22, y - 12, 6.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.restore();
+              drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
+              break;
+            case 'arrow':
+              drawArrow(ctx, ev.x, y, ev.x + 140, y - 20, alpha, progress);
+              drawChalkText(ctx, ev.content || '', ev.x + 150, y - 10, Math.min(1, progress * 1.4), alpha);
+              break;
+            case 'structure':
+              if (!ev.segments || ev.segments.length === 0) break;
+              const per = progress * (ev.segments.length);
+              ev.segments.forEach((seg, idx) => {
+                const local = Math.min(1, Math.max(0, per - idx));
+                if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, alpha, local);
+              });
+              break;
+          }
+        });
+
+        // chalk dust simulation
+        const dust = chalkParticlesRef.current;
+        for (let i = dust.length - 1; i >= 0; i--) {
+          const p = dust[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.01;
+          p.life -= 1;
+          p.alpha *= 0.97;
+          if (p.life <= 0 || p.alpha <= 0.02) {
+            dust.splice(i, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
         }
-      });
-      ctx.restore();
-    };
+        ctx.restore();
+      };
+
 
     raf = requestAnimationFrame(render);
     return () => cancelAnimationFrame(raf);
@@ -517,12 +624,12 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
   const resetBoard = () => {
     boardEventsRef.current = [];
-    yCursorRef.current = 140;
+    yCursorRef.current = BOARD_LAYOUT.titleY + 40;
     cameraRef.current = { y: 0, targetY: 0 };
   };
 
   const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
-    const baseX = 80;
+    const baseX = BOARD_LAYOUT.marginX;
     const baseY = yCursorRef.current;
     const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
 
