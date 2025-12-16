@@ -20,6 +20,14 @@ interface SavedVideoRecord {
     script: ScriptSegment[];
 }
 
+type RenderingOverlay = 'grid' | 'chem' | 'bio' | 'none';
+
+type RenderingProfile = {
+    method: string;
+    guidance: string;
+    overlay: RenderingOverlay;
+};
+
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [script, setScript] = useState<ScriptSegment[]>([]);
@@ -57,6 +65,46 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             visualContent: sanitizeText(segment.visualContent || cleanText)
         };
     };
+
+    const getRenderingProfile = (subj: string): RenderingProfile => {
+        const s = subj?.toLowerCase() || '';
+        if (s.includes('chem')) return { method: 'ChemDoodle / RDKit', guidance: 'Treat bonds, atoms, and arrows as text cues (e.g., "C6H6", "arrow: ->", "label: catalyst") with clear stoichiometry.', overlay: 'chem' };
+        if (s.includes('phys')) return { method: 'Coordinate-based Canvas', guidance: 'Reference x/y axes, vectors, angles, units, and positions in words (e.g., "arrow: F→", "x=0 origin", "θ = 30°").', overlay: 'grid' };
+        if (s.includes('math') || s.includes('calc') || s.includes('algebra')) return { method: 'Function plotting', guidance: 'Describe axes, curves, critical points, roots, slopes, and areas in text (e.g., "y = sin x", "mark: x=π/2 peak", "shade: area under curve").', overlay: 'grid' };
+        if (s.includes('bio')) return { method: 'SVG layers', guidance: 'Layer anatomy in text (e.g., "outer layer: epidermis", "middle: xylem", "arrow: nutrient flow"), each layer on a separate line.', overlay: 'bio' };
+        if (s.includes('anim')) return { method: 'Stroke reveal', guidance: 'List drawing steps as text (e.g., "step1: outline", "step2: fill", "step3: highlights") to cue stroke-by-stroke reveals.', overlay: 'none' };
+        return { method: 'Chalk cues', guidance: 'Keep concise chalk text and directional arrows described in words only.', overlay: 'none' };
+    };
+
+    const getBoardOverlayStyle = (overlay: RenderingOverlay) => {
+        if (overlay === 'grid') {
+            return {
+                backgroundImage: 'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
+                backgroundSize: '80px 80px',
+                opacity: 0.18,
+                mixBlendMode: 'screen'
+            };
+        }
+        if (overlay === 'chem') {
+            return {
+                backgroundImage: 'radial-gradient(circle at 20% 30%, rgba(34,197,94,0.08), transparent 35%), radial-gradient(circle at 70% 70%, rgba(249,115,22,0.08), transparent 35%)',
+                opacity: 0.25,
+                mixBlendMode: 'screen'
+            };
+        }
+        if (overlay === 'bio') {
+            return {
+                backgroundImage: 'linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(34,197,94,0.05) 25%, transparent 25%, transparent 50%, rgba(16,185,129,0.12) 50%, rgba(34,197,94,0.05) 75%, transparent 75%, transparent)',
+                backgroundSize: '90px 90px',
+                opacity: 0.18,
+                mixBlendMode: 'screen'
+            };
+        }
+        return {};
+    };
+
+    const renderingProfile = getRenderingProfile(subject);
+    const boardOverlayStyle = getBoardOverlayStyle(renderingProfile.overlay);
 
     const readyToPlay = !loading && script.length > 0;
 
@@ -158,7 +206,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     "Use short, descriptive phrases and arrows described in words (no markup).",
                     "Colors: mainly neon chalk tones (#00f3ff, #ff00ff, #39ff14, #facc15, #f97316) on a dark background.",
                     "Keep notes compact (one line per cue) so they fit on a blackboard.",
-                    "No markup, no SVG, no HTML. Plain text only."
+                    "No markup, no SVG, no HTML. Plain text only.",
+                    `Rendering method: ${renderingProfile.method}. ${renderingProfile.guidance}`
                 ].join(" ");
 
                 if (s.includes('physics')) {
@@ -374,7 +423,12 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
             <div ref={containerRef} className="w-full max-w-[98vw] bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl overflow-hidden flex flex-col relative h-[95vh]">
                 {/* Frame / Header */}
                 <div className="h-12 bg-gray-800 flex items-center justify-between px-4 border-b border-gray-700">
-                    <h3 className="text-gray-300 font-serif tracking-widest uppercase">Classroom Session</h3>
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-gray-300 font-serif tracking-widest uppercase">Classroom Session</h3>
+                        <span className="text-[11px] uppercase tracking-[0.2em] text-neon-green bg-neon-green/10 border border-neon-green/30 rounded-full px-3 py-1">
+                            {renderingProfile.method}
+                        </span>
+                    </div>
                     <div className="flex items-center gap-2">
                         <button onClick={toggleFullscreen} className="text-gray-400 hover:text-white" title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
                             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
@@ -403,6 +457,9 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                         <div className="absolute bottom-[20%] right-[20%] w-1 h-1 bg-white/50 rounded-full animate-float-slow"></div>
                     </div>
 
+                    {/* Subject overlay grid / glow */}
+                    <div className="absolute inset-0 pointer-events-none" style={boardOverlayStyle}></div>
+
                     {loading ? (
                         <div className="flex flex-col items-center justify-center h-full space-y-4">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
@@ -428,6 +485,9 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                             </button>
                             <p className="mt-3 text-sm text-gray-400 text-center max-w-xl">
                                 {readyToPlay ? 'Press start to hear the AI voice while the board animates.' : 'Generating the chalkboard plan and voice...' }
+                            </p>
+                            <p className="mt-1 text-xs text-neon-green text-center max-w-2xl">
+                                Rendering: {renderingProfile.method} — {renderingProfile.guidance}
                             </p>
 
                         </div>

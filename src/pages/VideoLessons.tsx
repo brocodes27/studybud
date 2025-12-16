@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles, Dna } from 'lucide-react';
+import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles } from 'lucide-react';
 import { BlackboardPlayer } from '../components/BlackboardPlayer';
 import { format } from 'date-fns';
 
@@ -32,12 +32,6 @@ interface ChapterFolder {
 type SubjectVisual = {
     gradient: string;
     accent: string;
-    icon: JSX.Element;
-};
-
-type VisualSetup = {
-    subject: string;
-    method: string;
     icon: JSX.Element;
 };
 
@@ -83,14 +77,6 @@ const getSubjectVisual = (subject: string): SubjectVisual => {
     if (key.includes('geo') || key.includes('earth')) return subjectVisuals.geography;
     return subjectVisuals.general;
 };
-
-const recommendedSetups: VisualSetup[] = [
-    { subject: 'Chemistry', method: 'ChemDoodle / RDKit', icon: <FlaskConical className="w-5 h-5 text-orange-200" /> },
-    { subject: 'Physics', method: 'Coordinate-based Canvas', icon: <Atom className="w-5 h-5 text-emerald-200" /> },
-    { subject: 'Math', method: 'Function plotting', icon: <Calculator className="w-5 h-5 text-indigo-200" /> },
-    { subject: 'Biology', method: 'SVG layers', icon: <Dna className="w-5 h-5 text-green-200" /> },
-    { subject: 'Animation', method: 'Stroke reveal', icon: <Sparkles className="w-5 h-5 text-yellow-200" /> }
-];
 
 export const VideoLessons = () => {
     const { user } = useAuth() as any;
@@ -341,32 +327,7 @@ export const VideoLessons = () => {
 
                     {/* LESSONS VIEW */}
                     {viewMode === 'lessons' && (
-                        <div className="space-y-4 animate-fade-in-up">
-                            <div className="glass-card border border-white/10 rounded-2xl p-4 bg-black/30">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <p className="text-xs uppercase tracking-[0.2em] text-white/60">Recommended visual setup</p>
-                                        <h3 className="text-lg font-bold text-white">Use these subject-specific rendering methods</h3>
-                                    </div>
-                                    <div className="text-xs text-white/70 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                                        From your brief
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {recommendedSetups.map((item) => (
-                                        <div key={item.subject} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                                            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
-                                                {item.icon}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-white">{item.subject}</p>
-                                                <p className="text-xs text-gray-400">{item.method}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
+                        <div className="animate-fade-in-up">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {currentLessons.map((lesson, index) => {
                                     const visual = getSubjectVisual(lesson.subject);
@@ -425,6 +386,7 @@ export const VideoLessons = () => {
                             </div>
                         </div>
                     )}
+
 
                   </>
               )}
