@@ -137,6 +137,11 @@ const extractSmilesCandidate = (raw: string) => {
 
 const splitCues = (value: string) => normalizeText(value).split(/\n|;|\||,/).map(v => v.trim()).filter(Boolean);
 
+const hasStructureIntent = (text: string, cues: string[] = []) => {
+  const blob = `${normalizeText(text)} ${cues.join(' ')}`.toLowerCase();
+  return /(smiles|structure|molecule|diagram|skeletal|bond|benzene|ring)/i.test(blob);
+};
+
 const buildNoisePattern = (ctx: CanvasRenderingContext2D) => {
   const patternCanvas = document.createElement('canvas');
   patternCanvas.width = 120;
@@ -371,6 +376,7 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
   const events: BoardEvent[] = [];
   let cursorY = baseY;
   let runningDelay = 0.2;
+  const structureIntent = hasStructureIntent(visualContent);
 
   // Try parsing explicit JSON timeline (supports fenced ```json blocks)
   const rawVisual = typeof visualContent === 'string' ? visualContent : JSON.stringify(visualContent ?? '');
@@ -395,7 +401,7 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
             duration: typeof ev.duration === 'number' ? ev.duration : 0.9,
           }));
 
-          if (!mapped.some(ev => ev.type === 'structure')) {
+          if (!mapped.some(ev => ev.type === 'structure') && structureIntent) {
             const lastY = mapped[mapped.length - 1]?.y ?? baseY;
             const lastDelay = mapped[mapped.length - 1]?.delay ?? 0.6 * mapped.length;
             const smiles = extractSmilesCandidate(visualContent);
@@ -419,8 +425,10 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
     }
 
 
-  const cues = splitCues(visualContent);
-  const smiles = extractSmilesCandidate(visualContent);
+    const cues = splitCues(visualContent);
+    const wantsStructure = hasStructureIntent(visualContent, cues);
+    const smiles = wantsStructure ? extractSmilesCandidate(visualContent) : '';
+
 
   if (segmentIndex === 0) {
     events.push({
@@ -456,21 +464,24 @@ const buildTimelineFromVisual = (visualContent: string, subtitles: string[], seg
     cursorY += type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep;
   });
 
-  // Structure event lives below cues
-  events.push({
-    id: `structure-${segmentIndex}`,
-    type: 'structure',
-    smiles,
-    content: smiles,
-    x: baseX + BOARD_LAYOUT.diagramOffsetX,
-    y: cursorY + 40,
-    delay: runningDelay + (arrowCue ? 0.35 : 0.5),
-    duration: 1.6,
-  });
-  runningDelay += 1.1;
-  cursorY += 160;
+    // Structure event lives below cues only if requested
+    if (wantsStructure) {
+      events.push({
+        id: `structure-${segmentIndex}`,
+        type: 'structure',
+        smiles,
+        content: smiles,
+        x: baseX + BOARD_LAYOUT.diagramOffsetX,
+        y: cursorY + 40,
+        delay: runningDelay + (arrowCue ? 0.35 : 0.5),
+        duration: 1.6,
+      });
+      runningDelay += 1.1;
+      cursorY += 160;
+    }
 
-  // Label subtitles as final chalk notes
+    // Label subtitles as final chalk notes
+
   subtitles.slice(0, 2).forEach((line, idx) => {
     events.push({
       id: `sub-${segmentIndex}-${idx}`,
