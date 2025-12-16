@@ -1,7 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { X, Play, RotateCcw, Maximize, Minimize } from 'lucide-react';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { OpenAIService } from '../lib/openaiService';
+
+declare global {
+    interface Window {
+        ChemDoodle?: any;
+    }
+}
 
 interface BlackboardPlayerProps {
     topic: string;
@@ -20,12 +27,265 @@ interface SavedVideoRecord {
     script: ScriptSegment[];
 }
 
+interface VisualRendererProps {
+    subject: string;
+    visualContent: string;
+    segmentId: number;
+}
+
 type RenderingOverlay = 'grid' | 'chem' | 'bio' | 'none';
 
 type RenderingProfile = {
     method: string;
     guidance: string;
     overlay: RenderingOverlay;
+};
+
+const chemDoodleScriptSrc = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.js';
+const chemDoodleCssHref = 'https://web.chemdoodle.com/assets/standalone/ChemDoodleWeb.css';
+
+const ensureChemDoodle = (): Promise<void> => {
+    if (typeof window === 'undefined') return Promise.resolve();
+    if (window.ChemDoodle) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+        const existingScript = document.querySelector(`script[src="${chemDoodleScriptSrc}"]`);
+        if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(), { once: true });
+            existingScript.addEventListener('error', () => reject(new Error('ChemDoodle failed to load')), { once: true });
+        } else {
+            if (!document.querySelector(`link[href="${chemDoodleCssHref}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = chemDoodleCssHref;
+                document.head.appendChild(link);
+            }
+
+            const script = document.createElement('script');
+            script.src = chemDoodleScriptSrc;
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('ChemDoodle failed to load'));
+            document.head.appendChild(script);
+        }
+    });
+};
+
+const normalizeVisualText = (value: string) => (value || '').replace(/\s+/g, ' ').trim();
+
+const extractSmilesCandidate = (raw: string) => {
+    const text = normalizeVisualText(raw);
+    if (!text) return 'C';
+    const hinted = text.match(/smiles[:\s]+([A-Za-z0-9@+\-\[\]\(\)=#\\/]+)/i);
+    if (hinted?.[1]) return hinted[1];
+    const cleaned = text.replace(/[^A-Za-z0-9@+\-\[\]\(\)=#\\/]/g, '');
+    return cleaned || 'C';
+};
+
+const buildMathData = (text: string) => {
+    const phrase = text.toLowerCase();
+    const fn = (x: number) => {
+        if (phrase.includes('sin')) return Math.sin(x);
+        if (phrase.includes('cos')) return Math.cos(x);
+        if (phrase.includes('exp')) return Math.exp(Math.min(2, x * 0.4)) * 0.1;
+        if (phrase.includes('log')) return Math.log(Math.abs(x) + 1);
+        if (phrase.includes('parabola') || phrase.includes('x^2') || phrase.includes('square')) return 0.15 * (x * x);
+        return 0.6 * x;
+    };
+    return Array.from({ length: 64 }).map((_, i) => {
+        const x = (i - 32) / 4;
+        return { x, y: parseFloat(fn(x).toFixed(2)) };
+    });
+};
+
+const splitCues = (value: string) => normalizeVisualText(value).split(/\n|;|\||,/).map(v => v.trim()).filter(Boolean);
+
+const VisualRenderer: React.FC<VisualRendererProps> = ({ subject, visualContent, segmentId }) => {
+    const lowered = (subject || '').toLowerCase();
+    const isChem = lowered.includes('chem');
+    const isPhysics = lowered.includes('phys');
+    const isMath = lowered.includes('math') || lowered.includes('calc') || lowered.includes('algebra');
+    const isBio = lowered.includes('bio');
+    const isAnim = lowered.includes('anim');
+
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [chemStatus, setChemStatus] = useState<'idle' | 'ready' | 'error'>('idle');
+
+    useEffect(() => {
+        if (!isChem) return;
+        let cancelled = false;
+        const run = async () => {
+            try {
+                await ensureChemDoodle();
+                if (cancelled) return;
+                if (!window.ChemDoodle || !canvasRef.current) { setChemStatus('error'); return; }
+
+                const canvasId = `chem-canvas-${segmentId}`;
+                canvasRef.current.id = canvasId;
+                canvasRef.current.width = 720;
+                canvasRef.current.height = 320;
+
+                try {
+                    const cd = window.ChemDoodle;
+                    const viewer = new cd.ViewerCanvas(canvasId, canvasRef.current.width, canvasRef.current.height);
+                    viewer.styles.backgroundColor = '#0f1b14';
+                    viewer.styles.atoms_useJMOLColors = true;
+                    viewer.styles.atoms_font_size_2D = 14;
+                    viewer.styles.bonds_width_2D = 2.2;
+                    viewer.styles.scale = 1.1;
+
+                    const smiles = extractSmilesCandidate(visualContent);
+                    const molecule = cd.readSMILES(smiles);
+                    viewer.loadMolecule(molecule);
+                    viewer.repaint();
+                    setChemStatus('ready');
+                } catch (err) {
+                    console.warn('ChemDoodle render failed, falling back to text', err);
+                    setChemStatus('error');
+                    const ctx = canvasRef.current.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+                        ctx.fillStyle = '#c7f9cc';
+                        ctx.font = '18px "Kalam", "Comic Sans MS", sans-serif';
+                        ctx.fillText(normalizeVisualText(visualContent) || 'Chemistry sketch', 12, 36);
+                    }
+                }
+            } catch (error) {
+                console.error('ChemDoodle load error', error);
+                if (!cancelled) setChemStatus('error');
+            }
+        };
+        run();
+        return () => { cancelled = true; };
+    }, [isChem, visualContent, segmentId]);
+
+    useEffect(() => {
+        if (!isPhysics || !canvasRef.current) return;
+        let disposed = false;
+        const canvas = canvasRef.current;
+        const width = 720;
+        const height = 320;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.clearRect(0, 0, width, height);
+
+        import('roughjs/bundled/rough.esm.js').then(mod => {
+            if (disposed || !canvasRef.current) return;
+            const rough = (mod as any).default || (mod as any);
+            const rc = rough.canvas(canvasRef.current);
+            rc.linearPath([[60, 40], [60, height - 40]], { stroke: '#39ff14', strokeWidth: 2, bowing: 0.6 });
+            rc.linearPath([[60, height - 40], [width - 40, height - 40]], { stroke: '#39ff14', strokeWidth: 2, bowing: 0.6 });
+
+            const cues = splitCues(visualContent);
+            cues.slice(0, 4).forEach((cue, idx) => {
+                const y = 80 + idx * 60;
+                const endX = 220 + idx * 80;
+                const endY = y - 20;
+                rc.line(120, y, endX, endY, { stroke: '#00f3ff', strokeWidth: 2, roughness: 1.5 });
+                rc.circle(120, y, 14, { stroke: '#f97316', strokeWidth: 2 });
+                ctx.fillStyle = '#00f3ff';
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - 12, endY - 6);
+                ctx.lineTo(endX - 12, endY + 6);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.font = '16px "Kalam", "Comic Sans MS", sans-serif';
+                ctx.fillText(cue, endX + 20, endY - 2);
+            });
+        });
+        return () => { disposed = true; };
+    }, [isPhysics, visualContent, segmentId]);
+
+    const mathData = useMemo(() => buildMathData(visualContent), [visualContent]);
+    const cueLines = splitCues(visualContent);
+
+    if (isChem || isPhysics) {
+        return (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+                <div className="text-xs uppercase tracking-[0.2em] text-neon-green mb-2 font-mono">{isChem ? 'ChemDoodle Sketch' : 'Physics Sketch'}</div>
+                <canvas ref={canvasRef} className="w-full h-[220px] bg-black/40 rounded-xl border border-white/5" />
+                {chemStatus === 'error' && isChem && (
+                    <p className="text-xs text-amber-300 mt-2">ChemDoodle fallback showing raw cue: {normalizeVisualText(visualContent)}</p>
+                )}
+                {isPhysics && cueLines.length > 0 && (
+                    <p className="text-xs text-gray-300 mt-2">{cueLines.join(' · ')}</p>
+                )}
+            </div>
+        );
+    }
+
+    if (isMath) {
+        return (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+                <div className="text-xs uppercase tracking-[0.2em] text-neon-blue mb-2 font-mono">Math Plot</div>
+                <div className="w-full h-[220px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={mathData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff22" />
+                            <XAxis dataKey="x" stroke="#a5f3fc" tick={{ fontSize: 10 }} />
+                            <YAxis stroke="#a5f3fc" tick={{ fontSize: 10 }} />
+                            <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }} />
+                            <Line type="monotone" dataKey="y" stroke="#22d3ee" dot={false} strokeWidth={3} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+                {cueLines.length > 0 && (
+                    <p className="text-xs text-gray-300 mt-2">{cueLines.join(' · ')}</p>
+                )}
+            </div>
+        );
+    }
+
+    if (isBio) {
+        return (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+                <div className="text-xs uppercase tracking-[0.2em] text-neon-green mb-2 font-mono">Biology Layers</div>
+                <div className="relative w-full h-[220px] bg-emerald-950/50 rounded-xl border border-emerald-500/20 overflow-hidden">
+                    <svg className="absolute inset-0" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet">
+                        <rect x="30" y="30" width="340" height="60" rx="20" className="fill-emerald-600/40 stroke-emerald-300/60" />
+                        <rect x="50" y="110" width="300" height="50" rx="18" className="fill-emerald-400/30 stroke-emerald-200/60" />
+                        <rect x="70" y="170" width="260" height="30" rx="14" className="fill-emerald-200/20 stroke-emerald-100/50" />
+                        {cueLines.slice(0, 3).map((cue, idx) => (
+                            <text key={cue} x={60 + idx * 20} y={70 + idx * 60} className="fill-white/80 text-[12px] font-semibold">{cue}</text>
+                        ))}
+                    </svg>
+                    {cueLines.length > 3 && (
+                        <div className="absolute bottom-3 right-3 text-xs text-emerald-100/80">{cueLines.slice(3).join(' · ')}</div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    if (isAnim) {
+        return (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+                <div className="text-xs uppercase tracking-[0.2em] text-neon-blue mb-2 font-mono">Stroke Steps</div>
+                <div className="space-y-2">
+                    {cueLines.map((cue, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                            <div className="w-8 h-1 bg-neon-green animate-pulse" style={{ animationDelay: `${idx * 120}ms` }} />
+                            <p className="text-sm text-gray-200">{cue}</p>
+                        </div>
+                    ))}
+                    {cueLines.length === 0 && (
+                        <p className="text-sm text-gray-300">{normalizeVisualText(visualContent) || 'Progressive reveal'}</p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-inner">
+            <div className="text-xs uppercase tracking-[0.2em] text-gray-300 mb-2 font-mono">Chalk Notes</div>
+            <p className="text-sm text-gray-200">{normalizeVisualText(visualContent) || 'Visual cue unavailable'}</p>
+        </div>
+    );
 };
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
@@ -506,6 +766,16 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                                     </div>
                                 );
                             })}
+
+                            {currentIndex >= 0 && currentIndex < script.length && (
+                                <div className="mb-8">
+                                    <VisualRenderer
+                                        subject={subject}
+                                        visualContent={script[currentIndex]?.visualContent || currentSubtitleText || ''}
+                                        segmentId={script[currentIndex]?.id ?? currentIndex}
+                                    />
+                                </div>
+                            )}
 
                             {/* Current Segment */}
                             {currentIndex >= 0 && currentIndex < script.length && (
