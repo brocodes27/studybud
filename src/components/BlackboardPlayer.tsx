@@ -198,7 +198,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
             }
 
             const getSubjectVisualPrompt = (subject: string): string => {
-                const s = subject.toLowerCase();
+                const s = subject?.toLowerCase() || '';
 
                 const base = [
                     "Generate vivid, concise chalkboard cues in neon style (plain text only, no SVG/HTML).",
@@ -210,20 +210,24 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
                     `Rendering method: ${renderingProfile.method}. ${renderingProfile.guidance}`
                 ].join(" ");
 
-                if (s.includes('physics')) {
+                if (s.includes('phys')) {
                     return `${base} THEME: physics chalkboard. Describe objects, forces and motion with short text cues (e.g., "block on incline", "arrow: gravity down").`;
                 }
 
-                if (s.includes('chemistry')) {
+                if (s.includes('chem')) {
                     return `${base} THEME: chemistry lab chalkboard. Use textual cues like molecules or reaction steps (e.g., "H2 + O2 -> H2O", "label: combustion").`;
                 }
 
-                if (s.includes('biology')) {
+                if (s.includes('bio')) {
                     return `${base} THEME: biology lecture. Describe flows and parts in words (e.g., "cell membrane", "arrow: nutrients in", "arrow: waste out").`;
                 }
 
-                if (s.includes('math') || s.includes('calculus') || s.includes('algebra')) {
+                if (s.includes('math') || s.includes('calc') || s.includes('algebra')) {
                     return `${base} THEME: math blackboard. Describe the main objects in text (e.g., "graph of y = sin(x)", "arrow: shift right", "area under curve").`;
+                }
+
+                if (s.includes('anim')) {
+                    return `${base} THEME: animation / stroke reveal. Write sequential stroke cues (e.g., "step1: outline", "step2: fill", "step3: highlights") to drive stroke-by-stroke reveals.`;
                 }
 
                 if (s.includes('history') || s.includes('literature')) {
