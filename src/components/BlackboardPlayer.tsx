@@ -622,16 +622,28 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isPlaying]);
 
-  const resetBoard = () => {
-    boardEventsRef.current = [];
-    yCursorRef.current = BOARD_LAYOUT.titleY + 40;
-    cameraRef.current = { y: 0, targetY: 0 };
-  };
+    const getCanvasSize = () => {
+      const canvas = canvasRef.current;
+      return {
+        w: canvas?.clientWidth || window.innerWidth || 1280,
+        h: canvas?.clientHeight || window.innerHeight || 720,
+      };
+    };
 
-  const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
-    const baseX = BOARD_LAYOUT.marginX;
-    const baseY = yCursorRef.current;
-    const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
+    const resetBoard = () => {
+      boardEventsRef.current = [];
+      const { h } = getCanvasSize();
+      yCursorRef.current = Math.max(BOARD_LAYOUT.titleY + 40, h * 0.4);
+      cameraRef.current = { y: 0, targetY: 0 };
+    };
+
+    const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
+      const { w, h } = getCanvasSize();
+      const clusterHalfWidth = BOARD_LAYOUT.diagramOffsetX * 0.5;
+      const baseX = Math.max(BOARD_LAYOUT.marginX, w / 2 - clusterHalfWidth);
+      const baseY = yCursorRef.current || Math.max(BOARD_LAYOUT.titleY + 40, h * 0.4);
+      const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
+
 
     for (const ev of timeline) {
       const active: ActiveEvent = {
