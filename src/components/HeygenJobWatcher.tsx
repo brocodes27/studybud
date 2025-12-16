@@ -23,8 +23,8 @@ export function HeygenJobWatcher() {
   const notifyBrowser = useCallback((job: SavedVideoJob) => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
 
-    const title = 'Your blackboard video is ready';
-    const body = `${job.subject || 'Lesson'} • ${job.topic || 'Topic'} is ready to watch.`;
+    const title = 'Your HeyGen audio is ready';
+    const body = `${job.subject || 'Lesson'} • ${job.topic || 'Topic'} is ready to play.`;
 
     const push = () => {
       try {

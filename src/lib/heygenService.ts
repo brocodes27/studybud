@@ -1,11 +1,8 @@
 import { supabase } from './supabase';
 
 export interface HeygenVideoOptions {
-  avatarId?: string;
   voiceId?: string;
-  aspectRatio?: '16:9' | '9:16' | '1:1';
-  resolution?: '1280x720' | '720x1280' | '1080x1920' | '1024x1024';
-  caption?: boolean;
+  format?: 'mp3' | 'wav';
 }
 
 export interface HeygenStatus {
@@ -22,16 +19,14 @@ export class HeygenService {
   private static instance: HeygenService;
   private apiKey: string;
   private baseUrl = 'https://api.heygen.com';
-  private defaultAvatarId: string | undefined;
   private defaultVoiceId: string | undefined;
 
   private constructor() {
     this.apiKey = import.meta.env.VITE_HEYGEN_API_KEY || '';
-    this.defaultAvatarId = import.meta.env.VITE_HEYGEN_AVATAR_ID || undefined;
     this.defaultVoiceId = import.meta.env.VITE_HEYGEN_VOICE_ID || undefined;
 
     if (!this.apiKey) {
-      console.warn('HeyGen API key missing. Set VITE_HEYGEN_API_KEY to enable avatar videos.');
+      console.warn('HeyGen API key missing. Set VITE_HEYGEN_API_KEY to enable audio rendering.');
     }
   }
 
@@ -43,31 +38,30 @@ export class HeygenService {
   private getHeaders() {
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.apiKey}`
+      'Authorization': `Bearer ${this.apiKey}`,
+      'X-Api-Key': this.apiKey
     } as const;
   }
 
   async generateVideoFromText(text: string, opts: HeygenVideoOptions = {}): Promise<string> {
+    // Kept name for backward compatibility; now issues audio-only jobs (no avatar).
+    const { id } = await this.generateAudioFromText(text, opts);
+    return id;
+  }
+
+  async generateAudioFromText(text: string, opts: HeygenVideoOptions = {}): Promise<{ id: string; url: string | null }> {
     if (!this.apiKey) throw new Error('VITE_HEYGEN_API_KEY is not set');
-    const avatarId = opts.avatarId || this.defaultAvatarId;
-    if (!avatarId) throw new Error('VITE_HEYGEN_AVATAR_ID is not set');
+    const voiceId = opts.voiceId || this.defaultVoiceId;
+    if (!voiceId) throw new Error('VITE_HEYGEN_VOICE_ID is not set');
 
     const payload = {
-      video_inputs: [
-        {
-          avatar_id: avatarId,
-          voice_id: opts.voiceId || this.defaultVoiceId,
-          input_text: text,
-        }
-      ],
-      aspect_ratio: opts.aspectRatio || '16:9',
-      resolution: opts.resolution || '1280x720',
-      caption: opts.caption ?? false,
-      transparent: false,
+      voice_id: voiceId,
+      text,
+      format: opts.format || 'mp3',
       metadata: await this.getUserMeta()
     } as any;
 
-    const res = await fetch(`${this.baseUrl}/v2/video/generate`, {
+    const res = await fetch(`${this.baseUrl}/v1/audio.generate`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload)
@@ -75,21 +69,22 @@ export class HeygenService {
 
     if (!res.ok) {
       const msg = await res.text();
-      throw new Error(`HeyGen generate failed: ${res.status} ${msg}`);
+      throw new Error(`HeyGen audio generate failed: ${res.status} ${msg}`);
     }
 
     const data = await res.json();
-    const videoId = data?.data?.video_id || data?.video_id;
-    if (!videoId) {
-      throw new Error('HeyGen response missing video_id');
+    const audioId = data?.data?.audio_id || data?.audio_id;
+    const audioUrl = data?.data?.audio_url || data?.audio_url || data?.data?.download_url || data?.download_url || null;
+    if (!audioId) {
+      throw new Error('HeyGen response missing audio_id');
     }
-    return videoId;
+    return { id: audioId, url: audioUrl };
   }
 
-  async getStatus(videoId: string): Promise<HeygenStatus> {
+  async getStatus(jobId: string): Promise<HeygenStatus> {
     if (!this.apiKey) throw new Error('VITE_HEYGEN_API_KEY is not set');
 
-    const res = await fetch(`${this.baseUrl}/v1/video/status?video_id=${encodeURIComponent(videoId)}`, {
+    const res = await fetch(`${this.baseUrl}/v1/audio.status?audio_id=${encodeURIComponent(jobId)}`, {
       headers: this.getHeaders()
     });
 
@@ -100,14 +95,14 @@ export class HeygenService {
 
     const data = await res.json();
     const status = data?.data?.status || data?.status || 'pending';
-    const downloadUrl = data?.data?.download_url || data?.download_url;
+    const downloadUrl = data?.data?.audio_url || data?.audio_url || data?.data?.download_url || data?.download_url;
     return { status, downloadUrl };
   }
 
-  async getDownloadUrl(videoId: string): Promise<string | null> {
+  async getDownloadUrl(jobId: string): Promise<string | null> {
     if (!this.apiKey) throw new Error('VITE_HEYGEN_API_KEY is not set');
 
-    const res = await fetch(`${this.baseUrl}/v1/video/download?video_id=${encodeURIComponent(videoId)}`, {
+    const res = await fetch(`${this.baseUrl}/v1/audio.download?audio_id=${encodeURIComponent(jobId)}`, {
       headers: this.getHeaders()
     });
 
@@ -117,24 +112,24 @@ export class HeygenService {
     }
 
     const data = await res.json();
-    return data?.data?.video_url || data?.video_url || null;
+    return data?.data?.audio_url || data?.audio_url || data?.data?.download_url || data?.download_url || null;
   }
 
   async waitForVideoUrl(
-    videoId: string,
+    jobId: string,
     opts: { maxAttempts?: number; delayMs?: number; signal?: AbortSignal } = {}
   ): Promise<string | null> {
     const { maxAttempts = 30, delayMs = 4000, signal } = opts;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (signal?.aborted) return null;
-      const status = await this.getStatus(videoId);
+      const status = await this.getStatus(jobId);
       if (status.status === 'completed') {
         if (status.downloadUrl) return status.downloadUrl;
-        return await this.getDownloadUrl(videoId);
+        return await this.getDownloadUrl(jobId);
       }
       if (status.status === 'failed') {
-        throw new Error(status.error || 'HeyGen video generation failed');
+        throw new Error(status.error || 'HeyGen audio generation failed');
       }
       await this.sleep(delayMs, signal);
     }

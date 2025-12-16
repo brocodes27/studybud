@@ -435,18 +435,19 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                 setHeygenStatus('ready');
                 setSavedVideoId(videoId);
                 await upsertSavedVideo({ heygen_video_id: videoId, heygen_video_url: url, heygen_status: 'ready', heygen_error: null });
-            } else {
+                } else {
+                    setHeygenStatus('error');
+                    setHeygenError('HeyGen did not return an audio URL. Tap retry.');
+                    await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: 'No audio URL from HeyGen' });
+                }
+            } catch (e: any) {
+                if (controller.signal.aborted) return;
                 setHeygenStatus('error');
-                setHeygenError('HeyGen did not return a video URL. Tap retry.');
-                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: 'No video URL from HeyGen' });
+                setHeygenError(e?.message || 'HeyGen audio generation failed');
+                await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen audio generation failed' });
             }
-        } catch (e: any) {
-            if (controller.signal.aborted) return;
-            setHeygenStatus('error');
-            setHeygenError(e?.message || 'HeyGen video generation failed');
-            await upsertSavedVideo({ heygen_video_id: videoId, heygen_status: 'error', heygen_error: e?.message || 'HeyGen video generation failed' });
-        }
-    }, [upsertSavedVideo]);
+        }, [upsertSavedVideo]);
+
 
     const requestHeygenVideo = useCallback(async (force = false) => {
         if (heygenStatus === 'generating' || heygenStatus === 'polling') return;
@@ -468,18 +469,31 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
 
         try {
             const heygen = HeygenService.getInstance();
-            const videoId = await heygen.generateVideoFromText(allText, { caption: true });
+            const { id: audioId, url: audioUrl } = await heygen.generateAudioFromText(allText, { format: 'mp3' });
             if (heygenRequestIdRef.current !== requestId || controller.signal.aborted) return;
 
-            setSavedVideoId(videoId);
-            await upsertSavedVideo({
-                heygen_video_id: videoId,
-                heygen_status: 'processing',
-                heygen_video_url: null,
-                heygen_error: null,
-                heygen_requested_at: new Date().toISOString()
-            });
-            await pollExistingHeygenVideo(videoId);
+            setSavedVideoId(audioId);
+
+            if (audioUrl) {
+                setHeygenUrl(audioUrl);
+                setHeygenStatus('ready');
+                await upsertSavedVideo({
+                    heygen_video_id: audioId,
+                    heygen_status: 'ready',
+                    heygen_video_url: audioUrl,
+                    heygen_error: null,
+                    heygen_requested_at: new Date().toISOString()
+                });
+            } else {
+                await upsertSavedVideo({
+                    heygen_video_id: audioId,
+                    heygen_status: 'processing',
+                    heygen_video_url: null,
+                    heygen_error: null,
+                    heygen_requested_at: new Date().toISOString()
+                });
+                await pollExistingHeygenVideo(audioId);
+            }
         } catch (e: any) {
             if (controller.signal.aborted) return;
             setHeygenStatus('error');
@@ -546,12 +560,12 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                     ) : lessonLocked ? (
                         <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
-                            <span className="text-xl font-semibold text-white">Lesson locked while HeyGen blackboard video renders</span>
+                            <span className="text-xl font-semibold text-white">Lesson locked while HeyGen audio renders</span>
                             <p className="text-sm text-gray-400">
-                                {videoWorking ? 'Generating HeyGen video now...' : 'Waiting for video generation to finish.'}
+                                {videoWorking ? 'Generating HeyGen audio now...' : 'Waiting for audio generation to finish.'}
                             </p>
                             <p className="text-xs text-gray-500 max-w-xl">
-                                You can close this window and keep studying; we will notify you once the HeyGen video is ready.
+                                You can close this window and keep studying; we will notify you once the HeyGen audio is ready.
                             </p>
                             <button
                                 onClick={handleClose}
@@ -574,15 +588,16 @@ JSON STRUCTURE TO RETURN (NO MARKDOWN, NO BACKTICKS):
                                 <div className="w-20 h-20 rounded-full bg-neon-green/20 flex items-center justify-center border border-neon-green/50 shadow-[0_0_30px_rgba(34,197,94,0.3)] group-hover:shadow-[0_0_50px_rgba(34,197,94,0.5)] transition-all">
                                     <Play className="w-10 h-10 fill-neon-green text-neon-green ml-1" />
                                 </div>
-                                <span className="text-2xl font-bold text-white tracking-wide">
-                                    {videoReady ? 'Start Lesson' : 'Lesson locked until HeyGen video is ready'}
-                                </span>
-                            </button>
-                            <p className="mt-3 text-sm text-gray-400">
-                                {videoWorking && 'Generating HeyGen video...'}
-                                {!videoWorking && !videoReady && 'Video must finish generating before you can start.'}
-                                {videoReady && 'Video ready. Press start to begin.'}
-                            </p>
+                                    <span className="text-2xl font-bold text-white tracking-wide">
+                                        {videoReady ? 'Start Lesson' : 'Lesson locked until HeyGen audio is ready'}
+                                    </span>
+                                </button>
+                                <p className="mt-3 text-sm text-gray-400">
+                                    {videoWorking && 'Generating HeyGen audio...'}
+                                    {!videoWorking && !videoReady && 'Audio must finish generating before you can start.'}
+                                    {videoReady && 'Audio ready. Press start to begin.'}
+                                </p>
+
                         </div>
                     ) : (
                         <div className="whitespace-pre-wrap leading-relaxed w-full">
