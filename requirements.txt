@@ -1,5 +1,0 @@
-manim
-openai
-pydub
-python-dotenv
-supabase
