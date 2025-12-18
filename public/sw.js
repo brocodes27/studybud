@@ -1,6 +1,6 @@
 // Service Worker for elevenfolks PWA
 
-const CACHE_NAME = 'elevenfolks-cache-v1';
+const CACHE_NAME = 'elevenfolks-cache-v2';
 const OFFLINE_URL = '/index.html';
 
 // Assets to cache on install
@@ -15,14 +15,14 @@ const ASSETS_TO_CACHE = [
 // Install event - cache assets
 self.addEventListener('install', (event) => {
   console.log('[ServiceWorker] Install');
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[ServiceWorker] Caching app shell');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  
+
   // Activate the SW immediately
   self.skipWaiting();
 });
@@ -30,7 +30,7 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('[ServiceWorker] Activate');
-  
+
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
@@ -41,7 +41,7 @@ self.addEventListener('activate', (event) => {
       }));
     })
   );
-  
+
   // Claim clients immediately
   self.clients.claim();
 });
@@ -49,15 +49,20 @@ self.addEventListener('activate', (event) => {
 // Fetch event - serve from cache or network
 self.addEventListener('fetch', (event) => {
   console.log('[ServiceWorker] Fetch', event.request.url);
-  
+
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
-  
+
+  // Bypass SW for videos and subtitles to avoid range-request issues and caching massive files
+  if (event.request.url.includes('/videos/')) {
+    return;
+  }
+
   // Network-first strategy for API requests
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('supabase.co')) {
+  if (event.request.url.includes('/api/') ||
+    event.request.url.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -75,7 +80,7 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  
+
   // Cache-first strategy for static assets
   event.respondWith(
     caches.match(event.request)
@@ -84,7 +89,7 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        
+
         // Otherwise fetch from network
         return fetch(event.request)
           .then((response) => {
@@ -92,16 +97,16 @@ self.addEventListener('fetch', (event) => {
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
-            
+
             // Clone the response
             const responseToCache = response.clone();
-            
+
             // Add it to cache for later
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(event.request, responseToCache);
               });
-            
+
             return response;
           })
           .catch(() => {
@@ -109,7 +114,7 @@ self.addEventListener('fetch', (event) => {
             if (event.request.mode === 'navigate') {
               return caches.match(OFFLINE_URL);
             }
-            
+
             return new Response('Network error happened', {
               status: 408,
               headers: { 'Content-Type': 'text/plain' }
@@ -122,9 +127,9 @@ self.addEventListener('fetch', (event) => {
 // Handle push notifications
 self.addEventListener('push', (event) => {
   console.log('[ServiceWorker] Push received');
-  
+
   const data = event.data.json();
-  
+
   const options = {
     body: data.body,
     icon: '/pwa-192x192.png',
@@ -133,7 +138,7 @@ self.addEventListener('push', (event) => {
       url: data.url || '/'
     }
   };
-  
+
   event.waitUntil(
     self.registration.showNotification(data.title, options)
   );
@@ -142,9 +147,9 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('[ServiceWorker] Notification click received');
-  
+
   event.notification.close();
-  
+
   event.waitUntil((async () => {
     try {
       const rawUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';

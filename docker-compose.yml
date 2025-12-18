@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  video-gen-server:
+    build: .
+    container_name: video-gen-server
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Persist generated videos
+      - ./public/videos:/app/public/videos
+      # Map logs/temp storage if needed, but code can stay in container or be mapped
+      - ./manim_engine:/app/manim_engine

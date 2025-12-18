@@ -179,6 +179,43 @@ export class OpenAIService {
 
     return await res.arrayBuffer();
   }
+
+  /**
+   * Generate a comprehensive script for a Manim-based video lesson.
+   * Returns a structured JSON with audio transcription and visual cues.
+   */
+  async generateManimVideoScript(topic: string, subject: string): Promise<any> {
+    const systemPrompt = `You are an elite educational scriptwriter for Manim (Mathematical Animation Engine).
+Your goal is to explain the topic vividly using a mix of spoken word and synchronized mathematical animations.
+
+Return a JSON object with:
+"topic": "${topic}",
+"segments": [
+  {
+    "audioText": "The text to be spoken by TTS",
+    "visualPrompt": "Detailed description of what should happen in Manim (e.g., 'Draw a unit circle and highlight the sine component as a vertical line.')",
+    "durationEstimate": 5.5
+  }
+]
+
+Tone: Clear, engaging, academic but accessible.
+Subject: ${subject}
+Topic: ${topic}`;
+
+    const prompt = `Generate a 3-5 segment script for a video lesson about: ${topic}. Each segment should transition logically to the next.`;
+
+    const response = await this.generateChatCompletion(prompt, systemPrompt);
+    try {
+      // Find the JSON block
+      const start = response.indexOf('{');
+      const end = response.lastIndexOf('}');
+      if (start === -1 || end === -1) throw new Error('Invalid JSON response');
+      return JSON.parse(response.slice(start, end + 1));
+    } catch (e) {
+      console.error('Failed to parse Manim script JSON:', e);
+      throw new Error('Script generation failed');
+    }
+  }
 }
 
 export default OpenAIService;

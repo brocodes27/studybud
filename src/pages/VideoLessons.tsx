@@ -1,9 +1,24 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Video, BookOpen, Clock, AlertCircle, Atom, Calculator, FlaskConical, Globe2, Sparkles } from 'lucide-react';
-import { BlackboardPlayer } from '../components/BlackboardPlayer';
+import {
+    Video,
+    BookOpen,
+    Clock,
+    AlertCircle,
+    Atom,
+    Calculator,
+    FlaskConical,
+    Globe2,
+    Sparkles
+} from 'lucide-react';
+
 import { format } from 'date-fns';
+import { BlackboardPlayer } from '../components/BlackboardPlayer';
+import { ManimVideoPlayer } from '../components/ManimVideoPlayer';
+
+
+
 
 interface Lesson {
     day: number;
@@ -82,12 +97,14 @@ export const VideoLessons = () => {
     const { user } = useAuth() as any;
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentGenerationId, setCurrentGenerationId] = useState<string | undefined>();
     const [playingLesson, setPlayingLesson] = useState<{ topic: string, subject: string } | null>(null);
 
     // Navigation State
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
     const [selectedPlan, setSelectedPlan] = useState<PlanFolder | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+    const [renderMode, setRenderMode] = useState<'classic' | 'premium' | null>(null);
 
     useEffect(() => {
         fetchLessons();
@@ -186,16 +203,82 @@ export const VideoLessons = () => {
         ? lessons.filter(l => l.plan_id === selectedPlan.id && l.chapter === selectedChapter)
         : [];
 
+    const handlePlayPremium = async (lesson: Lesson) => {
+        setLoading(true); // Short loading state while checking status
+        try {
+            // 1. Check if generation exists
+            const { data: existing, error } = await supabase
+                .from('video_generations')
+                .select('*')
+                .eq('user_id', user?.id)
+                .eq('topic', lesson.topic)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (existing && existing.status !== 'failed') {
+                // If completed or processing, use this one
+                setCurrentGenerationId(existing.id);
+                setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+                setRenderMode('premium');
+                setLoading(false);
+                return;
+            }
+
+            // 2. If not, trigger new generation via local server
+            const response = await fetch('http://localhost:3001/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    topic: lesson.topic,
+                    userId: user?.id,
+                    script: lesson.description // Use description as context? Or auto-gen.
+                })
+            });
+
+            if (!response.ok) {
+                // Fallback: If server not running, just try to open player to show error or legacy view
+                console.warn("Local generation server not reachable, falling back to legacy view.");
+                setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+                setRenderMode('premium');
+                setLoading(false);
+                return;
+            }
+
+            const resData = await response.json();
+            setCurrentGenerationId(resData.generationId);
+            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+            setRenderMode('premium');
+
+        } catch (e) {
+            console.error("Error starting generation:", e);
+            // Fallback
+            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+            setRenderMode('premium');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-fade-in relative min-h-screen">
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-96 h-96 bg-neon-green/10 rounded-full blur-3xl -z-10"></div>
 
-            {playingLesson && (
+            {playingLesson && renderMode === 'classic' && (
                 <BlackboardPlayer
                     topic={playingLesson.topic}
                     subject={playingLesson.subject}
-                    onClose={() => setPlayingLesson(null)}
+                    onClose={() => { setPlayingLesson(null); setRenderMode(null); }}
+                />
+            )}
+
+            {playingLesson && renderMode === 'premium' && (
+                <ManimVideoPlayer
+                    videoUrl={`/videos/${playingLesson.topic.toLowerCase().replace(/[^a-z0-9]/g, '-')}.mp4`}
+                    topic={playingLesson.topic}
+                    generationId={currentGenerationId}
+                    onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); }}
                 />
             )}
 
@@ -373,13 +456,25 @@ export const VideoLessons = () => {
                                                 {lesson.description}
                                             </p>
 
-                                            <button
-                                                onClick={() => setPlayingLesson({ topic: lesson.topic, subject: lesson.subject })}
-                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all group-hover:scale-[1.02]"
-                                            >
-                                                <Play className="w-4 h-4 fill-current" />
-                                                Watch Lesson
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+                                                        setRenderMode('classic');
+                                                    }}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 text-white/80 font-bold border border-white/10 hover:bg-white/10 transition-all hover:scale-[1.02]"
+                                                >
+                                                    <BookOpen className="w-4 h-4" />
+                                                    Blackboard
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePlayPremium(lesson)}
+                                                    className="flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all hover:scale-[1.02]"
+                                                >
+                                                    <Sparkles className="w-4 h-4 fill-current text-white/80" />
+                                                    Premium Video
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -388,9 +483,9 @@ export const VideoLessons = () => {
                     )}
 
 
-                  </>
-              )}
-          </div>
-      );
-  };
+                </>
+            )}
+        </div>
+    );
+};
 

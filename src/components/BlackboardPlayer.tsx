@@ -20,18 +20,23 @@ interface ScriptSegment {
   visualContent: string;
 }
 
-type BoardEventType = 'title' | 'text' | 'bullet' | 'label' | 'arrow' | 'structure';
+type BoardEventType = 'title' | 'text' | 'bullet' | 'label' | 'arrow' | 'structure' | 'svg';
 
 type BoardEvent = {
   id: string;
   type: BoardEventType;
   content?: string;
   smiles?: string;
+  svgPath?: string; // New field for AI-generated SVGs
   delay: number; // seconds from segment start
   duration: number; // seconds to draw
   x: number;
   y: number;
+  width?: number; // Visual box width
+  height?: number; // Visual box height
 };
+
+
 
 interface ActiveEvent extends BoardEvent {
   status: 'pending' | 'drawing' | 'done';
@@ -108,39 +113,8 @@ const ensureChemDoodle = async (): Promise<boolean> => {
   return chemLoadPromise;
 };
 
-const safeString = (value: unknown) => {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  try {
-    const str = JSON.stringify(value);
-    return typeof str === 'string' ? str : '';
-  } catch {
-    return '';
-  }
-};
+// Removed safeString, normalizeText, extractSmilesCandidate, splitCues, hasStructureIntent as they are no longer needed with strict JSON visuals
 
-const normalizeText = (value: unknown) => {
-  const text = safeString(value);
-  if (!text) return '';
-  return text.replace(/\s+/g, ' ').trim();
-};
-
-const extractSmilesCandidate = (raw: string) => {
-  const text = normalizeText(raw);
-  if (!text) return 'C';
-  const hinted = text.match(/smiles[:\s]+([A-Za-z0-9@+\-\[\]\(\)=#\\/]+)/i);
-  if (hinted?.[1]) return hinted[1];
-  const cleaned = text.replace(/[^A-Za-z0-9@+\-\[\]\(\)=#\\/]/g, '');
-  return cleaned || 'C';
-};
-
-const splitCues = (value: string) => normalizeText(value).split(/\n|;|\||,/).map(v => v.trim()).filter(Boolean);
-
-const hasStructureIntent = (text: string, cues: string[] = []) => {
-  const blob = `${normalizeText(text)} ${cues.join(' ')}`.toLowerCase();
-  return /(smiles|structure|molecule|diagram|skeletal|bond|benzene|ring)/i.test(blob);
-};
 
 const buildNoisePattern = (ctx: CanvasRenderingContext2D) => {
   const patternCanvas = document.createElement('canvas');
@@ -170,19 +144,22 @@ const stableJitter = (seed: string, amt = 1.4) => {
   const r = stableRand(seed);
   return (r * amt) - amt / 2;
 };
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+// clamp removed if unused - actually let's keep it if we might need it later for other things, but lint says it's unused.
+// I'll remove it to satisfy lint.
 
 const BOARD_LAYOUT = {
-  marginX: 120,
-  titleY: 140,
-  lineStep: 82,
-  bulletGap: 76,
-  sectionGap: 30,
-  diagramOffsetX: 360,
-  gridAlpha: 0.045,
-  columnSpan: 260,
-  safeTop: 120,
+  marginX: 100,
+  titleY: 120,
+  lineStep: 72,
+  bulletGap: 68,
+  sectionGap: 40,
+  diagramOffsetX: 420, // Move diagrams further to the right
+  gridAlpha: 0.03,
+  columnSpan: 280,
+  safeTop: 100,
+  structureOpacity: 0.45,
 };
+
 
 const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, progress: number, alpha: number) => {
   ctx.save();
@@ -197,16 +174,16 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
     const fontJitter = stableRand(`${seed}-f`) * 4; // Slight size variation
     const fontSize = 32 + fontJitter;
     ctx.font = `${fontSize}px "Kalam", "Comic Sans MS", cursive`;
-    
+
     // Measure actual width for proper spacing
     const metrics = ctx.measureText(ch);
     const charWidth = metrics.width;
-    
+
     // Jitter the position slightly
     const offsetX = stableJitter(`${seed}-x`, 2);
     const offsetY = stableJitter(`${seed}-y`, 3);
     const rotation = stableJitter(`${seed}-rot`, 0.05); // Slight rotation for realism
-    
+
     const dx = currentX + offsetX;
     const dy = y + offsetY;
 
@@ -221,10 +198,10 @@ const drawChalkText = (ctx: CanvasRenderingContext2D, text: string, x: number, y
     ctx.shadowBlur = 6;
     ctx.lineWidth = 1.2;
     ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    
+
     ctx.strokeText(ch, 0, 0);
     ctx.fillText(ch, 0, 0);
-    
+
     ctx.restore();
 
     // Advance cursor - ensure spaces are wide enough
@@ -270,6 +247,72 @@ const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: nu
   drawChalkLine(ctx, x2, y2, hx2, hy2, alpha, 1);
 };
 
+const parseSVGPath = (d: string, offsetX: number, offsetY: number, scale: number): LineSegment[] => {
+  const segments: LineSegment[] = [];
+  const commands = d.match(/[a-df-z][^a-df-z]*/ig) || [];
+  let curX = 0, curY = 0;
+  let startX = 0, startY = 0;
+
+  commands.forEach(cmd => {
+    const type = cmd[0];
+    const args = (cmd.slice(1).trim().split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n)));
+
+    const toRelX = (v: number) => (type === type.toLowerCase() ? curX + v : v);
+    const toRelY = (v: number) => (type === type.toLowerCase() ? curY + v : v);
+
+
+    switch (type.toUpperCase()) {
+      case 'M':
+        curX = toRelX(args[0]);
+        curY = toRelY(args[1]);
+        startX = curX;
+        startY = curY;
+        break;
+      case 'L':
+        for (let i = 0; i < args.length; i += 2) {
+          const nx = toRelX(args[i]);
+          const ny = toRelY(args[i + 1]);
+          segments.push({
+            x1: curX * scale + offsetX, y1: curY * scale + offsetY,
+            x2: nx * scale + offsetX, y2: ny * scale + offsetY
+          });
+          curX = nx; curY = ny;
+        }
+        break;
+      case 'H':
+        args.forEach(x => {
+          const nx = toRelX(x);
+          segments.push({
+            x1: curX * scale + offsetX, y1: curY * scale + offsetY,
+            x2: nx * scale + offsetX, y2: curY * scale + offsetY
+          });
+          curX = nx;
+        });
+        break;
+      case 'V':
+        args.forEach(y => {
+          const ny = toRelY(y);
+          segments.push({
+            x1: curX * scale + offsetX, y1: curY * scale + offsetY,
+            x2: curX * scale + offsetX, y2: ny * scale + offsetY
+          });
+          curY = ny;
+        });
+        break;
+      case 'Z':
+        segments.push({
+          x1: curX * scale + offsetX, y1: curY * scale + offsetY,
+          x2: startX * scale + offsetX, y2: startY * scale + offsetY
+        });
+        curX = startX; curY = startY;
+        break;
+    }
+  });
+  return segments;
+};
+
+
+
 const playChalkTap = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -288,6 +331,7 @@ const playChalkTap = () => {
 };
 
 const spawnChalkDust = (particles: ChalkParticle[], x: number, y: number, count = 14) => {
+
   for (let i = 0; i < count; i++) {
     particles.push({
       x: jitter(x, 6),
@@ -335,198 +379,67 @@ const generateChemSegments = async (smiles: string, centerX: number, centerY: nu
   }
 };
 
-const generateSymbolicSegments = (seedText: string, centerX: number, centerY: number, radius = 160): LineSegment[] => {
-  const seed = normalizeText(seedText) || 'concept';
-  const segments: LineSegment[] = [];
-  const nodes = 6;
-  const points = Array.from({ length: nodes }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / nodes + stableJitter(`${seed}-angle-${i}`, 0.4);
-    const r = radius * (0.65 + stableRand(`${seed}-r-${i}`) * 0.3);
+// generateSymbolicSegments removed in favor of AI SVGs
+
+
+
+const buildTimelineFromVisual = (visualInput: any, subtitles: string[], segmentIndex: number, baseX: number, baseY: number): BoardEvent[] => {
+  let visualArray: any[] = [];
+  if (Array.isArray(visualInput)) {
+    visualArray = visualInput;
+  } else if (typeof visualInput === 'string') {
+    try { visualArray = JSON.parse(visualInput); } catch { visualArray = []; }
+  }
+
+  const events: BoardEvent[] = visualArray.map((ev, i) => {
+    // Type normalization: if it has svgPath but wrong type, fix it
+    let type = (ev.type as BoardEventType) || 'text';
+    if (ev.svgPath && type === 'structure') type = 'svg';
+
     return {
-      x: centerX + Math.cos(angle) * r,
-      y: centerY + Math.sin(angle) * r,
+      id: `ev-${segmentIndex}-${i}-${type}`,
+      type,
+      content: ev.content || '',
+      smiles: ev.smiles || (ev.type === 'structure' ? ev.content : undefined),
+      svgPath: ev.svgPath,
+      x: ev.x,
+      y: ev.y,
+      width: ev.width,
+      height: ev.height,
+      delay: typeof ev.delay === 'number' ? ev.delay : i * 0.5,
+      duration: typeof ev.duration === 'number' ? ev.duration : 1.2,
     };
   });
 
-  // outer ring
-  for (let i = 0; i < nodes; i++) {
-    const next = (i + 1) % nodes;
-    segments.push({ x1: points[i].x, y1: points[i].y, x2: points[next].x, y2: points[next].y });
-  }
-
-  // spokes to center
-  for (let i = 0; i < nodes; i++) {
-    segments.push({ x1: centerX, y1: centerY, x2: points[i].x, y2: points[i].y });
-  }
-
-  // a smaller inner triangle for extra visual interest
-  const innerR = radius * 0.42;
-  for (let i = 0; i < 3; i++) {
-    const angle = (Math.PI * 2 * i) / 3 + stableJitter(`${seed}-inner-${i}`, 0.25);
-    const nextAngle = (Math.PI * 2 * ((i + 1) % 3)) / 3 + stableJitter(`${seed}-inner-${i + 1}`, 0.25);
-    const p1 = { x: centerX + Math.cos(angle) * innerR, y: centerY + Math.sin(angle) * innerR };
-    const p2 = { x: centerX + Math.cos(nextAngle) * innerR, y: centerY + Math.sin(nextAngle) * innerR };
-    segments.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y });
-  }
-
-  return segments;
-};
-
-const buildTimelineFromVisual = (visualContent: string, subtitles: string[], segmentIndex: number, baseX: number, baseY: number): BoardEvent[] => {
-  const events: BoardEvent[] = [];
-  let cursorY = baseY;
-  let runningDelay = 0.2;
-  const structureIntent = hasStructureIntent(visualContent);
-
-  // Try parsing explicit JSON timeline (supports fenced ```json blocks)
-  const rawVisual = typeof visualContent === 'string' ? visualContent : JSON.stringify(visualContent ?? '');
-  const unfenced = rawVisual.match(/```(?:json)?\s*([\s\S]+?)\s*```/i)?.[1]?.trim() ?? rawVisual.trim();
-  const jsonCandidate = /^[{\[]/.test(unfenced)
-    ? unfenced
-    : unfenced.match(/(\{[\s\S]*\}|\[[\s\S]*\])/m)?.[1];
-
-          if (jsonCandidate) {
-            try {
-              const parsed = JSON.parse(jsonCandidate);
-              const arr = Array.isArray(parsed) ? parsed : parsed?.events;
-              if (Array.isArray(arr)) {
-                const mapped = arr.map((ev, i) => ({
-                  id: `json-${segmentIndex}-${i}-${ev.type}`,
-                  type: (ev.type as BoardEventType) || 'text',
-                  content: ev.content || ev.text || '',
-                  smiles: ev.smiles,
-                  x: ev.x ?? baseX,
-                  y: ev.y ?? (baseY + i * 90),
-                  delay: typeof ev.delay === 'number' ? ev.delay : i * 0.6,
-                  duration: typeof ev.duration === 'number' ? ev.duration : 0.9,
-                }));
-
-                const hasVisuals = mapped.some(ev => ['bullet', 'arrow', 'structure', 'label'].includes(ev.type));
-                if (!mapped.some(ev => ev.type === 'structure') && (structureIntent || !hasVisuals)) {
-                  const lastY = mapped[mapped.length - 1]?.y ?? baseY;
-                  const lastDelay = mapped[mapped.length - 1]?.delay ?? 0.6 * mapped.length;
-                  const smiles = extractSmilesCandidate(visualContent);
-                  mapped.push({
-                    id: `json-structure-${segmentIndex}`,
-                    type: 'structure',
-                    smiles,
-                    content: smiles,
-                    x: baseX + BOARD_LAYOUT.diagramOffsetX,
-                    y: lastY + 90,
-                    delay: lastDelay + 0.8,
-                    duration: 1.2,
-                  });
-                }
-
-                return mapped;
-              }
-            } catch (err) {
-              console.warn('Failed to parse visualContent JSON; falling back to cues', err);
-            }
-          }
 
 
-    const cues = splitCues(visualContent);
-    let wantsStructure = hasStructureIntent(visualContent, cues);
-    if (!wantsStructure && cues.length === 0) wantsStructure = true;
-    const smiles = wantsStructure ? extractSmilesCandidate(visualContent) : '';
 
-
-  if (segmentIndex === 0) {
-    events.push({
+  // Auto-title if first segment and no title present
+  if (segmentIndex === 0 && !events.some(e => e.type === 'title')) {
+    events.unshift({
       id: `title-${segmentIndex}`,
       type: 'title',
-      content: subtitles[0] || visualContent || 'Lesson',
+      content: subtitles[0] || 'Lesson Start',
       x: baseX,
-      y: cursorY,
-      delay: runningDelay,
-      duration: 1.2,
+      y: baseY - 60,
+      delay: 0.1,
+      duration: 1.0,
     });
-    runningDelay += 1.05;
-    cursorY += BOARD_LAYOUT.lineStep + 6;
   }
-
-  // If there is an arrow description
-  const arrowCue = cues.find(c => c.includes('->') || c.includes('=>'));
-  cues.forEach((cue, idx) => {
-    const isArrow = cue.includes('->') || cue.includes('=>') || cue.toLowerCase().startsWith('arrow');
-    const isLabel = cue.toLowerCase().startsWith('label');
-    const type: BoardEventType = isArrow ? 'arrow' : isLabel ? 'label' : 'bullet';
-    events.push({
-      id: `cue-${segmentIndex}-${idx}`,
-      type,
-      content: cue.replace(/label[:\s]*/i, ''),
-      x: baseX,
-      y: cursorY,
-      delay: runningDelay,
-      duration: isArrow ? 1.0 : 0.85,
-    });
-    runningDelay += isArrow ? 0.8 : 0.55;
-    runningDelay += 0.25; // breathing room between strokes
-    cursorY += type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep;
-  });
-
-    // Structure event lives below cues only if requested
-    if (wantsStructure) {
-      events.push({
-        id: `structure-${segmentIndex}`,
-        type: 'structure',
-        smiles,
-        content: smiles,
-        x: baseX + BOARD_LAYOUT.diagramOffsetX,
-        y: cursorY + 40,
-        delay: runningDelay + (arrowCue ? 0.35 : 0.5),
-        duration: 1.6,
-      });
-      runningDelay += 1.1;
-      cursorY += 160;
-    }
-
-    // Label subtitles as final chalk notes
-
-  subtitles.slice(0, 2).forEach((line, idx) => {
-    events.push({
-      id: `sub-${segmentIndex}-${idx}`,
-      type: 'label',
-      content: line,
-      x: baseX,
-      y: cursorY,
-      delay: runningDelay,
-      duration: 0.95,
-    });
-    runningDelay += 0.6;
-    cursorY += 60;
-  });
 
   return events;
 };
 
-const sanitizeText = (input: unknown) => {
-  const raw = safeString(input);
-  if (!raw) return '';
-
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]+?)\s*```/i);
-  let text = fenced?.[1] ?? raw;
-  if (typeof text !== 'string') text = safeString(text);
-
-  return text
-    .replace(/<svg[\s\S]*?<\/svg>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-};
-
 const sanitizeSegment = (segment: any): ScriptSegment => {
-  const rawSubtitles = Array.isArray(segment.subtitles) ? segment.subtitles : [];
-  const cleanSubtitles = rawSubtitles.map((s: string) => sanitizeText(s)).filter(Boolean);
-  const cleanText = sanitizeText(segment.textToSpeak || cleanSubtitles.join(' '));
+  const subtitles = Array.isArray(segment.subtitles) ? segment.subtitles : [segment.textToSpeak || ''];
+  const textToSpeak = segment.textToSpeak || subtitles.join(' ');
 
   return {
     ...segment,
-    textToSpeak: cleanText,
-    subtitles: cleanSubtitles.length ? cleanSubtitles : [cleanText || ''],
-    visualContent: sanitizeText(segment.visualContent || cleanText)
-  };
+    textToSpeak,
+    subtitles,
+    visualContent: Array.isArray(segment.visualContent) ? segment.visualContent : []
+  } as ScriptSegment;
 };
 
 export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subject, onClose }) => {
@@ -541,7 +454,7 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
   const noisePatternRef = useRef<CanvasPattern | null>(null);
   const boardEventsRef = useRef<ActiveEvent[]>([]);
   const yCursorRef = useRef<number>(BOARD_LAYOUT.titleY + 40);
-  const cameraRef = useRef<{ y: number; targetY: number; } >({ y: 0, targetY: 0 });
+  const cameraRef = useRef<{ y: number; targetY: number; }>({ y: 0, targetY: 0 });
   const chalkParticlesRef = useRef<ChalkParticle[]>([]);
 
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -552,6 +465,15 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
   const readyToPlay = !loading && script.length > 0;
 
   useEffect(() => {
+    // Reset state whenever the lesson topic/subject changes
+    playbackSessionRef.current += 1;
+    setScript([]);
+    setCurrentIndex(-1);
+    setIsPlaying(false);
+    boardEventsRef.current = [];
+    chalkParticlesRef.current = [];
+    resetBoard();
+
     generateScript();
     return () => {
       window.speechSynthesis.cancel();
@@ -560,8 +482,8 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         audioRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [topic, subject]);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -641,85 +563,107 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
       const now = performance.now();
       boardEventsRef.current.forEach(ev => {
-          if (ev.sessionId !== playbackSessionRef.current) return;
-          if (ev.status === 'pending' && ev.startTime && now >= ev.startTime) {
-            ev.status = 'drawing';
-          }
-          if (ev.status === 'drawing' && ev.startTime) {
-            const elapsed = (now - ev.startTime) / 1000;
-            const p = Math.min(1, elapsed / ev.duration);
-            ev.progress = p;
-            if (p >= 1) ev.status = 'done';
-          }
-
-          if (ev.status === 'done' && !ev.notifiedComplete) {
-            ev.notifiedComplete = true;
-            spawnChalkDust(chalkParticlesRef.current, ev.x, ev.y - cameraY, ev.type === 'structure' ? 26 : 14);
-            playChalkTap();
-          }
-
-          const progress = ev.status === 'done' ? 1 : ev.progress || 0;
-          const alpha = ev.status === 'done' ? 0.38 : 0.9;
-          const y = ev.y - cameraY;
-
-          switch (ev.type) {
-            case 'title':
-            case 'text':
-            case 'label':
-              drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
-              break;
-            case 'bullet':
-              ctx.save();
-              ctx.globalAlpha = alpha;
-              ctx.fillStyle = 'rgba(255,255,255,0.86)';
-              ctx.beginPath();
-              ctx.arc(ev.x - 22, y - 12, 6.5, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.restore();
-              drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
-              break;
-            case 'arrow':
-              drawArrow(ctx, ev.x, y, ev.x + 140, y - 20, alpha, progress);
-              drawChalkText(ctx, ev.content || '', ev.x + 150, y - 10, Math.min(1, progress * 1.4), alpha);
-              break;
-              case 'structure':
-                if (!ev.segments || ev.segments.length === 0) {
-                  ev.segments = generateSymbolicSegments(ev.content || ev.smiles || 'structure', ev.x, ev.y, 180);
-                }
-                if (!ev.segments || ev.segments.length === 0) break;
-                const per = progress * (ev.segments.length);
-                ev.segments.forEach((seg, idx) => {
-                  const local = Math.min(1, Math.max(0, per - idx));
-                  if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, alpha, local);
-                });
-                break;
-
-          }
-        });
-
-        // chalk dust simulation
-        const dust = chalkParticlesRef.current;
-        for (let i = dust.length - 1; i >= 0; i--) {
-          const p = dust[i];
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vy += 0.01;
-          p.life -= 1;
-          p.alpha *= 0.97;
-          if (p.life <= 0 || p.alpha <= 0.02) {
-            dust.splice(i, 1);
-            continue;
-          }
-          ctx.save();
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = 'rgba(255,255,255,0.8)';
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+        if (ev.sessionId !== playbackSessionRef.current) return;
+        if (ev.status === 'pending' && ev.startTime && now >= ev.startTime) {
+          ev.status = 'drawing';
         }
+        if (ev.status === 'drawing' && ev.startTime) {
+          const elapsed = (now - ev.startTime) / 1000;
+          const p = Math.min(1, elapsed / ev.duration);
+          ev.progress = p;
+          if (p >= 1) ev.status = 'done';
+        }
+
+        if (ev.status === 'done' && !ev.notifiedComplete) {
+          ev.notifiedComplete = true;
+          spawnChalkDust(chalkParticlesRef.current, ev.x, ev.y - cameraY, ev.type === 'structure' ? 26 : 14);
+          playChalkTap();
+        }
+
+        const progress = ev.status === 'done' ? 1 : ev.progress || 0;
+        const alpha = ev.status === 'done' ? 0.38 : 0.9;
+        const structureAlpha = ev.status === 'done' ? BOARD_LAYOUT.structureOpacity * 0.5 : BOARD_LAYOUT.structureOpacity;
+        const y = ev.y - cameraY;
+
+        switch (ev.type) {
+          case 'title':
+          case 'text':
+          case 'label':
+            drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
+
+            break;
+          case 'bullet':
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = 'rgba(255,255,255,0.86)';
+            ctx.beginPath();
+            ctx.arc(ev.x - 22, y - 12, 6.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            drawChalkText(ctx, ev.content || '', ev.x, y, progress, alpha);
+            break;
+          case 'arrow':
+            drawArrow(ctx, ev.x, y, ev.x + 140, y - 20, alpha, progress);
+            drawChalkText(ctx, ev.content || '', ev.x + 150, y - 10, Math.min(1, progress * 1.4), alpha);
+            break;
+          case 'structure':
+            if (!ev.segments || ev.segments.length === 0) {
+              ev.segments = []; // No generic symbols anymore
+            }
+            if (!ev.segments || ev.segments.length === 0) break;
+            const per = progress * (ev.segments.length);
+            ctx.save();
+            ctx.globalAlpha = structureAlpha;
+            ev.segments.forEach((seg, idx) => {
+              const local = Math.min(1, Math.max(0, per - idx));
+              if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, 1.0, local);
+            });
+            ctx.restore();
+            break;
+          case 'svg':
+            if (!ev.segments && ev.svgPath) {
+              ev.segments = parseSVGPath(ev.svgPath, ev.x, ev.y - (ev.height || 100) / 2, 1.2);
+            }
+            if (ev.segments) {
+              const sPer = progress * ev.segments.length;
+              ctx.save();
+              ctx.globalAlpha = structureAlpha;
+              ev.segments.forEach((seg, idx) => {
+                const local = Math.min(1, Math.max(0, sPer - idx));
+                if (local > 0) drawChalkLine(ctx, seg.x1, seg.y1 - cameraY, seg.x2, seg.y2 - cameraY, 1.0, local);
+              });
+              ctx.restore();
+            }
+            break;
+        }
+
+
+
+      });
+
+      // chalk dust simulation
+      const dust = chalkParticlesRef.current;
+      for (let i = dust.length - 1; i >= 0; i--) {
+        const p = dust[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.01;
+        p.life -= 1;
+        p.alpha *= 0.97;
+        if (p.life <= 0 || p.alpha <= 0.02) {
+          dust.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
-      };
+      }
+      ctx.restore();
+    };
 
 
     raf = requestAnimationFrame(render);
@@ -738,13 +682,15 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isPlaying]);
 
-    const getCanvasSize = () => {
-      const canvas = canvasRef.current;
-      return {
-        w: canvas?.clientWidth || window.innerWidth || 1280,
-        h: canvas?.clientHeight || window.innerHeight || 720,
-      };
+  const getCanvasSize = () => {
+    const canvas = canvasRef.current;
+    return {
+      w: canvas?.clientWidth || 1280,
+      h: canvas?.clientHeight || 720,
     };
+  };
+
+
 
   const resetBoard = () => {
     boardEventsRef.current = [];
@@ -755,21 +701,26 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
 
 
   const enqueueBoardEvents = async (segment: ScriptSegment, segmentIndex: number, sessionId: number) => {
-    const { w, h } = getCanvasSize();
+    const { w } = getCanvasSize();
     const baseX = Math.max(BOARD_LAYOUT.marginX + 20, w * 0.26);
-    const baseY = yCursorRef.current || Math.max(BOARD_LAYOUT.titleY + 60, h * 0.35);
     const maxX = Math.max(BOARD_LAYOUT.marginX, w - BOARD_LAYOUT.marginX - 80);
-    const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, baseY);
+    let currentY = yCursorRef.current + 40; // Base offset to clear title
+    const timeline = buildTimelineFromVisual(segment.visualContent, segment.subtitles, segmentIndex, baseX, currentY);
 
-    const laidOut = timeline.map((ev, idx) => {
-      const isStructure = ev.type === 'structure';
-      const colShift = !isStructure && (idx % 2 === 1) ? BOARD_LAYOUT.columnSpan * 0.6 : 0;
-      const xCandidate = (ev.x ?? baseX) + colShift;
-      const x = clamp(xCandidate, BOARD_LAYOUT.marginX, maxX);
-      const estimatedY = ev.y ?? (baseY + idx * (ev.type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep));
-      const y = clamp(estimatedY, BOARD_LAYOUT.safeTop, estimatedY + BOARD_LAYOUT.lineStep * 0.5);
+    const laidOut = timeline.map((ev) => {
+      const isVisual = ev.type === 'structure' || ev.type === 'svg';
+      // Shift text to the left, visuals to the right
+      const x = isVisual ? Math.max(w * 0.6, maxX - (ev.width || 200)) : baseX;
+
+      // Auto-arrange Y to prevent overlap
+      const y = Math.max(BOARD_LAYOUT.safeTop + 80, currentY, BOARD_LAYOUT.titleY + 60);
+
+      const itemHeight = isVisual ? (ev.height || 220) : (ev.type === 'bullet' ? BOARD_LAYOUT.bulletGap : BOARD_LAYOUT.lineStep);
+      currentY = y + itemHeight + 20;
+
       return { ...ev, x, y };
     });
+
 
     for (const ev of laidOut) {
       const active: ActiveEvent = {
@@ -781,14 +732,14 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
       };
 
       if (ev.type === 'structure') {
-        const chemSegments = await generateChemSegments(ev.smiles || extractSmilesCandidate(segment.visualContent), ev.x, ev.y, 240);
-        active.segments = chemSegments.length
-          ? chemSegments
-          : generateSymbolicSegments(segment.visualContent || segment.textToSpeak, ev.x, ev.y, 190);
+        const chemSegments = await generateChemSegments(ev.smiles || 'C', ev.x, ev.y, 240);
+        active.segments = chemSegments.length ? chemSegments : [];
       }
 
+
       boardEventsRef.current.push(active);
-      const padding = ev.type === 'structure' ? 200 : 130;
+      const padding = ev.type === 'structure' ? 240 : (ev.type === 'title' ? 100 : 80);
+
       yCursorRef.current = Math.max(yCursorRef.current, ev.y + padding);
       if (yCursorRef.current - cameraRef.current.targetY > (canvasRef.current?.clientHeight || 800) - 260) {
         cameraRef.current.targetY = yCursorRef.current - ((canvasRef.current?.clientHeight || 800) * 0.6);
@@ -845,24 +796,60 @@ export const BlackboardPlayer: React.FC<BlackboardPlayerProps> = ({ topic, subje
         }
       }
 
-        const prompt = `You are an energetic chalkboard lecturer. Build 6-10 segments for topic "${topic}" (subject: "${subject}").
-Each segment needs:
-- subtitles: array of 3-5 explanatory sentences (10-18 words) that answer why/how with tiny examples.
-- textToSpeak: 2-3 flowing teacherly sentences combining those subtitles (engaging, not just listing terms).
-- visualContent: plaintext cues (or JSON timeline array with x,y,delay) mixing at least 3 items: bullets, arrows, labels, plus one structure cue (SMILES or a simple schematic shape). Accuracy is not critical—doodles and simple shapes are fine. Allowed types: text, bullet, label, arrow, structure with SMILES.
-Rules: NO HTML, NO SVG, plaintext or JSON only.`;
+      const prompt = `You are a world-class educational content creator and chalkboard lecturer. 
+Build 6-10 highly engaging and visually rich segments for the topic "${topic}" (subject: "${subject}").
+
+Each segment MUST follow this strict JSON schema:
+{
+  "subtitles": ["Sentence 1...", "Sentence 2...", "Sentence 3..."],
+  "textToSpeak": "Direct teacherly narration combining the subtitles...",
+  "visualContent": [
+    {
+      "type": "title" | "text" | "bullet" | "label" | "arrow" | "structure",
+      "content": "Text to display or SMILES string for structure",
+      "delay": relative_seconds_from_segment_start,
+      "duration": drawing_seconds,
+      "x": optional_fixed_x,
+      "y": optional_fixed_y
+    }
+  ]
+}
+
+Rules:
+1. "visualContent" MUST be a JSON array of events.
+2. MANDATORY: Every segment MUST include a "type": "svg" event with a detailed "svgPath".
+3. "svgPath" should be a valid SVG path data string (M, L, H, V, Z commands).
+4. DRAW MEANINGFULLY: If the topic is "The Heart", draw a heart primitive. If it's "Gravity", draw a falling object and an arrow.
+5. NEVER use "type": "structure" unless you are providing a SMILES string for a chemical molecule.
+6. For all other diagrams, ALWAYS use "type": "svg".
+7. Layout: Visuals appear on the right, text on the left. Leave plenty of vertical space.`;
 
 
-      const response = await OpenAIService.getInstance().generateChatCompletion(prompt, 'Return JSON only for the lesson plan.');
+
+
+
+
+      const response = await OpenAIService.getInstance().generateChatCompletion(prompt, 'Return ONLY a JSON object with a "segments" array. No preamble.');
       const jsonCandidate = extractJsonCandidate(response);
       if (!jsonCandidate) throw new Error('No JSON found');
       const parsed = JSON.parse(jsonCandidate);
       if (parsed.segments) {
-        const computed = parsed.segments.map((s: any) => sanitizeSegment({
-          ...s,
-          textToSpeak: s.textToSpeak || (Array.isArray(s.subtitles) ? s.subtitles.join(' ') : s.textToSpeak),
-          subtitles: Array.isArray(s.subtitles) ? s.subtitles : [s.textToSpeak || '']
-        }));
+        console.log('--- Whiteboard Generation Success ---');
+        const computed = parsed.segments.map((s: any) => {
+          const sanitized = sanitizeSegment(s);
+          // Defensive parsing for visualContent
+          let vArray: any[] = [];
+          if (Array.isArray(s.visualContent)) vArray = s.visualContent;
+          else if (typeof s.visualContent === 'string') {
+            try { vArray = JSON.parse(s.visualContent); } catch { vArray = []; }
+          }
+
+          return {
+            ...sanitized,
+            visualContent: vArray
+          };
+        });
+        console.log('Active Script Preview:', computed.map((c: any) => ({ id: c.id, visuals: c.visualContent.length })));
         setScript(computed);
         const { data: { user: u } } = await supabase.auth.getUser();
         if (u) {
@@ -893,16 +880,16 @@ Rules: NO HTML, NO SVG, plaintext or JSON only.`;
 
     const subtitlesToPlay = Array.isArray(segment.subtitles) && segment.subtitles.length > 0 ? segment.subtitles : [segment.textToSpeak || ''];
 
-      const speakFallback = async (text: string) => {
-        await new Promise<void>((resolve) => {
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 0.92;
-          utterance.pitch = 1.02;
-          utterance.onend = () => resolve();
-          speechRef.current = utterance;
-          window.speechSynthesis.speak(utterance);
-        });
-      };
+    const speakFallback = async (text: string) => {
+      await new Promise<void>((resolve) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.92;
+        utterance.pitch = 1.02;
+        utterance.onend = () => resolve();
+        speechRef.current = utterance;
+        window.speechSynthesis.speak(utterance);
+      });
+    };
 
 
     for (let i = 0; i < subtitlesToPlay.length; i++) {

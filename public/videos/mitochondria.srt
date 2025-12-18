@@ -1,0 +1,12 @@
+1
+00:00:00,000 --> 00:00:09,663
+Imagine each cell in your body as a bustling city, and the mitochondria are its power plants, generating energy to keep everything running smoothly.
+
+2
+00:00:09,663 --> 00:00:19,326
+These tiny, bean-shaped organelles have a unique double membrane with an inner layer that folds into cristae, creating more surface area for energy production.
+
+3
+00:00:19,326 --> 00:00:26,976
+Inside, a dynamic dance of proteins and enzymes takes place, converting nutrients into ATP, the cell's main energy currency.
+
