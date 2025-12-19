@@ -1,10 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, RefreshControl, ActivityIndicator } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
+import { useVideoGeneration } from '../../lib/VideoGenerationContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 interface DaySchedule {
     id: string;
@@ -27,6 +29,8 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const { activeGenerations } = useVideoGeneration();
+    const generationsArray = Array.from(activeGenerations.values());
 
     useEffect(() => {
         fetchData();
@@ -168,6 +172,35 @@ export default function HomeScreen() {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.dark.primary} />
             }
         >
+            {/* Global Background Generations */}
+            {generationsArray.length > 0 && (
+                <View style={styles.backgroundGenerations}>
+                    {generationsArray.map(gen => (
+                        <TouchableOpacity
+                            key={gen.id}
+                            style={styles.genCard}
+                            onPress={() => router.push({ pathname: '/player', params: { topic: gen.topic } })}
+                        >
+                            <BlurView intensity={20} style={styles.genContent}>
+                                <View style={styles.genInfo}>
+                                    <View style={styles.genIcon}>
+                                        <Ionicons name="sparkles" size={16} color={Colors.dark.accent} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.genTitle} numberOfLines={1}>Generating Visuals: {gen.topic}</Text>
+                                        <Text style={styles.genStep}>{gen.current_step}</Text>
+                                    </View>
+                                    <ActivityIndicator size="small" color={Colors.dark.accent} />
+                                </View>
+                                <View style={styles.progressContainer}>
+                                    <View style={[styles.progressBar, { width: `${gen.progress * 100}%` }]} />
+                                </View>
+                            </BlurView>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            )}
+
             {/* Header with Gradient */}
             <LinearGradient
                 colors={['#00f3ff20', '#ff00ff20']}
@@ -490,5 +523,55 @@ const styles = StyleSheet.create({
         color: Colors.dark.text,
         fontWeight: Typography.weights.semibold,
         marginTop: Spacing.sm,
+    },
+    backgroundGenerations: {
+        padding: Spacing.md,
+        gap: Spacing.sm,
+    },
+    genCard: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(57, 255, 20, 0.2)',
+    },
+    genContent: {
+        padding: Spacing.md,
+    },
+    genInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        marginBottom: Spacing.sm,
+    },
+    genIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(57, 255, 20, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    genTitle: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    genStep: {
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontSize: 10,
+    },
+    progressContainer: {
+        height: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    progressBar: {
+        height: '100%',
+        backgroundColor: Colors.dark.accent,
+        shadowColor: Colors.dark.accent,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 5,
     },
 });

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
-import { Colors, Spacing, Typography } from '../constants/theme';
+import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
@@ -238,6 +238,35 @@ export default function PlanDetailScreen() {
                                 ))}
                             </View>
                         )}
+
+                        <View style={styles.actionButtons}>
+                            {!isCurrentTaskCompleted && (
+                                <TouchableOpacity style={styles.completeButtonLarge} onPress={completeTask}>
+                                    <LinearGradient colors={['#39ff14', '#00ff88']} style={styles.completeButtonGradient}>
+                                        <Ionicons name="checkmark-circle" size={20} color="#000" />
+                                        <Text style={styles.completeButtonText}>Complete Task</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                                style={styles.videoButton}
+                                onPress={() => {
+                                    router.push({
+                                        pathname: '/player',
+                                        params: {
+                                            topic: currentTask.topic,
+                                            planId: planId,
+                                            subject: plan.subject
+                                        }
+                                    });
+                                }}
+                            >
+                                <LinearGradient colors={['#00f3ff', '#0080ff']} style={styles.videoButtonGradient}>
+                                    <Ionicons name="play" size={20} color="#000" />
+                                    <Text style={styles.videoButtonText}>Watch Lesson</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
                     </LinearGradient>
                 </View>
 
@@ -255,16 +284,6 @@ export default function PlanDetailScreen() {
                         textAlignVertical="top"
                     />
                 </View>
-
-                {/* Complete Button */}
-                {!isCurrentTaskCompleted && (
-                    <TouchableOpacity style={styles.completeButton} onPress={completeTask}>
-                        <LinearGradient colors={['#39ff14', '#00ff88']} style={styles.completeButtonGradient}>
-                            <Ionicons name="checkmark-circle" size={20} color="#000" />
-                            <Text style={styles.completeButtonText}>Complete Task</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                )}
 
                 {/* Navigation */}
                 <View style={styles.navigation}>
@@ -328,7 +347,7 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: Spacing.lg,
-        paddingTop: Spacing.xl,
+        paddingTop: 60,
         flexDirection: 'row',
         alignItems: 'center',
         gap: Spacing.md,
@@ -350,7 +369,7 @@ const styles = StyleSheet.create({
         fontSize: Typography.sizes.xl,
         fontWeight: Typography.weights.bold,
         color: Colors.dark.text,
-        marginBottom: Spacing.xs,
+        marginBottom: 4,
     },
     headerMeta: {
         flexDirection: 'row',
@@ -439,7 +458,7 @@ const styles = StyleSheet.create({
     taskDay: {
         fontSize: Typography.sizes.lg,
         fontWeight: Typography.weights.bold,
-        color: Colors.dark.text,
+        color: '#fff',
     },
     taskDate: {
         fontSize: Typography.sizes.sm,
@@ -448,29 +467,29 @@ const styles = StyleSheet.create({
     completedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.xs,
+        gap: 4,
         backgroundColor: Colors.dark.accent + '20',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.xs,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: Colors.dark.accent + '30',
     },
     completedText: {
-        fontSize: Typography.sizes.xs,
+        fontSize: 10,
         color: Colors.dark.accent,
-        fontWeight: Typography.weights.semibold,
+        fontWeight: Typography.weights.bold,
     },
     taskTopic: {
         fontSize: Typography.sizes.lg,
         fontWeight: Typography.weights.bold,
-        color: Colors.dark.text,
+        color: '#fff',
         marginBottom: Spacing.sm,
     },
     typeBadge: {
         alignSelf: 'flex-start',
         backgroundColor: Colors.dark.primary + '20',
-        paddingHorizontal: Spacing.sm,
+        paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
         borderWidth: 1,
@@ -478,12 +497,12 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.md,
     },
     typeBadgeText: {
-        fontSize: Typography.sizes.xs,
+        fontSize: 10,
         color: Colors.dark.primary,
         fontWeight: Typography.weights.semibold,
     },
     descriptionCard: {
-        backgroundColor: '#00000066',
+        backgroundColor: 'rgba(0,0,0,0.4)',
         padding: Spacing.md,
         borderRadius: 12,
         borderWidth: 1,
@@ -493,13 +512,13 @@ const styles = StyleSheet.create({
     descriptionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: Spacing.xs,
-        marginBottom: Spacing.sm,
+        gap: 6,
+        marginBottom: 8,
     },
     descriptionHeaderText: {
         fontSize: Typography.sizes.sm,
-        fontWeight: Typography.weights.semibold,
-        color: Colors.dark.text,
+        fontWeight: Typography.weights.bold,
+        color: '#fff',
     },
     descriptionText: {
         fontSize: Typography.sizes.sm,
@@ -512,18 +531,19 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Colors.dark.primary + '20',
+        marginBottom: Spacing.xl,
     },
     questionsTitle: {
         fontSize: Typography.sizes.md,
-        fontWeight: Typography.weights.semibold,
+        fontWeight: Typography.weights.bold,
         color: Colors.dark.primary,
         marginBottom: Spacing.sm,
     },
     questionItem: {
-        backgroundColor: '#00000040',
+        backgroundColor: 'rgba(0,0,0,0.2)',
         padding: Spacing.sm,
         borderRadius: 8,
-        marginBottom: Spacing.xs,
+        marginBottom: 6,
         borderWidth: 1,
         borderColor: Colors.dark.border,
     },
@@ -532,55 +552,74 @@ const styles = StyleSheet.create({
         color: Colors.dark.textSecondary,
         lineHeight: 18,
     },
-    notesContainer: {
-        marginBottom: Spacing.lg,
+    actionButtons: {
+        gap: Spacing.sm,
     },
-    notesLabel: {
-        fontSize: Typography.sizes.sm,
-        fontWeight: Typography.weights.semibold,
-        color: Colors.dark.textSecondary,
-        marginBottom: Spacing.sm,
-    },
-    notesInput: {
-        backgroundColor: '#00000040',
-        borderWidth: 1,
-        borderColor: Colors.dark.border,
-        borderRadius: 12,
-        padding: Spacing.md,
-        fontSize: Typography.sizes.sm,
-        color: Colors.dark.text,
-        minHeight: 100,
-    },
-    completeButton: {
+    completeButtonLarge: {
         borderRadius: 12,
         overflow: 'hidden',
-        marginBottom: Spacing.lg,
     },
     completeButtonGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: Spacing.md,
-        gap: Spacing.sm,
+        paddingVertical: 14,
+        gap: 8,
     },
     completeButtonText: {
         fontSize: Typography.sizes.md,
         fontWeight: Typography.weights.bold,
         color: '#000',
     },
+    videoButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    videoButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        gap: 8,
+    },
+    videoButtonText: {
+        fontSize: Typography.sizes.md,
+        fontWeight: Typography.weights.bold,
+        color: '#000',
+    },
+    notesContainer: {
+        marginBottom: Spacing.xl,
+    },
+    notesLabel: {
+        fontSize: Typography.sizes.sm,
+        fontWeight: Typography.weights.bold,
+        color: '#fff',
+        marginBottom: Spacing.sm,
+    },
+    notesInput: {
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        borderRadius: 12,
+        padding: Spacing.md,
+        fontSize: Typography.sizes.sm,
+        color: '#fff',
+        minHeight: 100,
+    },
     navigation: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: Spacing.md,
+        paddingBottom: 40,
     },
     navButton: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: Spacing.xs,
+        gap: 8,
         backgroundColor: Colors.dark.surface,
-        paddingVertical: Spacing.sm,
+        paddingVertical: 14,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Colors.dark.border,
@@ -590,8 +629,8 @@ const styles = StyleSheet.create({
     },
     navButtonText: {
         fontSize: Typography.sizes.sm,
-        color: Colors.dark.text,
-        fontWeight: Typography.weights.semibold,
+        color: '#fff',
+        fontWeight: Typography.weights.bold,
     },
     navButtonTextDisabled: {
         color: Colors.dark.textSecondary,

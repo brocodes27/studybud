@@ -81,11 +81,18 @@ export default function LoginScreen() {
                         onPress={handleLogin}
                         disabled={loading}
                     >
-                        {loading ? (
-                            <ActivityIndicator color={Colors.dark.background} />
-                        ) : (
-                            <Text style={styles.buttonText}>Login</Text>
-                        )}
+                        <LinearGradient
+                            colors={['#00f3ff', '#0080ff']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.buttonGradient}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Login</Text>
+                            )}
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
@@ -169,7 +176,13 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: Typography.sizes.md,
         fontWeight: Typography.weights.bold,
-        color: Colors.dark.background,
+        color: '#fff',
+    },
+    buttonGradient: {
+        width: '100%',
+        padding: Spacing.md,
+        alignItems: 'center',
+        borderRadius: 12,
     },
     footer: {
         flexDirection: 'row',

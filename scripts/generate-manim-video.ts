@@ -238,28 +238,33 @@ async function uploadToStorage(filePath: string, contentType: string): Promise<s
 }
 
 async function generateVideo(topic: string, scriptText: string) {
+    const jobId = generationId || `job_${Date.now()}`;
+    const jobDir = path.join(ENGINE_DIR, 'jobs', jobId);
+
     try {
         await logToDB(`Starting generation for: ${topic}`, 5, 'processing');
-        await logEntryDb("Initializing Manim Engine and AI Agents...");
+        await logEntryDb("Initializing Isolated Job Environment...");
 
-        // Temp file
-        const inputScriptPath = path.join(ENGINE_DIR, 'input_script.txt');
+        // Create isolated directory
+        if (!fs.existsSync(path.join(ENGINE_DIR, 'jobs'))) fs.mkdirSync(path.join(ENGINE_DIR, 'jobs'));
+        if (!fs.existsSync(jobDir)) fs.mkdirSync(jobDir, { recursive: true });
+
+        // Temp files within jobDir
+        const inputScriptPath = path.join(jobDir, 'input_script.txt');
         fs.writeFileSync(inputScriptPath, scriptText, 'utf-8');
-
-        // Cleanup
-        const scenePath = path.join(ENGINE_DIR, 'scene.py');
-        if (fs.existsSync(scenePath)) fs.unlinkSync(scenePath);
-        if (fs.existsSync(path.join(ENGINE_DIR, 'media'))) fs.rmSync(path.join(ENGINE_DIR, 'media'), { recursive: true, force: true });
 
         // 1. Script & Code
         await logToDB("AI Agent: Generating script and Manim code...", 20);
         await logEntryDb("Prompting OpenAI GPT-4o for educational content...");
-        await runPythonScript('generator.py', [`"${topic}"`, inputScriptPath]);
 
+        // Pass jobDir to generator
+        await runPythonScript('generator.py', [`"${topic}"`, inputScriptPath, jobDir]);
+
+        const scenePath = path.join(jobDir, 'scene.py');
         if (!fs.existsSync(scenePath)) throw new Error("Failed to generate scene.py code.");
 
-        const narrationPath = path.join(ENGINE_DIR, 'narration.txt');
-        const audioPath = path.join(ENGINE_DIR, 'narration.mp3');
+        const narrationPath = path.join(jobDir, 'narration.txt');
+        const audioPath = path.join(jobDir, 'narration.mp3');
 
         if (!fs.existsSync(narrationPath) || !fs.existsSync(audioPath)) {
             throw new Error("Missing audio/narration files.");
@@ -267,12 +272,15 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 2. Render
         await logToDB("Manim Engine: Rendering video scenes...", 40);
-        await logEntryDb("Starting Python renderer (480p15)... this may take a few minutes.");
+        await logEntryDb("Starting Python renderer (480p15)... isolation active.");
 
-        await runPythonScript('renderer.py', ['scene.py', 'l']);
+        // Update renderer to take jobDir
+        await runPythonScript('renderer.py', [scenePath, 'l', jobDir]);
 
-        // Find video
-        const videoDir = path.join(ENGINE_DIR, 'media', 'videos', 'scene', '480p15');
+        // Find video - it will be inside jobDir/media
+        const videoDir = path.join(jobDir, 'media', 'videos', 'scene', '480p15');
+        if (!fs.existsSync(videoDir)) throw new Error(`Render failed: ${videoDir} not found.`);
+
         const files = fs.readdirSync(videoDir).filter(f => f.endsWith('.mp4'))
             .map(f => ({ name: f, time: fs.statSync(path.join(videoDir, f)).mtime.getTime() }))
             .sort((a, b) => b.time - a.time);
@@ -282,14 +290,14 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 3. Subtitles
         await logToDB("Aligning subtitles...", 75);
-        await logEntryDb("Calculating word-level timestamps using audio analysis...");
-        const srtPath = path.join(ENGINE_DIR, 'subtitles.srt');
+        await logEntryDb("Calculating word-level timestamps...");
+        const srtPath = path.join(jobDir, 'subtitles.srt');
         await runPythonScript('alignment.py', [narrationPath, audioPath, srtPath]);
 
         // 4. Merge
         await logToDB("Merging audio and video...", 90);
         await logEntryDb("FFmpeg: Stitching video stream with audio track...");
-        const finalVideoPath = path.join(ENGINE_DIR, 'final_output.mp4');
+        const finalVideoPath = path.join(jobDir, 'final_output.mp4');
         if (fs.existsSync(finalVideoPath)) fs.unlinkSync(finalVideoPath);
 
         await runCommand('ffmpeg', [
@@ -340,6 +348,12 @@ async function generateVideo(topic: string, scriptText: string) {
         }
 
         console.log("Generation Success!");
+
+        // Cleanup isolated job directory after success
+        if (fs.existsSync(jobDir)) {
+            console.log(`Cleaning up isolated job directory: ${jobDir}`);
+            fs.rmSync(jobDir, { recursive: true, force: true });
+        }
 
     } catch (error: any) {
         console.error('Generation Failed:', error);

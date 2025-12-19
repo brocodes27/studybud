@@ -107,11 +107,18 @@ export default function SignupScreen() {
                         onPress={handleSignup}
                         disabled={loading}
                     >
-                        {loading ? (
-                            <ActivityIndicator color={Colors.dark.background} />
-                        ) : (
-                            <Text style={styles.buttonText}>Create Account</Text>
-                        )}
+                        <LinearGradient
+                            colors={['#ff00ff', '#00f3ff']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.buttonGradient}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Create Account</Text>
+                            )}
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     <View style={styles.footer}>
@@ -195,7 +202,13 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: Typography.sizes.md,
         fontWeight: Typography.weights.bold,
-        color: Colors.dark.background,
+        color: '#fff',
+    },
+    buttonGradient: {
+        width: '100%',
+        paddingVertical: Spacing.md,
+        alignItems: 'center',
+        borderRadius: 12,
     },
     footer: {
         flexDirection: 'row',

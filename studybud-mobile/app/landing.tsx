@@ -205,7 +205,8 @@ export default function LandingScreen() {
                     ].map((feature, index) => (
                         <TouchableOpacity key={index} activeOpacity={0.9} style={styles.featureCard}>
                             <LinearGradient
-                                colors={[...feature.gradient, feature.gradient[0] + '00']}
+                                colors={[feature.gradient[0], feature.gradient[1], 'rgba(0,0,0,0)']}
+                                locations={[0, 0.5, 1]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={styles.featureGradient}
@@ -222,6 +223,44 @@ export default function LandingScreen() {
                             </LinearGradient>
                         </TouchableOpacity>
                     ))}
+                </View>
+
+                {/* Testimonials section */}
+                <View style={styles.testimonialsSection}>
+                    <Text style={styles.sectionTitle}>
+                        Loved by <Text style={styles.sectionTitleAccent}>Students</Text>
+                    </Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.testimonialsScroll}
+                    >
+                        {[
+                            { name: 'Priya Sharma', grade: 'Class 12', text: 'ElevenFolks improved my prep by 40%. The AI plans are incredible!' },
+                            { name: 'Arjun Patel', grade: 'Class 10', text: 'The AI flashcards made studying so much more effective. Highly recommend!' },
+                            { name: 'Sneha Reddy', grade: 'Class 11', text: 'Connect with other students. We motivate each other every day!' }
+                        ].map((t, i) => (
+                            <View key={i} style={styles.testimonialCard}>
+                                <BlurView intensity={20} style={styles.testimonialBlur}>
+                                    <View style={styles.testimonialHeader}>
+                                        <View style={styles.avatarMini}>
+                                            <Text style={styles.avatarMiniText}>{t.name[0]}</Text>
+                                        </View>
+                                        <View>
+                                            <Text style={styles.testimonialName}>{t.name}</Text>
+                                            <Text style={styles.testimonialGrade}>{t.grade}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.starsContainer}>
+                                        {[...Array(5)].map((_, j) => (
+                                            <Ionicons key={j} name="star" size={14} color="#ffd700" />
+                                        ))}
+                                    </View>
+                                    <Text style={styles.testimonialText}>"{t.text}"</Text>
+                                </BlurView>
+                            </View>
+                        ))}
+                    </ScrollView>
                 </View>
 
                 {/* CTA Section */}
@@ -265,9 +304,11 @@ export default function LandingScreen() {
 
                 {/* Footer */}
                 <View style={styles.footer}>
+                    <View style={styles.footerDivider} />
                     <Text style={styles.footerText}>
                         🚀 Powered by AI • 🔒 Secure & Private • 📱 Available Everywhere
                     </Text>
+                    <Text style={styles.copyrightText}>© 2024 ElevenFolks. All rights reserved.</Text>
                 </View>
             </ScrollView>
         </View>
@@ -511,13 +552,83 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.lg,
+        paddingBottom: Spacing.xl,
         alignItems: 'center',
     },
+    footerDivider: {
+        width: '100%',
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginBottom: Spacing.lg,
+    },
     footerText: {
-        fontSize: Typography.sizes.sm,
+        fontSize: 12,
         color: Colors.dark.textSecondary,
         textAlign: 'center',
-        lineHeight: 22,
+        marginBottom: 8,
+    },
+    copyrightText: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.3)',
+        textAlign: 'center',
+    },
+    testimonialsSection: {
+        marginBottom: Spacing.xxl,
+    },
+    testimonialsScroll: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.md,
+    },
+    testimonialCard: {
+        width: 280,
+        marginRight: Spacing.md,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    testimonialBlur: {
+        padding: Spacing.lg,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
+    },
+    testimonialHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.md,
+    },
+    avatarMini: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: Colors.dark.primary + '30',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: Spacing.sm,
+        borderWidth: 1,
+        borderColor: Colors.dark.primary + '40',
+    },
+    avatarMiniText: {
+        color: Colors.dark.primary,
+        fontWeight: 'bold',
+    },
+    testimonialName: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    testimonialGrade: {
+        color: Colors.dark.textSecondary,
+        fontSize: 12,
+    },
+    starsContainer: {
+        flexDirection: 'row',
+        gap: 2,
+        marginBottom: Spacing.sm,
+    },
+    testimonialText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 14,
+        lineHeight: 20,
+        fontStyle: 'italic',
     },
 });

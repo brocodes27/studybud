@@ -29,7 +29,7 @@ def get_scene_class(file_path):
             return match.group(1)
     return "GeneratedScene"
 
-def render_scene(file_path, quality="l"):
+def render_scene(file_path, quality="l", job_dir=None):
     """
     Quality levels: l (480p), m (720p), h (1080p), k (4k)
     """
@@ -42,20 +42,23 @@ def render_scene(file_path, quality="l"):
         print(f"Detected scene class: {scene_class}")
         print(f"Rendering {file_path} at quality {quality}...")
 
+        base_cmd = []
         if os.name == 'nt':
-            # On Windows, use the launcher to specify Python 3.12 where manim is installed
-            cmd = ["py", "-3.12", "-m", "manim", "-q" + quality, file_path, scene_class]
+            base_cmd = ["py", "-3.12", "-m", "manim"]
         else:
-            # On Linux (VPS), verify manim exists first
             try:
                 subprocess.run(["manim", "--version"], capture_output=True)
-                cmd = ["manim", "-v", "ERROR", "-q" + quality, file_path, scene_class]
+                base_cmd = ["manim"]
             except FileNotFoundError:
-                print("Warning: 'manim' command not found directly. Trying 'python3 -m manim'...")
-                cmd = ["python3", "-m", "manim", "-v", "ERROR", "-q" + quality, file_path, scene_class]
+                base_cmd = ["python3", "-m", "manim"]
+        
+        cmd = base_cmd + ["-v", "ERROR", "-q" + quality, file_path, scene_class]
+        
+        if job_dir:
+            media_dir = os.path.join(job_dir, "media")
+            cmd.extend(["--media_dir", media_dir])
         
         print(f"Executing: {' '.join(cmd)}")
-        # We don't capture output here so it streams directly to the parent script's console
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8')
         
         while True:
@@ -78,10 +81,11 @@ def render_scene(file_path, quality="l"):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python renderer.py <file_path> [quality]")
+        print("Usage: python renderer.py <file_path> [quality] [job_dir]")
         sys.exit(1)
         
     file_path = sys.argv[1]
     quality = sys.argv[2] if len(sys.argv) > 2 else "l"
+    job_dir = sys.argv[3] if len(sys.argv) > 3 else None
     
-    render_scene(file_path, quality)
+    render_scene(file_path, quality, job_dir)

@@ -40,6 +40,17 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
+                name="create"
+                options={{
+                    title: 'Create',
+                    tabBarIcon: ({ color, focused }) => (
+                        <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+                            <Ionicons name={focused ? "add-circle" : "add-circle-outline"} size={24} color={color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="plans"
                 options={{
                     title: 'Plans',

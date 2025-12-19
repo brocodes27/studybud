@@ -190,7 +190,19 @@ export default function LessonsScreen() {
                     {item.description}
                 </Text>
 
-                <TouchableOpacity style={styles.watchButton}>
+                <TouchableOpacity
+                    style={styles.watchButton}
+                    onPress={() => {
+                        router.push({
+                            pathname: '/player',
+                            params: {
+                                topic: item.topic,
+                                planId: item.plan_id,
+                                subject: item.subject
+                            }
+                        });
+                    }}
+                >
                     <LinearGradient colors={['#39ff14', '#00ff88']} style={styles.watchButtonGradient}>
                         <Ionicons name="play" size={16} color={Colors.dark.background} />
                         <Text style={styles.watchButtonText}>Watch Lesson</Text>

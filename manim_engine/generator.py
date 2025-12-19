@@ -96,8 +96,14 @@ def setup_ffmpeg():
             AudioSegment.converter = os.path.join(bin_dir, "ffmpeg.exe")
             AudioSegment.ffprobe = os.path.join(bin_dir, "ffprobe.exe")
 
-def generate_scene_and_audio(topic, script_text):
+def generate_scene_and_audio(topic, script_text, job_dir=None):
     setup_ffmpeg()
+    
+    # If job_dir is provided, make sure it exists and use it as base
+    if job_dir and not os.path.exists(job_dir):
+        os.makedirs(job_dir, exist_ok=True)
+        
+    base_path = job_dir if job_dir else ""
     
     prompt = (
         f"Topic: {topic}\n"
@@ -152,10 +158,10 @@ def generate_scene_and_audio(topic, script_text):
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     
-    temp_dir = "temp_audio_segments"
+    temp_dir = os.path.join(base_path, "temp_audio_segments")
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
-    os.makedirs(temp_dir)
+    os.makedirs(temp_dir, exist_ok=True)
     
     print(f"Processing {len(segments)} segments...")
     
@@ -184,8 +190,6 @@ def generate_scene_and_audio(topic, script_text):
         # Normalize indentation from AI then re-indent to class depth (8 spaces)
         clean_seg_code = textwrap.dedent(code).strip()
         # Safety Fix: Ensure LaTeX backslashes are escaped if AI forgot
-        # This regex finds a backslash that is NOT followed by n, t, r, ', ", or another backslash
-        # and doubles it. This protects LaTeX like \frac while allowing \n.
         clean_seg_code = re.sub(r'\\(?![ntr\'"\\])', r'\\\\', clean_seg_code)
         
         indented_code = textwrap.indent(clean_seg_code, "        ")
@@ -199,23 +203,28 @@ def generate_scene_and_audio(topic, script_text):
         shutil.rmtree(temp_dir)
         
     # Write Final Files
-    with open("scene.py", "w", encoding="utf-8") as f:
+    scene_path = os.path.join(base_path, "scene.py")
+    audio_path = os.path.join(base_path, "narration.mp3")
+    text_path = os.path.join(base_path, "narration.txt")
+
+    with open(scene_path, "w", encoding="utf-8") as f:
         f.write(full_code)
         
-    full_audio.export("narration.mp3", format="mp3")
+    full_audio.export(audio_path, format="mp3")
     
-    with open("narration.txt", "w", encoding="utf-8") as f:
+    with open(text_path, "w", encoding="utf-8") as f:
         f.write(full_narrative_text.strip())
         
-    print("Success: Generated scene.py and narration.mp3 with perfect sync.")
+    print(f"Success: Generated files in {base_path if base_path else 'current directory'}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python generator.py <topic> <script_json>")
+        print("Usage: python generator.py <topic> <script_json> [job_dir]")
         sys.exit(1)
         
     topic = sys.argv[1].strip('"').strip("'")
     script_arg = sys.argv[2]
+    job_dir = sys.argv[3] if len(sys.argv) > 3 else None
     
     if os.path.isfile(script_arg):
         with open(script_arg, "r", encoding="utf-8") as f:
@@ -223,4 +232,4 @@ if __name__ == "__main__":
     else:
         script_data = script_arg
     
-    generate_scene_and_audio(topic, script_data)
+    generate_scene_and_audio(topic, script_data, job_dir)
