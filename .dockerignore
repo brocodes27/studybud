@@ -19,4 +19,3 @@ manim_engine/temp_audio_segments
 *.log
 .env
 bun.lock
-package-lock.json
