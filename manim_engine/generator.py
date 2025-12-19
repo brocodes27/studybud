@@ -76,6 +76,36 @@ Output ONLY valid JSON matching this schema:
 3. **Axes**: Use `Axes(axis_config={"include_tip": True})` for all graphs.
 4. **Positioning**: Use `.to_edge(UP)` or `.next_to(obj, DOWN)` to avoid "messy" overlaps.
 5. **Memory**: If a segment has more than 8 major components (excluding labels), fade out the oldest ones.
+
+**CRITICAL: BANNED METHODS (THESE DO NOT EXIST)**:
+- NEVER use `.arrange_in_circle()` - VGroup does NOT have this method
+- NEVER use `.set_glow()` - This method does not exist in standard Manim
+- NEVER use `.pulse()` - Use `.animate.scale()` with back-and-forth transforms instead
+
+**CORRECT CIRCULAR ARRANGEMENTS**:
+To arrange objects in a circle, use manual positioning with trigonometry:
+```python
+import numpy as np
+radius = 2
+n_objects = 5
+objects = VGroup(*[Circle() for _ in range(n_objects)])
+for i, obj in enumerate(objects):
+    angle = i * 2 * PI / n_objects
+    obj.move_to([radius * np.cos(angle), radius * np.sin(angle), 0])
+```
+
+**VALID VGROUP METHODS**:
+- `.arrange(direction=RIGHT, buff=0.5)` - arranges in a line
+- `.arrange_in_grid(rows=2, cols=3, buff=0.5)` - arranges in a grid
+- `.shift(vector)` - moves the entire group
+- `.scale(factor)` - scales the entire group
+- `.rotate(angle)` - rotates the entire group
+- `.next_to(mobject, direction)` - positions relative to another object
+
+**VALID ANIMATION METHODS**:
+- `Create()`, `Write()`, `FadeIn()`, `FadeOut()`, `Transform()`, `ReplacementTransform()`
+- `GrowFromCenter()`, `ShrinkToCenter()`, `Indicate()`, `Flash()`, `Wiggle()`
+- Use `.animate` for property changes: `obj.animate.shift(UP)`, `obj.animate.scale(2)`
 """
 
 def clean_code_block(code):
