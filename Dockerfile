@@ -19,7 +19,11 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install Node dependencies
-RUN npm install
+# We omit dev dependencies to save space and time on the VPS
+# We only need the runtime scripts (tsx, typescript, supabase, etc)
+RUN npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set fetch-retries 5 && \
+    npm ci --omit=dev
 
 # Copy Python requirements
 COPY requirements.txt ./
