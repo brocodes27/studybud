@@ -206,10 +206,14 @@ export const VideoLessons = () => {
     const handlePlayPremium = async (lesson: Lesson) => {
         setLoading(true);
         try {
-            // Clean/Truncate the topic for DB lookup (prevents 406 errors with huge topics)
-            const cleanTopic = lesson.topic.length > 100
-                ? lesson.topic.substring(0, 97) + '...'
-                : lesson.topic;
+            // Aggressively clean topic: No special chars, max 50 chars.
+            // This prevents Supabase 406 errors and file system issues.
+            const cleanTopic = lesson.topic
+                .replace(/[^a-zA-Z0-9 ]/g, '') // Remove everything except alphanumeric and spaces
+                .substring(0, 50)              // Truncate to safe length
+                .trim();
+
+            console.log("Searching for video with topic:", cleanTopic);
 
             // 1. Check if generation exists
             const { data: existing, error } = await supabase
