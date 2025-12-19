@@ -139,8 +139,12 @@ async function runPythonScript(scriptName: string, args: string[]): Promise<stri
         child.on('error', (err) => reject(new Error(`Failed to start Python script ${scriptName}: ${err.message}`)));
 
         child.on('close', (code) => {
-            if (code !== 0) reject(new Error(`Python script ${scriptName} failed with code ${code}\nStderr: ${stderr}`));
-            else resolve(stdout);
+            if (code !== 0) {
+                const combinedOutput = `Stdout: ${stdout}\nStderr: ${stderr}`;
+                reject(new Error(`Python script ${scriptName} failed with code ${code}\n${combinedOutput}`));
+            } else {
+                resolve(stdout);
+            }
         });
     });
 }

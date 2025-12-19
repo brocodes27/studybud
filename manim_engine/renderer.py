@@ -34,27 +34,46 @@ def render_scene(file_path, quality="l"):
     Quality levels: l (480p), m (720p), h (1080p), k (4k)
     """
     try:
+        if not os.path.exists(file_path):
+            print(f"Error: scene file not found at {file_path}")
+            sys.exit(1)
+
         scene_class = get_scene_class(file_path)
         print(f"Detected scene class: {scene_class}")
         print(f"Rendering {file_path} at quality {quality}...")
-        
+
         if os.name == 'nt':
             # On Windows, use the launcher to specify Python 3.12 where manim is installed
             cmd = ["py", "-3.12", "-m", "manim", "-q" + quality, file_path, scene_class]
         else:
-            cmd = ["manim", "-q" + quality, file_path, scene_class]
+            # On Linux (VPS), verify manim exists first
+            try:
+                subprocess.run(["manim", "--version"], capture_output=True)
+                cmd = ["manim", "-v", "ERROR", "-q" + quality, file_path, scene_class]
+            except FileNotFoundError:
+                print("Warning: 'manim' command not found directly. Trying 'python3 -m manim'...")
+                cmd = ["python3", "-m", "manim", "-v", "ERROR", "-q" + quality, file_path, scene_class]
         
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')
+        print(f"Executing: {' '.join(cmd)}")
+        # We don't capture output here so it streams directly to the parent script's console
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8')
         
-        if result.returncode != 0:
-            print("Error during rendering:")
-            print(result.stderr)
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+        
+        returncode = process.poll()
+        if returncode != 0:
+            print(f"Manim rendering failed with return code {returncode}")
             sys.exit(1)
             
         print("Rendering complete.")
         return True
-    except FileNotFoundError:
-        print("Error: 'manim' command not found. Please ensure Manim Community is installed and on your PATH.")
+    except Exception as e:
+        print(f"Unexpected error in renderer.py: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
