@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CLASSES = ["10", "12"];
 const EXAM_TYPES = ["Board", "Pre-Board", "Practice"];
@@ -22,6 +23,7 @@ const SUBJECTS_12 = {
 
 export default function CBSESimulatorScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -37,7 +39,7 @@ export default function CBSESimulatorScreen() {
 
     // Step 1: Basic Details
     const renderStep1 = () => (
-        <View style={styles.stepContainer}>
+        <View style={[styles.stepContainer, { paddingBottom: insets.bottom + 40 }]}>
             <Text style={styles.stepTitle}>Exam Details</Text>
 
             <View style={styles.inputGroup}>
@@ -155,7 +157,7 @@ export default function CBSESimulatorScreen() {
 
     // Step 2: Select Chapters & Difficulty
     const renderStep2 = () => (
-        <View style={styles.stepContainer}>
+        <View style={[styles.stepContainer, { paddingBottom: insets.bottom + 40 }]}>
             <Text style={styles.stepTitle}>Configurations</Text>
 
             <View style={styles.inputGroup}>
@@ -259,7 +261,7 @@ export default function CBSESimulatorScreen() {
         <View style={styles.container}>
             <LinearGradient
                 colors={[Colors.dark.surface, Colors.dark.background]}
-                style={styles.header}
+                style={[styles.header, { paddingTop: insets.top + 20 }]}
             >
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.dark.text} />

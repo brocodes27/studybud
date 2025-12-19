@@ -7,6 +7,7 @@ import { useVideoGeneration } from '../../lib/VideoGenerationContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface DaySchedule {
     id: string;
@@ -24,21 +25,30 @@ interface Stats {
 }
 
 export default function HomeScreen() {
+    const insets = useSafeAreaInsets();
     const [todaySchedule, setTodaySchedule] = useState<DaySchedule | null>(null);
     const [stats, setStats] = useState<Stats>({ streak: 0, totalPlans: 0, completedToday: 0 });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(20)).current;
     const { activeGenerations } = useVideoGeneration();
     const generationsArray = Array.from(activeGenerations.values());
 
     useEffect(() => {
         fetchData();
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-        }).start();
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            })
+        ]).start();
     }, []);
 
     const fetchData = async () => {
@@ -158,7 +168,8 @@ export default function HomeScreen() {
         return (
             <View style={styles.container}>
                 <LinearGradient colors={['#0a0a0f', '#1a1a2e']} style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Loading your study plan...</Text>
+                    <ActivityIndicator size="large" color={Colors.dark.primary} />
+                    <Text style={styles.loadingText}>Loading StudyBud...</Text>
                 </LinearGradient>
             </View>
         );
@@ -167,14 +178,14 @@ export default function HomeScreen() {
     return (
         <ScrollView
             style={styles.container}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.dark.primary} />
             }
         >
             {/* Global Background Generations */}
             {generationsArray.length > 0 && (
-                <View style={styles.backgroundGenerations}>
+                <View style={[styles.backgroundGenerations, { marginTop: insets.top }]}>
                     {generationsArray.map(gen => (
                         <TouchableOpacity
                             key={gen.id}
@@ -203,19 +214,24 @@ export default function HomeScreen() {
 
             {/* Header with Gradient */}
             <LinearGradient
-                colors={['#00f3ff20', '#ff00ff20']}
+                colors={['rgba(0, 243, 255, 0.1)', 'rgba(255, 0, 255, 0.05)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.header}
+                style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}
             >
-                <Text style={styles.greeting}>Welcome back! 👋</Text>
-                <Text style={styles.date}>
-                    {new Date().toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                    })}
-                </Text>
+                <View>
+                    <Text style={styles.greeting}>Welcome back! 👋</Text>
+                    <Text style={styles.date}>
+                        {new Date().toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                        })}
+                    </Text>
+                </View>
+                <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(tabs)/profile')}>
+                    <Ionicons name="person-circle-outline" size={40} color={Colors.dark.text} />
+                </TouchableOpacity>
             </LinearGradient>
 
             {/* Stats Cards */}
@@ -368,9 +384,15 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: Spacing.lg,
-        paddingTop: Spacing.xl,
+        // paddingTop is handled dynamically via inline style
         borderBottomWidth: 1,
         borderBottomColor: Colors.dark.border,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    profileButton: {
+        padding: 4,
     },
     greeting: {
         fontSize: Typography.sizes.xxl,

@@ -7,9 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ExamSessionScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const questions = typeof params.questions === 'string' ? JSON.parse(params.questions) : [];
     const duration = params.duration ? parseInt(params.duration as string) : 3 * 60 * 60;
@@ -164,7 +166,7 @@ export default function ExamSessionScreen() {
 
     if (isSubmitted) {
         return (
-            <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+            <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }}>
                 <Text style={styles.headerTitle}>Exam Submission</Text>
 
                 {!imageUri ? (
@@ -259,7 +261,7 @@ export default function ExamSessionScreen() {
         <View style={styles.container}>
             <LinearGradient
                 colors={[Colors.dark.surface, Colors.dark.background]}
-                style={styles.header}
+                style={[styles.header, { paddingTop: insets.top + 20 }]}
             >
                 <View style={styles.timerBadge}>
                     <Ionicons name="time-outline" size={20} color={Colors.dark.accent} />
@@ -290,7 +292,7 @@ export default function ExamSessionScreen() {
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
                 <TouchableOpacity
                     disabled={currentIndex === 0}
                     onPress={() => setCurrentIndex(prev => prev - 1)}

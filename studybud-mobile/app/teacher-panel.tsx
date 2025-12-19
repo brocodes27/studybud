@@ -150,8 +150,12 @@ export default function TeacherPanelScreen() {
                             onPress={() => router.push('/notifications')}
                         >
                             <Ionicons name="notifications-outline" size={24} color="#fff" />
-                            {/* Optional: Add red dot if unread */}
-                            {/* <View style={styles.badge} /> */}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.iconButton}
+                            onPress={() => router.push('/teacher/profile')}
+                        >
+                            <Ionicons name="person-outline" size={24} color="#fff" />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.createButton}

@@ -5,9 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -57,7 +59,7 @@ export default function NotificationsScreen() {
                 // Extract class ID and attempt ID if present
                 const parts = item.action_url.split('/teacher/class/')[1].split('?');
                 const classId = parts[0];
-                router.push({ pathname: `/teacher/class/${classId}` });
+                router.push({ pathname: '/teacher/class/[id]', params: { id: classId } });
             } else if (item.action_url.includes('/classes/')) {
                 // Student class link
                 const classId = item.action_url.split('/classes/')[1];
@@ -83,7 +85,7 @@ export default function NotificationsScreen() {
         <View style={styles.container}>
             <LinearGradient
                 colors={[Colors.dark.surface, Colors.dark.background]}
-                style={styles.header}
+                style={[styles.header, { paddingTop: insets.top + 20 }]}
             >
                 <View style={styles.headerTop}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface ManimVideoPlayerProps {
@@ -21,6 +21,7 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
 
     // Generation State
     const [isGenerating, setIsGenerating] = useState(!!generationId);
+    const [currentProgress, setCurrentProgress] = useState(0);
     const [logs, setLogs] = useState<{ time: string, msg: string }[]>([]);
     const [actualSrc, setActualSrc] = useState<string | null>(videoUrl || null);
 
@@ -63,11 +64,12 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                     setActualSrc(data.video_url);
                     setIsGenerating(false);
                 } else if (data.status === 'failed') {
-                    setError("Generation Failed");
+                    setError("Generation Failed: " + (data.logs?.[data.logs.length - 1]?.msg || "Internal engine error"));
                     setIsGenerating(false);
                 }
-                // Load historical logs? For now just start empty or use last step
-                if (data.current_step) setLogs([{ time: new Date().toLocaleTimeString(), msg: data.current_step }]);
+                if (data.progress) setCurrentProgress(data.progress);
+                if (data.logs) setLogs(data.logs);
+                else if (data.current_step) setLogs([{ time: new Date().toLocaleTimeString(), msg: data.current_step }]);
             }
         });
 
@@ -79,15 +81,24 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                 (payload) => {
                     const newItem = payload.new as any;
 
-                    // Update Logs
+                    // Update Logs & Progress
+                    if (newItem.progress !== undefined) {
+                        setCurrentProgress(newItem.progress);
+                    }
+
                     if (newItem.current_step) {
-                        setLogs(prev => [...prev, { time: new Date().toLocaleTimeString().split(' ')[0], msg: newItem.current_step }]);
+                        setLogs(prev => {
+                            const last = prev[prev.length - 1];
+                            if (last?.msg === newItem.current_step) return prev;
+                            return [...prev, { time: new Date().toLocaleTimeString().split(' ')[0], msg: newItem.current_step }];
+                        });
                     }
 
                     // Complete
                     if (newItem.status === 'completed' && newItem.video_url) {
                         setActualSrc(newItem.video_url);
                         setIsGenerating(false);
+                        setCurrentProgress(100);
                     }
 
                     // Fail
@@ -154,28 +165,97 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                 className={`relative w-full ${isFullscreen ? 'h-full' : 'max-w-5xl aspect-video'} rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] class-glass`}
             >
 
-                {/* Simple Generation Loading State */}
-                {isGenerating && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
-                        <div className="relative">
-                            <div className="w-24 h-24 rounded-full border-4 border-white/5 border-t-neon-green animate-spin" />
+                {/* Generation Loading State */}
+                {isGenerating && !error && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl px-8">
+                        <div className="relative mb-8">
+                            <div className="w-32 h-32 rounded-full border-4 border-white/5 border-t-neon-green animate-spin" />
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <Sparkles className="text-neon-green animate-pulse" />
+                                <Sparkles className="text-neon-green w-10 h-10 animate-pulse" />
                             </div>
                         </div>
-                        <h3 className="mt-8 text-2xl font-bold text-white tracking-tight">Preparing Premium Visuals</h3>
-                        <p className="text-gray-400 mt-2 font-mono">{logs[logs.length - 1]?.msg || 'Initializing engine...'}</p>
 
-                        <div className="mt-8 w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-neon-green transition-all duration-1000 shadow-[0_0_15px_rgba(34,197,94,0.5)]"
-                                style={{ width: `${(logs.length / 10) * 100}%` }} // Simplified progress estimation
-                            />
+                        <div className="text-center space-y-2 max-w-md">
+                            <h3 className="text-3xl font-black text-white tracking-tight uppercase italic">
+                                Rendering <span className="text-neon-green">Masterpiece</span>
+                            </h3>
+                            <p className="text-gray-400 font-medium">Topic: {topic}</p>
                         </div>
 
-                        <button onClick={onClose} className="mt-12 px-6 py-2 rounded-xl bg-white/5 text-gray-500 hover:text-white transition-all text-sm">
-                            Generate in Background
-                        </button>
+                        <div className="mt-12 w-full max-w-sm">
+                            <div className="flex justify-between text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2 px-1">
+                                <span>Engine Progress</span>
+                                <span className="text-neon-green">{currentProgress}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 p-[1px]">
+                                <div
+                                    className="h-full bg-gradient-to-r from-emerald-600 to-neon-green transition-all duration-700 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.4)]"
+                                    style={{ width: `${currentProgress}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Live Log Terminal */}
+                        <div className="mt-12 w-full max-w-2xl bg-black/40 rounded-2xl border border-white/10 overflow-hidden">
+                            <div className="px-4 py-2 bg-white/5 border-b border-white/10 flex items-center gap-2">
+                                <div className="flex gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/40" />
+                                </div>
+                                <span className="text-[10px] font-mono text-gray-500 ml-2">manim-engine --verbose</span>
+                            </div>
+                            <div
+                                ref={logContainerRef}
+                                className="p-4 h-32 font-mono text-xs text-emerald-400 overflow-y-auto space-y-1"
+                            >
+                                {logs.map((log, i) => (
+                                    <div key={i} className="flex gap-3 opacity-80 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <span className="text-gray-600">[{log.time}]</span>
+                                        <span className="text-emerald-500">▶</span>
+                                        <span className="flex-1">{log.msg}</span>
+                                    </div>
+                                ))}
+                                {logs.length === 0 && <div className="text-gray-600 animate-pulse">Waiting for engine response...</div>}
+                            </div>
+                        </div>
+
+                        <div className="mt-12 flex items-center gap-4">
+                            <button
+                                onClick={onClose}
+                                className="px-8 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold border border-white/5"
+                            >
+                                Finish in Background
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                    <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl px-12 text-center">
+                        <div className="w-20 h-20 rounded-3xl bg-red-500/20 border border-red-500/30 flex items-center justify-center mb-8">
+                            <AlertCircle className="text-red-500 w-10 h-10" />
+                        </div>
+                        <h3 className="text-3xl font-black text-white italic tracking-tight mb-4 uppercase">Generation <span className="text-red-500">Failed</span></h3>
+                        <p className="text-gray-400 text-lg max-w-xl mb-12 leading-relaxed">
+                            {error}
+                        </p>
+
+                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-xl mb-12 max-w-lg">
+                            <p className="text-xs text-red-400/80 italic font-mono">
+                                Potential cause: Temporary LaTeX rendering error or server timeout. Try generating the video again or contact support.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={onClose}
+                                className="px-10 py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-xl shadow-white/5"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
                     </div>
                 )}
 

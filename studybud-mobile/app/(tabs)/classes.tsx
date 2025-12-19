@@ -5,9 +5,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ClassesScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [classes, setClasses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [joining, setJoining] = useState(false);
@@ -64,18 +66,13 @@ export default function ClassesScreen() {
                         <Text style={styles.classInfo}>ID: {item.id.substring(0, 8)}...</Text>
                     </View>
                 </View>
-                {/* 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>View Details <Ionicons name="arrow-forward" size={14} /></Text>
-                </View>
-                */}
             </LinearGradient>
         </TouchableOpacity>
     );
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+            <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
                 <Text style={styles.headerTitle}>My Classes</Text>
                 {/* Add Join Button logic if needed later */}
             </View>
@@ -95,7 +92,7 @@ export default function ClassesScreen() {
                     data={classes}
                     renderItem={renderClassItem}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
                 />
             )}
         </View>

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Bell, XCircle, Eye, Trash2, Upload, Plus, FileText, Link as LinkIcon, MessageSquare, BarChart2, Brain, Calendar, Users, BookOpen, AlertCircle, CheckCircle, Loader2, Send, Search, Download, Clock, Sparkles } from 'lucide-react';
 import { marked } from 'marked';
 
-const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Analytics', 'AI Insights', 'Notifications'];
+const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Weaknesses', 'AI Insights', 'Notifications'];
 
 const TeacherClassDashboard: React.FC = () => {
   const { id } = useParams();
@@ -61,6 +61,8 @@ const TeacherClassDashboard: React.FC = () => {
   const [attemptProfiles, setAttemptProfiles] = useState<Record<string, { full_name?: string; email?: string }>>({});
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [attemptModal, setAttemptModal] = useState<any | null>(null);
+  const [responseGroupMode, setResponseGroupMode] = useState<'assignment' | 'student'>('assignment');
+  const [viewingStudent, setViewingStudent] = useState<any | null>(null);
 
   // Helper to extract storage path from a public URL for the 'assignments' bucket
   const getAssignmentsStoragePath = (publicUrl?: string | null) => {
@@ -874,6 +876,27 @@ const TeacherClassDashboard: React.FC = () => {
         {/* Student Responses Tab */}
         {tab === 'Student Responses' && (
           <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileText className="h-6 w-6 text-neon-blue" />
+                Student Responses
+              </h3>
+              <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+                <button
+                  onClick={() => setResponseGroupMode('assignment')}
+                  className={`px-4 py-1.5 rounded-lg text-sm transition-all ${responseGroupMode === 'assignment' ? 'bg-neon-blue text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                  By Assignment
+                </button>
+                <button
+                  onClick={() => setResponseGroupMode('student')}
+                  className={`px-4 py-1.5 rounded-lg text-sm transition-all ${responseGroupMode === 'student' ? 'bg-neon-blue text-black font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                  By Student
+                </button>
+              </div>
+            </div>
+
             {attemptsLoading && (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
@@ -887,93 +910,175 @@ const TeacherClassDashboard: React.FC = () => {
             {!attemptsLoading && !attemptsError && (
               <>
                 {(() => {
-                  const assignmentMap = new Map<string, any>((assignments || []).map((a: any) => [a.id, a]));
-                  const mockAssignments = (assignments || []).filter((a: any) => a?.is_mock);
-                  const groups = mockAssignments
-                    .map((assn: any) => ({
-                      assignment: assn,
-                      attempts: (attempts || []).filter((at: any) => at.assignment_id === assn.id)
-                    }))
-                    .filter(g => g.attempts.length > 0);
-                  const otherAttempts = (attempts || []).filter((at: any) => {
-                    const assn = assignmentMap.get(at.assignment_id);
-                    return !assn || !assn.is_mock;
-                  });
+                  if (responseGroupMode === 'assignment') {
+                    const assignmentMap = new Map<string, any>((assignments || []).map((a: any) => [a.id, a]));
+                    const groupedByAssignment = (assignments || []).map((assnn: any) => ({
+                      assignment: assnn,
+                      attempts: (attempts || []).filter((at: any) => at.assignment_id === assnn.id)
+                    })).filter(g => g.attempts.length > 0);
 
-                  if (groups.length === 0 && otherAttempts.length === 0) {
+                    const otherAttempts = (attempts || []).filter(at => !assignmentMap.has(at.assignment_id));
+
+                    if (groupedByAssignment.length === 0 && otherAttempts.length === 0) {
+                      return (
+                        <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
+                          <p className="text-gray-400">No student responses found yet.</p>
+                        </div>
+                      );
+                    }
+
                     return (
-                      <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
-                        <p className="text-gray-400">No student responses found yet.</p>
+                      <div className="space-y-8">
+                        {groupedByAssignment.map((g) => (
+                          <div key={g.assignment.id} className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <FileText className="h-5 w-5 text-neon-blue" />
+                                {g.assignment.title}
+                              </h3>
+                              <div className="text-xs text-gray-400">
+                                {g.assignment.created_at ? new Date(g.assignment.created_at).toLocaleString() : ''}
+                              </div>
+                            </div>
+                            <div className="glass-panel p-4 rounded-xl border border-white/10 overflow-x-auto">
+                              <table className="min-w-full text-sm text-left">
+                                <thead>
+                                  <tr className="text-gray-400 border-b border-white/10">
+                                    <th className="px-3 py-3 font-medium">Date</th>
+                                    <th className="px-3 py-3 font-medium">Student</th>
+                                    <th className="px-3 py-3 font-medium">Score</th>
+                                    <th className="px-3 py-3 font-medium">Questions</th>
+                                    <th className="px-3 py-3 font-medium text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                  {g.attempts.map((a: any, i: number) => {
+                                    const prof = attemptProfiles[a.user_id] || {};
+                                    const name = prof.full_name || prof.email || a.user_id;
+                                    return (
+                                      <tr key={a.id || i} className="hover:bg-white/5 transition-colors">
+                                        <td className="px-3 py-3 text-gray-300">{a.exam_date ? new Date(a.exam_date).toLocaleDateString() : '-'}</td>
+                                        <td className="px-3 py-3 text-white font-medium">
+                                          <button
+                                            onClick={() => {
+                                              const s = students.find(st => st.id === a.user_id || st.user_id === a.user_id);
+                                              if (s) setViewingStudent(s);
+                                            }}
+                                            className="hover:text-neon-blue transition-colors text-left"
+                                          >
+                                            {name}
+                                          </button>
+                                        </td>
+                                        <td className="px-3 py-3 text-neon-green font-mono">{a.total_score} / {a.max_score}</td>
+                                        <td className="px-3 py-3 text-gray-300">{a.questions_count || '-'}</td>
+                                        <td className="px-3 py-3 text-right">
+                                          <button
+                                            className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg transition-colors border border-white/10"
+                                            onClick={() => { setAttemptModal(a); setShowAttemptModal(true); }}
+                                          >
+                                            <Eye className="w-4 h-4" /> View
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    // Group by Student
+                    const groupedByStudent = students.map((s: any) => ({
+                      student: s,
+                      attempts: (attempts || []).filter((at: any) => at.user_id === s.user_id || at.user_id === s.id)
+                    })).filter(g => g.attempts.length > 0);
+
+                    if (groupedByStudent.length === 0) {
+                      return (
+                        <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
+                          <p className="text-gray-400">No student responses found yet.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {groupedByStudent.map((g) => (
+                          <div
+                            key={g.student.id || g.student.user_id}
+                            className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all cursor-pointer group flex items-center gap-4"
+                            onClick={() => setViewingStudent(g.student)}
+                          >
+                            <div className="w-12 h-12 rounded-full bg-neon-blue/20 flex items-center justify-center text-neon-blue font-bold text-lg">
+                              {g.student.full_name?.[0] || g.student.email?.[0] || '?'}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">
+                                {g.student.full_name || g.student.email}
+                              </h3>
+                              <p className="text-sm text-gray-400">
+                                {g.attempts.length} Assessments Completed
+                              </p>
+                            </div>
+                            <Eye className="w-5 h-5 text-gray-500 group-hover:text-neon-blue transition-colors" />
+                          </div>
+                        ))}
                       </div>
                     );
                   }
-
-                  return (
-                    <div className="space-y-8">
-                      {groups.map((g) => (
-                        <div key={g.assignment.id} className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                              <FileText className="h-5 w-5 text-neon-blue" />
-                              {g.assignment.title}
-                            </h3>
-                            <div className="text-xs text-gray-400">
-                              {g.assignment.created_at ? new Date(g.assignment.created_at).toLocaleString() : ''}
-                            </div>
-                          </div>
-                          <div className="glass-panel p-4 rounded-xl border border-white/10 overflow-x-auto">
-                            <table className="min-w-full text-sm text-left">
-                              <thead>
-                                <tr className="text-gray-400 border-b border-white/10">
-                                  <th className="px-3 py-3 font-medium">Date</th>
-                                  <th className="px-3 py-3 font-medium">Student</th>
-                                  <th className="px-3 py-3 font-medium">Score</th>
-                                  <th className="px-3 py-3 font-medium">Questions</th>
-                                  <th className="px-3 py-3 font-medium">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/5">
-                                {g.attempts.map((a: any, i: number) => {
-                                  const prof = attemptProfiles[a.user_id] || {};
-                                  const name = prof.full_name || prof.email || a.user_id;
-                                  return (
-                                    <tr key={a.id || i} className="hover:bg-white/5 transition-colors">
-                                      <td className="px-3 py-3 text-gray-300">{a.exam_date ? new Date(a.exam_date).toLocaleString() : '-'}</td>
-                                      <td className="px-3 py-3 text-white font-medium">{name}</td>
-                                      <td className="px-3 py-3 text-neon-green font-mono">{a.total_score} / {a.max_score}</td>
-                                      <td className="px-3 py-3 text-gray-300">{a.questions_count || '-'}</td>
-                                      <td className="px-3 py-3">
-                                        <button
-                                          className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg transition-colors border border-white/10"
-                                          onClick={() => { setAttemptModal(a); setShowAttemptModal(true); }}
-                                        >
-                                          <Eye className="w-4 h-4" /> View
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
                 })()}
               </>
             )}
           </div>
         )}
 
-        {/* Analytics Tab */}
-        {tab === 'Analytics' && (
-          <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center">
-            <BarChart2 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Class Analytics</h3>
-            <p className="text-gray-400">Detailed analytics coming soon. Check "AI Insights" for a summary.</p>
+        {/* Weaknesses Tab */}
+        {tab === 'Weaknesses' && (
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <AlertCircle className="h-6 w-6 text-neon-yellow" />
+              Student Weaknesses
+            </h3>
+            <div className="grid grid-cols-1 gap-6">
+              {students.map((s: any) => {
+                const studentAttempts = (attempts || []).filter(a => (a.user_id === s.user_id || a.user_id === s.id) && a.student_weaknesses);
+                if (studentAttempts.length === 0) return null;
+                return (
+                  <div
+                    key={s.id || s.user_id}
+                    className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-neon-blue/50 transition-all cursor-pointer group flex items-center justify-between"
+                    onClick={() => setViewingStudent(s)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-neon-yellow/20 flex items-center justify-center text-neon-yellow font-bold text-lg">
+                        {s.full_name?.[0] || s.email?.[0] || '?'}
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-white group-hover:text-neon-yellow transition-colors">{s.full_name || s.email}</h4>
+                        <p className="text-sm text-gray-400">{studentAttempts.length} AI Weakness analyses</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-neon-yellow bg-neon-yellow/10 px-3 py-1 rounded-full border border-neon-yellow/20">Needs Attention</span>
+                      <Eye className="w-5 h-5 text-gray-500 group-hover:text-neon-yellow transition-colors" />
+                    </div>
+                  </div>
+                );
+              })}
+              {students.every(s => !(attempts || []).some(a => (a.user_id === s.user_id || a.user_id === s.id) && a.student_weaknesses)) && (
+                <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center text-gray-400">
+                  No weakness data recorded yet. Data will appear after students complete AI-graded exams.
+                </div>
+              )}
+            </div>
           </div>
         )}
+
+        {/* Analytics Tab (Hidden replaced by Weaknesses) */}
+
 
         {/* AI Insights Tab */}
         {tab === 'AI Insights' && (
@@ -1081,6 +1186,89 @@ const TeacherClassDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      {/* Student Detail Modal */}
+      {viewingStudent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setViewingStudent(null)}></div>
+          <div className="relative glass-panel w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/10 flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-neon-blue/20 flex items-center justify-center text-neon-blue font-bold text-xl">
+                  {viewingStudent.full_name?.[0] || viewingStudent.email?.[0] || '?'}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">{viewingStudent.full_name || viewingStudent.email}</h3>
+                  <p className="text-gray-400">{viewingStudent.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingStudent(null)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <XCircle className="w-8 h-8 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="glass-panel p-4 rounded-2xl border border-white/5 bg-white/5">
+                  <div className="text-gray-400 text-xs mb-1">Total Assessments</div>
+                  <div className="text-2xl font-bold text-neon-blue">
+                    {(attempts || []).filter(a => a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id).length}
+                  </div>
+                </div>
+                <div className="glass-panel p-4 rounded-2xl border border-white/5 bg-white/5">
+                  <div className="text-gray-400 text-xs mb-1">Performance Insight</div>
+                  <div className="text-2xl font-bold text-neon-green">
+                    {(() => {
+                      const satts = (attempts || []).filter(a => a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id);
+                      if (satts.length === 0) return 'N/A';
+                      const avg = satts.reduce((acc, at) => acc + (at.total_score / at.max_score), 0) / satts.length;
+                      return Math.round(avg * 100) + '%';
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-neon-yellow" />
+                  Identified Weaknesses & Gaps
+                </h4>
+                <div className="space-y-4">
+                  {(attempts || [])
+                    .filter(a => (a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id) && a.student_weaknesses)
+                    .map((at, idx) => (
+                      <div key={at.id || idx} className="bg-black/40 p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-neon-yellow"></div>
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="text-xs font-bold text-neon-blue">
+                            {(assignments || []).find(as => as.id === at.assignment_id)?.title || 'Mock Test'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(at.exam_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">
+                          {at.student_weaknesses}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/10">
+              <button
+                onClick={() => setViewingStudent(null)}
+                className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all border border-white/10"
+              >
+                Close Analysis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

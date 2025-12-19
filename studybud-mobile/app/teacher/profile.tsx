@@ -1,14 +1,17 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useState, useEffect } from 'react';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function ProfileScreen() {
+export default function TeacherProfileScreen() {
     const [user, setUser] = useState<any>(null);
     const [profile, setProfile] = useState<any>(null);
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         loadData();
@@ -49,50 +52,56 @@ export default function ProfileScreen() {
     return (
         <View style={styles.container}>
             <LinearGradient
-                colors={['#00f3ff20', '#ff00ff20']}
+                colors={['#39ff1420', '#00f3ff20']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.header}
+                style={[styles.header, { paddingTop: insets.top + Spacing.xl }]}
             >
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
                 <View style={styles.avatarContainer}>
                     <LinearGradient
-                        colors={[Colors.dark.primary, Colors.dark.secondary]}
+                        colors={[Colors.dark.accent, '#00ff80']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.avatar}
                     >
                         <Text style={styles.avatarText}>
-                            {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                            {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'T'}
                         </Text>
                     </LinearGradient>
                 </View>
-                <Text style={styles.name}>{profile?.full_name || 'Student'}</Text>
-                <Text style={styles.email}>{user?.email || 'student@example.com'}</Text>
+                <Text style={styles.name}>{profile?.full_name || 'Teacher'}</Text>
+                <Text style={styles.email}>{user?.email || 'teacher@example.com'}</Text>
+                <View style={styles.roleBadge}>
+                    <Text style={styles.roleText}>TEACHER</Text>
+                </View>
             </LinearGradient>
 
-            <View style={styles.content}>
+            <ScrollView style={styles.content}>
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account</Text>
+                    <Text style={styles.sectionTitle}>Account Settings</Text>
 
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuIcon}>
-                            <Ionicons name="person-outline" size={22} color={Colors.dark.primary} />
+                            <Ionicons name="person-outline" size={22} color={Colors.dark.accent} />
                         </View>
-                        <Text style={styles.menuText}>Edit Profile</Text>
+                        <Text style={styles.menuText}>Professional Profile</Text>
                         <Ionicons name="chevron-forward" size={20} color={Colors.dark.textSecondary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuIcon}>
-                            <Ionicons name="notifications-outline" size={22} color={Colors.dark.primary} />
+                            <Ionicons name="notifications-outline" size={22} color={Colors.dark.accent} />
                         </View>
-                        <Text style={styles.menuText}>Notifications</Text>
+                        <Text style={styles.menuText}>Preferences</Text>
                         <Ionicons name="chevron-forward" size={20} color={Colors.dark.textSecondary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuIcon}>
-                            <Ionicons name="shield-checkmark-outline" size={22} color={Colors.dark.primary} />
+                            <Ionicons name="shield-checkmark-outline" size={22} color={Colors.dark.accent} />
                         </View>
                         <Text style={styles.menuText}>Privacy & Security</Text>
                         <Ionicons name="chevron-forward" size={20} color={Colors.dark.textSecondary} />
@@ -104,17 +113,17 @@ export default function ProfileScreen() {
 
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuIcon}>
-                            <Ionicons name="help-circle-outline" size={22} color={Colors.dark.secondary} />
+                            <Ionicons name="help-circle-outline" size={22} color={Colors.dark.textSecondary} />
                         </View>
-                        <Text style={styles.menuText}>Help Center</Text>
+                        <Text style={styles.menuText}>Teacher Guide</Text>
                         <Ionicons name="chevron-forward" size={20} color={Colors.dark.textSecondary} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.menuItem}>
                         <View style={styles.menuIcon}>
-                            <Ionicons name="bug-outline" size={22} color={Colors.dark.secondary} />
+                            <Ionicons name="bug-outline" size={22} color={Colors.dark.textSecondary} />
                         </View>
-                        <Text style={styles.menuText}>Report a Problem</Text>
+                        <Text style={styles.menuText}>Feedback</Text>
                         <Ionicons name="chevron-forward" size={20} color={Colors.dark.textSecondary} />
                     </TouchableOpacity>
                 </View>
@@ -124,16 +133,17 @@ export default function ProfileScreen() {
                     onPress={handleSignOut}
                 >
                     <LinearGradient
-                        colors={['#ff006620', '#ff000020']}
+                        colors={['rgba(239, 68, 68, 0.1)', 'rgba(239, 68, 68, 0.05)']}
                         style={styles.signOutGradient}
                     >
                         <Ionicons name="log-out-outline" size={22} color={Colors.dark.error} />
-                        <Text style={styles.signOutText}>Sign Out</Text>
+                        <Text style={styles.signOutText}>Sign Out from Workspace</Text>
                     </LinearGradient>
                 </TouchableOpacity>
 
-                <Text style={styles.version}>Version 1.0.0</Text>
-            </View>
+                <Text style={styles.version}>Teacher Console v1.0.0</Text>
+                <View style={{ height: 40 }} />
+            </ScrollView>
         </View>
     );
 }
@@ -145,10 +155,14 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        paddingTop: Spacing.xxl * 2,
         paddingBottom: Spacing.xl,
         borderBottomWidth: 1,
         borderBottomColor: Colors.dark.border,
+    },
+    backButton: {
+        position: 'absolute',
+        left: Spacing.lg,
+        top: 60,
     },
     avatarContainer: {
         marginBottom: Spacing.md,
@@ -159,7 +173,7 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#00f3ff',
+        shadowColor: Colors.dark.accent,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
         shadowRadius: 20,
@@ -168,7 +182,7 @@ const styles = StyleSheet.create({
     avatarText: {
         fontSize: 40,
         fontWeight: Typography.weights.bold,
-        color: '#fff',
+        color: '#000',
     },
     name: {
         fontSize: Typography.sizes.xl,
@@ -179,6 +193,21 @@ const styles = StyleSheet.create({
     email: {
         fontSize: Typography.sizes.md,
         color: Colors.dark.textSecondary,
+        marginBottom: Spacing.sm,
+    },
+    roleBadge: {
+        backgroundColor: 'rgba(57, 255, 20, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(57, 255, 20, 0.2)',
+    },
+    roleText: {
+        color: Colors.dark.accent,
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 1,
     },
     content: {
         flex: 1,
@@ -221,7 +250,7 @@ const styles = StyleSheet.create({
         fontWeight: Typography.weights.medium,
     },
     signOutButton: {
-        marginTop: Spacing.xl,
+        marginTop: Spacing.md,
         borderRadius: 12,
         overflow: 'hidden',
     },
