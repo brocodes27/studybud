@@ -67,9 +67,18 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
   - Related concepts: Move old to side/corner, then add new
 
 **MANDATORY CLEANUP**:
-- **Before Each Segment**: Start with `self.play(FadeOut(*[m for m in self.mobjects if not isinstance(m, (Tex, MathTex))]))` if the previous segment had complex visuals
+- **Before Each Segment**: If there are existing mobjects from the previous segment, clear non-text elements with:
+  ```python
+  to_remove = [m for m in self.mobjects if not isinstance(m, (Tex, MathTex))]
+  if to_remove:
+      self.play(FadeOut(*to_remove))
+  ```
 - **Rule of 3**: If you have 3+ major mobjects on screen, you MUST fade out at least one before adding another
-- **Clear Transitions**: When the narration shifts topics (e.g., from "arrays" to "stacks"), completely clear the screen with `self.play(FadeOut(*self.mobjects))`
+- **Clear Transitions**: When the narration shifts topics (e.g., from "arrays" to "stacks"), completely clear the screen:
+  ```python
+  if self.mobjects:
+      self.play(FadeOut(*self.mobjects))
+  ```
 
 
 **STRICT OUTPUT FORMAT**:
