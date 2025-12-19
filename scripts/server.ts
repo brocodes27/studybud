@@ -25,6 +25,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const PORT = 3001;
 
 const server = http.createServer(async (req, res) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+
     // CORS headers - Wildcard for absolute compatibility during debugging
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -50,6 +52,7 @@ const server = http.createServer(async (req, res) => {
                 const { topic, userId, script } = JSON.parse(body);
 
                 if (!topic || !userId) {
+                    console.log(`Rejecting request: Missing topic (${topic}) or userId (${userId})`);
                     res.writeHead(400);
                     res.end(JSON.stringify({ error: 'Missing topic or userId' }));
                     return;
