@@ -186,9 +186,12 @@ def generate_scene_and_audio(topic, script_text):
             duration_sec = 2.0
             
         # 3. Append Code + Wait
+        import textwrap
+        
         full_code += f"        # Segment {idx}\n"
-        # Indent code
-        indented_code = "\n".join(["        " + line for line in code.split("\n")])
+        # Normalize indentation from AI then re-indent to class depth (8 spaces)
+        clean_seg_code = textwrap.dedent(code).strip()
+        indented_code = textwrap.indent(clean_seg_code, "        ")
         full_code += indented_code + "\n"
         full_code += f"        self.wait({duration_sec:.2f})\n\n"
         
