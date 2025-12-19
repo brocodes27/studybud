@@ -56,7 +56,14 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
   - Use `MathTex(r"...")` for EVERY entry that contains math symbols (+, -, =, ^, _, \, derivatives).
   - Use `Tex("...")` ONLY for pure alphabetical labels (e.g., "Mitochondria").
   - ALWAYS use raw strings `r"..."` for both.
-- **Formulas**: Laws or equations MUST be center-stage using `MathTex`.
+
+**CHEMISTRY SAFETY (IMPORTANT)**:
+- Chemical formulas like `H_2O`, `KMnO_4`, `COOH` MUST use `MathTex`.
+- `Tex` will CRASH if it sees an underscore `_`.
+- If a label has a number at the bottom (subscript), use `MathTex`.
+- Example: `MathTex(r"C_6H_{12}O_6")` - CORRECT. `Tex(r"C_6H_{12}O_6")` - CRASH.
+
+**Formulas**: Laws or equations MUST be center-stage using `MathTex`.
 - **Layout**: Use `VGroup` to bundle mobjects with their labels.
 
 **VISUAL CHOREOGRAPHY - LAYERED COMPLEXITY**:
@@ -143,6 +150,14 @@ def clean_code_block(code):
         if l.startswith("class "): continue
         if l.startswith("def construct"): continue
         if l.startswith("super()."): continue
+        
+        # SAFETY FIX: If the AI uses Tex for chemical formulas or math (contains _ or ^),
+        # we automatically convert it to MathTex to prevent LaTeX compilation errors.
+        if "Tex(r" in line and ("_" in line or "^" in line):
+            line = line.replace("Tex(r", "MathTex(r")
+        elif "Tex(\"" in line and ("_" in line or "^" in line):
+            line = line.replace("Tex(\"", "MathTex(\"")
+            
         filtered_lines.append(line)
     
     # Join and dedent to normalize indentation
