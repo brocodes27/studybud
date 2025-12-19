@@ -38,8 +38,6 @@ export function VideoGenerationProvider({ children }: { children: React.ReactNod
     useEffect(() => {
         if (activeGenerations.size === 0) return;
 
-        const generationIds = Array.from(activeGenerations.keys());
-
         const channel = supabase
             .channel('global-video-generations')
             .on(
@@ -47,47 +45,48 @@ export function VideoGenerationProvider({ children }: { children: React.ReactNod
                 {
                     event: 'UPDATE',
                     schema: 'public',
-                    table: 'video_generations',
-                    filter: `id=in.(${generationIds.join(',')})`
+                    table: 'video_generations'
+                    // removed unsupported 'in.' filter
                 },
                 (payload) => {
                     const newItem = payload.new as any;
 
                     setActiveGenerations(prev => {
+                        // Only process updates for IDs we are actually tracking
+                        if (!prev.has(newItem.id)) return prev;
+
                         const next = new Map(prev);
-                        const existing = next.get(newItem.id);
-                        if (existing) {
-                            const status = newItem.status;
+                        const existing = next.get(newItem.id)!;
+                        const status = newItem.status;
 
-                            // If completed or failed, we might want to keep it for a bit then remove
-                            if (status === 'completed' || status === 'failed') {
-                                // For now, just update
-                                next.set(newItem.id, {
-                                    ...existing,
-                                    status,
-                                    current_step: newItem.current_step || existing.current_step,
-                                    progress: status === 'completed' ? 1 : existing.progress
-                                });
+                        // If completed or failed, we might want to keep it for a bit then remove
+                        if (status === 'completed' || status === 'failed') {
+                            next.set(newItem.id, {
+                                ...existing,
+                                status,
+                                current_step: newItem.current_step || existing.current_step,
+                                progress: status === 'completed' ? 1 : existing.progress
+                            });
 
-                                // Remove after 5 seconds if completed/failed
-                                setTimeout(() => {
-                                    setActiveGenerations(p => {
-                                        const n = new Map(p);
-                                        n.delete(newItem.id);
-                                        return n;
-                                    });
-                                }, 5000);
-                            } else {
-                                // Increment progress by 10% for every update, up to 95%
-                                const newProgress = Math.min(0.95, existing.progress + 0.1);
-                                const newLog = { time: new Date().toLocaleTimeString(), msg: newItem.current_step };
-                                next.set(newItem.id, {
-                                    ...existing,
-                                    current_step: newItem.current_step || existing.current_step,
-                                    progress: newProgress,
-                                    logs: [...existing.logs, newLog]
+                            // Remove after 10 seconds if completed/failed instead of 5
+                            setTimeout(() => {
+                                setActiveGenerations(p => {
+                                    const n = new Map(p);
+                                    n.delete(newItem.id);
+                                    return n;
                                 });
-                            }
+                            }, 10000);
+                        } else {
+                            // Increment progress by 10% for every update, up to 95%
+                            const newProgress = Math.min(0.95, (existing.progress || 0) + 0.1);
+                            const newLog = { time: new Date().toLocaleTimeString(), msg: newItem.current_step };
+
+                            next.set(newItem.id, {
+                                ...existing,
+                                current_step: newItem.current_step || existing.current_step,
+                                progress: newProgress,
+                                logs: [...(existing.logs || []), newLog]
+                            });
                         }
                         return next;
                     });

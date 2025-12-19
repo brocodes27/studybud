@@ -53,14 +53,8 @@ Output ONLY valid JSON matching this schema:
   ]
 }
 
-**STRICT CODE ASSEMBLY RULES**:
-- NO `from manim import *`, NO `class ...`.
-- Start with mobject creation.
-- Use `self.play(...)` and `self.wait(...)` sparingly; focus on the visual logic.
-- **CRITICAL**: Use `MathTex` for all formulas with double backslashes.
-
 **CODE SAFETY & CRASH PREVENTION**:
-1. **LaTeX**: Use `MathTex(r'\\frac{1}{2}')` with DOUBLE BACKSLASHES.
+1. **LaTeX**: Use `MathTex(r'\frac{1}{2}')` with a raw string (r) and SINGLE BACKSLASHES for all commands.
 2. **Groups**: Always wrap lists in `VGroup(*my_list)` before animating.
 3. **Axes**: Use `Axes(axis_config={"include_tip": True})` for all graphs.
 4. **Positioning**: Use `.to_edge(UP)` or `.next_to(obj, DOWN)` to avoid "messy" overlaps.
@@ -191,10 +185,8 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         full_code += f"        # --- Segment {idx} ( Narration: {duration_sec:.2f}s ) ---\n"
         full_code += f"        _start_t_{idx} = self.renderer.time\n"
         
-        # Normalize indentation from AI then re-indent to class depth (8 spaces)
+        # Segment Code Processing
         clean_seg_code = textwrap.dedent(code).strip()
-        # Safety Fix: Ensure LaTeX backslashes are escaped if AI forgot
-        clean_seg_code = re.sub(r'\\(?![ntr\'"\\])', r'\\\\', clean_seg_code)
         
         indented_code = textwrap.indent(clean_seg_code, "        ")
         full_code += indented_code + "\n"

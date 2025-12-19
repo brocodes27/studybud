@@ -34,17 +34,11 @@ if (genIdFlag) {
 }
 
 async function logToDB(msg: string, progress: number = -1, status: string | null = null) {
-    console.log(msg); // Always log to console
+    console.log(`[DB LOG] ${msg}`); // Always log to console
     if (!supabase || !generationId) return;
 
     try {
         const update: any = {
-            // Append log to array using Postgres operator check? No, Supabase JS simple access
-            // We'll read-modify-write or just assume simple usage for now. 
-            // Better: use rpc or just append locally and update? 
-            // For simplicity/reliability in this script, we'll just push a log entry.
-            // Actually, simplified: Just update status/progress. Logs might be heavy to simple-update repeatedly.
-            // Let's just update 'current_step' and 'progress'.
             current_step: msg,
             updated_at: new Date().toISOString()
         };
@@ -52,35 +46,16 @@ async function logToDB(msg: string, progress: number = -1, status: string | null
         if (progress >= 0) update.progress = progress;
         if (status) update.status = status;
 
-        // Append to logs JSONB
-        // We can use a raw SQL query or just fetch-update. Fetch-update is safer for JS client.
-        // But for speed, we'll just update fields.
-
-        await supabase.from('video_generations').update(update).eq('id', generationId);
-
-        // Separate call to append log to match desired "timeline" feature
-        const logEntry = { time: new Date().toISOString(), msg };
-        // Postgrest append to array is tricky without RPC. We'll skip atomic append and just overwrite? 
-        // No, that's race-condition prone.
-        // We will just assume this is single-threaded enough or use a simple RPC if distinct.
-        // Actually, let's just create a log entry in a separate logs table? 
-        // No, the user asked for logs in the JSON column.
-        // We'll skip writing *every* log to DB to save requests, only major steps.
-    } catch (e) {
-        console.error("Failed to log to DB:", e);
-    }
-}
-
-// Helper to append log item
-async function logEntryDb(msg: string) {
-    if (!supabase || !generationId) return;
-    try {
-        // Fetch current logs
+        // Fetch current logs to append
         const { data } = await supabase.from('video_generations').select('logs').eq('id', generationId).single();
         const currentLogs = data?.logs || [];
         currentLogs.push({ time: new Date().toLocaleTimeString(), msg });
-        await supabase.from('video_generations').update({ logs: currentLogs }).eq('id', generationId);
-    } catch (e) { /* ignore */ }
+        update.logs = currentLogs;
+
+        await supabase.from('video_generations').update(update).eq('id', generationId);
+    } catch (e) {
+        console.error("Failed to log to DB:", e);
+    }
 }
 
 
@@ -243,7 +218,7 @@ async function generateVideo(topic: string, scriptText: string) {
 
     try {
         await logToDB(`Starting generation for: ${topic}`, 5, 'processing');
-        await logEntryDb("Initializing Isolated Job Environment...");
+        await logToDB("Initializing Isolated Job Environment...");
 
         // Create isolated directory
         if (!fs.existsSync(path.join(ENGINE_DIR, 'jobs'))) fs.mkdirSync(path.join(ENGINE_DIR, 'jobs'));
@@ -255,7 +230,7 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 1. Script & Code
         await logToDB("AI Agent: Generating script and Manim code...", 20);
-        await logEntryDb("Prompting OpenAI GPT-4o for educational content...");
+        await logToDB("Prompting OpenAI GPT-4o for educational content...");
 
         // Pass jobDir to generator
         await runPythonScript('generator.py', [`"${topic}"`, inputScriptPath, jobDir]);
@@ -272,7 +247,7 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 2. Render
         await logToDB("Manim Engine: Rendering video scenes...", 40);
-        await logEntryDb("Starting Python renderer (480p15)... isolation active.");
+        await logToDB("Starting Python renderer (480p15)... isolation active.");
 
         // Update renderer to take jobDir
         await runPythonScript('renderer.py', [scenePath, 'l', jobDir]);
@@ -290,13 +265,13 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 3. Subtitles
         await logToDB("Aligning subtitles...", 75);
-        await logEntryDb("Calculating word-level timestamps...");
+        await logToDB("Calculating word-level timestamps...");
         const srtPath = path.join(jobDir, 'subtitles.srt');
         await runPythonScript('alignment.py', [narrationPath, audioPath, srtPath]);
 
         // 4. Merge
         await logToDB("Merging audio and video...", 90);
-        await logEntryDb("FFmpeg: Stitching video stream with audio track...");
+        await logToDB("FFmpeg: Stitching video stream with audio track...");
         const finalVideoPath = path.join(jobDir, 'final_output.mp4');
         if (fs.existsSync(finalVideoPath)) fs.unlinkSync(finalVideoPath);
 
@@ -308,7 +283,7 @@ async function generateVideo(topic: string, scriptText: string) {
 
         // 5. Upload / Save
         await logToDB("Finalizing and Uploading...", 95);
-        await logEntryDb("Uploading assets to Supabase Storage...");
+        await logToDB("Uploading assets to Supabase Storage...");
 
         const videoUrl = await uploadToStorage(finalVideoPath, 'video/mp4');
         const subUrl = await uploadToStorage(srtPath.replace('.srt', '.vtt'), 'text/vtt'); // Upload VTT
@@ -324,7 +299,7 @@ async function generateVideo(topic: string, scriptText: string) {
         fs.copyFileSync(srtPath.replace('.srt', '.vtt'), path.join(destDir, `${slug}.vtt`));
 
         await logToDB("Process Complete", 100, 'completed');
-        await logEntryDb("Video ready for playback.");
+        await logToDB("Video ready for playback.");
 
         if (supabase && generationId) {
             // Get user_id for notification
@@ -358,7 +333,7 @@ async function generateVideo(topic: string, scriptText: string) {
     } catch (error: any) {
         console.error('Generation Failed:', error);
         await logToDB(`Failed: ${error.message}`, -1, 'failed');
-        await logEntryDb(`Critical Error: ${error.message}`);
+        await logToDB(`Critical Error: ${error.message}`);
     }
 }
 

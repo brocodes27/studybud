@@ -30,6 +30,20 @@ export default function PlayerScreen() {
         checkExistingVideo();
     }, []);
 
+    // Sync context status to local status
+    useEffect(() => {
+        const activeGen = Array.from(activeGenerations.values()).find((g: ActiveGeneration) => g.topic === topic);
+        if (activeGen) {
+            if (activeGen.status === 'completed') {
+                // If it just completed, we might need a small delay or re-check the DB for the URL
+                checkExistingVideo();
+            } else if (activeGen.status === 'failed') {
+                setError('Video generation failed. Please try again.');
+                setStatus('error');
+            }
+        }
+    }, [activeGenerations]);
+
     const checkExistingVideo = async () => {
         try {
             setStatus('idle');
@@ -112,36 +126,8 @@ export default function PlayerScreen() {
     };
 
     const subscribeToGeneration = (id: string) => {
-        const channel = supabase
-            .channel(`generation-${id}`)
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'video_generations', filter: `id=eq.${id}` },
-                (payload) => {
-                    const newItem = payload.new as any;
-
-                    if (newItem.current_step) {
-                        setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), msg: newItem.current_step }]);
-                    }
-
-                    if (newItem.status === 'completed' && newItem.video_url) {
-                        setVideoUrl(newItem.video_url);
-                        setStatus('ready');
-                        supabase.removeChannel(channel);
-                    }
-
-                    if (newItem.status === 'failed') {
-                        setError('Generation failed');
-                        setStatus('error');
-                        supabase.removeChannel(channel);
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        // Redundant - handled by global VideoGenerationContext
+        return;
     };
 
     if (status === 'error') {
