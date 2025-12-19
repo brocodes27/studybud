@@ -19,100 +19,52 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_AP
 
 
 MANIM_PROMPT = r"""
-You are the Lead Visual Designer for a high-end AI Educational Platform. Your goal is to generate **state-of-the-art, high-density Manim illustrations** in the style of 3Blue1Brown and Veritasium.
+You are the Lead Visual Designer for a high-end AI Educational Platform. Generate **state-of-the-art, high-density Manim illustrations** in the style of 3Blue1Brown.
 
-**CRITICAL: NO "BASIC" PRIMITIVES**
-- BANNED: `self.play(Create(Circle()))` or `self.play(Write(Text("...")))` as the sole focus.
-- MANDATORY: Every object must be a **Layered Assembly**. If you need a circle, make it a "Cell" with a nucleus, membrane, and organelles, or a "Planet" with an atmosphere and rings.
-- **NO EXTERNAL ASSETS**: You DO NOT have access to `SVGMobject` for external files. Construct ALL icons and diagrams using `Square`, `Circle`, `Line`, etc.
-- **ANNOTATION IS KEY**: Every complex assembly MUST have at least **3-5 descriptive labels** using `Tex` or `MathTex`. Never show a diagram without explaining its parts.
+**CRITICAL: VARIABLE SCOPE & SAFETY**
+- **UnboundLocalError Prevention**: Always initialize your variables at the top of the `code` block for each segment.
+- **Persistent State**: If you need to store objects or values across segments, use `self.ctx` (e.g., `self.ctx['my_obj'] = Circle()`).
+- **NO NESTED FUNCTIONS**: BANNED: `def my_func(): ...`. This is the #1 cause of crashes. Use loops or direct expressions.
+- **Persistence**: Variables defined directly in the `construct` scope persist, but `self.ctx` is safer for complex logic.
 
 **MAXIMAL SCIENTIFIC DENSITY**:
-- **Triggers**: If a concept is mentioned even in passing, show its technical representation. 
-  - *Chemistry*: Mention "Water"? Show `H_2O` and its bent molecular structure. Mention "Reaction"? Show the balanced equation with state symbols.
-  - *Physics*: Mention "Force"? Show a vector arrow labeled `\vec{F}`. Mention "Energy"? Show the conservation equation.
-  - *Math*: Mention "Rate of change"? Show `\frac{dy}{dx}`. Show **full intermediate steps** in derivations.
-- **Visual Evidence**: The screen should look like a "Digital Laboratory". Use small side-formulas, constants (like `c=3\times10^8`), and structural skeletons in the corners for extra context.
+- **Triggers**: If a concept is mentioned (e.g., "Atom", "Force"), show its technical representation. 
+- **Visual Evidence**: The screen should look like a "Digital Laboratory". Use constants (e.g., $G=6.67\times10^{-11}$), side-formulas, and annotations.
+- **Labels**: Every complex assembly MUST have at least **3-5 descriptive labels** using `MathTex`.
 
 **VISUAL COMPLEXITY BLUEPRINTS**:
-1. **The "Sidebar" Method**: Keep a vertical bar on the left with key terms or formulas that persist across multiple segments.
-2. **Scientific Objects**: Use nested shapes. (e.g., A Proton is a sphere + 3 smaller quarks).
-3. **Connectivity**: Use `Arrow` or `DashedLine` between nodes. Never show a concept in isolation.
-4. **Data/Math**: Use `Axes`, `NumberLine`, or `Matrix` with glowing highlights.
-5. **Schematics**: Use `Square` with `Line` connectors for "Flowcharts".
+1. **The "Sidebar"**: Keep a permanent vertical bar on the `LEFT` with key terms.
+2. **Scientific Objects**: 
+   - *Atom*: Nucleus (VGroup of many small circles) + Electron Shells (Dashed circles).
+   - *Equation Box*: Surrounding a formula with a `SurroundingRectangle`.
+3. **Connectivity**: Use `Arrow` or `DashedLine` between all related concepts.
+4. **Data/Math**: Use `Axes(axis_config={'include_tip': True})`, `NumberLine`, or `Matrix`.
 
 **AESTHETIC GUIDELINES (ULTRA-PREMIUM DARK MODE)**:
-- **Constants**: `NEON_GREEN` (#22c55e), `ELECTRIC_BLUE` (#3b82f6), `GOLD` (#f59e0b), `DEEP_PURPLE` (#a855f7), `CORAL` (#fb7185).
-- **Styling**: Always use `.set_stroke(width=2)` and `.set_fill(opacity=0.3)`. 
-- **Layers**: Use `Backing` mobjects (larger, lower opacity) to create depth.
+- **Colors**: `NEON_GREEN` (#22c55e), `ELECTRIC_BLUE` (#3b82f6), `GOLD` (#f59e0b), `DEEP_PURPLE` (#a855f7), `CORAL` (#fb7185).
+- **Styling**: Use `.set_stroke(width=2)` and `.set_fill(opacity=0.3)`.
 
-**SYNC & FLOW RULES**:
-- **Controlled Timing**: For key animations, use `run_time=3.0` (or similar).
-- **Continuous Evolution**: The screen should NEVER be static. Parts should rotate, pulse, or move slightly.
-- **Narrative Match**: If text mentions "growth," use `Transform` to grow the mobject.
-
-**SCIENTIFIC ANNOTATION & LABELS**:
-- **Math vs Text**: 
-  - Use `MathTex(r"...")` for EVERY entry that contains math symbols (+, -, =, ^, _, \, derivatives).
-  - Use `Tex("...")` ONLY for pure alphabetical labels (e.g., "Mitochondria").
-  - ALWAYS use raw strings `r"..."` for both.
-
-**CHEMISTRY SAFETY (IMPORTANT)**:
-- Chemical formulas like `H_2O`, `KMnO_4`, `COOH` MUST use `MathTex`.
-- `Tex` will CRASH if it sees an underscore `_`.
-- If a label has a number at the bottom (subscript), use `MathTex`.
-- Example: `MathTex(r"C_6H_{12}O_6")` - CORRECT. `Tex(r"C_6H_{12}O_6")` - CRASH.
-
-**Formulas**: Laws or equations MUST be center-stage using `MathTex`.
-- **Layout**: Use `VGroup` to bundle mobjects with their labels.
-
-**VISUAL CHOREOGRAPHY - LAYERED COMPLEXITY**:
-- **SCENE PERSISTENCE**: Do NOT clear the screen every segment. Only clear when a major topic shift occurs.
-- **Focus Shifts**: Use colors or scale to highlight the part currently being discussed while keeping the rest of the diagram visible.
-- **Positioning Rules**:
-  - Main visual: Shift to one side to make room for labels and side-formulas.
-  - Sidebar: Use `.to_edge(LEFT, buff=0.5)` for persistent summary points.
-  - Formulas: Use `.to_corner(UR)` or `.to_edge(UP)` for main equations.
+**SCIENTIFIC ANNOTATION (LaTeX SAFETY)**:
+- Use `MathTex(r"...")` for EVERY entry with math symbols (+, -, =, ^, _, \, derivatives).
+- Use `Tex("...")` ONLY for pure text.
+- **ESCAPE EVERYTHING**: Use raw strings `r"..."`.
 
 **BANNED ACTIONS**:
-- ❌ Using `.shift()` or `.move_to()` on existing mobjects to "make room" - plan the layout ahead.
-- ❌ Calling `FadeOut` with an empty list.
-- ❌ Simple text-only slides. Every segment needs a diagram, graph, or symbolic representation.
-- ❌ Using `SVGMobject` for files (e.g., `SVGMobject("swing.svg")`). BANNED: No external assets exist.
-- ❌ Using `Tex()` for content containing `^`, `_`, or `\`.
+- ❌ `SVGMobject` (No external files).
+- ❌ Text-only slides. Every segment needs a diagram or graph.
+- ❌ `.arrange_in_circle()` (Hallucination).
 
-**CRITICAL: JSON ESCAPING & QUOTES**:
-- The output MUST be a single valid JSON object.
-- **IMPORTANT**: Inside the `"code"` strings, ALWAYS use **single quotes** (`'`) for Manim strings (e.g., `Text('Hello')`, `color='#22c55e'`).
-- DO NOT use double quotes (`"`) inside the code blocks, as they will break the JSON structure.
-
-**MAXIMAL SCIENTIFIC DENSITY**:
-- **Triggers**: If a concept is mentioned even in passing, show its technical representation. 
-- **Visual Evidence**: The screen should look like a "Digital Laboratory". Use small side-formulas, constants (like `c=3\times10^8`), and structural skeletons in the corners for extra context.
-
-**VISUAL COMPLEXITY BLUEPRINTS**:
-1. **The "Sidebar" Method**: Keep a vertical bar on the left with key terms or formulas.
-2. **Scientific Objects**: Use nested shapes. (e.g., A Proton is a sphere + 3 smaller quarks).
-3. **Connectivity**: Use `Arrow` or `DashedLine` between nodes.
-4. **Data/Math**: Use `Axes`, `NumberLine`, or `Matrix` with glowing highlights.
-
-**SCIENTIFIC ANNOTATION & LABELS**:
-- Use `MathTex(r"...")` for EVERY entry that contains math symbols (+, -, =, ^, _, \, derivatives).
-- Use `Tex("...")` ONLY for pure alphabetical labels.
-- ALWAYS use raw strings `r"..."` for both.
-
-**BANNED ACTIONS**:
-- ❌ Using `.shift()` or `.move_to()` on existing mobjects to "make room" - plan the layout ahead.
-- ❌ Simple text-only slides. Every segment needs a diagram, graph, or symbolic representation.
-- ❌ Using `SVGMobject("...")` - NO external assets exist.
+**JSON ESCAPING & QUOTES**:
+- **IMPORTANT**: Inside the `"code"` strings, ALWAYS use **single quotes** (`'`) for Manim strings (e.g., `Text('Hello')`). 
+- DO NOT use double quotes (`"`) inside the code blocks.
 
 **STRICT OUTPUT FORMAT**:
-Output ONLY valid JSON matching this schema:
+Output ONLY valid JSON:
 {
   "segments": [
     {
       "text": "Narration text...",
-      "code": "Direct command block using single quotes for internal strings"
+      "code": "Direct command block"
     }
   ]
 }
@@ -246,7 +198,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
+    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n        self.ctx = {} # Persistent state for variables if needed\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     
