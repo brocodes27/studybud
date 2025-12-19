@@ -207,23 +207,22 @@ export const VideoLessons = () => {
         setLoading(true);
         try {
             // Aggressively clean topic: No special chars, max 50 chars.
-            // This prevents Supabase 406 errors and file system issues.
             const cleanTopic = lesson.topic
-                .replace(/[^a-zA-Z0-9 ]/g, '') // Remove everything except alphanumeric and spaces
-                .substring(0, 50)              // Truncate to safe length
+                .replace(/[^a-zA-Z0-9 ]/g, '')
+                .substring(0, 50)
                 .trim();
 
-            console.log("Searching for video with topic:", cleanTopic);
+            console.log("Processing premium video for:", cleanTopic);
 
-            // 1. Check if generation exists
-            const { data: existing, error } = await supabase
+            // 1. Check if generation exists using a simpler query to avoid 406
+            const { data: existing, error: fetchError } = await supabase
                 .from('video_generations')
-                .select('*')
+                .select('id, status, video_url')
                 .eq('user_id', user?.id)
                 .eq('topic', cleanTopic)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (existing && existing.status !== 'failed') {
                 setCurrentGenerationId(existing.id);
