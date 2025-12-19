@@ -25,10 +25,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const PORT = 3001;
 
 const server = http.createServer(async (req, res) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // CORS headers - Be explicit for production
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Or 'https://elevenfolks.com'
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -40,11 +41,12 @@ const server = http.createServer(async (req, res) => {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
+            res.setHeader('Content-Type', 'application/json');
             try {
                 const { topic, userId, script } = JSON.parse(body);
 
                 if (!topic || !userId) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.writeHead(400);
                     res.end(JSON.stringify({ error: 'Missing topic or userId' }));
                     return;
                 }

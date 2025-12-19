@@ -226,13 +226,19 @@ export const VideoLessons = () => {
             }
 
             // 2. If not, trigger new generation via local server
-            const response = await fetch('http://31.97.235.242:3001/api/generate', {
+            // IMPORTANT: For production, this MUST be https://your-domain.com
+            const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
+
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify({
                     topic: lesson.topic,
                     userId: user?.id,
-                    script: lesson.description // Use description as context? Or auto-gen.
+                    script: lesson.description
                 })
             });
 
