@@ -105,11 +105,12 @@ const server = http.createServer(async (req, res) => {
             }
         });
     } else {
-        res.writeHead(404);
-        res.end();
+        setCors(404);
+        console.log(`404 Not Found: ${req.method} ${req.url}`);
+        res.end(JSON.stringify({ error: 'Not Found' }));
     }
 });
 
-server.listen(PORT, () => {
-    console.log(`Video Generation Server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Video Generation Server running on http://0.0.0.0:${PORT}`);
 });
