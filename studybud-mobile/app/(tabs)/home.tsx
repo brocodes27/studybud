@@ -316,6 +316,16 @@ export default function HomeScreen() {
                 <View style={styles.actionsGrid}>
                     <TouchableOpacity
                         style={styles.actionCard}
+                        onPress={() => router.push('/cbse-simulator')}
+                    >
+                        <LinearGradient colors={['#39ff1430', '#39ff1410']} style={styles.actionGradient}>
+                            <Ionicons name="school" size={32} color={Colors.dark.accent} />
+                            <Text style={styles.actionText}>CBSE Simulator</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionCard}
                         onPress={() => router.push('/(tabs)/lessons')}
                     >
                         <LinearGradient colors={['#00f3ff30', '#00f3ff10']} style={styles.actionGradient}>
@@ -504,10 +514,11 @@ const styles = StyleSheet.create({
     },
     actionsGrid: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: Spacing.md,
     },
     actionCard: {
-        flex: 1,
+        width: '47%', // Fits 2 per row with gap
         borderRadius: 16,
         overflow: 'hidden',
     },
@@ -517,6 +528,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.dark.border,
         borderRadius: 16,
+        height: 120, // Fixed height for consistency
+        justifyContent: 'center',
     },
     actionText: {
         fontSize: Typography.sizes.sm,

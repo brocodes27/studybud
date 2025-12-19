@@ -144,19 +144,29 @@ export default function TeacherPanelScreen() {
                         <Text style={styles.title}>Teacher Panel</Text>
                         <Text style={styles.subtitle}>Manage your classes and students</Text>
                     </View>
-                    <TouchableOpacity
-                        style={styles.createButton}
-                        onPress={() => setShowCreateModal(true)}
-                    >
-                        <LinearGradient
-                            colors={[Colors.dark.accent, '#00ff80']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.createButtonGradient}
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity
+                            style={styles.iconButton}
+                            onPress={() => router.push('/notifications')}
                         >
-                            <Ionicons name="add" size={24} color="#000" />
-                        </LinearGradient>
-                    </TouchableOpacity>
+                            <Ionicons name="notifications-outline" size={24} color="#fff" />
+                            {/* Optional: Add red dot if unread */}
+                            {/* <View style={styles.badge} /> */}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.createButton}
+                            onPress={() => setShowCreateModal(true)}
+                        >
+                            <LinearGradient
+                                colors={[Colors.dark.accent, '#00ff80']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.createButtonGradient}
+                            >
+                                <Ionicons name="add" size={24} color="#000" />
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Classes List */}
@@ -337,6 +347,20 @@ const styles = StyleSheet.create({
     createButtonGradient: {
         width: 48,
         height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+    },
+    iconButton: {
+        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 12,
+        height: 48,
+        width: 48,
         alignItems: 'center',
         justifyContent: 'center',
     },
