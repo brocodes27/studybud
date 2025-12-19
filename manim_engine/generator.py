@@ -59,6 +59,8 @@ You are a senior Manim animation director. Your goal is to generate clean, label
 - **Graphs**: DO NOT use `axes.get_graph`. ALWAYS use `axes.plot(lambda x: ..., color=...)`.
 - **Lists**: DO NOT pass lists to `FadeIn`/`FadeOut`. BEFORE animating, wrap lists: `FadeOut(VGroup(*my_list))`.
 - **Text**: Ensure no text overlaps. `FadeOut(old_text)` before `Write(new_text)`.
+- **LaTeX Safety**: ALWAYS use DOUBLE BACKSLASHES for LaTeX commands (e.g., `\\frac{1}{2}` or `\\mu`). Python will crash if you use single backslashes inside normal strings.
+- **MathTex**: Use `MathTex(r'...')` or double backslashes if generating strings.
 
 4.  **MATH / GRAPHS** (Calculus, Functions, Stats)
     -   `Axes` object is mandatory.
@@ -191,6 +193,12 @@ def generate_scene_and_audio(topic, script_text):
         full_code += f"        # Segment {idx}\n"
         # Normalize indentation from AI then re-indent to class depth (8 spaces)
         clean_seg_code = textwrap.dedent(code).strip()
+        # Safety Fix: Ensure LaTeX backslashes are escaped if AI forgot
+        # This regex finds a backslash that is NOT followed by n, t, r, ', ", or another backslash
+        # and doubles it. This protects LaTeX like \frac while allowing \n.
+        import re
+        clean_seg_code = re.sub(r'\\(?![ntr\'"\\])', r'\\\\', clean_seg_code)
+        
         indented_code = textwrap.indent(clean_seg_code, "        ")
         full_code += indented_code + "\n"
         full_code += f"        self.wait({duration_sec:.2f})\n\n"
