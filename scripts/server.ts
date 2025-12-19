@@ -99,7 +99,7 @@ const server = http.createServer(async (req, res) => {
                 const scriptPath = path.join(__dirname, 'generate-manim-video.ts');
                 // Use absolute path for node and avoid shell: true to prevent quoting issues
                 const child = spawn('node', [
-                    '--loader', 'tsx',
+                    '--import', 'tsx',
                     scriptPath,
                     topic,
                     script || '',
