@@ -97,11 +97,18 @@ const server = http.createServer(async (req, res) => {
 
                 // 2. Spawn Worker
                 const scriptPath = path.join(__dirname, 'generate-manim-video.ts');
-                const child = spawn('npx', ['tsx', scriptPath, topic, script || '', `--generation-id=${generationId}`], {
+                // Use absolute path for node and avoid shell: true to prevent quoting issues
+                const child = spawn('node', [
+                    '--loader', 'tsx',
+                    scriptPath,
+                    topic,
+                    script || '',
+                    `--generation-id=${generationId}`
+                ], {
                     cwd: path.join(__dirname, '..'),
-                    shell: true,
                     detached: true,
-                    stdio: 'inherit' // Change to inherit to see logs in docker
+                    stdio: 'inherit',
+                    env: { ...process.env, NODE_OPTIONS: '--no-warnings' }
                 });
 
                 child.unref();
