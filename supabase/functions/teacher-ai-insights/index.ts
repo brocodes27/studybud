@@ -8,10 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-// Read Gemini API key from environment variable
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
+// Read OpenAI API key from environment variable
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -21,9 +19,10 @@ serve(async (req) => {
 
   try {
     const { classId, students, resources, assignments, prompt } = await req.json();
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Gemini API key not set." }), { status: 500, headers: corsHeaders });
+    if (!OPENAI_API_KEY) {
+      return new Response(JSON.stringify({ error: "OpenAI API key not set in Edge Function secrets." }), { status: 500, headers: corsHeaders });
     }
+
     // Compose the prompt
     const fullPrompt = `Class ID: ${classId}
 Students: ${JSON.stringify(students)}
@@ -32,23 +31,33 @@ Assignments: ${JSON.stringify(assignments)}
 
 ${prompt}`;
 
-    // Call Gemini API
-    const geminiRes = await fetch(GEMINI_URL, {
+    // Call OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: fullPrompt }] }],
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are an expert personalized educational consultant for a teacher." },
+          { role: "user", content: fullPrompt }
+        ]
       }),
     });
-    const geminiData = await geminiRes.json();
-    const summary =
-      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      geminiData?.candidates?.[0]?.content?.text ||
-      JSON.stringify(geminiData);
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || "OpenAI API error");
+    }
+
+    const summary = data.choices[0]?.message?.content || "No summary returned.";
+
     return new Response(JSON.stringify({ summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message || "Unknown error" }), { status: 500, headers: corsHeaders });
   }
-}); 
+});

@@ -107,8 +107,8 @@ const TeacherClassDashboard: React.FC = () => {
     setGeneratingMock(true);
 
     try {
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
-      if (!GEMINI_API_KEY) throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY');
+      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string;
+      if (!OPENAI_API_KEY) throw new Error('OpenAI API key not configured. Please set VITE_OPENAI_API_KEY');
 
       const prompt = `You are an expert CBSE question setter. Create a short mock test strictly based on the following topics taught today. Keep it aligned with latest CBSE patterns.
 
@@ -119,16 +119,34 @@ Rules:
 - Total questions: ${mockQuestionCount}
 - Include a balanced mix: MCQs (with 4 options A-D, exactly one correct), Short Answer (2-4 lines), Long Answer (6-10 lines)
 - Provide marks per question: MCQ 1 mark, Short 2-3 marks, Long 4-5 marks
-- Output JSON array only, no extra text. Each item: {"index": number, "type": "mcq"|"short"|"long", "question": string, "marks": number, "options"?: string[]}
+- Output strictly a JSON array, no markdown formatting. Each item: {"index": number, "type": "mcq"|"short"|"long", "question": string, "marks": number, "options"?: string[]}
 `;
 
-      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY;
-      const body = { contents: [{ parts: [{ text: prompt }] }] } as any;
-      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!resp.ok) throw new Error('Gemini API error: ' + resp.statusText);
-      const data = await resp.json();
-      let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that outputs only JSON.' },
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: "json_object" }
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error('OpenAI API error: ' + (errData.error?.message || response.statusText));
+      }
+
+      const data = await response.json();
+      let text = data.choices[0].message.content || '';
       let clean = text.trim().replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+
       let questions: any[];
       try {
         questions = JSON.parse(clean);
@@ -234,7 +252,7 @@ Rules:
         // Students (support user_id or student_id schema)
         const { data: memberData } = await supabase
           .from('class_members')
-          .select('user_id, student_id')
+          .select('student_id')
           .eq('class_id', id);
         const userIds: string[] = (memberData || []).map((m: any) => m.user_id || m.student_id).filter(Boolean);
         if (userIds.length > 0) {
@@ -278,7 +296,7 @@ Rules:
       try {
         const { data: members } = await supabase
           .from('class_members')
-          .select('user_id, student_id')
+          .select('student_id')
           .eq('class_id', id);
         const userIds: string[] = (members || []).map((m: any) => m.user_id || m.student_id).filter(Boolean);
         if (userIds.length === 0) {
@@ -992,7 +1010,7 @@ Rules:
               </div>
             ) : (
               <div className="prose prose-invert max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: marked(aiSummary) }} />
+                <div dangerouslySetInnerHTML={{ __html: marked(aiSummary) as string }} />
               </div>
             )}
           </div>
