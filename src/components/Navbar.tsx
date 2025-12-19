@@ -27,6 +27,7 @@ import {
 
 const navLinks = [
   { href: '/', label: 'Ranjan Sir', icon: Brain, color: 'text-neon-blue' },
+  { href: '/my-classes', label: 'My Classes', icon: Users, color: 'text-indigo-500' },
   { href: '/dashboard', label: 'Stats Dashboard', icon: LayoutDashboard, color: 'text-gray-400' },
   { href: '/cbse-simulator', label: 'CBSE Simulator', icon: FileText, color: 'text-teal-400' },
   { href: '/create', label: 'Create Plan', icon: CalendarPlus, color: 'text-neon-green' },

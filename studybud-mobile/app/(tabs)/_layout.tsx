@@ -40,6 +40,17 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
+                name="classes"
+                options={{
+                    title: 'Classes',
+                    tabBarIcon: ({ color, focused }) => (
+                        <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+                            <Ionicons name={focused ? "school" : "school-outline"} size={24} color={color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="create"
                 options={{
                     title: 'Create',
