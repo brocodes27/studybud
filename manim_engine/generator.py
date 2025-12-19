@@ -43,12 +43,17 @@ Output ONLY valid JSON matching this schema:
       "segments": [
         {
           "text": "Narration text for this specific segment...",
-          "code": "# Python code specifically for this segment's visuals"
+          "code": "ONLY direct commands here (no imports/classes)"
         }
       ]
     }
   ]
 }
+
+**STRICT CODE ASSEMBLY RULES**:
+- Provide ONLY the direct commands that would go inside a `construct(self)` method.
+- **DO NOT** include `from manim import *`, `class ...`, or `def construct(self):`.
+- Start directly with mobject creation or animations.
 
 **CODE SAFETY & CRASH PREVENTION**:
 1. **LaTeX**: Use `MathTex(r'\\frac{1}{2}')` with DOUBLE BACKSLASHES.
@@ -58,9 +63,22 @@ Output ONLY valid JSON matching this schema:
 """
 
 def clean_code_block(code):
-    # Remove markdown code fences if present
+    # Remove markdown code fences
     code = code.replace("```python", "").replace("```", "").strip()
-    return code
+    
+    # Aggressively remove common AI-generated boilerplate
+    lines = code.split('\n')
+    filtered_lines = []
+    for line in lines:
+        l = line.strip()
+        if l.startswith("from manim import"): continue
+        if l.startswith("import "): continue
+        if l.startswith("class "): continue
+        if l.startswith("def construct"): continue
+        if l.startswith("super()."): continue
+        filtered_lines.append(line)
+        
+    return "\n".join(filtered_lines).strip()
 
 import glob
 
