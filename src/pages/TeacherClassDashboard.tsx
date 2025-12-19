@@ -107,49 +107,19 @@ const TeacherClassDashboard: React.FC = () => {
     setGeneratingMock(true);
 
     try {
-      const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string;
-      if (!OPENAI_API_KEY) throw new Error('OpenAI API key not configured. Please set VITE_OPENAI_API_KEY');
-
-      const prompt = `You are an expert CBSE question setter. Create a short mock test strictly based on the following topics taught today. Keep it aligned with latest CBSE patterns.
-
-Topics taught today:
-${dailyTopics}
-
-Rules:
-- Total questions: ${mockQuestionCount}
-- Include a balanced mix: MCQs (with 4 options A-D, exactly one correct), Short Answer (2-4 lines), Long Answer (6-10 lines)
-- Provide marks per question: MCQ 1 mark, Short 2-3 marks, Long 4-5 marks
-- Output strictly a JSON array, no markdown formatting. Each item: {"index": number, "type": "mcq"|"short"|"long", "question": string, "marks": number, "options"?: string[]}
-`;
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant that outputs only JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          response_format: { type: "json_object" }
-        })
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('teacher-generate-mock', {
+        body: { dailyTopics, mockQuestionCount }
       });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error('OpenAI API error: ' + (errData.error?.message || response.statusText));
-      }
+      if (funcError) throw new Error(funcError.message);
+      if (funcData.error) throw new Error(funcData.error);
 
-      const data = await response.json();
-      let text = data.choices[0].message.content || '';
-      let clean = text.trim().replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
-
+      const clean = funcData.content;
       let questions: any[];
       try {
-        questions = JSON.parse(clean);
+        const parsed = JSON.parse(clean);
+        // The edge function now returns { questions: [...] } structure
+        questions = Array.isArray(parsed) ? parsed : (parsed.questions || []);
       } catch {
         const match = clean.match(/\[.*\]/s);
         if (match) questions = JSON.parse(match[0]);
@@ -252,9 +222,9 @@ Rules:
         // Students (support user_id or student_id schema)
         const { data: memberData } = await supabase
           .from('class_members')
-          .select('student_id')
+          .select('user_id')
           .eq('class_id', id);
-        const userIds: string[] = (memberData || []).map((m: any) => m.user_id || m.student_id).filter(Boolean);
+        const userIds: string[] = (memberData || []).map((m: any) => m.user_id).filter(Boolean);
         if (userIds.length > 0) {
           const { data: studentProfiles } = await supabase
             .from('user_profiles')
@@ -296,9 +266,9 @@ Rules:
       try {
         const { data: members } = await supabase
           .from('class_members')
-          .select('student_id')
+          .select('user_id')
           .eq('class_id', id);
-        const userIds: string[] = (members || []).map((m: any) => m.user_id || m.student_id).filter(Boolean);
+        const userIds: string[] = (members || []).map((m: any) => m.user_id).filter(Boolean);
         if (userIds.length === 0) {
           setAttempts([]);
           setAttemptProfiles({});
