@@ -30,13 +30,26 @@ export default function PlayerScreen() {
         checkExistingVideo();
     }, []);
 
+    const getFullUrl = (path: string | null) => {
+        if (!path) return null;
+        if (path.startsWith('http') || path.startsWith('https')) return path;
+
+        const serverUrl = process.env.EXPO_PUBLIC_VIDEO_SERVER_URL || 'http://localhost:3001';
+        // Remove trailing slash from serverUrl if present, and leading slash from path if present
+        const cleanServer = serverUrl.replace(/\/$/, '');
+        const cleanPath = path.startsWith('/') ? path : `/${path}`;
+        return `${cleanServer}${cleanPath}`;
+    };
+
     // Sync context status to local status
     useEffect(() => {
         const activeGen = Array.from(activeGenerations.values()).find((g: ActiveGeneration) => g.topic === topic);
         if (activeGen) {
             if (activeGen.status === 'completed') {
                 if (activeGen.video_url) {
-                    setVideoUrl(activeGen.video_url);
+                    const fullUrl = getFullUrl(activeGen.video_url);
+                    console.log('Video completed, setting URL:', fullUrl);
+                    setVideoUrl(fullUrl);
                     setStatus('ready');
                 } else {
                     // Fallback to DB check if URL missing from payload for some reason
@@ -48,6 +61,16 @@ export default function PlayerScreen() {
             }
         }
     }, [activeGenerations]);
+
+    // Force play when ready
+    useEffect(() => {
+        if (status === 'ready' && videoUrl && videoRef.current) {
+            console.log('Status ready, attempting to play video...');
+            videoRef.current.playAsync().catch(err => {
+                console.log('Auto-play failed (expected on some devices):', err);
+            });
+        }
+    }, [status, videoUrl]);
 
     const checkExistingVideo = async () => {
         try {
@@ -73,7 +96,7 @@ export default function PlayerScreen() {
             if (data && data.length > 0) {
                 const latest = data[0];
                 if (latest.status === 'completed' && latest.video_url) {
-                    setVideoUrl(latest.video_url);
+                    setVideoUrl(getFullUrl(latest.video_url));
                     setStatus('ready');
                     return;
                 } else if (latest.status === 'generating' || (latest.status === 'idle' && new Date().getTime() - new Date(latest.created_at).getTime() < 300000)) {

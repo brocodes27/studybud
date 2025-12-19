@@ -1,6 +1,7 @@
 import http from 'http';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
@@ -37,6 +38,25 @@ const server = http.createServer(async (req, res) => {
         res.setHeader('Access-Control-Max-Age', '86400');
         if (status) res.writeHead(status);
     };
+
+    // Static File Serving
+    if (req.method === 'GET' && req.url?.startsWith('/videos/')) {
+        const filePath = path.join(__dirname, '..', 'public', req.url);
+        if (fs.existsSync(filePath)) {
+            const ext = path.extname(filePath).toLowerCase();
+            const contentType = ext === '.mp4' ? 'video/mp4' : ext === '.vtt' ? 'text/vtt' : 'application/octet-stream';
+
+            setCors();
+            res.setHeader('Content-Type', contentType);
+            const stream = fs.createReadStream(filePath);
+            stream.pipe(res);
+            return;
+        } else {
+            res.statusCode = 404;
+            res.end('Video not found');
+            return;
+        }
+    }
 
     // Response Helper
     const sendJson = (status: number, data: any) => {

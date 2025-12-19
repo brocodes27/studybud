@@ -290,9 +290,14 @@ async function generateVideo(topic: string, scriptText: string) {
         const videoUrl = await uploadToStorage(finalVideoPath, 'video/mp4');
         const subUrl = await uploadToStorage(srtPath.replace('.srt', '.vtt'), 'text/vtt'); // Upload VTT
 
-        // Also save locally just in case
         const slug = topic.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const localVideoName = `${slug}.mp4`;
+
+        // Ensure local persistence for server static delivery fallback
+        const destDir = path.join(__dirname, '..', 'public', 'videos');
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        fs.copyFileSync(finalVideoPath, path.join(destDir, localVideoName));
+        fs.copyFileSync(srtPath.replace('.srt', '.vtt'), path.join(destDir, `${slug}.vtt`));
 
         await logToDB("Process Complete", 100, 'completed', {
             video: videoUrl || `/videos/${localVideoName}`,
