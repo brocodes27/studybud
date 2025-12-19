@@ -36,9 +36,23 @@ const server = http.createServer(async (req, res) => {
         if (status) res.writeHead(status);
     };
 
+    // Response Helper
+    const sendJson = (status: number, data: any) => {
+        setCors();
+        res.statusCode = status;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(data));
+    };
+
     if (req.method === 'OPTIONS') {
         setCors(204);
         res.end();
+        return;
+    }
+
+    // Ping check for Cloudflare/Uptime
+    if (req.method === 'GET' && req.url === '/api/generate') {
+        sendJson(200, { status: 'online' });
         return;
     }
 
@@ -46,19 +60,16 @@ const server = http.createServer(async (req, res) => {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
-            setCors();
-            res.setHeader('Content-Type', 'application/json');
             try {
                 const { topic, userId, script } = JSON.parse(body);
 
                 if (!topic || !userId) {
-                    console.log(`Rejecting request: Missing topic (${topic}) or userId (${userId})`);
-                    res.writeHead(400);
-                    res.end(JSON.stringify({ error: 'Missing topic or userId' }));
+                    console.log(`Rejecting request: Missing topic or userId`);
+                    sendJson(400, { error: 'Missing topic or userId' });
                     return;
                 }
 
-                console.log(`Received request for: ${topic}`);
+                console.log(`Received generation request for: ${topic}`);
 
                 // 1. Create DB Record
                 const { data, error } = await supabase
@@ -76,38 +87,32 @@ const server = http.createServer(async (req, res) => {
 
                 if (error) {
                     console.error('DB Error:', error);
-                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: error.message }));
+                    sendJson(500, { error: error.message });
                     return;
                 }
 
                 const generationId = data.id;
 
                 // 2. Spawn Worker
-                // We run the matching TS script using 'tsx'
                 const scriptPath = path.join(__dirname, 'generate-manim-video.ts');
                 const child = spawn('npx', ['tsx', scriptPath, `"${topic}"`, `"${script || ''}"`, `--generation-id=${generationId}`], {
-                    cwd: path.join(__dirname, '..'), // Run from project root
+                    cwd: path.join(__dirname, '..'),
                     shell: true,
-                    detached: true, // Let it run independently
-                    stdio: 'ignore' // We don't need to pipe output, it logs to DB
+                    detached: true,
+                    stdio: 'ignore'
                 });
 
                 child.unref();
 
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, generationId }));
+                sendJson(200, { success: true, generationId });
 
             } catch (e) {
                 console.error('Server Error:', e);
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Internal Server Error' }));
+                sendJson(500, { error: 'Internal Server Error' });
             }
         });
     } else {
-        setCors(404);
-        console.log(`404 Not Found: ${req.method} ${req.url}`);
-        res.end(JSON.stringify({ error: 'Not Found' }));
+        sendJson(404, { error: 'Not Found' });
     }
 });
 
