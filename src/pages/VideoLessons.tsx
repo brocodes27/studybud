@@ -204,20 +204,24 @@ export const VideoLessons = () => {
         : [];
 
     const handlePlayPremium = async (lesson: Lesson) => {
-        setLoading(true); // Short loading state while checking status
+        setLoading(true);
         try {
+            // Clean/Truncate the topic for DB lookup (prevents 406 errors with huge topics)
+            const cleanTopic = lesson.topic.length > 100
+                ? lesson.topic.substring(0, 97) + '...'
+                : lesson.topic;
+
             // 1. Check if generation exists
             const { data: existing, error } = await supabase
                 .from('video_generations')
                 .select('*')
                 .eq('user_id', user?.id)
-                .eq('topic', lesson.topic)
+                .eq('topic', cleanTopic)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
 
             if (existing && existing.status !== 'failed') {
-                // If completed or processing, use this one
                 setCurrentGenerationId(existing.id);
                 setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
                 setRenderMode('premium');
@@ -225,8 +229,7 @@ export const VideoLessons = () => {
                 return;
             }
 
-            // 2. If not, trigger new generation via local server
-            // IMPORTANT: For production, this MUST be https://your-domain.com
+            // 2. Trigger new generation
             const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
 
             const response = await fetch(API_URL, {
@@ -236,7 +239,7 @@ export const VideoLessons = () => {
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    topic: lesson.topic,
+                    topic: cleanTopic,
                     userId: user?.id,
                     script: lesson.description
                 })
