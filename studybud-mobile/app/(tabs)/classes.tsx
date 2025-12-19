@@ -45,8 +45,10 @@ export default function ClassesScreen() {
         <TouchableOpacity
             style={styles.card}
             onPress={() => {
-                // Navigate to class details (if implemented on mobile) or show simple info
-                // For now, simple alert or just opacity change
+                router.push({
+                    pathname: '/class-details',
+                    params: { id: item.id }
+                });
             }}
         >
             <LinearGradient

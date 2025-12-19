@@ -264,23 +264,31 @@ const TeacherClassDashboard: React.FC = () => {
       setAttemptsLoading(true);
       setAttemptsError(null);
       try {
-        const { data: members } = await supabase
+        const { data: members, error: memErr } = await supabase
           .from('class_members')
           .select('user_id')
           .eq('class_id', id);
+
+        if (memErr) console.error('Error fetching members:', memErr);
+
         const userIds: string[] = (members || []).map((m: any) => m.user_id).filter(Boolean);
+        console.log('Fetching attempts for user IDs:', userIds);
+
         if (userIds.length === 0) {
           setAttempts([]);
           setAttemptProfiles({});
           setAttemptsLoading(false);
           return;
         }
-        const { data: attemptData } = await supabase
+        const { data: attemptData, error: attemptErr } = await supabase
           .from('cbse_exam_attempts')
           .select('*')
           .in('user_id', userIds)
           .order('exam_date', { ascending: false })
           .limit(200);
+
+        if (attemptErr) console.error('Error fetching attempts:', attemptErr);
+        console.log('Attempts found:', attemptData?.length);
         setAttempts(attemptData || []);
         const { data: profiles } = await supabase
           .from('user_profiles')

@@ -10,7 +10,18 @@ export default function Index() {
     const checkAuth = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-            router.replace('/(tabs)/home');
+            // Check role
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profile?.role === 'teacher') {
+                router.replace('/teacher-panel');
+            } else {
+                router.replace('/(tabs)/home');
+            }
         } else {
             router.replace('/landing');
         }
