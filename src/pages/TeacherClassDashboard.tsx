@@ -176,13 +176,13 @@ const TeacherClassDashboard: React.FC = () => {
       // Notify all students in this class
       const { data: members, error: memErr } = await supabase
         .from('class_members')
-        .select('user_id, student_id')
+        .select('user_id')
         .eq('class_id', id);
       if (memErr) {
         console.warn('class_members fetch error:', memErr);
       }
       const studentIds: string[] = (members || [])
-        .map((m: any) => m.user_id || m.student_id)
+        .map((m: any) => m.user_id)
         .filter((uid: string) => uid && uid !== user.id);
       if (studentIds.length > 0) {
         const rows = studentIds.map(uid => ({
