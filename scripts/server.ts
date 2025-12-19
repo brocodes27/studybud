@@ -27,18 +27,17 @@ const PORT = 3001;
 const server = http.createServer(async (req, res) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
 
-    // CORS headers - Wildcard for absolute compatibility during debugging
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
+    // CORS Helper
+    const setCors = (status = 0) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        if (status) res.writeHead(status);
+    };
 
     if (req.method === 'OPTIONS') {
-        res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, X-Requested-With'
-        });
+        setCors(204);
         res.end();
         return;
     }
@@ -47,6 +46,7 @@ const server = http.createServer(async (req, res) => {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
+            setCors();
             res.setHeader('Content-Type', 'application/json');
             try {
                 const { topic, userId, script } = JSON.parse(body);
