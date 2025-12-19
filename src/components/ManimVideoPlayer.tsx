@@ -7,10 +7,11 @@ interface ManimVideoPlayerProps {
     topic: string;
     generationId?: string; // If provided, we track live progress
     isPreparing?: boolean; // If true, we are waiting for a generation ID to be fetched
+    error?: string | null;  // External error from the parent (e.g. API failure)
     onClose: () => void;
 }
 
-export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, isPreparing, onClose }) => {
+export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, isPreparing, error: externalError, onClose }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
@@ -26,14 +27,22 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
     const [logs, setLogs] = useState<{ time: string, msg: string }[]>([]);
     const [actualSrc, setActualSrc] = useState<string | null>(videoUrl || null);
 
+    // Reset internal state when topic or base video changes
+    useEffect(() => {
+        setIsGenerating(!!generationId || !!isPreparing);
+        setError(externalError || null);
+        setActualSrc(videoUrl || null);
+        setLogs([]);
+    }, [topic, videoUrl, externalError]);
+
     // Sync state and clear errors when transition happens
     useEffect(() => {
         if (generationId || isPreparing) {
             setIsGenerating(true);
-            setError(null);
+            if (!externalError) setError(null);
             if (generationId) setLogs([]);
         }
-    }, [generationId, isPreparing]);
+    }, [generationId, isPreparing, externalError]);
 
     const toggleFullscreen = () => {
         if (!containerRef.current) return;
@@ -61,7 +70,9 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
         if (!generationId) {
             // Fallback to simulation or instant play if URL exists
             if (videoUrl && !actualSrc) setActualSrc(videoUrl);
-            if (videoUrl) setIsGenerating(false);
+
+            // If we are preparing, we are still "generating" (loading)
+            if (videoUrl && !isPreparing) setIsGenerating(false);
             return;
         }
 
@@ -165,7 +176,9 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
     const handleError = () => {
         // Only trigger error if we are definitively not generating and not expecting to start
         if (!isGenerating && !generationId && !isPreparing) {
-            setError("Playback failed. This usually means the MP4 file hasn't been rendered yet. Run 'npm run generate-video' in your terminal.");
+            if (!error) {
+                setError("Unable to load video. It might still be processing or failed to initialize. Please try refreshing or re-generating.");
+            }
         }
     };
 

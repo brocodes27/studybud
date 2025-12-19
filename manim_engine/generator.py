@@ -24,6 +24,7 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
 **CRITICAL: NO "BASIC" PRIMITIVES**
 - BANNED: `self.play(Create(Circle()))` or `self.play(Write(Text("...")))` as the sole focus.
 - MANDATORY: Every object must be a **Layered Assembly**. If you need a circle, make it a "Cell" with a nucleus, membrane, and organelles, or a "Planet" with an atmosphere and rings.
+- **NO EXTERNAL ASSETS**: You DO NOT have access to `SVGMobject` for external files. Construct ALL icons and diagrams using `Square`, `Circle`, `Line`, etc.
 - **ANNOTATION IS KEY**: Every complex assembly MUST have at least **3-5 descriptive labels** using `Tex` or `MathTex`. Never show a diagram without explaining its parts.
 
 **MAXIMAL SCIENTIFIC DENSITY**:
@@ -70,6 +71,7 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
 - ❌ Using `.shift()` or `.move_to()` on existing mobjects to "make room" - plan the layout ahead.
 - ❌ Calling `FadeOut` with an empty list.
 - ❌ Simple text-only slides. Every segment needs a diagram, graph, or symbolic representation.
+- ❌ Using `SVGMobject` for files (e.g., `SVGMobject("swing.svg")`). BANNED: No external assets exist.
 - ❌ Using `Tex()` for content containing `^`, `_`, or `\`.
 
 **STRICT OUTPUT FORMAT**:
@@ -93,6 +95,7 @@ Output ONLY valid JSON matching this schema:
 - NEVER use `.arrange_in_circle()` - VGroup does NOT have this method.
 - NEVER use `.set_glow()` - This method does not exist in standard Manim.
 - NEVER use `.pulse()` - Use `.animate.scale()` with back-and-forth transforms instead.
+- NEVER use `SVGMobject("...")` for any file that isn't provided. (HINT: No files are provided).
 
 **CORRECT CIRCULAR ARRANGEMENTS**:
 To arrange objects in a circle, use manual positioning with trigonometry:
@@ -113,6 +116,12 @@ for i, obj in enumerate(objects):
 - `.scale(factor)` - scales the entire group
 - `.rotate(angle)` - rotates the entire group
 - `.next_to(mobject, direction)` - positions relative to another object
+
+**VISUAL ABSTRACTIONS (Build These from Primitives)**:
+- **ATOM**: `VGroup(Circle(radius=0.2), *[Circle(radius=0.8).rotate(i*PI/3) for i in range(3)])`
+- **GEAR**: `VGroup(Circle(), *[Square(side_length=0.2).move_to([np.cos(a), np.sin(a), 0]) for a in np.linspace(0, 2*PI, 8)])`
+- **TRANSISTOR**: `VGroup(Line(LEFT, RIGHT), Line(UP, DOWN).shift(LEFT*0.5))`
+- **SWING**: `VGroup(Line(UP*2, ORIGIN), Rectangle(width=1, height=0.2))`
 
 **VALID ANIMATION METHODS**:
 - `Create()`, `Write()`, `FadeIn()`, `FadeOut()`, `Transform()`, `ReplacementTransform()`
@@ -219,7 +228,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
+    full_code = "from manim import *\nimport numpy as np\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     

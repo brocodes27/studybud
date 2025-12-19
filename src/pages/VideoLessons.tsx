@@ -108,6 +108,7 @@ export const VideoLessons = () => {
     const [currentGenerationId, setCurrentGenerationId] = useState<string | undefined>();
     const [playingLesson, setPlayingLesson] = useState<{ topic: string, subject: string } | null>(null);
     const [isPreparing, setIsPreparing] = useState(false);
+    const [generationError, setGenerationError] = useState<string | null>(null);
 
     // Navigation State
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
@@ -260,16 +261,17 @@ export const VideoLessons = () => {
         // Reset state
         setCurrentGenerationId(undefined);
         setIsPreparing(true);
+        setGenerationError(null);
 
         // Always open player to show progress or play
         setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
         setRenderMode('premium');
 
         if (existingGen) {
-            setCurrentGenerationId(existingGen.id);
             // If it's already completed or processing, the player will handle it
-            // If it failed, we'll try to trigger a new one below
+            // If it failed, we'll try to trigger a new one below without passing the old ID
             if (existingGen.status !== 'failed') {
+                setCurrentGenerationId(existingGen.id);
                 setIsPreparing(false);
                 return;
             }
@@ -296,10 +298,16 @@ export const VideoLessons = () => {
                 const resData = await response.json();
                 if (resData.generationId) {
                     setCurrentGenerationId(resData.generationId);
+                } else if (resData.error) {
+                    setGenerationError(`Engine Error: ${resData.error}`);
                 }
+            } else {
+                const errText = await response.text();
+                setGenerationError(`Server error (${response.status}): ${errText.substring(0, 100)}`);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error starting generation:", e);
+            setGenerationError(`Network error: ${e.message || "Failed to reach generation server"}`);
         } finally {
             setIsPreparing(false);
         }
@@ -324,7 +332,8 @@ export const VideoLessons = () => {
                     topic={playingLesson.topic}
                     generationId={currentGenerationId}
                     isPreparing={isPreparing}
-                    onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); setIsPreparing(false); }}
+                    error={generationError}
+                    onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); setIsPreparing(false); setGenerationError(null); }}
                 />
             )}
 
