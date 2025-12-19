@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,7 +70,11 @@ export default function ProfileScreen() {
                 <Text style={styles.email}>{user?.email || 'student@example.com'}</Text>
             </LinearGradient>
 
-            <View style={styles.content}>
+            <ScrollView
+                style={styles.content}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
 
@@ -133,7 +137,8 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 <Text style={styles.version}>Version 1.0.0</Text>
-            </View>
+                <View style={{ height: 40 }} />
+            </ScrollView>
         </View>
     );
 }
@@ -182,6 +187,8 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
+    },
+    scrollContent: {
         padding: Spacing.lg,
     },
     section: {

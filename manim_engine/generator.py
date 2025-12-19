@@ -151,6 +151,12 @@ def clean_code_block(code):
         if l.startswith("def construct"): continue
         if l.startswith("super()."): continue
         
+        # SAFETY FIXES: Catch common AI hallucinations
+        if "MathMathTex" in line:
+            line = line.replace("MathMathTex", "MathTex")
+        if "MathText" in line:
+            line = line.replace("MathText", "MathTex")
+
         # SAFETY FIX: If the AI uses Tex for chemical formulas or math (contains _ or ^),
         # we automatically convert it to MathTex to prevent LaTeX compilation errors.
         if "Tex(r" in line and ("_" in line or "^" in line):

@@ -176,14 +176,27 @@ export default function ClassDetailScreen() {
                                             <Text style={styles.actionButtonText}>Attachment</Text>
                                         </TouchableOpacity>
                                     )}
-                                    {/* Mock Test Logic Placeholder */}
                                     {item.file_url && /\.json(\?|$)/i.test(item.file_url) && (
                                         <TouchableOpacity
                                             style={[styles.actionButton, { borderColor: Colors.dark.success, backgroundColor: Colors.dark.success + '10' }]}
-                                            onPress={() => {
-                                                // Handle Mock Test Navigation
-                                                // router.push({ pathname: '/exam-session', params: { ... } });
-                                                Alert.alert("Coming Soon", "Mock test taking is available on web. Mobile support coming soon.");
+                                            onPress={async () => {
+                                                try {
+                                                    const res = await fetch(item.file_url);
+                                                    if (!res.ok) throw new Error('Failed to fetch test');
+                                                    const json = await res.json();
+                                                    const qData = json.questions || json;
+
+                                                    router.push({
+                                                        pathname: '/exam-session',
+                                                        params: {
+                                                            questions: JSON.stringify(qData),
+                                                            subject: classInfo?.class_name || 'Mock Test',
+                                                            duration: 3 * 60 * 60
+                                                        }
+                                                    });
+                                                } catch (err) {
+                                                    Alert.alert("Error", "Could not load test content.");
+                                                }
                                             }}
                                         >
                                             <Ionicons name="clipboard-outline" size={16} color={Colors.dark.success} />
