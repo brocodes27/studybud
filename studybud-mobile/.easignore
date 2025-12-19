@@ -1,0 +1,54 @@
+# Reduce app size
+*.md
+*.txt
+CHANGELOG*
+README*
+LICENSE*
+CONTRIBUTING*
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+
+# Documentation
+docs/
+documentation/
+
+# Test files
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Source maps
+**/*.map
+
+# Large media files (if any)
+*.psd
+*.ai
+*.sketch
+
+# Node modules (will be rebuilt)
+node_modules/
+
+# Build artifacts
+.expo/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

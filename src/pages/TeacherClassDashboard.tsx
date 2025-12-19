@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Bell, XCircle, Eye, Trash2, Upload, Plus, FileText, Link as LinkIcon, MessageSquare, BarChart2, Brain, Calendar, Users, BookOpen, AlertCircle, CheckCircle, Loader2, Send, Search, Download, Clock } from 'lucide-react';
+import { Bell, XCircle, Eye, Trash2, Upload, Plus, FileText, Link as LinkIcon, MessageSquare, BarChart2, Brain, Calendar, Users, BookOpen, AlertCircle, CheckCircle, Loader2, Send, Search, Download, Clock, Sparkles } from 'lucide-react';
 import { marked } from 'marked';
 
 const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Analytics', 'AI Insights', 'Notifications'];
@@ -511,8 +511,8 @@ Rules:
               <button
                 key={t}
                 className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap ${tab === t
-                    ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/20'
-                    : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                  ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/20'
+                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
                   }`}
                 onClick={() => setTab(t)}
               >
