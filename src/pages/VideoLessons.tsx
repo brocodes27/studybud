@@ -107,6 +107,7 @@ export const VideoLessons = () => {
     const [loading, setLoading] = useState(true);
     const [currentGenerationId, setCurrentGenerationId] = useState<string | undefined>();
     const [playingLesson, setPlayingLesson] = useState<{ topic: string, subject: string } | null>(null);
+    const [isPreparing, setIsPreparing] = useState(false);
 
     // Navigation State
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
@@ -256,6 +257,10 @@ export const VideoLessons = () => {
         const topicKey = cleanTopic.toLowerCase();
         const existingGen = generations[topicKey];
 
+        // Reset state
+        setCurrentGenerationId(undefined);
+        setIsPreparing(true);
+
         // Always open player to show progress or play
         setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
         setRenderMode('premium');
@@ -264,7 +269,10 @@ export const VideoLessons = () => {
             setCurrentGenerationId(existingGen.id);
             // If it's already completed or processing, the player will handle it
             // If it failed, we'll try to trigger a new one below
-            if (existingGen.status !== 'failed') return;
+            if (existingGen.status !== 'failed') {
+                setIsPreparing(false);
+                return;
+            }
         }
 
         // Trigger or re-trigger generation
@@ -292,6 +300,8 @@ export const VideoLessons = () => {
             }
         } catch (e) {
             console.error("Error starting generation:", e);
+        } finally {
+            setIsPreparing(false);
         }
     };
 
@@ -313,7 +323,8 @@ export const VideoLessons = () => {
                     videoUrl={`/videos/${playingLesson.topic.toLowerCase().replace(/[^a-z0-9]/g, '-')}.mp4`}
                     topic={playingLesson.topic}
                     generationId={currentGenerationId}
-                    onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); }}
+                    isPreparing={isPreparing}
+                    onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); setIsPreparing(false); }}
                 />
             )}
 

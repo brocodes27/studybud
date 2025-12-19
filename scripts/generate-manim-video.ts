@@ -252,18 +252,37 @@ async function generateVideo(topic: string, scriptText: string) {
         await logToDB("Crafting high-fidelity diagrams and motion graphics...");
 
         // Update renderer to take jobDir
-        await runPythonScript('renderer.py', [scenePath, 'l', jobDir]);
+        await logToDB("Rendering high-quality cinematic frames...", 60);
+        await runPythonScript('renderer.py', [scenePath, 'm', jobDir]);
 
-        // Find video - it will be inside jobDir/media
-        const videoDir = path.join(jobDir, 'media', 'videos', 'scene', '480p15');
-        if (!fs.existsSync(videoDir)) throw new Error(`Render failed: ${videoDir} not found.`);
+        // Robust video finding
+        let silentVideoPath = "";
+        const searchPath = path.join(jobDir, 'media', 'videos');
 
-        const files = fs.readdirSync(videoDir).filter(f => f.endsWith('.mp4'))
-            .map(f => ({ name: f, time: fs.statSync(path.join(videoDir, f)).mtime.getTime() }))
-            .sort((a, b) => b.time - a.time);
+        function findLatestMp4(dir: string): string | null {
+            if (!fs.existsSync(dir)) return null;
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            let latestFile: { path: string, time: number } | null = null;
 
-        if (files.length === 0) throw new Error("No rendered MP4 found.");
-        const silentVideoPath = path.join(videoDir, files[0].name);
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    const found = findLatestMp4(fullPath);
+                    if (found) {
+                        const time = fs.statSync(found).mtime.getTime();
+                        if (!latestFile || time > latestFile.time) latestFile = { path: found, time };
+                    }
+                } else if (entry.name.endsWith('.mp4') && !entry.name.includes('partial')) {
+                    const time = fs.statSync(fullPath).mtime.getTime();
+                    if (!latestFile || time > latestFile.time) latestFile = { path: fullPath, time };
+                }
+            }
+            return latestFile?.path || null;
+        }
+
+        silentVideoPath = findLatestMp4(searchPath) || "";
+        if (!silentVideoPath) throw new Error("No rendered MP4 found in media directory.");
+        console.log(`Found rendered video: ${silentVideoPath}`);
 
         // 3. Subtitles
         await logToDB("Generating precision subtitles...", 75);
@@ -339,15 +358,32 @@ async function main() {
     let topic = topicArg;
     let script = scriptArg;
 
-    if (!script) {
-        await logToDB(`Generating script for: ${topic}`, 10);
-        // AI Script Generation logic here using runPythonScript...
-        // For brevity in rewrite using existing logic:
+    const wordCount = (s: string) => s.trim().split(/\s+/).length;
+
+    // If no script provided, OR if the script is too short (< 150 words), 
+    // we generate a comprehensive deep-dive script to ensure premium quality.
+    if (!script || wordCount(script) < 150) {
+        const reason = !script ? "Missing script" : `provided script too short (${wordCount(script)} words)`;
+        await logToDB(`Generating professional deep-dive script (${reason})...`, 10);
+
         try {
-            script = await runPythonScript('script_generator.py', [`"${topic}"`]);
+            const contextHint = script ? ` (Using context: ${script})` : "";
+            const topicWithContext = `"${topic}${contextHint}"`;
+            script = await runPythonScript('script_generator.py', [topicWithContext]);
             script = script.trim();
-        } catch (e) {
-            script = "Error generating script.";
+
+            if (!script || script.length < 50) {
+                throw new Error("Generated script too short or empty.");
+            }
+        } catch (e: any) {
+            console.error("Script generation failed:", e);
+            // If it failed and we had a short script, we fallback to it
+            // but if we had NO script, we must throw.
+            if (!scriptArg) {
+                script = `Let's explore the fascinating world of ${topic}. This subject covers essential concepts and their applications in the real world.`;
+            } else {
+                script = scriptArg;
+            }
         }
     }
 

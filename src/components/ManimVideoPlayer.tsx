@@ -6,10 +6,11 @@ interface ManimVideoPlayerProps {
     videoUrl?: string; // Optional now, can come from DB
     topic: string;
     generationId?: string; // If provided, we track live progress
+    isPreparing?: boolean; // If true, we are waiting for a generation ID to be fetched
     onClose: () => void;
 }
 
-export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, onClose }) => {
+export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, isPreparing, onClose }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
@@ -20,10 +21,19 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Generation State
-    const [isGenerating, setIsGenerating] = useState(!!generationId);
+    const [isGenerating, setIsGenerating] = useState(!!generationId || !!isPreparing);
     const [currentProgress, setCurrentProgress] = useState(0);
     const [logs, setLogs] = useState<{ time: string, msg: string }[]>([]);
     const [actualSrc, setActualSrc] = useState<string | null>(videoUrl || null);
+
+    // Sync state and clear errors when transition happens
+    useEffect(() => {
+        if (generationId || isPreparing) {
+            setIsGenerating(true);
+            setError(null);
+            if (generationId) setLogs([]);
+        }
+    }, [generationId, isPreparing]);
 
     const toggleFullscreen = () => {
         if (!containerRef.current) return;
@@ -153,7 +163,8 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
     };
 
     const handleError = () => {
-        if (!isGenerating) {
+        // Only trigger error if we are definitively not generating and not expecting to start
+        if (!isGenerating && !generationId && !isPreparing) {
             setError("Playback failed. This usually means the MP4 file hasn't been rendered yet. Run 'npm run generate-video' in your terminal.");
         }
     };

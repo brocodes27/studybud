@@ -109,13 +109,7 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="chat"
                 options={{
-                    href: null, // Hiding chat from tab bar if needed, or keeping it? User has 6 tabs.
-                    // Tab bar fits 5 comfortably. 6 is crowded.
-                    // 'home', 'classes', 'create', 'plans', 'lessons', 'chat', 'profile'. That's 7!
-                    // I need to prioritize.
-                    // 'home', 'classes', 'create', 'plans', 'profile'.
-                    // 'lessons' and 'chat' can be in Quick Actions on Home.
-                    // I will hide 'lessons' and 'chat' from the tab bar but keep the screens accessible.
+                    // Hiding chat from tab bar but keeping it accessible via direct navigation or Quick Actions
                     tabBarButton: () => null,
                 }}
             />
