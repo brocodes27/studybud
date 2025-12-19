@@ -81,59 +81,41 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
 - ❌ Using `SVGMobject` for files (e.g., `SVGMobject("swing.svg")`). BANNED: No external assets exist.
 - ❌ Using `Tex()` for content containing `^`, `_`, or `\`.
 
+**CRITICAL: JSON ESCAPING & QUOTES**:
+- The output MUST be a single valid JSON object.
+- **IMPORTANT**: Inside the `"code"` strings, ALWAYS use **single quotes** (`'`) for Manim strings (e.g., `Text('Hello')`, `color='#22c55e'`).
+- DO NOT use double quotes (`"`) inside the code blocks, as they will break the JSON structure.
+
+**MAXIMAL SCIENTIFIC DENSITY**:
+- **Triggers**: If a concept is mentioned even in passing, show its technical representation. 
+- **Visual Evidence**: The screen should look like a "Digital Laboratory". Use small side-formulas, constants (like `c=3\times10^8`), and structural skeletons in the corners for extra context.
+
+**VISUAL COMPLEXITY BLUEPRINTS**:
+1. **The "Sidebar" Method**: Keep a vertical bar on the left with key terms or formulas.
+2. **Scientific Objects**: Use nested shapes. (e.g., A Proton is a sphere + 3 smaller quarks).
+3. **Connectivity**: Use `Arrow` or `DashedLine` between nodes.
+4. **Data/Math**: Use `Axes`, `NumberLine`, or `Matrix` with glowing highlights.
+
+**SCIENTIFIC ANNOTATION & LABELS**:
+- Use `MathTex(r"...")` for EVERY entry that contains math symbols (+, -, =, ^, _, \, derivatives).
+- Use `Tex("...")` ONLY for pure alphabetical labels.
+- ALWAYS use raw strings `r"..."` for both.
+
+**BANNED ACTIONS**:
+- ❌ Using `.shift()` or `.move_to()` on existing mobjects to "make room" - plan the layout ahead.
+- ❌ Simple text-only slides. Every segment needs a diagram, graph, or symbolic representation.
+- ❌ Using `SVGMobject("...")` - NO external assets exist.
+
 **STRICT OUTPUT FORMAT**:
 Output ONLY valid JSON matching this schema:
 {
   "segments": [
     {
       "text": "Narration text...",
-      "code": "Direct command block"
+      "code": "Direct command block using single quotes for internal strings"
     }
   ]
 }
-
-**CODE SAFETY & CRASH PREVENTION**:
-1. **LaTeX**: Use `MathTex(r"y = x^2")` - ALWAYS use raw strings `r""`. 
-2. **Groups**: Always wrap lists in `VGroup(*my_list)` before animating.
-3. **Axes**: Use `Axes(axis_config={"include_tip": True})` for all graphs.
-4. **Positioning**: Use `.to_edge(UP)` or `.next_to(obj, DOWN)` to avoid "messy" overlaps.
-
-**CRITICAL: BANNED METHODS (THESE DO NOT EXIST)**:
-- NEVER use `.arrange_in_circle()` - VGroup does NOT have this method.
-- NEVER use `.set_glow()` - This method does not exist in standard Manim.
-- NEVER use `.pulse()` - Use `.animate.scale()` with back-and-forth transforms instead.
-- NEVER use `SVGMobject("...")` for any file that isn't provided. (HINT: No files are provided).
-
-**CORRECT CIRCULAR ARRANGEMENTS**:
-To arrange objects in a circle, use manual positioning with trigonometry:
-```python
-import numpy as np
-radius = 2
-n_objects = 5
-objects = VGroup(*[Circle() for _ in range(n_objects)])
-for i, obj in enumerate(objects):
-    angle = i * 2 * PI / n_objects
-    obj.move_to([radius * np.cos(angle), radius * np.sin(angle), 0])
-```
-
-**VALID VGROUP METHODS**:
-- `.arrange(direction=RIGHT, buff=0.5)` - arranges in a line
-- `.arrange_in_grid(rows=2, cols=3, buff=0.5)` - arranges in a grid
-- `.shift(vector)` - moves the entire group
-- `.scale(factor)` - scales the entire group
-- `.rotate(angle)` - rotates the entire group
-- `.next_to(mobject, direction)` - positions relative to another object
-
-**VISUAL ABSTRACTIONS (Build These from Primitives)**:
-- **ATOM**: `VGroup(Circle(radius=0.2), *[Circle(radius=0.8).rotate(i*PI/3) for i in range(3)])`
-- **GEAR**: `VGroup(Circle(), *[Square(side_length=0.2).move_to([np.cos(a), np.sin(a), 0]) for a in np.linspace(0, 2*PI, 8)])`
-- **TRANSISTOR**: `VGroup(Line(LEFT, RIGHT), Line(UP, DOWN).shift(LEFT*0.5))`
-- **SWING**: `VGroup(Line(UP*2, ORIGIN), Rectangle(width=1, height=0.2))`
-
-**VALID ANIMATION METHODS**:
-- `Create()`, `Write()`, `FadeIn()`, `FadeOut()`, `Transform()`, `ReplacementTransform()`
-- `GrowFromCenter()`, `ShrinkToCenter()`, `Indicate()`, `Flash()`, `Wiggle()`
-- Use `.animate` for property changes: `obj.animate.shift(UP)`, `obj.animate.scale(2)`
 """
 
 def clean_code_block(code):
@@ -208,10 +190,10 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         f"Topic: {topic}\n"
         f"FIXED SCRIPT: {script_text}\n\n"
         f"TASKS:\n"
-        f"1. Break the FIXED SCRIPT into 10-15 logical segments to ensure high-density visuals.\n"
+        f"1. Break the FIXED SCRIPT into 8-12 logical segments to ensure high-density visuals without hitting token limits.\n"
         f"2. For each segment, provide the narration text and the Manim code.\n"
         f"3. Ensure the 'text' fields combined exactly match the FIXED SCRIPT.\n"
-        f"4. RETURN ONLY THE JSON OBJECT."
+        f"4. RETURN ONLY THE JSON OBJECT. IF THE SCRIPT IS LONG, BE CONCISE WITH CODE."
     )
     
     print(f"Sending prompt to OpenAI for {topic}...")
@@ -227,12 +209,18 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
     
     content = response.choices[0].message.content.strip()
     
-    # Robust JSON extraction
-    json_match = re.search(r"(\{.*\})", content, re.DOTALL)
-    if json_match:
-        json_str = json_match.group(1)
+    if response.choices[0].finish_reason == "length":
+        print("WARNING: AI response was truncated due to token limit!")
+    
+    # Robust JSON extraction - find the LAST opening brace and FIRST closing brace might not work
+    # instead we find the first { and last }
+    start_idx = content.find('{')
+    end_idx = content.rfind('}')
+    
+    if start_idx != -1 and end_idx != -1:
+        json_str = content[start_idx:end_idx+1]
     else:
-        print(f"FAILED: No JSON object found in AI response.\nContent: {content}")
+        print(f"FAILED: No JSON object found in AI response.\nContent snippet: {content[:200]}...")
         raise ValueError("AI failed to return valid JSON.")
         
     try:
