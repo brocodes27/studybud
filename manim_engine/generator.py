@@ -4,6 +4,8 @@ import json
 import shutil
 from openai import OpenAI
 from pydub import AudioSegment
+import re
+import textwrap
 
 # Import locally if possible, otherwise rely on pydub
 try:
@@ -26,7 +28,7 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
 - If the topic is "Force," show a high-tech vector field or a detailed mechanical assembly.
 
 **AESTHETIC GUIDELINES (FUTURISTIC / DARK MODE)**:
-- **Colors**: Use Neon Green (#22c55e), Electric Blue (#3b82f6), and Gold (#f59e0b).
+- **Colors**: Use the following constants: `NEON_GREEN` (green), `ELECTRIC_BLUE` (blue), `GOLD` (yellow), `DEEP_PURPLE` (purple), `CORAL` (red/pink).
 - **Glows**: Use `.set_glow(0.2)` or `Create(..., rate_func=slow_into)` for vital elements.
 - **Complexity**: Aim for at least 15-20 distinct mobjects per scene. Use `VGroup` to keep them organized.
 
@@ -120,7 +122,6 @@ def generate_scene_and_audio(topic, script_text):
     content = response.choices[0].message.content.strip()
     
     # Robust JSON extraction
-    import re
     json_match = re.search(r"\{.*\}", content, re.DOTALL)
     if json_match:
         content = json_match.group(0)
@@ -139,7 +140,15 @@ def generate_scene_and_audio(topic, script_text):
         return
 
     # Prepare logic
-    full_code = "from manim import *\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
+    color_defs = [
+        "NEON_GREEN = '#22c55e'",
+        "ELECTRIC_BLUE = '#3b82f6'",
+        "GOLD = '#f59e0b'",
+        "DEEP_PURPLE = '#a855f7'",
+        "CORAL = '#fb7185'"
+    ]
+    
+    full_code = "from manim import *\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     
@@ -171,15 +180,12 @@ def generate_scene_and_audio(topic, script_text):
             duration_sec = 2.0
             
         # 3. Append Code + Wait
-        import textwrap
-        
         full_code += f"        # Segment {idx}\n"
         # Normalize indentation from AI then re-indent to class depth (8 spaces)
         clean_seg_code = textwrap.dedent(code).strip()
         # Safety Fix: Ensure LaTeX backslashes are escaped if AI forgot
         # This regex finds a backslash that is NOT followed by n, t, r, ', ", or another backslash
         # and doubles it. This protects LaTeX like \frac while allowing \n.
-        import re
         clean_seg_code = re.sub(r'\\(?![ntr\'"\\])', r'\\\\', clean_seg_code)
         
         indented_code = textwrap.indent(clean_seg_code, "        ")
