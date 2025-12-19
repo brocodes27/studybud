@@ -215,7 +215,7 @@ export const VideoLessons = () => {
             console.log("Processing premium video for:", cleanTopic);
 
             // 1. Check if generation exists using a simpler query to avoid 406
-            const { data: existing, error: fetchError } = await supabase
+            const { data: existing } = await supabase
                 .from('video_generations')
                 .select('id, status, video_url')
                 .eq('user_id', user?.id)
