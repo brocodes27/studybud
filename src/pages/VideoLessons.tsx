@@ -10,7 +10,8 @@ import {
     Calculator,
     FlaskConical,
     Globe2,
-    Sparkles
+    Sparkles,
+    Loader2
 } from 'lucide-react';
 
 import { format } from 'date-fns';
@@ -105,6 +106,44 @@ export const VideoLessons = () => {
     const [selectedPlan, setSelectedPlan] = useState<PlanFolder | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
     const [renderMode, setRenderMode] = useState<'classic' | 'premium' | null>(null);
+    const [generations, setGenerations] = useState<Record<string, any>>({});
+
+    useEffect(() => {
+        if (!user) return;
+
+        // Fetch existing generations
+        const fetchGens = async () => {
+            const { data } = await supabase
+                .from('video_generations')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (data) {
+                const genMap: Record<string, any> = {};
+                data.forEach(g => {
+                    genMap[g.topic.toLowerCase()] = g;
+                });
+                setGenerations(genMap);
+            }
+        };
+        fetchGens();
+
+        // Subscribe to updates
+        const channel = supabase
+            .channel('video-lessons-status')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'video_generations', filter: `user_id=eq.${user.id}` },
+                (payload) => {
+                    const newItem = payload.new as any;
+                    setGenerations(prev => ({
+                        ...prev,
+                        [newItem.topic.toLowerCase()]: newItem
+                    }));
+                }
+            ).subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
 
     useEffect(() => {
         fetchLessons();
@@ -204,71 +243,45 @@ export const VideoLessons = () => {
         : [];
 
     const handlePlayPremium = async (lesson: Lesson) => {
-        setLoading(true);
+        const cleanTopicPrefix = lesson.topic
+            .replace(/[^a-zA-Z0-9 ]/g, '')
+            .substring(0, 50)
+            .trim();
+
+        const topicKey = cleanTopicPrefix.toLowerCase();
+        const existingGen = generations[topicKey];
+
+        // If completed, just play
+        if (existingGen?.status === 'completed') {
+            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+            setRenderMode('premium');
+            setCurrentGenerationId(existingGen.id);
+            return;
+        }
+
+        // If already processing, do nothing (GUI button handles state)
+        if (existingGen?.status === 'processing' || existingGen?.status === 'pending') {
+            return;
+        }
+
+        // Otherwise, trigger background generation
         try {
-            // Aggressively clean topic: No special chars, max 50 chars.
-            const cleanTopic = lesson.topic
-                .replace(/[^a-zA-Z0-9 ]/g, '')
-                .substring(0, 50)
-                .trim();
-
-            console.log("Processing premium video for:", cleanTopic);
-
-            // 1. Check if generation exists using a simpler query to avoid 406
-            const { data: existing } = await supabase
-                .from('video_generations')
-                .select('id, status, video_url')
-                .eq('user_id', user?.id)
-                .eq('topic', cleanTopic)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (existing && existing.status !== 'failed') {
-                setCurrentGenerationId(existing.id);
-                setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-                setRenderMode('premium');
-                setLoading(false);
-                return;
-            }
-
-            // 2. Trigger new generation
             const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
 
-            const response = await fetch(API_URL, {
+            await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    topic: cleanTopic,
+                    topic: cleanTopicPrefix,
                     userId: user?.id,
-                    script: lesson.description
+                    script: lesson.description || ""
                 })
             });
-
-            if (!response.ok) {
-                // Fallback: If server not running, just try to open player to show error or legacy view
-                console.warn("Local generation server not reachable, falling back to legacy view.");
-                setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-                setRenderMode('premium');
-                setLoading(false);
-                return;
-            }
-
-            const resData = await response.json();
-            setCurrentGenerationId(resData.generationId);
-            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-            setRenderMode('premium');
-
         } catch (e) {
             console.error("Error starting generation:", e);
-            // Fallback
-            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-            setRenderMode('premium');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -481,10 +494,23 @@ export const VideoLessons = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handlePlayPremium(lesson)}
-                                                    className="flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all hover:scale-[1.02]"
+                                                    disabled={generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending'}
+                                                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl font-bold border transition-all hover:scale-[1.02] ${generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending'
+                                                        ? 'bg-white/5 text-gray-400 border-white/10'
+                                                        : 'bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]'
+                                                        }`}
                                                 >
-                                                    <Sparkles className="w-4 h-4 fill-current text-white/80" />
-                                                    Premium Video
+                                                    {generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending' ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            {generations[lesson.topic.toLowerCase()]?.progress || 0}% Ready
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="w-4 h-4 fill-current text-white/80" />
+                                                            Premium Video
+                                                        </>
+                                                    )}
                                                 </button>
                                             </div>
                                         </div>

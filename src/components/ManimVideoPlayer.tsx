@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, X, Volume2, Maximize, Cpu, Brain, Database, Sparkles, Terminal, AlertCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface ManimVideoPlayerProps {
@@ -8,11 +8,6 @@ interface ManimVideoPlayerProps {
     generationId?: string; // If provided, we track live progress
     onClose: () => void;
 }
-
-const GENERATION_LOGS = [
-    { time: '0.0s', msg: 'System initializing: Connecting to Manim Engine...' },
-    // ... (Keep strictly for offline fallback demo)
-];
 
 export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, onClose }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -159,97 +154,28 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                 className={`relative w-full ${isFullscreen ? 'h-full' : 'max-w-5xl aspect-video'} rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] class-glass`}
             >
 
-                {/* Generation Overlay (Process View) */}
+                {/* Simple Generation Loading State */}
                 {isGenerating && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0b0c10] p-12 text-left">
-                        <div className="w-full max-w-3xl space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                        <Terminal size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-white tracking-tight">AI Engine Lifecycle</h3>
-                                        <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Process: {topic}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                                    <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest">Active Generation</span>
-                                </div>
-                            </div>
-
-                            {/* Terminal Log */}
-                            <div className="relative group">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                                <div
-                                    ref={logContainerRef}
-                                    className="relative h-64 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 font-mono text-sm overflow-y-auto custom-scrollbar"
-                                >
-                                    {logs.map((log, i) => (
-                                        log && (
-                                            <div key={i} className="flex gap-4 mb-2 animate-in slide-in-from-left-2 duration-300">
-                                                <span className="text-emerald-500/60 shrink-0">[{log.time}]</span>
-                                                <span className="text-gray-300">{log.msg}</span>
-                                            </div>
-                                        )
-                                    ))}
-                                    <div className="h-4 w-2 bg-emerald-400/80 animate-pulse mt-2 inline-block" />
-                                </div>
-                            </div>
-
-                            {/* Activity Indicators */}
-                            <div className="grid grid-cols-4 gap-4">
-                                {[
-                                    { icon: <Brain />, label: 'Neural Design' },
-                                    { icon: <Cpu />, label: 'TeX Processing' },
-                                    { icon: <Database />, label: 'Manim Render' },
-                                    { icon: <Sparkles />, label: 'A/V Mastering' },
-                                ].map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className={`p-4 rounded-2xl border transition-all duration-700 flex flex-col items-center gap-3 ${i <= Math.floor((logs.length / GENERATION_LOGS.length) * 4)
-                                            ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
-                                            : 'border-white/5 bg-white/2 text-gray-700'
-                                            }`}
-                                    >
-                                        {item.icon}
-                                        <span className="text-[10px] uppercase tracking-wider font-bold">{item.label}</span>
-                                    </div>
-                                ))}
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full border-4 border-white/5 border-t-neon-green animate-spin" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Sparkles className="text-neon-green animate-pulse" />
                             </div>
                         </div>
-                    </div>
-                )}
+                        <h3 className="mt-8 text-2xl font-bold text-white tracking-tight">Preparing Premium Visuals</h3>
+                        <p className="text-gray-400 mt-2 font-mono">{logs[logs.length - 1]?.msg || 'Initializing engine...'}</p>
 
-                {/* Error Overlay */}
-                {error && !isGenerating && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-8 text-center">
-                        <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-                            <AlertCircle className="text-red-400 w-10 h-10" />
+                        <div className="mt-8 w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-neon-green transition-all duration-1000 shadow-[0_0_15px_rgba(34,197,94,0.5)]"
+                                style={{ width: `${(logs.length / 10) * 100}%` }} // Simplified progress estimation
+                            />
                         </div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Video Not Found</h3>
-                        <p className="text-gray-400 max-w-sm mb-8">{error}</p>
-                        <div className="bg-black/40 border border-white/5 p-4 rounded-xl font-mono text-[11px] text-emerald-400 mb-8 max-w-md">
-                            $ npm run generate-video "{topic}"
-                        </div>
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => { setError(null); setIsPlaying(false); }}
-                                className="px-8 py-3 rounded-xl bg-neon-green text-black font-bold hover:scale-105 transition-all"
-                            >
-                                Reload Video
-                            </button>
-                            <button
-                                onClick={() => { setError(null); setIsGenerating(true); setLogs([]); }}
-                                className="px-8 py-3 rounded-xl bg-white/10 text-white font-bold border border-white/10 hover:bg-white/20 transition-all font-mono text-xs"
-                            >
-                                Re-Simulate logic
-                            </button>
-                            <button onClick={onClose} className="px-8 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-all">
-                                Exit
-                            </button>
-                        </div>
+
+                        <button onClick={onClose} className="mt-12 px-6 py-2 rounded-xl bg-white/5 text-gray-500 hover:text-white transition-all text-sm">
+                            Generate in Background
+                        </button>
                     </div>
                 )}
 
