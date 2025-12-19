@@ -246,7 +246,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
+    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     
