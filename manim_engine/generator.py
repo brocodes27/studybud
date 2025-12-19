@@ -214,35 +214,40 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         f"4. RETURN ONLY THE JSON OBJECT."
     )
     
-    print("Sending prompt to OpenAI...")
+    print(f"Sending prompt to OpenAI for {topic}...")
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": MANIM_PROMPT},
             {"role": "user", "content": prompt}
         ],
-        temperature=0.4
+        temperature=0.4,
+        max_tokens=4000 # Increased to prevent truncation
     )
     
     content = response.choices[0].message.content.strip()
     
     # Robust JSON extraction
-    json_match = re.search(r"\{.*\}", content, re.DOTALL)
+    json_match = re.search(r"(\{.*\})", content, re.DOTALL)
     if json_match:
-        content = json_match.group(0)
+        json_str = json_match.group(1)
+    else:
+        print(f"FAILED: No JSON object found in AI response.\nContent: {content}")
+        raise ValueError("AI failed to return valid JSON.")
         
     try:
-        data = json.loads(content)
+        data = json.loads(json_str)
         # Handle both flat and nested schemas
         if "segments" in data:
             segments = data["segments"]
         elif "scenes" in data and len(data["scenes"]) > 0:
             segments = data["scenes"][0].get("segments", [])
         else:
-            segments = []
+            print(f"FAILED: JSON structure missing 'segments'. Data keys: {list(data.keys())}")
+            raise ValueError("Invalid JSON structure from AI.")
     except Exception as e:
-        print(f"JSON Parse Error: {e}\nContent: {content}")
-        return
+        print(f"JSON Parse Error: {e}\nRaw Content: {content}\nExtracted: {json_str if 'json_str' in locals() else 'None'}")
+        raise e
 
     # Prepare logic
     color_defs = [
@@ -266,6 +271,10 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
     
     for i, seg in enumerate(segments):
         idx = i + 1
+        if not isinstance(seg, dict) or 'text' not in seg or 'code' not in seg:
+            print(f"  WARNING: Skipping malformed segment {idx}: {seg}")
+            continue
+            
         text = seg['text']
         code = clean_code_block(seg['code'])
         
