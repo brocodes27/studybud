@@ -25,17 +25,17 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const PORT = 3001;
 
 const server = http.createServer(async (req, res) => {
-    // CORS headers - Be explicit for production
-    res.setHeader('Access-Control-Allow-Origin', 'https://elevenfolks.com');
+    // CORS headers - Wildcard for absolute compatibility during debugging
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
 
     if (req.method === 'OPTIONS') {
         res.writeHead(204, {
-            'Access-Control-Allow-Origin': 'https://elevenfolks.com',
+            'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization'
+            'Access-Control-Allow-Headers': 'Content-Type, Accept, Authorization, X-Requested-With'
         });
         res.end();
         return;
