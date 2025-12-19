@@ -298,6 +298,22 @@ export default function LandingScreen() {
                             >
                                 <Text style={styles.secondaryButtonText}>I Already Have an Account</Text>
                             </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.teacherButton}
+                                onPress={() => router.push('/auth/teacher-signup')}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient
+                                    colors={['#39ff1420', '#00ff8020']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.teacherButtonGradient}
+                                >
+                                    <Ionicons name="school" size={20} color={Colors.dark.accent} />
+                                    <Text style={styles.teacherButtonText}>Sign Up as Teacher</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
                         </BlurView>
                     </LinearGradient>
                 </View>
@@ -630,5 +646,24 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 20,
         fontStyle: 'italic',
+    },
+    teacherButton: {
+        marginTop: Spacing.md,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(57, 255, 20, 0.2)',
+    },
+    teacherButtonGradient: {
+        padding: Spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: Spacing.sm,
+    },
+    teacherButtonText: {
+        fontSize: Typography.sizes.md,
+        fontWeight: Typography.weights.semibold,
+        color: Colors.dark.accent,
     },
 });
