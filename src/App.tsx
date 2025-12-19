@@ -46,6 +46,8 @@ import { Curriculum } from './pages/Curriculum';
 import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
+import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
+
 
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -249,9 +251,10 @@ function AppContent() {
       </div>
 
       {/* Global Components */}
-        <GlobalTourManager />
-        <PersonalTipsManager />
-        <Toaster toasts={toasts} removeToast={removeToast} />
+      <GlobalTourManager />
+      <PersonalTipsManager />
+      <GlobalGenerationStatus />
+      <Toaster toasts={toasts} removeToast={removeToast} />
 
     </div>
   );

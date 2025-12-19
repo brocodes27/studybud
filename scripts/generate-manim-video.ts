@@ -315,10 +315,24 @@ async function generateVideo(topic: string, scriptText: string) {
         await logEntryDb("Video ready for playback.");
 
         if (supabase && generationId) {
+            // Get user_id for notification
+            const { data: genData } = await supabase.from('video_generations').select('user_id').eq('id', generationId).single();
+
             await supabase.from('video_generations').update({
                 video_url: videoUrl || `/videos/${localVideoName}`,
                 subtitle_url: subUrl || `/videos/${slug}.vtt`
             }).eq('id', generationId);
+
+            if (genData?.user_id) {
+                await supabase.from('notifications').insert({
+                    user_id: genData.user_id,
+                    type: 'system',
+                    title: '🎬 Video Ready!',
+                    message: `Your premium video lesson for "${topic}" is ready.`,
+                    priority: 'medium',
+                    is_read: false
+                });
+            }
         }
 
         console.log("Generation Success!");
