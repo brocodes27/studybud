@@ -57,7 +57,7 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
         setIsGenerating(true);
 
         // Initial fetch
-        supabase.from('video_generations').select('*').eq('id', generationId).single().then(({ data, error }) => {
+        supabase.from('video_generations').select('*').eq('id', generationId).single().then(({ data }) => {
             if (data) {
                 if (data.status === 'completed') {
                     setActualSrc(data.video_url);

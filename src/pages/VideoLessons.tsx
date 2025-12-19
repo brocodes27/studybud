@@ -94,6 +94,13 @@ const getSubjectVisual = (subject: string): SubjectVisual => {
     return subjectVisuals.general;
 };
 
+const getCleanTopic = (topic: string) => {
+    return topic
+        .replace(/[^a-zA-Z0-9 ]/g, '')
+        .substring(0, 50)
+        .trim();
+};
+
 export const VideoLessons = () => {
     const { user } = useAuth() as any;
     const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -121,7 +128,8 @@ export const VideoLessons = () => {
             if (data) {
                 const genMap: Record<string, any> = {};
                 data.forEach(g => {
-                    genMap[g.topic.toLowerCase()] = g;
+                    const cleaned = getCleanTopic(g.topic).toLowerCase();
+                    genMap[cleaned] = g;
                 });
                 setGenerations(genMap);
             }
@@ -135,9 +143,10 @@ export const VideoLessons = () => {
                 { event: '*', schema: 'public', table: 'video_generations', filter: `user_id=eq.${user.id}` },
                 (payload) => {
                     const newItem = payload.new as any;
+                    const cleaned = getCleanTopic(newItem.topic).toLowerCase();
                     setGenerations(prev => ({
                         ...prev,
-                        [newItem.topic.toLowerCase()]: newItem
+                        [cleaned]: newItem
                     }));
                 }
             ).subscribe();
@@ -243,43 +252,44 @@ export const VideoLessons = () => {
         : [];
 
     const handlePlayPremium = async (lesson: Lesson) => {
-        const cleanTopicPrefix = lesson.topic
-            .replace(/[^a-zA-Z0-9 ]/g, '')
-            .substring(0, 50)
-            .trim();
-
-        const topicKey = cleanTopicPrefix.toLowerCase();
+        const cleanTopic = getCleanTopic(lesson.topic);
+        const topicKey = cleanTopic.toLowerCase();
         const existingGen = generations[topicKey];
 
-        // If completed, just play
-        if (existingGen?.status === 'completed') {
-            setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-            setRenderMode('premium');
+        // Always open player to show progress or play
+        setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+        setRenderMode('premium');
+
+        if (existingGen) {
             setCurrentGenerationId(existingGen.id);
-            return;
+            // If it's already completed or processing, the player will handle it
+            // If it failed, we'll try to trigger a new one below
+            if (existingGen.status !== 'failed') return;
         }
 
-        // If already processing, do nothing (GUI button handles state)
-        if (existingGen?.status === 'processing' || existingGen?.status === 'pending') {
-            return;
-        }
-
-        // Otherwise, trigger background generation
+        // Trigger or re-trigger generation
         try {
             const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
 
-            await fetch(API_URL, {
+            const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
-                    topic: cleanTopicPrefix,
+                    topic: cleanTopic,
                     userId: user?.id,
                     script: lesson.description || ""
                 })
             });
+
+            if (response.ok) {
+                const resData = await response.json();
+                if (resData.generationId) {
+                    setCurrentGenerationId(resData.generationId);
+                }
+            }
         } catch (e) {
             console.error("Error starting generation:", e);
         }
@@ -494,16 +504,17 @@ export const VideoLessons = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handlePlayPremium(lesson)}
-                                                    disabled={generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending'}
-                                                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl font-bold border transition-all hover:scale-[1.02] ${generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending'
+                                                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl font-bold border transition-all hover:scale-[1.02] ${generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'processing' ||
+                                                        generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'pending'
                                                         ? 'bg-white/5 text-gray-400 border-white/10'
                                                         : 'bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]'
                                                         }`}
                                                 >
-                                                    {generations[lesson.topic.toLowerCase()]?.status === 'processing' || generations[lesson.topic.toLowerCase()]?.status === 'pending' ? (
+                                                    {generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'processing' ||
+                                                        generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'pending' ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                                            {generations[lesson.topic.toLowerCase()]?.progress || 0}% Ready
+                                                            {generations[getCleanTopic(lesson.topic).toLowerCase()]?.progress || 0}% Ready
                                                         </>
                                                     ) : (
                                                         <>
