@@ -19,43 +19,45 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_AP
 
 
 MANIM_PROMPT = r"""
-You are the Lead Visual Designer for a high-end AI Educational Platform. Your goal is to generate **state-of-the-art, high-density Manim illustrations**. 
+You are the Lead Visual Designer for a high-end AI Educational Platform. Your goal is to generate **state-of-the-art, high-density Manim illustrations** in the style of 3Blue1Brown.
 
 **CRITICAL: NO "BASIC" PRIMITIVES**
-- NEVER just show a single "Circle" or "Square."
-- EVERY visual must be a **Complex Compound Diagram**. 
-- If the topic is an "Atom," build a system of orbiting rings, glowing particles, and labeled shells.
-- If the topic is "Force," show a high-tech vector field or a detailed mechanical assembly.
+- BANNED: `self.play(Create(Circle()))` or `self.play(Write(Text("...")))` as the sole focus.
+- MANDATORY: Every object must be a **Complex Assembly**. If you need a circle, make it a "Cell" with a nucleus, mitochondria, and a semi-transparent membrane, or a "Planet" with rings and an atmosphere.
+- Aim for **20+ unique components** per segment.
 
-**AESTHETIC GUIDELINES (FUTURISTIC / DARK MODE)**:
-- **Colors**: Use the following constants: `NEON_GREEN` (green), `ELECTRIC_BLUE` (blue), `GOLD` (yellow), `DEEP_PURPLE` (purple), `CORAL` (red/pink).
-- **Glows**: Use `.set_glow(0.2)` or `Create(..., rate_func=slow_into)` for vital elements.
-- **Complexity**: Aim for at least 15-20 distinct mobjects per scene. Use `VGroup` to keep them organized.
+**VISUAL COMPLEXITY BLUEPRINTS**:
+1. **Scientific Objects**: Use nested shapes. (e.g., A Proton is a sphere + 3 smaller quarks inside + glowing pulse effect).
+2. **Connectivity**: Use `Arrow` or `DashedLine` to show relationships between nodes. Never show a concept in isolation.
+3. **Data/Math**: Use `Axes`, `NumberLine`, or `Matrix` with glowing highlights on specific entries.
+4. **Schematics**: Use `Square` with `Line` connectors to build "Circuitry" or "Flowcharts" with custom labels.
+
+**AESTHETIC GUIDELINES (ULTRA-PREMIUM DARK MODE)**:
+- **Constants**: `NEON_GREEN` (#22c55e), `ELECTRIC_BLUE` (#3b82f6), `GOLD` (#f59e0b), `DEEP_PURPLE` (#a855f7), `CORAL` (#fb7185).
+- **Styling**: Always use `.set_stroke(width=2)` and `.set_fill(opacity=0.3)`. Use `.set_glow(0.1)` on central focus items.
+- **Layers**: Use `Backing` mobjects (larger, lower opacity) to create a "depth" effect.
 
 **SYNC & FLOW RULES**:
-- **Continuous Evolution**: Visuals must NOT be static. Use `UpdateFromAlpha` or successive `self.play` calls to keep the screen moving during the entire segment.
-- **Segment Transitions**: ALWAYS `FadeOut` or `Transform` the previous segment's elements into the new ones.
-- **Labels**: Every key part of the diagram MUST have a professional label using `Text(..., font_size=24)`.
+- **Controlled Timing**: For key animations, use `run_time=3.0` (or similar).
+- **Continuous Evolution**: The screen should NEVER be static. Parts of the diagram should rotate, pulse, or move slightly (`Indicate`, `Wiggle`, or `Rotating`).
+- **Narrative Match**: If the text mentions "growth," actually use `Transform` to grow the mobject.
 
 **STRICT OUTPUT FORMAT**:
 Output ONLY valid JSON matching this schema:
 {
-  "scenes": [
+  "segments": [
     {
-      "segments": [
-        {
-          "text": "Narration text for this specific segment...",
-          "code": "ONLY direct commands here (no imports/classes)"
-        }
-      ]
+      "text": "Narration text...",
+      "code": "Direct command block"
     }
   ]
 }
 
 **STRICT CODE ASSEMBLY RULES**:
-- Provide ONLY the direct commands that would go inside a `construct(self)` method.
-- **DO NOT** include `from manim import *`, `class ...`, or `def construct(self):`.
-- Start directly with mobject creation or animations.
+- NO `from manim import *`, NO `class ...`.
+- Start with mobject creation.
+- Use `self.play(...)` and `self.wait(...)` sparingly; focus on the visual logic.
+- **CRITICAL**: Use `MathTex` for all formulas with double backslashes.
 
 **CODE SAFETY & CRASH PREVENTION**:
 1. **LaTeX**: Use `MathTex(r'\\frac{1}{2}')` with DOUBLE BACKSLASHES.
@@ -185,8 +187,10 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
             print(f"    WARNING: Audio generation failed for seg {idx}. Using 2s fallback.")
             duration_sec = 2.0
             
-        # 3. Append Code + Wait
-        full_code += f"        # Segment {idx}\n"
+        # 3. Append Code with Precision Sync Timing
+        full_code += f"        # --- Segment {idx} ( Narration: {duration_sec:.2f}s ) ---\n"
+        full_code += f"        _start_t_{idx} = self.renderer.time\n"
+        
         # Normalize indentation from AI then re-indent to class depth (8 spaces)
         clean_seg_code = textwrap.dedent(code).strip()
         # Safety Fix: Ensure LaTeX backslashes are escaped if AI forgot
@@ -194,7 +198,12 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         
         indented_code = textwrap.indent(clean_seg_code, "        ")
         full_code += indented_code + "\n"
-        full_code += f"        self.wait({duration_sec:.2f})\n\n"
+        
+        # Calculate how much time the animations took and wait the remainder
+        full_code += f"        _end_t_{idx} = self.renderer.time\n"
+        full_code += f"        _wait_t_{idx} = {duration_sec:.2f} - (_end_t_{idx} - _start_t_{idx})\n"
+        full_code += f"        if _wait_t_{idx} > 0:\n"
+        full_code += f"            self.wait(_wait_t_{idx})\n\n"
         
         full_narrative_text += text + " "
 
