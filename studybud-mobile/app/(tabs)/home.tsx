@@ -332,7 +332,7 @@ export default function HomeScreen() {
                 <View style={styles.actionsGrid}>
                     <TouchableOpacity
                         style={styles.actionCard}
-                        onPress={() => router.push('/cbse-simulator')}
+                        onPress={() => router.push('/(tabs)/cbse-sim')}
                     >
                         <LinearGradient colors={['#39ff1430', '#39ff1410']} style={styles.actionGradient}>
                             <Ionicons name="school" size={32} color={Colors.dark.accent} />

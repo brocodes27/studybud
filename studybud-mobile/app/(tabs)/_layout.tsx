@@ -98,9 +98,16 @@ export default function TabsLayout() {
                 name="lessons"
                 options={{
                     title: 'Lessons',
+                    tabBarButton: () => null,
+                }}
+            />
+            <Tabs.Screen
+                name="cbse-sim"
+                options={{
+                    title: 'Sim',
                     tabBarIcon: ({ color, focused }) => (
                         <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
-                            <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={24} color={color} />
+                            <Ionicons name={focused ? "flask" : "flask-outline"} size={24} color={color} />
                             {focused && <View style={styles.glowDot} />}
                         </View>
                     ),

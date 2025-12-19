@@ -164,6 +164,10 @@ def clean_code_block(code):
         elif "Tex(\"" in line and ("_" in line or "^" in line):
             line = line.replace("Tex(\"", "MathTex(\"")
             
+        if ".arrange_in_circle(" in line:
+            # VGroup does not have arrange_in_circle, so we fall back to arrange() which does exist.
+            line = line.replace(".arrange_in_circle(", ".arrange(")
+            
         filtered_lines.append(line)
     
     # Join and dedent to normalize indentation
@@ -249,7 +253,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\nimport numpy as np\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
+    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     

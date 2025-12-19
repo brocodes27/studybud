@@ -2,9 +2,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Spacing, Typography } from '../constants/theme';
+import { Colors, Spacing, Typography } from '../../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CLASSES = ["10", "12"];
