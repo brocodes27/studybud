@@ -125,8 +125,16 @@ async function runPythonScript(scriptName: string, args: string[]): Promise<stri
         let stdout = '';
         let stderr = '';
 
-        child.stdout.on('data', (data) => stdout += data.toString());
-        child.stderr.on('data', (data) => stderr += data.toString());
+        child.stdout.on('data', (data) => {
+            const str = data.toString();
+            stdout += str;
+            process.stdout.write(str); // Forward to console
+        });
+        child.stderr.on('data', (data) => {
+            const str = data.toString();
+            stderr += str;
+            process.stderr.write(str); // Forward to console
+        });
 
         child.on('error', (err) => reject(new Error(`Failed to start Python script ${scriptName}: ${err.message}`)));
 
