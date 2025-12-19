@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Dimensions, ScrollView } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, VideoFullscreenUpdate, VideoFullscreenUpdateEvent } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { supabase } from '../lib/supabase';
 import { useVideoGeneration, ActiveGeneration } from '../lib/VideoGenerationContext';
 import { Colors, Spacing, Typography } from '../constants/theme';
@@ -153,6 +155,14 @@ export default function PlayerScreen() {
         }
     };
 
+    const onFullscreenUpdate = async ({ fullscreenUpdate }: VideoFullscreenUpdateEvent) => {
+        if (fullscreenUpdate === VideoFullscreenUpdate.PLAYER_DID_PRESENT) {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        } else if (fullscreenUpdate === VideoFullscreenUpdate.PLAYER_DID_DISMISS) {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        }
+    };
+
     const subscribeToGeneration = (id: string) => {
         // Redundant - handled by global VideoGenerationContext
         return;
@@ -160,7 +170,7 @@ export default function PlayerScreen() {
 
     if (status === 'error') {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <LinearGradient colors={['#0a0a0f', '#1a1a2e']} style={styles.centerContent}>
                     <Ionicons name="alert-circle" size={64} color={Colors.dark.error} />
                     <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
@@ -172,7 +182,7 @@ export default function PlayerScreen() {
                         <Text style={styles.backButtonText}>Go Back</Text>
                     </TouchableOpacity>
                 </LinearGradient>
-            </View>
+            </SafeAreaView>
         );
     }
 
@@ -181,7 +191,7 @@ export default function PlayerScreen() {
         const currentProgress = activeGen?.progress || 0;
 
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <LinearGradient colors={['#0a0a0f', '#1a1a2e']} style={styles.centerContent}>
                     <View style={styles.loaderContainer}>
                         <ActivityIndicator size="large" color={Colors.dark.accent} />
@@ -227,12 +237,12 @@ export default function PlayerScreen() {
                         <Text style={styles.backgroundButtonText}>Continue in Background</Text>
                     </TouchableOpacity>
                 </LinearGradient>
-            </View>
+            </SafeAreaView>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <LinearGradient colors={['#000', '#0a0a0f']} style={styles.playerWrapper}>
                 {/* Header Overlay */}
                 <BlurView intensity={20} style={styles.playerHeader}>
@@ -254,6 +264,7 @@ export default function PlayerScreen() {
                         resizeMode={ResizeMode.CONTAIN}
                         shouldPlay
                         isLooping={false}
+                        onFullscreenUpdate={onFullscreenUpdate}
                         onError={(e) => {
                             console.error('Video error:', e);
                             setError('Problem playing the video.');
@@ -281,7 +292,7 @@ export default function PlayerScreen() {
                     </LinearGradient>
                 </View>
             </LinearGradient>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -375,7 +386,6 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        paddingTop: 50,
         paddingHorizontal: Spacing.lg,
         paddingBottom: Spacing.lg,
         flexDirection: 'row',

@@ -279,7 +279,7 @@ export default function PlansScreen() {
 
                 <View style={styles.statCard}>
                     <LinearGradient colors={['#39ff1420', '#39ff1410']} style={styles.statGradient}>
-                        <Ionicons name="target" size={24} color={Colors.dark.accent} />
+                        <Ionicons name="globe-outline" size={24} color={Colors.dark.accent} />
                         <Text style={styles.statValue}>{stats.active}</Text>
                         <Text style={styles.statLabel}>Active</Text>
                     </LinearGradient>

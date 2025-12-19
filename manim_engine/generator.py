@@ -93,8 +93,17 @@ def clean_code_block(code):
         if l.startswith("def construct"): continue
         if l.startswith("super()."): continue
         filtered_lines.append(line)
-        
-    return "\n".join(filtered_lines).strip()
+    
+    # Join and dedent to normalize indentation
+    cleaned = "\n".join(filtered_lines)
+    cleaned = textwrap.dedent(cleaned).strip()
+    
+    # Re-indent with 8 spaces (2 levels) for construct method body
+    if cleaned:
+        indented_lines = ["        " + line if line.strip() else "" for line in cleaned.split('\n')]
+        return "\n".join(indented_lines)
+    
+    return ""
 
 import glob
 
