@@ -114,7 +114,7 @@ export default function LandingScreen() {
                             end={{ x: 1, y: 1 }}
                             style={styles.logoGradient}
                         >
-                            <Text style={styles.logoEmoji}>📚</Text>
+                            <Ionicons name="star" size={40} color="#fff" />
                         </LinearGradient>
                     </View>
 

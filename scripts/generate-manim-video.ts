@@ -33,7 +33,7 @@ if (genIdFlag) {
     }
 }
 
-async function logToDB(msg: string, progress: number = -1, status: string | null = null) {
+async function logToDB(msg: string, progress: number = -1, status: string | null = null, urls: { video?: string, sub?: string } | null = null) {
     console.log(`[DB LOG] ${msg}`); // Always log to console
     if (!supabase || !generationId) return;
 
@@ -45,6 +45,8 @@ async function logToDB(msg: string, progress: number = -1, status: string | null
 
         if (progress >= 0) update.progress = progress;
         if (status) update.status = status;
+        if (urls?.video) update.video_url = urls.video;
+        if (urls?.sub) update.subtitle_url = urls.sub;
 
         // Fetch current logs to append
         const { data } = await supabase.from('video_generations').select('logs').eq('id', generationId).single();
@@ -218,7 +220,7 @@ async function generateVideo(topic: string, scriptText: string) {
 
     try {
         await logToDB(`Starting generation for: ${topic}`, 5, 'processing');
-        await logToDB("Initializing Isolated Job Environment...");
+        await logToDB("Preparing your personal study material...");
 
         // Create isolated directory
         if (!fs.existsSync(path.join(ENGINE_DIR, 'jobs'))) fs.mkdirSync(path.join(ENGINE_DIR, 'jobs'));
@@ -229,8 +231,8 @@ async function generateVideo(topic: string, scriptText: string) {
         fs.writeFileSync(inputScriptPath, scriptText, 'utf-8');
 
         // 1. Script & Code
-        await logToDB("AI Agent: Generating script and Manim code...", 20);
-        await logToDB("Prompting OpenAI GPT-4o for educational content...");
+        await logToDB("AI Mentor: Drafting the lesson script...", 20);
+        await logToDB("Structuring key concepts and visual blueprints...");
 
         // Pass jobDir to generator
         await runPythonScript('generator.py', [`"${topic}"`, inputScriptPath, jobDir]);
@@ -246,8 +248,8 @@ async function generateVideo(topic: string, scriptText: string) {
         }
 
         // 2. Render
-        await logToDB("Manim Engine: Rendering video scenes...", 40);
-        await logToDB("Starting Python renderer (480p15)... isolation active.");
+        await logToDB("Visualizing concepts into 3D animations...", 40);
+        await logToDB("Crafting high-fidelity diagrams and motion graphics...");
 
         // Update renderer to take jobDir
         await runPythonScript('renderer.py', [scenePath, 'l', jobDir]);
@@ -264,14 +266,14 @@ async function generateVideo(topic: string, scriptText: string) {
         const silentVideoPath = path.join(videoDir, files[0].name);
 
         // 3. Subtitles
-        await logToDB("Aligning subtitles...", 75);
-        await logToDB("Calculating word-level timestamps...");
+        await logToDB("Generating precision subtitles...", 75);
+        await logToDB("Syncing visual cues with narration...");
         const srtPath = path.join(jobDir, 'subtitles.srt');
         await runPythonScript('alignment.py', [narrationPath, audioPath, srtPath]);
 
         // 4. Merge
-        await logToDB("Merging audio and video...", 90);
-        await logToDB("FFmpeg: Stitching video stream with audio track...");
+        await logToDB("Compositing the final masterpiece...", 90);
+        await logToDB("Polishing audio-visual synchronization...");
         const finalVideoPath = path.join(jobDir, 'final_output.mp4');
         if (fs.existsSync(finalVideoPath)) fs.unlinkSync(finalVideoPath);
 
@@ -282,33 +284,24 @@ async function generateVideo(topic: string, scriptText: string) {
         ]);
 
         // 5. Upload / Save
-        await logToDB("Finalizing and Uploading...", 95);
-        await logToDB("Uploading assets to Supabase Storage...");
+        await logToDB("Delivering your premium lesson...", 95);
+        await logToDB("Optimizing for mobile playback...");
 
         const videoUrl = await uploadToStorage(finalVideoPath, 'video/mp4');
         const subUrl = await uploadToStorage(srtPath.replace('.srt', '.vtt'), 'text/vtt'); // Upload VTT
 
         // Also save locally just in case
         const slug = topic.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const destDir = path.join(__dirname, '..', 'public', 'videos');
-        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-
-        // Copy to public for local dev viewing immediately
         const localVideoName = `${slug}.mp4`;
-        fs.copyFileSync(finalVideoPath, path.join(destDir, localVideoName));
-        fs.copyFileSync(srtPath.replace('.srt', '.vtt'), path.join(destDir, `${slug}.vtt`));
 
-        await logToDB("Process Complete", 100, 'completed');
-        await logToDB("Video ready for playback.");
+        await logToDB("Process Complete", 100, 'completed', {
+            video: videoUrl || `/videos/${localVideoName}`,
+            sub: subUrl || `/videos/${slug}.vtt`
+        });
 
         if (supabase && generationId) {
             // Get user_id for notification
             const { data: genData } = await supabase.from('video_generations').select('user_id').eq('id', generationId).single();
-
-            await supabase.from('video_generations').update({
-                video_url: videoUrl || `/videos/${localVideoName}`,
-                subtitle_url: subUrl || `/videos/${slug}.vtt`
-            }).eq('id', generationId);
 
             if (genData?.user_id) {
                 await supabase.from('notifications').insert({

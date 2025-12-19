@@ -42,6 +42,13 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Your go
 - **Continuous Evolution**: The screen should NEVER be static. Parts of the diagram should rotate, pulse, or move slightly (`Indicate`, `Wiggle`, or `Rotating`).
 - **Narrative Match**: If the text mentions "growth," actually use `Transform` to grow the mobject.
 
+**VISUAL CHOREOGRAPHY**:
+- **Clutter Control**: NEVER let mobjects overlap unless they are part of the same assembly. 
+- **Transitions**: When moving to a new concept or a new "thought" within a segment, you MUST either:
+  1. `self.play(FadeOut(*self.mobjects))` to reset the stage.
+  2. Use `ReplacementTransform` to evolve one shape into another.
+  3. `self.play(obj.animate.to_edge(UP).scale(0.5))` to make room for new elements.
+
 **STRICT OUTPUT FORMAT**:
 Output ONLY valid JSON matching this schema:
 {
@@ -58,6 +65,7 @@ Output ONLY valid JSON matching this schema:
 2. **Groups**: Always wrap lists in `VGroup(*my_list)` before animating.
 3. **Axes**: Use `Axes(axis_config={"include_tip": True})` for all graphs.
 4. **Positioning**: Use `.to_edge(UP)` or `.next_to(obj, DOWN)` to avoid "messy" overlaps.
+5. **Memory**: If a segment has more than 5 major components, start fading out older ones to preserve visual clarity.
 """
 
 def clean_code_block(code):

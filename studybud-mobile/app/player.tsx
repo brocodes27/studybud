@@ -35,8 +35,13 @@ export default function PlayerScreen() {
         const activeGen = Array.from(activeGenerations.values()).find((g: ActiveGeneration) => g.topic === topic);
         if (activeGen) {
             if (activeGen.status === 'completed') {
-                // If it just completed, we might need a small delay or re-check the DB for the URL
-                checkExistingVideo();
+                if (activeGen.video_url) {
+                    setVideoUrl(activeGen.video_url);
+                    setStatus('ready');
+                } else {
+                    // Fallback to DB check if URL missing from payload for some reason
+                    checkExistingVideo();
+                }
             } else if (activeGen.status === 'failed') {
                 setError('Video generation failed. Please try again.');
                 setStatus('error');
@@ -170,14 +175,27 @@ export default function PlayerScreen() {
                     </View>
 
                     <View style={styles.logContainer}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {(activeGen?.logs || logs).map((log, index) => (
-                                <Text key={index} style={styles.logText}>
-                                    <Text style={styles.logTime}>[{log.time}]</Text> {log.msg}
-                                </Text>
-                            ))}
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.logScrollContent}>
+                            {(activeGen?.logs || logs).slice(-3).map((log, index) => {
+                                const isLast = index === Math.min((activeGen?.logs || logs).length, 3) - 1;
+                                return (
+                                    <View key={index} style={[styles.logItem, isLast && styles.logItemActive]}>
+                                        <Ionicons
+                                            name={isLast ? "sync" : "checkmark-circle"}
+                                            size={18}
+                                            color={isLast ? Colors.dark.accent : "rgba(255,255,255,0.3)"}
+                                        />
+                                        <Text style={[styles.logText, isLast && styles.logTextActive]}>
+                                            {log.msg}
+                                        </Text>
+                                    </View>
+                                );
+                            })}
                             {(activeGen?.logs || logs).length === 0 && (
-                                <Text style={styles.logText}>[System] Initializing engine...</Text>
+                                <View style={styles.logItem}>
+                                    <ActivityIndicator size="small" color={Colors.dark.accent} style={{ marginRight: 8 }} />
+                                    <Text style={styles.logText}>Preparing resources...</Text>
+                                </View>
                             )}
                         </ScrollView>
                     </View>
@@ -281,22 +299,35 @@ const styles = StyleSheet.create({
     },
     logContainer: {
         width: '100%',
-        height: 150,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 16,
-        padding: Spacing.md,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 20,
+        padding: Spacing.lg,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
         marginBottom: Spacing.xl,
     },
-    logText: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
-        fontFamily: 'monospace',
-        marginBottom: 4,
+    logScrollContent: {
+        paddingVertical: 4,
     },
-    logTime: {
+    logItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        opacity: 0.6,
+    },
+    logItemActive: {
+        opacity: 1,
+        transform: [{ scale: 1.02 }],
+    },
+    logText: {
+        color: '#fff',
+        fontSize: 14,
+        marginLeft: 12,
+        fontWeight: Typography.weights.medium,
+    },
+    logTextActive: {
         color: Colors.dark.accent,
+        fontWeight: Typography.weights.bold,
     },
     backgroundButton: {
         paddingVertical: Spacing.md,

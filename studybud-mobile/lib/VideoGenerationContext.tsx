@@ -8,6 +8,8 @@ export interface ActiveGeneration {
     current_step: string;
     progress: number;
     logs: { time: string; msg: string }[];
+    video_url?: string;
+    subtitle_url?: string;
 }
 
 interface VideoGenerationContextType {
@@ -65,7 +67,9 @@ export function VideoGenerationProvider({ children }: { children: React.ReactNod
                                 ...existing,
                                 status,
                                 current_step: newItem.current_step || existing.current_step,
-                                progress: status === 'completed' ? 1 : existing.progress
+                                progress: status === 'completed' ? 1 : existing.progress,
+                                video_url: newItem.video_url,
+                                subtitle_url: newItem.subtitle_url
                             });
 
                             // Remove after 10 seconds if completed/failed instead of 5
