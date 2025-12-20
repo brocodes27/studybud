@@ -4,6 +4,7 @@ from openai import OpenAI
 
 from audio_engine import generate_audio
 from alignment import align_segments
+from subtitle_generator import generate_subtitles
 
 # Use absolute path to ensure correct directory in Docker
 BASE_DIR = Path(__file__).parent / "jobs"
@@ -252,6 +253,9 @@ def generate(topic, script_path):
     scene_code = build_scene_code(segments, durations)
     (job / "scene.py").write_text(scene_code)
     print(f"✅ Created scene.py")
+    
+    # Generate subtitles
+    generate_subtitles(segments, durations, str(job / "subtitles.vtt"))
 
     # Return absolute path
     job_abs = job.resolve()
@@ -304,6 +308,9 @@ if __name__ == "__main__":
         scene_code = build_scene_code(segments, durations)
         (job / "scene.py").write_text(scene_code)
         print(f"✅ Created scene.py")
+        
+        # Generate subtitles
+        generate_subtitles(segments, durations, str(job / "subtitles.vtt"))
         
         job_abs = job.resolve()
         print(f"📁 Job directory (absolute): {job_abs}")
