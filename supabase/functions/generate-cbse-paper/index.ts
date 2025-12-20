@@ -152,16 +152,32 @@ Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMa
         }
         else if (action === "ocr") {
             // Optical Character Recognition (Vision)
-            const { images } = await req.json(); // Array of base64 strings
+            const { images } = await req.json(); // Array of base64 strings or strings with data: prefix
             if (!images || !Array.isArray(images)) throw new Error("Images array required");
 
-            const contentParts = [
-                { type: "text", text: "Extract all handwritten answers as clean, plain text in reading order. Preserve question numbers if visible (e.g., Q1, 1., (a)). Remove headers/footers and ignore non-answer artifacts." },
-                ...images.map((img: string) => ({
+            // Filter out non-image content if needed or handle PDF
+            const contentParts: any[] = [
+                { type: "text", text: "Extract all handwritten answers as clean, plain text in reading order. Preserve question numbers if visible (e.g., Q1, 1., (a)). Remove headers/footers and ignore non-answer artifacts." }
+            ];
+
+            for (const img of images) {
+                if (img.includes('application/pdf') || img.startsWith('JVBERi0')) { // PDF magic bytes
+                    // For now, GPT-4o Vision doesn't handle PDF directly in Chat Completions.
+                    // Ideally we'd convert it, but as a shortcut we can ask for text if it's digital,
+                    // or just ignore if it's a scan until we have a converter.
+                    // FOR NOW: Let's treat it as a request to handle PDF.
+                    // Since it's handwritten, we really need images.
+                    continue;
+                }
+                contentParts.push({
                     type: "image_url",
                     image_url: { url: img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}` }
-                }))
-            ];
+                });
+            }
+
+            if (contentParts.length === 1) {
+                return new Response(JSON.stringify({ text: "Please upload image files for handwritten OCR. PDF support is coming soon (needs conversion to images)." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
 
             const completion = await fetch("https://api.openai.com/v1/chat/completions", {
                 method: "POST",

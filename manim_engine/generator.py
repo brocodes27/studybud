@@ -215,7 +215,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def clear_except(self, *keep):\n        \"\"\"Helper to clear stage of clutter while keeping specific mobjects.\"\"\"\n        # Flat list of all mobjects to remove\n        to_fade = [m for m in self.mobjects if m not in keep]\n        if to_fade:\n            self.play(FadeOut(VGroup(*to_fade)))\n\n    def construct(self):\n        self.ctx = {} # Persistent state for variables if needed\n"
+    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def clear_except(self, *keep):\n        \"\"\"Helper to clear stage of clutter while keeping specific mobjects.\"\"\"\n        # Flat list of all mobjects to remove, filtering only VMobjects\n        to_fade = [m for m in self.mobjects if m not in keep and isinstance(m, (VMobject, OpenGLVMobject))]\n        if to_fade:\n            self.play(FadeOut(VGroup(*to_fade)))\n\n    def construct(self):\n        self.ctx = {} # Persistent state for variables if needed\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     

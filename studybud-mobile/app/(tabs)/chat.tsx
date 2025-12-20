@@ -4,12 +4,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
 
 interface Message {
     id: string;
     text: string;
     isUser: boolean;
     timestamp: Date;
+    image?: string;
 }
 
 export default function ChatScreen() {
@@ -22,6 +25,7 @@ export default function ChatScreen() {
         },
     ]);
     const [inputText, setInputText] = useState('');
+    const [selectedImage, setSelectedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
     const [loading, setLoading] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
 
@@ -30,18 +34,21 @@ export default function ChatScreen() {
     }, [messages]);
 
     const handleSend = async () => {
-        if (!inputText.trim() || loading) return;
+        if ((!inputText.trim() && !selectedImage) || loading) return;
 
         const userMessage: Message = {
             id: Date.now().toString(),
             text: inputText,
             isUser: true,
             timestamp: new Date(),
+            image: selectedImage?.uri
         };
 
         setMessages(prev => [...prev, userMessage]);
         const currentInput = inputText;
+        const currentImage = selectedImage;
         setInputText('');
+        setSelectedImage(null);
         setLoading(true);
 
         try {
@@ -49,6 +56,16 @@ export default function ChatScreen() {
             if (!session) throw new Error('Not authenticated');
 
             const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+            // Multimodal content structure
+            const userContent: any[] = [{ type: 'text', text: currentInput || "Analyze this image." }];
+            if (currentImage?.base64) {
+                userContent.push({
+                    type: 'image_url',
+                    image_url: { url: `data:image/jpeg;base64,${currentImage.base64}` }
+                });
+            }
+
             const response = await fetch(`${supabaseUrl}/functions/v1/openai-proxy`, {
                 method: 'POST',
                 headers: {
@@ -56,23 +73,25 @@ export default function ChatScreen() {
                     'Authorization': `Bearer ${session.access_token}`,
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: 'gpt-4o', // Vision needs gpt-4o
                     messages: [
                         {
                             role: 'system',
-                            content: 'You are a helpful AI study assistant. Help students with their studies, provide explanations, and answer questions about various subjects. Be encouraging and educational.',
+                            content: 'You are a helpful AI study assistant. Help students with their studies, provide explanations, and answer questions about various subjects. You can analyze images of handwritten notes, diagrams, or textbook questions. Be encouraging and educational.',
                         },
                         {
                             role: 'user',
-                            content: currentInput,
+                            content: userContent,
                         },
                     ],
-                    max_completion_tokens: 500,
+                    max_completion_tokens: 1000,
                     temperature: 0.7,
                 }),
             });
 
             if (!response.ok) {
+                const errTxt = await response.text();
+                console.error('Proxy Response Error:', errTxt);
                 throw new Error('Failed to get AI response');
             }
 
@@ -98,6 +117,19 @@ export default function ChatScreen() {
             setMessages(prev => [...prev, errorMessage]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const pickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
+            base64: true,
+        });
+
+        if (!result.canceled) {
+            setSelectedImage(result.assets[0]);
         }
     };
 
@@ -141,6 +173,13 @@ export default function ChatScreen() {
                                 <Ionicons name="sparkles" size={12} color={Colors.dark.primary} />
                             </View>
                         )}
+                        {message.image && (
+                            <Image
+                                source={{ uri: message.image }}
+                                style={styles.messageImage}
+                                resizeMode="cover"
+                            />
+                        )}
                         <Text style={[styles.messageText, message.isUser && styles.userMessageText]}>
                             {message.text}
                         </Text>
@@ -160,6 +199,17 @@ export default function ChatScreen() {
                 )}
             </ScrollView>
 
+            {selectedImage && (
+                <View style={styles.previewContainer}>
+                    <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+                    <TouchableOpacity
+                        style={styles.removeImageBtn}
+                        onPress={() => setSelectedImage(null)}
+                    >
+                        <Ionicons name="close-circle" size={20} color="#ff4444" />
+                    </TouchableOpacity>
+                </View>
+            )}
             <View style={styles.inputContainer}>
                 <LinearGradient
                     colors={['#00f3ff10', '#ff00ff10']}
@@ -167,6 +217,12 @@ export default function ChatScreen() {
                     end={{ x: 1, y: 0 }}
                     style={styles.inputWrapper}
                 >
+                    <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={pickImage}
+                    >
+                        <Ionicons name="add-circle-outline" size={24} color={Colors.dark.primary} />
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.input}
                         placeholder="Ask a question..."
@@ -178,9 +234,9 @@ export default function ChatScreen() {
                         editable={!loading}
                     />
                     <TouchableOpacity
-                        style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
+                        style={[styles.sendButton, (!inputText.trim() && !selectedImage || loading) && styles.sendButtonDisabled]}
                         onPress={handleSend}
-                        disabled={!inputText.trim() || loading}
+                        disabled={(!inputText.trim() && !selectedImage) || loading}
                     >
                         <LinearGradient
                             colors={inputText.trim() && !loading ? ['#00f3ff', '#0080ff'] : ['#333', '#333']}
@@ -313,5 +369,33 @@ const styles = StyleSheet.create({
         height: 40,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    messageImage: {
+        width: 200,
+        height: 150,
+        borderRadius: 12,
+        marginBottom: Spacing.sm,
+    },
+    attachButton: {
+        padding: Spacing.xs,
+    },
+    previewContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.sm,
+        alignItems: 'center',
+    },
+    imagePreview: {
+        width: 60,
+        height: 60,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.dark.primary,
+    },
+    removeImageBtn: {
+        marginLeft: -10,
+        marginTop: -50,
+        backgroundColor: Colors.dark.background,
+        borderRadius: 10,
     },
 });

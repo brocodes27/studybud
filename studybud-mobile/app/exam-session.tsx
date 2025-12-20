@@ -1,12 +1,13 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ExamSessionScreen() {
@@ -20,7 +21,7 @@ export default function ExamSessionScreen() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [timeLeft, setTimeLeft] = useState(duration);
     const [isSubmitted, setIsSubmitted] = useState(false);
-    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [selectedFiles, setSelectedFiles] = useState<{ uri: string, type: 'image' | 'pdf', base64: string, name: string }[]>([]);
     const [ocrLoading, setOcrLoading] = useState(false);
     const [extractedText, setExtractedText] = useState<string | null>(null);
     const [evalLoading, setEvalLoading] = useState(false);
@@ -59,15 +60,41 @@ export default function ExamSessionScreen() {
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: false, // Full sheet often needs crop but let's keep it simple
+            allowsEditing: false,
+            allowsMultipleSelection: true,
             quality: 0.8,
             base64: true,
         });
 
         if (!result.canceled) {
-            setImageUri(result.assets[0].uri);
-            // Auto trigger OCR?
-            handleOCR(result.assets[0].base64);
+            const newFiles = result.assets.map(asset => ({
+                uri: asset.uri,
+                type: 'image' as const,
+                base64: asset.base64 || '',
+                name: asset.fileName || `image_${Date.now()}.jpg`
+            }));
+            setSelectedFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const pickDocument = async () => {
+        const result = await DocumentPicker.getDocumentAsync({
+            type: 'application/pdf',
+            multiple: true,
+            copyToCacheDirectory: true,
+        });
+
+        if (!result.canceled) {
+            const newFiles = await Promise.all(result.assets.map(async doc => {
+                const base64 = await FileSystem.readAsStringAsync(doc.uri, { encoding: 'base64' });
+                return {
+                    uri: doc.uri,
+                    type: 'pdf' as const,
+                    base64: base64,
+                    name: doc.name
+                };
+            }));
+            setSelectedFiles(prev => [...prev, ...newFiles]);
         }
     };
 
@@ -84,19 +111,29 @@ export default function ExamSessionScreen() {
         });
 
         if (!result.canceled) {
-            setImageUri(result.assets[0].uri);
-            handleOCR(result.assets[0].base64);
+            const asset = result.assets[0];
+            setSelectedFiles(prev => [...prev, {
+                uri: asset.uri,
+                type: 'image' as const,
+                base64: asset.base64 || '',
+                name: `photo_${Date.now()}.jpg`
+            }]);
         }
     };
 
-    const handleOCR = async (base64: string | undefined | null) => {
-        if (!base64) return;
+    const startOCR = () => {
+        if (selectedFiles.length === 0) return;
+        const base64s = selectedFiles.map(f => f.base64);
+        handleOCR(base64s);
+    };
+
+    const handleOCR = async (images: string[]) => {
         setOcrLoading(true);
         try {
             const { data, error } = await supabase.functions.invoke('generate-cbse-paper', {
                 body: {
                     action: 'ocr',
-                    images: [base64]
+                    images: images // Backend already takes a list!
                 }
             });
 
@@ -169,25 +206,64 @@ export default function ExamSessionScreen() {
             <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }}>
                 <Text style={styles.headerTitle}>Exam Submission</Text>
 
-                {!imageUri ? (
+                {selectedFiles.length === 0 ? (
                     <View style={styles.uploadSection}>
                         <Ionicons name="document-text-outline" size={64} color={Colors.dark.textSecondary} />
-                        <Text style={styles.instructionText}>Upload or Capture your Handwritten Answer Sheet</Text>
+                        <Text style={styles.instructionText}>Upload your Answer Sheets (PDF or Multiple Images)</Text>
 
                         <View style={styles.row}>
                             <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
-                                <Ionicons name="camera" size={24} color="#fff" />
-                                <Text style={styles.btnText}>Camera</Text>
+                                <Ionicons name="camera" size={20} color="#fff" />
+                                <Text style={styles.btnText}>Photo</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
-                                <Ionicons name="images" size={24} color="#fff" />
+                                <Ionicons name="images" size={20} color="#fff" />
                                 <Text style={styles.btnText}>Gallery</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.actionButton} onPress={pickDocument}>
+                                <Ionicons name="document" size={20} color="#fff" />
+                                <Text style={styles.btnText}>PDF</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 ) : (
                     <View style={styles.previewSection}>
-                        <Image source={{ uri: imageUri }} style={styles.previewImage} />
+                        <ScrollView horizontal style={styles.fileList} showsHorizontalScrollIndicator={false}>
+                            {selectedFiles.map((file, idx) => (
+                                <View key={idx} style={styles.filePreviewWrapper}>
+                                    {file.type === 'image' ? (
+                                        <Image source={{ uri: file.uri }} style={styles.filePreviewThumb} />
+                                    ) : (
+                                        <View style={styles.pdfThumb}>
+                                            <Ionicons name="document" size={32} color={Colors.dark.primary} />
+                                            <Text style={styles.fileNameText} numberOfLines={1}>{file.name}</Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity
+                                        style={styles.removeFileBtn}
+                                        onPress={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                    >
+                                        <Ionicons name="close-circle" size={20} color="red" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            <TouchableOpacity style={styles.addMoreBtn} onPress={pickImage}>
+                                <Ionicons name="add" size={32} color={Colors.dark.textSecondary} />
+                                <Text style={styles.addMoreText}>Add</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+
+                        {!extractedText && !ocrLoading && (
+                            <TouchableOpacity style={styles.evaluateButton} onPress={startOCR}>
+                                <LinearGradient
+                                    colors={[Colors.dark.primary, Colors.dark.secondary]}
+                                    style={styles.gradientBtn}
+                                >
+                                    <Text style={styles.btnText}>Process {selectedFiles.length} File(s)</Text>
+                                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        )}
 
                         {ocrLoading ? (
                             <View style={styles.loadingBox}>
@@ -247,8 +323,8 @@ export default function ExamSessionScreen() {
                         )}
 
                         {!results && !evalLoading && (
-                            <TouchableOpacity onPress={() => { setImageUri(null); setExtractedText(null); }}>
-                                <Text style={styles.retryText}>Retake Photo</Text>
+                            <TouchableOpacity onPress={() => { setSelectedFiles([]); setExtractedText(null); }}>
+                                <Text style={styles.retryText}>Clear and Retake</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -596,5 +672,59 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.dark.border,
         marginTop: 20,
+    },
+    fileList: {
+        flexDirection: 'row',
+        marginBottom: 10,
+    },
+    filePreviewWrapper: {
+        width: 100,
+        height: 120,
+        marginRight: 10,
+        position: 'relative',
+    },
+    filePreviewThumb: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 12,
+    },
+    pdfThumb: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: Colors.dark.surface,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        padding: 5,
+    },
+    fileNameText: {
+        color: Colors.dark.textSecondary,
+        fontSize: 10,
+        marginTop: 5,
+        textAlign: 'center',
+    },
+    removeFileBtn: {
+        position: 'absolute',
+        top: -5,
+        right: -5,
+        backgroundColor: Colors.dark.background,
+        borderRadius: 10,
+    },
+    addMoreBtn: {
+        width: 100,
+        height: 120,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        borderStyle: 'dashed',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addMoreText: {
+        color: Colors.dark.textSecondary,
+        fontSize: 12,
+        marginTop: 5,
     },
 });
