@@ -27,5 +27,7 @@ def generate_audio(text, out_path):
         raise
 
 def audio_duration(path):
+    # Ensure path is a string
+    path = str(path) if isinstance(path, Path) else path
     audio = AudioSegment.from_file(path)
     return len(audio) / 1000

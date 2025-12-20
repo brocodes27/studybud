@@ -216,6 +216,8 @@ def normalize_segments(raw_segments):
 
 
 def generate(topic, script_path):
+    from pydub import AudioSegment
+    
     script = Path(script_path).read_text()
     job = BASE_DIR / str(uuid.uuid4())
     job.mkdir(parents=True)
@@ -223,15 +225,32 @@ def generate(topic, script_path):
     segments = get_segments_from_ai(topic, script)
 
     audio_files = []
+    full_transcript = []
+    
     for i, seg in enumerate(segments):
         path = job / f"seg_{i+1}.mp3"
         generate_audio(seg["voiceover"], path)
         audio_files.append(path)
+        full_transcript.append(seg["voiceover"])
 
     durations = align_segments(audio_files)
 
+    # Combine all audio segments into narration.mp3
+    combined_audio = AudioSegment.empty()
+    for audio_file in audio_files:
+        segment_audio = AudioSegment.from_file(str(audio_file))
+        combined_audio += segment_audio
+    
+    combined_audio.export(str(job / "narration.mp3"), format="mp3")
+    print(f"✅ Created combined narration.mp3")
+    
+    # Create narration.txt with full transcript
+    (job / "narration.txt").write_text(" ".join(full_transcript))
+    print(f"✅ Created narration.txt")
+
     scene_code = build_scene_code(segments, durations)
     (job / "scene.py").write_text(scene_code)
+    print(f"✅ Created scene.py")
 
     return str(job)
 
@@ -245,6 +264,8 @@ if __name__ == "__main__":
     job_dir = sys.argv[3] if len(sys.argv) > 3 else None
     
     if job_dir:
+        from pydub import AudioSegment
+        
         # Use provided job directory
         job = Path(job_dir)
         job.mkdir(parents=True, exist_ok=True)
@@ -253,15 +274,32 @@ if __name__ == "__main__":
         segments = get_segments_from_ai(topic, script)
         
         audio_files = []
+        full_transcript = []
+        
         for i, seg in enumerate(segments):
             path = job / f"seg_{i+1}.mp3"
             generate_audio(seg["voiceover"], str(path))
             audio_files.append(str(path))
+            full_transcript.append(seg["voiceover"])
         
         durations = align_segments(audio_files)
         
+        # Combine all audio segments into narration.mp3
+        combined_audio = AudioSegment.empty()
+        for audio_file in audio_files:
+            segment_audio = AudioSegment.from_file(audio_file)
+            combined_audio += segment_audio
+        
+        combined_audio.export(str(job / "narration.mp3"), format="mp3")
+        print(f"✅ Created combined narration.mp3")
+        
+        # Create narration.txt with full transcript
+        (job / "narration.txt").write_text(" ".join(full_transcript))
+        print(f"✅ Created narration.txt")
+        
         scene_code = build_scene_code(segments, durations)
         (job / "scene.py").write_text(scene_code)
+        print(f"✅ Created scene.py")
         
         print(f"Success: Generated files in {job}")
     else:
