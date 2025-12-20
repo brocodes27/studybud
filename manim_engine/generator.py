@@ -73,64 +73,55 @@ Return JSON only in this schema:
 }}
 
 === 🪐 3B1B VISUAL DNA ===
-1. PREFER: Dark background, vivid but limited color palette (BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE).
-2. SMOOTH TRANSITIONS: Use Transform, ReplacementTransform, and .animate instead of hard cuts. Build the key picture gradually.
-3. CONTINUOUS MOTION: Use ValueTracker and always_redraw for updaters (e.g., a point moving along a curve, tracing a path).
-4. CAMERA ANIMATIONS: self.play(self.camera.frame.animate.scale(0.8).move_to(target)) to focus on details.
-5. GROUPING & LAYOUT: Use VGroup, .arrange, .to_edge, .next_to to keep things premium.
-6. EMPHASIS: Use SurroundingRectangle, Indicate, or Circumscribe when highlighting key terms or features.
+1. PALETTE: Use high-end HEX colors. Primary: BLUE_D (#1C758A), TEAL (#5CD0B3), GREEN_D (#699C52), GOLD (#E8C11C), RED_D (#C55F4E), PURPLE_D (#9A72AC).
+2. GLOW EFFECT: To make objects "pop", layer them. Example: `obj.set_stroke(color=COL, width=10, opacity=0.2)` then `obj.copy().set_stroke(width=2, opacity=1)`.
+3. BACKGROUND: Use a subtle grid (`NumberPlane(background_line_style={"stroke_opacity": 0.1})`) if the scene feels empty.
+4. CINEMATIC MOTION: Use `LaggedStart` for groups. Avoid linear motion; use `rate_func=smooth` or `rate_func=there_and_back`.
 
-=== 🧪 SUBJECT-SPECIFIC BLUEPRINTS ===
-- CHEMISTRY: Realistic molecular builds, reacting via Transforms, energy levels on Axes.
-- PHYSICS: Force vectors with updaters, trajectories via ParametricFunction, field VGroups.
-- MATHEMATICS: Axes/NumberPlane with labels, updaters for moving points, MathTex formulas.
-- BIOLOGY: Organic shapes using CubicBezier/Arc, layered membranes, labeled organelle VGroups.
+=== 🏙️ ENVIRONMENT BLUEPRINTS ===
 
-=== 📝 SYNTAX & STRUCTURE ===
-- NO imports, class, or def statements inside segments.
-- Use MULTI-LINE code. Separated by \\n.
-- DO NOT clear the screen automatically; maintain visual continuity across segments. Transform or FadeOut specific objects only when they are no longer needed.
-- Balance ALL parentheses, brackets, and braces.
-
-=== 🎨 ARTISTIC COMPOSITION ===
-1. COMPOSE REALISTIC OBJECTS: Build items from 10+ shapes. Use transparency floors and overlapping layers.
-2. SHADING & TEXTURE: Use high `fill_opacity` (0.6 - 0.9) and thin `stroke_width` (1 - 2).
-
-=== 🛠️ HIGH-FIDELITY BLUEPRINTS (CODE PATTERNS) ===
-
-🚗 REALISTIC CAR:
+🌳 REALISTIC TREE:
 ```python
-body = RoundedRectangle(width=3, height=1, corner_radius=0.3, color=BLUE, fill_opacity=0.8)
-top = ArcBetweenPoints(LEFT*0.8+UP*0.5, RIGHT*0.8+UP*0.5, radius=-1.5, color=BLUE, fill_opacity=0.8)
-wheel1 = VGroup(Circle(radius=0.4, color=WHITE), Circle(radius=0.1, color=DARK_GREY, fill_opacity=1)).shift(DOWN*0.5+LEFT*0.8)
-wheel2 = wheel1.copy().shift(RIGHT*1.6)
-windows = Polygon(LEFT*0.7+UP*0.5, RIGHT*0.7+UP*0.5, RIGHT*0.4+UP*0.9, LEFT*0.4+UP*0.9, color=WHITE, fill_opacity=0.3)
-car = VGroup(body, top, wheel1, wheel2, windows)
+trunk = RoundedRectangle(width=0.4, height=2, corner_radius=0.1, color=BROWN_E, fill_opacity=1)
+foliage = VGroup(*[Circle(radius=0.6, color=GREEN_E, fill_opacity=0.8).shift(UP*1.2+dir) for dir in [LEFT*0.4, RIGHT*0.4, UP*0.5]])
+tree = VGroup(trunk, foliage).shift(DOWN*2)
 ```
 
-🚲 DETAILED BICYCLE:
+🌃 CITY SKYLINE:
 ```python
-w1 = Circle(radius=0.7, color=WHITE, stroke_width=2)
-w2 = Circle(radius=0.7, color=WHITE, stroke_width=2).shift(RIGHT*2.5)
-frame = VGroup(Line(w1.get_center(), UP+RIGHT*0.5), Line(w2.get_center(), UP+RIGHT*0.5), Line(UP+RIGHT*0.5, UP+RIGHT*1.5)).set_stroke(color=RED, width=4)
-seat = Line(UP+RIGHT*0.5, UP*1.2+RIGHT*0.3, stroke_width=6)
-handle = Line(UP+RIGHT*1.5, UP*1.5+RIGHT*1.7, stroke_width=6)
-bike = VGroup(w1, w2, frame, seat, handle)
+buildings = VGroup(*[Rectangle(width=0.5, height=h, color=GRAY_E, fill_opacity=1).shift(RIGHT*i*0.6) 
+                   for i, h in enumerate([1.5, 2.2, 1.8, 2.5, 2.0])]).center().to_edge(DOWN, buff=0)
+windows = VGroup(*[Dot(radius=0.05, color=YELLOW).move_to(b.get_center()+UP*y+LEFT*x) 
+                 for b in buildings for y in [0.2, 0.5] for x in [-0.1, 0.1]])
 ```
 
-👤 REALISTIC HUMAN:
+=== 🛠️ MECHANICAL BLUEPRINTS ===
+(Use these 10+ shape patterns for ANY object mentioned)
+
+🚗 LUXURY CAR:
 ```python
-head = Circle(radius=0.3, color=PINK, fill_opacity=0.9).shift(UP*1.5)
-body = RoundedRectangle(height=1, width=0.6, corner_radius=0.2, color=BLUE, fill_opacity=0.8).shift(UP*0.7)
-limbs = VGroup(CubicBezier(UP*1.1+LEFT*0.3, UP*0.8+LEFT*0.8, UP*0.5+LEFT*0.8), # arm
-               Line(ORIGIN, DOWN+LEFT*0.3, stroke_width=6)) # leg
+chassis = RoundedRectangle(width=3.5, height=0.8, color=BLUE_D, fill_opacity=0.9).set_stroke(BLUE_A, 2)
+cabin = ArcBetweenPoints(LEFT*0.9+UP*0.4, RIGHT*1.1+UP*0.4, angle=-TAU/4, color=BLUE_D, fill_opacity=0.9)
+lights = VGroup(Dot(color=WHITE).move_to(chassis.get_left()+UP*0.2), Dot(color=RED).move_to(chassis.get_right()+UP*0.2))
+wheels = VGroup(*[VGroup(Circle(radius=0.4, color=WHITE), Circle(radius=0.3, color=GRAY, fill_opacity=1), 
+                 Line(UP*0.3, DOWN*0.3)).shift(DOWN*0.4+pos) for pos in [LEFT*1, RIGHT*1]])
+car = VGroup(chassis, cabin, lights, wheels)
+```
+
+🚲 PRECISION BICYCLE:
+```python
+tires = VGroup(Circle(radius=0.8).set_stroke(WHITE, 2), Circle(radius=0.8).shift(RIGHT*2.8).set_stroke(WHITE, 2))
+gears = VGroup(Circle(radius=0.2, color=GRAY, fill_opacity=1).move_to(tires[1]), 
+               Circle(radius=0.15, color=GRAY).move_to(tires[0]))
+chain = Line(gears[0], gears[1], stroke_width=2, color=GRAY)
+frame = VGroup(Polygon(tires[0].get_center(), tires[1].get_center(), UP+RIGHT*1.2, color=TEAL, stroke_width=5))
 ```
 
 MANDATORY FOR EVERY SEGMENT:
-- Build intuition step-by-step using 3B1B-style transitions.
-- Use at least one complex Updater (always_redraw) or Camera frame animation.
-- EVERY visual must be a MULTI-PART HIGH-FIDELITY illustration (like the car/bike examples above).
-- BANNED: Plain Circles for planets, Plain Rectangles for cars, Plain Stick Figures.
+- Build intuition step-by-step. Use `ReplacementTransform` to evolve ideas.
+- NO PLAIN SHAPES. If you need a circle, make it a "Sun" or a "Cell" with internal details.
+- Add "Glow" layers to important objects.
+- Use the camera to "walk" through the scene.
 
 Topic: {topic}
 Script:
@@ -214,6 +205,9 @@ def build_scene_code(segments, durations):
         "",
         "class GeneratedScene(MovingCameraScene):",
         "    def construct(self):",
+        "        # Add subtle background grid for depth",
+        "        grid = NumberPlane(background_line_style={'stroke_opacity': 0.1})",
+        "        self.add(grid)",
         ""
     ]
 
