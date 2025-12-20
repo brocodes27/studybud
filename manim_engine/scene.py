@@ -1,63 +1,80 @@
 from manim import *
+import numpy as np
+
+# ---- Safe colors ----
+INDIGO = "#4b0082"
+VIOLET = "#7c3aed"
 
 class GeneratedScene(Scene):
     def construct(self):
-        # Segment 1
-        # Segment 1
-        axes = Axes(x_range=[0, 10, 1], y_range=[0, 10, 1], axis_config={"include_numbers": True})
-        scatter_points = VGroup(*[Dot(axes.c2p(x, 0.5 * x + 1 + np.random.normal(0, 0.5))) for x in range(1, 10)])
-        caption = Text("The Essence of Linear Regression", font_size=36).to_edge(DOWN)
-        
-        self.play(Create(axes), FadeIn(scatter_points), Write(caption))
-        self.wait(29.74)
+        self.ctx = {}
+        # generator.py injects content here
+        pass
 
-        # Segment 2
-        # Segment 2
-        line = axes.plot(lambda x: 0.5 * x + 1, color=YELLOW)
-        equation = MathTex('y = mx + b').next_to(line, UP)
-        new_caption = Text("The Core Mechanism", font_size=36).to_edge(DOWN)
-        
-        self.play(Transform(caption, new_caption), Create(line), Write(equation))
-        self.wait(33.60)
+    # ================= CORE =================
 
-        # Segment 3
-        # Segment 3
-        vertical_lines = VGroup(*[Line(start=dot.get_center(), end=axes.c2p(dot.get_center()[0], 0.5 * dot.get_center()[0] + 1), color=RED) for dot in scatter_points])
-        new_caption = Text("The Dance of Least Squares", font_size=36).to_edge(DOWN)
-        
-        self.play(Transform(caption, new_caption), Create(vertical_lines))
-        self.wait(28.78)
+    def run_segment(self, duration, fn=None):
+        if fn:
+            try:
+                fn()
+            except Exception as e:
+                print("⚠️ Segment error:", e)
+        self.wait(max(0.1, duration))
 
-        # Segment 4
-        # Segment 4
-        cityscape = Text("Cityscape: Traffic Flow Predictions", font_size=36).to_edge(UP)
-        forest = Text("Forest: Tree Growth Predictions", font_size=36).to_edge(DOWN)
-        new_caption = Text("Visual Examples and Applications", font_size=36).to_edge(DOWN)
-        
-        self.play(FadeOut(VGroup(axes, scatter_points, line, equation, vertical_lines)), Write(cityscape), Write(forest), Transform(caption, new_caption))
-        self.wait(27.19)
+    def clear(self):
+        if self.mobjects:
+            self.play(
+                *[FadeOut(m) for m in self.mobjects],
+                run_time=0.4,
+                lag_ratio=0.05
+            )
 
-        # Segment 5
-        # Segment 5
-        assumptions = Text("Assumptions and Limitations", font_size=36).to_edge(UP)
-        new_caption = Text("Beyond the Line—Assumptions and Limitations", font_size=36).to_edge(DOWN)
-        
-        self.play(FadeOut(VGroup(cityscape, forest)), Write(assumptions), Transform(caption, new_caption))
-        self.wait(27.50)
+    # ================= SAFETY =================
 
-        # Segment 6
-        # Segment 6
-        symphony = Text("The Power of Visualization", font_size=36).to_edge(UP)
-        new_caption = Text("The Power of Visualization", font_size=36).to_edge(DOWN)
-        
-        self.play(FadeOut(assumptions), Write(symphony), Transform(caption, new_caption))
-        self.wait(24.46)
+    def safe_add(self, *mobs):
+        for m in mobs:
+            if isinstance(m, Mobject):
+                self.add(m)
 
-        # Segment 7
-        # Segment 7
-        conclusion = Text("Conclusion—The Bigger Picture", font_size=36).to_edge(UP)
-        final_caption = Text("Conclusion—The Bigger Picture", font_size=36).to_edge(DOWN)
-        
-        self.play(FadeOut(symphony), Write(conclusion), Transform(caption, final_caption))
-        self.wait(38.23)
+    def safe_plot(self, axes, fn, **kw):
+        try:
+            return axes.plot(fn, **kw)
+        except:
+            return VGroup()
 
+    def safe_angle(self, l1, l2, **kw):
+        try:
+            return Angle(l1, l2, **kw)
+        except:
+            return VGroup()
+
+    # ================= BUILDERS =================
+
+    def title(self, txt, size=48):
+        t = Text(txt, font_size=size)
+        self.play(Write(t))
+        return t
+
+    def caption(self, txt, size=32):
+        c = Text(txt, font_size=size).to_edge(DOWN)
+        self.play(FadeIn(c))
+        return c
+
+    def text_block(self, txt, size=36):
+        t = Text(txt, font_size=size, line_spacing=1.25)
+        self.play(Write(t))
+        return t
+
+    def math_block(self, tex, size=36):
+        m = MathTex(tex, font_size=size)
+        self.play(Write(m))
+        return m
+
+    def axes_2d(self):
+        ax = Axes(
+            x_range=[0, 10, 1],
+            y_range=[0, 10, 1],
+            axis_config={"include_numbers": True}
+        )
+        self.play(Create(ax))
+        return ax

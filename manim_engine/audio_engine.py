@@ -1,45 +1,18 @@
-import os
-import sys
-from openai import OpenAI
 from pathlib import Path
+from pydub import AudioSegment
+from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY"))
+client = OpenAI()
+VOICE_MODEL = "gpt-4o-mini-tts"
 
-def generate_audio(text, output_path):
-    """
-    Generates speech from text using OpenAI's TTS API.
-    """
-    try:
-        response = client.audio.speech.create(
-            model="tts-1",
-            voice="alloy",
-            input=text
-        )
-        # Use a more robust way to save the file
-        with open(output_path, "wb") as f:
-            f.write(response.read())
-            
-        print(f"Success: Audio generated at {output_path}")
-        return True
-    except Exception as e:
-        print(f"Error generating audio: {e}")
-        return False
+def generate_audio(text, out_path):
+    response = client.audio.speech.create(
+        model=VOICE_MODEL,
+        voice="alloy",
+        input=text
+    )
+    response.stream_to_file(out_path)
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python audio_engine.py <text> <output_path>")
-        sys.exit(1)
-        
-    input_arg = sys.argv[1]
-    output_path = sys.argv[2]
-    
-    # If input_arg is a path to a file, read it
-    if os.path.isfile(input_arg):
-        with open(input_arg, "r", encoding="utf-8") as f:
-            text = f.read()
-    else:
-        text = input_arg
-    
-    success = generate_audio(text, output_path)
-    if not success:
-        sys.exit(1)
+def audio_duration(path):
+    audio = AudioSegment.from_file(path)
+    return len(audio) / 1000

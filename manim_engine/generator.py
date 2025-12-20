@@ -1,269 +1,107 @@
-import os
-import sys
-import json
-import shutil
-import re
-import textwrap
-import glob
-import time
+import json, uuid, re
+from pathlib import Path
 from openai import OpenAI
-from pydub import AudioSegment
 
-# ================= AUDIO ENGINE =================
+from audio_engine import generate_audio
+from alignment import align_segments
 
-try:
-    from audio_engine import generate_audio
-except ImportError:
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from audio_engine import generate_audio
+BASE_DIR = Path("manim_engine/jobs")
+MODEL = "gpt-4.1"
 
-# ================= OPENAI =================
+client = OpenAI()
 
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY")
-)
+# ---------------- JSON HARD PARSE ----------------
 
-# ================= SYSTEM PROMPT =================
+def extract_json(raw):
+    m = re.search(r"\{.*\}", raw, re.S)
+    if not m:
+        raise ValueError("No JSON")
+    return json.loads(m.group())
 
-MANIM_PROMPT = r"""
-Return ONLY JSON. No markdown. No explanations.
+# ---------------- AI SEGMENTS ----------------
 
-You are generating Manim code for 3Blue1Brown-style videos.
+def get_segments(topic, script):
+    prompt = f"""
+Return ONLY valid JSON.
 
-The output MUST contain a list of segments.
-Each segment MUST have:
-- text (string)
-- code (string)
-"""
+Schema:
+{{
+ "segments":[
+   {{
+     "visual":"what should appear visually",
+     "voiceover":"spoken narration"
+   }}
+ ]
+}}
 
-# ================= JSON EXTRACTION =================
+Rules:
+- 6–10 segments
+- No markdown
+- Escape quotes
+- 20–45s narration each
 
-def extract_json_object(text: str):
-    text = text.replace("```json", "").replace("```", "")
-    start = text.find("{")
-    if start == -1:
-        raise ValueError("No JSON found")
-
-    depth = 0
-    for i in range(start, len(text)):
-        if text[i] == "{":
-            depth += 1
-        elif text[i] == "}":
-            depth -= 1
-
-        if depth == 0:
-            return json.loads(text[start:i + 1])
-
-    raise ValueError("Unbalanced JSON")
-
-# ================= SEGMENT NORMALIZATION =================
-
-def find_segments(obj):
-    """
-    Recursively search for a valid segments list.
-    """
-    if isinstance(obj, dict):
-        if "segments" in obj:
-            segs = obj["segments"]
-            if isinstance(segs, list):
-                return segs
-            elif isinstance(segs, dict):
-                return [segs]
-
-        for v in obj.values():
-            found = find_segments(v)
-            if found:
-                return found
-
-    elif isinstance(obj, list):
-        for item in obj:
-            found = find_segments(item)
-            if found:
-                return found
-
-    return None
-
-# ================= CODE CLEANER =================
-
-def clean_code_block(code: str) -> str:
-    code = code.replace("```python", "").replace("```", "").strip()
-    lines = code.split("\n")
-    out = []
-
-    for line in lines:
-        l = line.strip()
-
-        if l.startswith("import") or l.startswith("from manim"):
-            continue
-        if l.startswith("class ") or l.startswith("def construct"):
-            continue
-
-        if "Angle(" in line:
-            line = line.replace("Angle(", "self.safe_angle(")
-
-        if "MathText" in line:
-            line = line.replace("MathText", "MathTex")
-
-        if "Tex(r" in line and ("_" in line or "^" in line):
-            line = line.replace("Tex(r", "MathTex(r")
-
-        if ".arrange_in_circle(" in line:
-            line = line.replace(".arrange_in_circle(", ".arrange(")
-
-        out.append(line)
-
-    cleaned = textwrap.dedent("\n".join(out)).strip()
-    if not cleaned:
-        return ""
-
-    return "\n".join("        " + ln if ln.strip() else "" for ln in cleaned.split("\n"))
-
-# ================= FFMPEG =================
-
-def setup_ffmpeg():
-    if os.name == "nt":
-        base = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
-        hits = glob.glob(os.path.join(base, "**/bin/ffmpeg.exe"), recursive=True)
-        if hits:
-            bin_dir = os.path.dirname(hits[0])
-            os.environ["PATH"] += os.pathsep + bin_dir
-            AudioSegment.converter = os.path.join(bin_dir, "ffmpeg.exe")
-            AudioSegment.ffprobe = os.path.join(bin_dir, "ffprobe.exe")
-
-# ================= AI CALL =================
-
-def get_segments_from_ai(topic, script_text, retries=3):
-    last_error = None
-
-    for attempt in range(retries):
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": MANIM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": f"""
 Topic: {topic}
-
-SCRIPT:
-{script_text}
-
-Split into 8–14 segments.
+Script:
+{script}
 """
-                    },
-                ],
-                temperature=0.3,
-                max_tokens=4500,
-            )
-
-            raw = response.choices[0].message.content
-            data = extract_json_object(raw)
-
-            segments = find_segments(data)
-            if not segments:
-                raise KeyError("segments")
-
-            # Final validation
-            valid = [
-                s for s in segments
-                if isinstance(s, dict) and "text" in s and "code" in s
-            ]
-
-            if not valid:
-                raise ValueError("No valid segments")
-
-            return valid
-
-        except Exception as e:
-            last_error = e
-            print(f"⚠️ AI parse failed ({attempt+1}/{retries}): {e}")
-            time.sleep(1)
-
-    raise RuntimeError(f"AI failed to return usable segments: {last_error}")
-
-# ================= MAIN PIPELINE =================
-
-def generate_scene_and_audio(topic, script_text, job_dir=None):
-    setup_ffmpeg()
-    base_path = job_dir or "."
-    os.makedirs(base_path, exist_ok=True)
-
-    segments = get_segments_from_ai(topic, script_text)
-
-    scene_code = """from manim import *
-import numpy as np
-
-class GeneratedScene(Scene):
-
-    def safe_angle(self, line1, line2, **kwargs):
+    for i in range(3):
         try:
-            return Angle(line1, line2, **kwargs)
-        except Exception:
-            return VGroup()
+            r = client.chat.completions.create(
+                model=MODEL,
+                messages=[{"role":"user","content":prompt}],
+                temperature=0.2
+            )
+            return extract_json(r.choices[0].message.content)["segments"]
+        except Exception as e:
+            print(f"⚠️ AI parse failed ({i+1}/3):", e)
 
-    def clear_except(self, *keep):
-        to_remove = [m for m in self.mobjects if m not in keep]
-        if to_remove:
-            self.play(*[FadeOut(m) for m in to_remove], run_time=0.3)
+    raise RuntimeError("AI failed")
 
-    def construct(self):
-        self.ctx = {}
-"""
+# ---------------- SCENE BUILDER ----------------
 
-    full_audio = AudioSegment.empty()
-    narration_text = ""
+def build_scene_code(segments, durations):
+    lines = [
+        "from scene import GeneratedScene",
+        "",
+        "class GeneratedScene(GeneratedScene):",
+        "    def construct(self):",
+        "        self.ctx = {}",
+        ""
+    ]
 
-    temp_audio = os.path.join(base_path, "temp_audio")
-    shutil.rmtree(temp_audio, ignore_errors=True)
-    os.makedirs(temp_audio, exist_ok=True)
+    for i, (seg, dur) in enumerate(zip(segments, durations)):
+        visual = seg["visual"].replace("'''", "")
+        lines += [
+            f"        # Segment {i+1}",
+            "        self.run_segment(",
+            f"            duration={dur:.2f},",
+            "            fn=lambda:",
+            f"                self.text_block('''{visual}''')",
+            "        )",
+            "        self.clear()",
+            ""
+        ]
 
-    for i, seg in enumerate(segments, start=1):
-        text = seg["text"]
-        code = clean_code_block(seg["code"])
+    return "\n".join(lines)
 
-        audio_path = os.path.join(temp_audio, f"seg_{i}.mp3")
-        generate_audio(text, audio_path)
-        audio = AudioSegment.from_file(audio_path)
-        duration = len(audio) / 1000.0
+# ---------------- MAIN ----------------
 
-        scene_code += f"""
-        # ===== Segment {i} =====
-        self.clear_except()
-{code}
-        self.wait({duration})
-"""
+def generate(topic, script_path):
+    script = Path(script_path).read_text()
+    job = BASE_DIR / str(uuid.uuid4())
+    job.mkdir(parents=True)
 
-        full_audio += audio
-        narration_text += text + " "
+    segments = get_segments(topic, script)
 
-    shutil.rmtree(temp_audio, ignore_errors=True)
+    audio_files = []
+    for i, seg in enumerate(segments):
+        path = job / f"seg_{i+1}.mp3"
+        generate_audio(seg["voiceover"], path)
+        audio_files.append(path)
 
-    with open(os.path.join(base_path, "scene.py"), "w", encoding="utf-8") as f:
-        f.write(scene_code)
+    durations = align_segments(audio_files)
 
-    full_audio.export(os.path.join(base_path, "narration.mp3"), format="mp3")
+    scene_code = build_scene_code(segments, durations)
+    (job / "scene.py").write_text(scene_code)
 
-    with open(os.path.join(base_path, "narration.txt"), "w", encoding="utf-8") as f:
-        f.write(narration_text.strip())
-
-    print("✅ Generation successful — schema-robust, crash-proof")
-
-# ================= CLI =================
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python generator.py <topic> <script_or_file> [job_dir]")
-        sys.exit(1)
-
-    topic = sys.argv[1]
-    script_input = sys.argv[2]
-    job_dir = sys.argv[3] if len(sys.argv) > 3 else None
-
-    if os.path.isfile(script_input):
-        with open(script_input, "r", encoding="utf-8") as f:
-            script_text = f.read()
-    else:
-        script_text = script_input
-
-    generate_scene_and_audio(topic, script_text, job_dir)
+    return job
