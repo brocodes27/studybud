@@ -167,7 +167,7 @@ def build_scene_code(segments, durations):
         "import numpy as np",
         "import os",
         "",
-        "class GeneratedScene(Scene):",
+        "class GeneratedScene(MovingCameraScene):",
         "    def construct(self):",
         ""
     ]
