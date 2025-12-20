@@ -59,9 +59,9 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""You are an EXPERT Manim animator creating CINEMATIC educational videos with CONTEXTUAL, NARRATIVE-DRIVEN visuals.
+    prompt = f"""You are an ELITE Manim animator creating SOPHISTICATED, DETAILED educational illustrations.
 
-CRITICAL: Create visuals that MATCH the narration content EXACTLY. If talking about a bicycle, DRAW a bicycle. If discussing a tree, DRAW a tree. Don't show generic shapes - create ILLUSTRATIVE, CONTEXTUAL scenes.
+CRITICAL: Create DETAILED, REALISTIC-LOOKING illustrations, NOT basic shapes. Use curves, complex compositions, and artistic techniques to make visuals look PROFESSIONAL and ORGANIC.
 
 Return JSON only:
 {{
@@ -73,148 +73,171 @@ Return JSON only:
   ]
 }}
 
-SYNTAX RULES (MUST FOLLOW):
+SYNTAX RULES:
 1. Balance ALL parentheses, brackets, braces
-2. Write MULTI-LINE code (avoid one-liners)
-3. Use \\n to separate statements
-4. Test Python syntax mentally before responding
+2. Multi-line code for clarity
+3. Use \\n between statements
+4. Validate syntax mentally
 
-=== CONTEXTUAL VISUAL CREATION ===
+=== ADVANCED ILLUSTRATION TECHNIQUES ===
 
-🎯 CORE PRINCIPLE: Visual should ILLUSTRATE what narration describes
+� CREATE DETAILED, ORGANIC VISUALS:
+- Use CubicBezier() and Arc() for smooth, curved lines
+- Layer multiple shapes for depth and detail
+- Use fill_opacity to create shading and dimension
+- Combine 10-20+ small shapes to create complex objects
+- Use color gradients and varied opacity
+- Add texture with patterns of small elements
 
-If narration says...  →  Create this visual:
-- "Person riding bicycle" → Draw stick figure on bicycle (circles for wheels, lines for frame)
-- "Water evaporating" → Show water molecules (dots) rising with arrow
-- "Tree absorbing sunlight" → Draw tree outline with sun rays as arrows
-- "Heart pumping blood" → Show heart shape with arrows indicating flow
-- "Ball rolling down ramp" → Draw ramp (line) with circle rolling
-- "DNA replicating" → Show double helix splitting and copying
-- "Light reflecting off mirror" → Draw mirror line with arrow bouncing
-- "Supply and demand curves" → Draw actual crossing curves on axes
+🖼️ REALISTIC VISUAL EXAMPLES:
 
-VISUAL CONSTRUCTION EXAMPLES:
-
-🚴 BICYCLE:
+🌸 DETAILED FLOWER:
 ```
-wheel1 = Circle(radius=0.5, color=WHITE)
-wheel2 = Circle(radius=0.5, color=WHITE).shift(RIGHT*2)
-frame = VGroup(
-    Line(wheel1.get_top(), wheel2.get_top()),
-    Line(wheel1.get_center(), wheel1.get_top() + UP*0.5),
-    Line(wheel2.get_center(), wheel1.get_top() + UP*0.5)
+# Petals using curves
+petals = VGroup(*[
+    CubicBezier(
+        [0, 0, 0],
+        [np.cos(angle)*0.3, np.sin(angle)*0.3, 0],
+        [np.cos(angle)*0.8, np.sin(angle)*0.8, 0],
+        [np.cos(angle)*1.2, np.sin(angle)*1.2, 0]
+    ).set_fill(PINK, opacity=0.7).set_stroke(PINK, width=2)
+    for angle in np.linspace(0, 2*np.pi, 8, endpoint=False)
+])
+center = Circle(radius=0.3, color=YELLOW, fill_opacity=1)
+stem = Line(DOWN*2, ORIGIN, stroke_width=8, color=GREEN)
+leaves = VGroup(*[
+    Ellipse(width=0.4, height=0.8, color=GREEN, fill_opacity=0.6).rotate(angle).shift(DOWN*0.5 + dir)
+    for angle, dir in [(PI/4, LEFT*0.3), (-PI/4, RIGHT*0.3)]
+])
+self.play(Create(stem), Create(leaves))
+self.play(Create(petals), FadeIn(center))
+```
+
+👤 DETAILED HUMAN FIGURE:
+```
+# Head with features
+head = Circle(radius=0.4, color=YELLOW_C, fill_opacity=1)
+eyes = VGroup(
+    Dot(point=head.get_center() + UP*0.1 + LEFT*0.15, radius=0.05),
+    Dot(point=head.get_center() + UP*0.1 + RIGHT*0.15, radius=0.05)
 )
-person = VGroup(
-    Circle(radius=0.2, color=YELLOW, fill_opacity=1).shift(UP*1.5),
-    Line(UP*1.3, UP*0.7),
-    Line(UP*0.7, UP*0.7 + LEFT*0.3 + DOWN*0.3),
-    Line(UP*0.7, UP*0.7 + RIGHT*0.3 + DOWN*0.3)
-).shift(RIGHT)
-self.play(Create(wheel1), Create(wheel2))
-self.play(Create(frame))
-self.play(Create(person))
-```
-
-🌳 TREE WITH PHOTOSYNTHESIS:
-```
-trunk = Line(DOWN*2, UP, color=BROWN_E)
-leaves = VGroup(*[Circle(radius=0.3, color=GREEN, fill_opacity=0.8).shift(UP + dir) for dir in [LEFT*0.5, RIGHT*0.5, UP*0.3]])
-sun = Circle(radius=0.4, color=YELLOW, fill_opacity=1).to_edge(UP+RIGHT)
-rays = VGroup(*[Arrow(sun.get_center(), trunk.get_top() + dir, color=YELLOW) for dir in [LEFT*0.2, ORIGIN, RIGHT*0.2]])
-co2_label = MathTex(r"CO_2", color=BLUE).next_to(trunk, LEFT)
-o2_label = MathTex(r"O_2", color=GREEN).next_to(leaves, UP)
-self.play(Create(trunk), Create(leaves))
-self.play(FadeIn(sun), Create(rays))
-self.play(Write(co2_label), Write(o2_label))
-```
-
-=== SUBJECT-SPECIFIC BLUEPRINTS ===
-
-� CHEMISTRY:
-- Molecules: Circle atoms + Line bonds + Text labels
-- Reactions: Show transformation with Transform() or arrows
-- pH scale: NumberLine with color gradient
-Example:
-```
-h2o = VGroup(
-    Circle(radius=0.2, color=RED, fill_opacity=1),
-    Circle(radius=0.15, color=WHITE, fill_opacity=1).shift(LEFT*0.4+UP*0.2),
-    Circle(radius=0.15, color=WHITE, fill_opacity=1).shift(RIGHT*0.4+UP*0.2)
+smile = Arc(radius=0.2, start_angle=-PI, angle=PI).shift(head.get_center() + DOWN*0.1).scale(0.6)
+# Body with details
+body = Rectangle(height=1.2, width=0.6, color=BLUE, fill_opacity=0.8)
+arms = VGroup(
+    CubicBezier(body.get_top() + LEFT*0.3, LEFT*1.2 + UP*0.3, LEFT*1.2, LEFT*1.2 + DOWN*0.3).set_stroke(BLUE, width=8),
+    CubicBezier(body.get_top() + RIGHT*0.3, RIGHT*1.2 + UP*0.3, RIGHT*1.2, RIGHT*1.2 + DOWN*0.3).set_stroke(BLUE, width=8)
 )
-label = MathTex(r"H_2O").next_to(h2o, DOWN)
-self.play(Create(h2o), Write(label))
+legs = VGroup(
+    Line(body.get_bottom() + LEFT*0.2, DOWN*2.5 + LEFT*0.3, stroke_width=8, color=BLUE),
+    Line(body.get_bottom() + RIGHT*0.2, DOWN*2.5 + RIGHT*0.3, stroke_width=8, color=BLUE)
+)
+person = VGroup(head, eyes, smile, body, arms, legs).shift(DOWN*0.5)
+self.play(FadeIn(person, scale=0.5))
 ```
 
-📘 PHYSICS:
-- Motion: Show object with velocity vector (Arrow)
-- Forces: Multiple arrows on object with labels
-- Energy: Bar charts or potential wells
-Example:
+🏠 DETAILED HOUSE:
 ```
-box = Square(side_length=1, color=BLUE, fill_opacity=0.5)
-force = Arrow(start=box.get_right(), end=box.get_right()+RIGHT*2, color=RED)
-f_label = MathTex(r"F").next_to(force, UP)
-velocity = Arrow(start=box.get_center(), end=box.get_center()+RIGHT, color=GREEN)
-v_label = MathTex(r"v").next_to(velocity, DOWN)
-self.play(Create(box))
-self.play(Create(force), Write(f_label))
-self.play(Create(velocity), Write(v_label))
-```
-
-📙 MATHEMATICS:
-- Graphs: ALWAYS use Axes with proper labels
-- Geometry: Actual geometric constructions
-- Transformations: Show before and after with arrows
-Example:
-```
-axes = Axes(x_range=[-5, 5, 1], y_range=[-2, 10, 2], x_length=7, y_length=5)
-curve = axes.plot(lambda x: x**2, color=YELLOW)
-point = Dot(axes.c2p(2, 4), color=RED)
-tangent = axes.plot(lambda x: 4*x - 4, color=GREEN, x_range=[1, 3])
-title = Text("Derivative at x=2", font_size=28).to_edge(UP)
-self.play(Create(axes))
-self.play(Create(curve), Write(title))
-self.play(FadeIn(point), Create(tangent))
+# Main structure with depth
+walls = Rectangle(width=4, height=2.5, color=ORANGE, fill_opacity=0.7, stroke_width=3)
+roof = Polygon(
+    walls.get_corner(UL), walls.get_corner(UR), walls.get_top() + UP*1.2,
+    color=MAROON_D, fill_opacity=0.8, stroke_width=3
+)
+# Windows with frames
+window1 = VGroup(
+    Rectangle(width=0.6, height=0.8, color=BLUE_C, fill_opacity=0.5),
+    Line(UP*0.4, DOWN*0.4), Line(LEFT*0.3, RIGHT*0.3)
+).shift(LEFT*1.2 + UP*0.3)
+window2 = window1.copy().shift(RIGHT*2.4)
+# Door with detail
+door = VGroup(
+    Rectangle(width=0.7, height=1.4, color=MAROON_C, fill_opacity=0.9),
+    Circle(radius=0.05, fill_opacity=1, color=GOLD).shift(RIGHT*0.25)
+).shift(RIGHT*0.8 + DOWN*0.55)
+house = VGroup(walls, roof, window1, window2, door)
+self.play(Create(walls), Create(roof))
+self.play(Create(window1), Create(window2), Create(door))
 ```
 
-📕 BIOLOGY:
-- Organisms: Simple drawings using shapes
-- Processes: Show steps with arrows
-- Systems: Labeled component diagrams
-Example:
+� DETAILED CAR:
 ```
-cell_membrane = Circle(radius=2, color=BLUE)
-cytoplasm = Circle(radius=1.9, color=BLUE, fill_opacity=0.2)
-nucleus = Circle(radius=0.7, color=PURPLE, fill_opacity=0.7)
-mitochondria = Ellipse(width=0.5, height=0.25, color=RED, fill_opacity=0.6).shift(RIGHT+UP*0.5)
-labels = VGroup(Text("Nucleus", font_size=18).next_to(nucleus, DOWN, buff=0.1))
-self.play(Create(cell_membrane), Create(cytoplasm))
-self.play(Create(nucleus), Create(mitochondria))
-self.play(Write(labels))
+# Car body with curves
+body = RoundedRectangle(width=3, height=1, corner_radius=0.2, color=RED, fill_opacity=0.9)
+top = Arc(radius=1.5, start_angle=0, angle=PI, color=RED, fill_opacity=0.9, stroke_width=3).scale(0.5).move_to(body.get_top() + UP*0.3)
+# Wheels with detail
+wheel1 = VGroup(
+    Circle(radius=0.4, color=GREY, fill_opacity=1),
+    Circle(radius=0.25, color=DARK_GREY, fill_opacity=1),
+    Circle(radius=0.1, color=WHITE, fill_opacity=1)
+).shift(body.get_bottom() + LEFT*0.8 + DOWN*0.3)
+wheel2 = wheel1.copy().shift(RIGHT*1.6)
+# Windows
+windows = VGroup(
+    Arc(radius=0.8, start_angle=0, angle=PI, color=BLUE_C, fill_opacity=0.4).scale([0.6, 0.4, 1]).move_to(top.get_center() + LEFT*0.5),
+    Arc(radius=0.8, start_angle=0, angle=PI, color=BLUE_C, fill_opacity=0.4).scale([0.6, 0.4, 1]).move_to(top.get_center() + RIGHT*0.5)
+)
+car = VGroup(body, top, wheel1, wheel2, windows)
+self.play(FadeIn(car, shift=LEFT))
 ```
 
-ANIMATION FLOW RULES:
-1. Create contextual visuals that MATCH narration
-2. Use Transform() to morph between related concepts  
-3. Use .animate to show smooth changes
-4. Keep some elements on screen for continuity
-5. Add descriptive Text labels for clarity
-6. Use VGroup to organize related parts
-7. Color-code related concepts consistently
+🍎 DETAILED APPLE:
+```
+# Apple body with shading
+apple_body = Circle(radius=1.2, color=RED, fill_opacity=1)
+highlight = Ellipse(width=0.5, height=0.8, color=RED_A, fill_opacity=0.6).shift(UP*0.3 + LEFT*0.3)
+shadow = Ellipse(width=0.4, height=0.6, color=RED_E, fill_opacity=0.4).shift(DOWN*0.2 + RIGHT*0.3)
+# Stem and leaf
+stem = Line(UP*1.2, UP*1.6, stroke_width=6, color=BROWN)
+leaf = Ellipse(width=0.8, height=0.4, color=GREEN, fill_opacity=0.8).rotate(PI/6).shift(UP*1.4 + RIGHT*0.3)
+apple = VGroup(apple_body, shadow, highlight, stem, leaf)
+self.play(FadeIn(apple, scale=0.3))
+```
 
-MANDATORY EVERY SEGMENT:
-✓ Create scene that illustrates the narration topic
-✓ Use shapes to represent real objects/concepts
-✓ Add clear labels with Text() or MathTex()
-✓ Animate creation smoothly
-✓ Use appropriate colors and positioning
+=== SUBJECT-SPECIFIC DETAILED VISUALS ===
+
+📗 CHEMISTRY - Detailed Molecules:
+Use multiple circles with gradients, overlapping for 3D effect
+Add electron clouds with dashed circles and small dots
+Show bonds with thick lines or cylinders
+
+📘 PHYSICS - Realistic Scenarios:
+Create full scenes with objects, backgrounds
+Use arrows with gradient fills for forces
+Add motion blur effects with transparent copies
+
+📙 MATHEMATICS - Rich Diagrams:
+Multiple coordinate systems overlaid
+Color-coded regions with patterned fills
+Animated transformations showing steps
+
+📕 BIOLOGY - Detailed Organisms:
+Layer multiple shapes for cell membranes
+Use curves for organic shapes (cells, organs)
+Add internal structures with smaller grouped shapes
+
+COMPOSITION RULES:
+1. Build complex objects from 10+ primitive shapes
+2. Use CubicBezier for organic, curved lines
+3. Layer shapes with varying opacity for depth
+4. Add small details (dots, lines, patterns)
+5. Use color gradients (different shades of same color)
+6. Group related elements with VGroup
+7. Animate in stages (build up complexity)
+
+MANDATORY:
+✓ Create DETAILED, LAYERED illustrations
+✓ Use curves and arcs for organic shapes
+✓ Add depth with opacity and layering
+✓ Include small details for realism
+✓ Compose complex scenes from many parts
 
 Rules:
-- 6-10 segments total
-- Each voiceover 20-45 seconds
-- CONTEXTUAL visuals matching narration
-- SIMPLE, CLEAR, MULTI-LINE code
-- DOUBLE-CHECK syntax
+- 6-10 segments
+- 20-45 seconds each
+- DETAILED, REALISTIC visuals
+- Multi-line, clear code
+- VALIDATE syntax
 
 Topic: {topic}
 Script:
