@@ -1,14 +1,13 @@
 from manim import *
 import numpy as np
+import os
 
-# ---- Safe colors ----
 INDIGO = "#4b0082"
 VIOLET = "#7c3aed"
 
 class GeneratedScene(Scene):
     def construct(self):
         self.ctx = {}
-        # generator.py injects content here
         pass
 
     # ================= CORE =================
@@ -29,7 +28,26 @@ class GeneratedScene(Scene):
                 lag_ratio=0.05
             )
 
-    # ================= SAFETY =================
+    # ================= SAFE BUILDERS =================
+
+    def safe_image(self, filename, width=6):
+        """
+        Loads an image ONLY if it exists.
+        Falls back to labeled rectangle otherwise.
+        """
+        if os.path.exists(filename):
+            img = ImageMobject(filename)
+            img.set_width(width)
+            self.play(FadeIn(img))
+            return img
+
+        # Fallback
+        box = Rectangle(width=width, height=width * 0.6)
+        label = Text(f"[Missing image]\n{filename}", font_size=24)
+        label.move_to(box.get_center())
+
+        self.play(Create(box), FadeIn(label))
+        return VGroup(box, label)
 
     def safe_add(self, *mobs):
         for m in mobs:
@@ -48,7 +66,7 @@ class GeneratedScene(Scene):
         except:
             return VGroup()
 
-    # ================= BUILDERS =================
+    # ================= COMMON VISUALS =================
 
     def title(self, txt, size=48):
         t = Text(txt, font_size=size)
