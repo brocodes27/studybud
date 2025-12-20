@@ -9,15 +9,22 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-VOICE_MODEL = "gpt-4o-mini-tts"
+VOICE_MODEL = "tts-1"
 
 def generate_audio(text, out_path):
-    response = client.audio.speech.create(
-        model=VOICE_MODEL,
-        voice="alloy",
-        input=text
-    )
-    response.stream_to_file(out_path)
+    try:
+        response = client.audio.speech.create(
+            model=VOICE_MODEL,
+            voice="alloy",
+            input=text
+        )
+        # Ensure path is a string
+        out_path = str(out_path) if isinstance(out_path, Path) else out_path
+        response.stream_to_file(out_path)
+        print(f"✅ Generated audio: {out_path}")
+    except Exception as e:
+        print(f"❌ Audio generation failed: {e}")
+        raise
 
 def audio_duration(path):
     audio = AudioSegment.from_file(path)

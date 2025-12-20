@@ -1,4 +1,4 @@
-import json, uuid, re
+import json, uuid, re, sys, os
 from pathlib import Path
 from openai import OpenAI
 
@@ -6,9 +6,9 @@ from audio_engine import generate_audio
 from alignment import align_segments
 
 BASE_DIR = Path("manim_engine/jobs")
-MODEL = "gpt-4.1"
+MODEL = "gpt-4o"
 
-client = OpenAI()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY"))
 
 # ---------------- JSON HARD PARSE ----------------
 def sanitize_visual_text(visual: str) -> str:
@@ -89,7 +89,7 @@ Script:
     for attempt in range(3):
         try:
             response = client.chat.completions.create(
-                model=OPENAI_MODEL,
+                model=MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.2,
             )
@@ -136,9 +136,35 @@ Script:
 
 def build_scene_code(segments, durations):
     lines = [
-        "from scene import GeneratedScene",
+        "from manim import *",
+        "import numpy as np",
+        "import os",
         "",
-        "class GeneratedScene(GeneratedScene):",
+        "INDIGO = '#4b0082'",
+        "VIOLET = '#7c3aed'",
+        "",
+        "class GeneratedScene(Scene):",
+        "    def run_segment(self, duration, fn=None):",
+        "        if fn:",
+        "            try:",
+        "                fn()",
+        "            except Exception as e:",
+        "                print(f'⚠️ Segment error: {e}')",
+        "        self.wait(max(0.1, duration))",
+        "",
+        "    def clear(self):",
+        "        if self.mobjects:",
+        "            self.play(",
+        "                *[FadeOut(m) for m in self.mobjects],",
+        "                run_time=0.4,",
+        "                lag_ratio=0.05",
+        "            )",
+        "",
+        "    def text_block(self, txt, size=36):",
+        "        t = Text(txt, font_size=size, line_spacing=1.25)",
+        "        self.play(Write(t))",
+        "        return t",
+        "",
         "    def construct(self):",
         "        self.ctx = {}",
         ""
@@ -207,4 +233,37 @@ def generate(topic, script_path):
     scene_code = build_scene_code(segments, durations)
     (job / "scene.py").write_text(scene_code)
 
-    return job
+    return str(job)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python generator.py <topic> <script_path> [job_dir]")
+        sys.exit(1)
+    
+    topic = sys.argv[1]
+    script_path = sys.argv[2]
+    job_dir = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    if job_dir:
+        # Use provided job directory
+        job = Path(job_dir)
+        job.mkdir(parents=True, exist_ok=True)
+        
+        script = Path(script_path).read_text()
+        segments = get_segments_from_ai(topic, script)
+        
+        audio_files = []
+        for i, seg in enumerate(segments):
+            path = job / f"seg_{i+1}.mp3"
+            generate_audio(seg["voiceover"], str(path))
+            audio_files.append(str(path))
+        
+        durations = align_segments(audio_files)
+        
+        scene_code = build_scene_code(segments, durations)
+        (job / "scene.py").write_text(scene_code)
+        
+        print(f"Success: Generated files in {job}")
+    else:
+        job_path = generate(topic, script_path)
+        print(f"Success: Generated files in {job_path}")
