@@ -3,7 +3,7 @@ from pydub import AudioSegment
 import os
 from openai import OpenAI
 
-api_key = os.getenv("OPENAI_API_KEY")
+api_key = os.getenv("VITE_OPENAI_API_KEY")
 if not api_key:
     raise RuntimeError("OPENAI_API_KEY is not set")
 
