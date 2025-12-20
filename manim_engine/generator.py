@@ -73,30 +73,50 @@ Return JSON only in this schema:
   ]
 }}
 
+CRITICAL SYNTAX RULES:
+1. VALIDATE all parentheses, brackets, and braces are balanced
+2. Use MULTIPLE LINES - avoid complex one-liners
+3. Split statements with newlines (\\n) for clarity
+4. Test that your code would parse as valid Python
+5. Use semicolons (;) to separate statements on same line ONLY if simple
+
 MANIM CODE RULES:
-1. Use rich visuals: Circle(), Square(), Axes(), NumberPlane(), VMobject, etc.
+1. Use rich visuals: Circle(), Square(), Axes(), NumberPlane(), Arrow() etc.
 2. Create diagrams, graphs, and animations - NOT just Text()
 3. Use colors: BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE
-4. Animate with: Create(), FadeIn(), Transform(), Write(), MoveToTarget()
+4. Animate with: Create(), FadeIn(), Transform(), Write()
 5. Position with: .to_edge(UP), .shift(LEFT*2), .next_to(obj, DOWN)
-6. For math: Use MathTex(r"x^2 + y^2 = r^2")
+6. For math: Use MathTex(r"x^2 + y^2 = r^2")  
 7. For labels: Text("Label", font_size=24).next_to(obj, UP)
 8. Code should be self-contained (no imports, no class definitions)
-9. Use 'self.play()' and 'self.add()' to show objects
-10. IMPORTANT: Create visual diagrams, NOT walls of text
+9. ALWAYS use 'self.play()' to animate and 'self.add()' to add objects
+10. Keep it SIMPLE - better to have simple working code than complex broken code
 
-EXAMPLES:
-Good: "circle = Circle(radius=2, color=BLUE); self.play(Create(circle))"
-Bad: "self.play(Write(Text('A circle')))"
+GOOD EXAMPLES (multi-line, safe):
+```
+circle = Circle(radius=2, color=BLUE)
+self.play(Create(circle))
+```
 
-Good: "axes = Axes(); graph = axes.plot(lambda x: x**2, color=RED); self.play(Create(axes), Create(graph))"
-Bad: "self.text_block('This shows a parabola')"
+```
+axes = Axes(x_range=[-3, 3, 1], y_range=[-2, 2, 1])
+graph = axes.plot(lambda x: x**2, color=RED)
+label = Text("Parabola", font_size=24).to_edge(UP)
+self.play(Create(axes))
+self.play(Create(graph), Write(label))
+```
+
+BAD EXAMPLES (avoid):
+- Complex one-liners with nested structures
+- Unbalanced parentheses/brackets
+- Text-only slides without visuals
+- External file references
 
 Rules:
 - 6 to 10 segments
 - Each voiceover 20–45 seconds of speech
-- Code creates actual animations/visuals matching the narration
-- Escape quotes: use single quotes inside code strings
+- Code creates ACTUAL animations/visuals matching the narration
+- Write SIMPLE, CLEAR, MULTI-LINE code that will definitely parse
 
 Topic: {topic}
 Script:
@@ -153,6 +173,16 @@ Script:
 
 # ---------------- SCENE BUILDER ----------------
 
+def validate_python_code(code):
+    """Check if Python code is syntactically valid"""
+    try:
+        import ast
+        ast.parse(code)
+        return True
+    except SyntaxError as e:
+        print(f"⚠️ Syntax error in generated code: {e}")
+        return False
+
 def build_scene_code(segments, durations):
     lines = [
         "from manim import *",
@@ -167,10 +197,18 @@ def build_scene_code(segments, durations):
     for i, (seg, dur) in enumerate(zip(segments, durations)):
         code = seg.get("code", "")
         
-        # Clean and indent the code
+        # Clean the code
         code = code.strip()
+        
+        # Validate and sanitize code
         if code:
-            # Indent each line appropriately for being inside construct()
+            # Check for syntax errors
+            test_code = f"from manim import *\nimport numpy as np\n{code}"
+            if not validate_python_code(test_code):
+                print(f"⚠️ Segment {i+1} has invalid code, using fallback")
+                code = f"title = Text('Segment {i+1}', font_size=36)\nself.play(Write(title))"
+            
+            # Split into statements and clean
             code_lines = code.split('\n')
             indented_code = '\n'.join('        ' + line if line.strip() else '' for line in code_lines)
         else:
