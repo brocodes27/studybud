@@ -17,7 +17,7 @@ except ImportError:
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from audio_engine import generate_audio
 
-# ================= OPENAI =================
+# ================= OPENAI CLIENT =================
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY")
@@ -29,8 +29,7 @@ MANIM_PROMPT = r"""
 You are generating Manim code for 3Blue1Brown-style educational videos.
 
 STRICT RULES:
-- Return ONLY valid JSON
-- NO explanations, NO markdown, NO text outside JSON
+- Return ONLY valid JSON (no markdown, no explanations)
 - One visual idea per segment
 - Always position visuals (LEFT / RIGHT / UP / DOWN)
 - No SVGMobject
@@ -46,17 +45,17 @@ JSON FORMAT:
 }
 """
 
-# ================= JSON EXTRACTION (BULLETPROOF) =================
+# ================= JSON EXTRACTION =================
 
 def extract_json_object(text: str):
     """
-    Extracts the FIRST valid JSON object from a string.
+    Extract the FIRST valid JSON object from a string.
     Ignores extra text before/after.
     """
     text = text.replace("```json", "").replace("```", "")
     start = text.find("{")
     if start == -1:
-        raise ValueError("No JSON start found")
+        raise ValueError("No JSON object found")
 
     brace_count = 0
     for i in range(start, len(text)):
@@ -67,12 +66,9 @@ def extract_json_object(text: str):
 
         if brace_count == 0:
             candidate = text[start:i + 1]
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                break
+            return json.loads(candidate)
 
-    raise ValueError("Failed to extract valid JSON")
+    raise ValueError("Unbalanced JSON braces")
 
 # ================= CODE CLEANER =================
 
@@ -83,6 +79,7 @@ def clean_code_block(code: str) -> str:
 
     for line in lines:
         l = line.strip()
+
         if l.startswith("import") or l.startswith("from manim"):
             continue
         if l.startswith("class ") or l.startswith("def construct"):
@@ -103,13 +100,18 @@ def clean_code_block(code: str) -> str:
     if not cleaned:
         return ""
 
-    return "\n".join("        " + ln if ln.strip() else "" for ln in cleaned.split("\n"))
+    return "\n".join(
+        "        " + ln if ln.strip() else "" for ln in cleaned.split("\n")
+    )
 
-# ================= FFMPEG =================
+# ================= FFMPEG SETUP =================
 
 def setup_ffmpeg():
     if os.name == "nt":
-        base = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
+        base = os.path.join(
+            os.environ.get("LOCALAPPDATA", ""),
+            "Microsoft", "WinGet", "Packages"
+        )
         hits = glob.glob(os.path.join(base, "**/bin/ffmpeg.exe"), recursive=True)
         if hits:
             bin_dir = os.path.dirname(hits[0])
@@ -117,7 +119,7 @@ def setup_ffmpeg():
             AudioSegment.converter = os.path.join(bin_dir, "ffmpeg.exe")
             AudioSegment.ffprobe = os.path.join(bin_dir, "ffprobe.exe")
 
-# ================= OPENAI CALL WITH RETRY =================
+# ================= OPENAI CALL (WITH RETRY) =================
 
 def get_segments_from_ai(topic, script_text, retries=3):
     for attempt in range(1, retries + 1):
@@ -147,7 +149,7 @@ Return JSON ONLY.
             data = extract_json_object(raw)
 
             if "segments" not in data or not isinstance(data["segments"], list):
-                raise ValueError("JSON missing 'segments'")
+                raise ValueError("Invalid JSON structure")
 
             return data["segments"]
 
@@ -155,7 +157,7 @@ Return JSON ONLY.
             print(f"⚠️ AI parse failed (attempt {attempt}/{retries}): {e}")
             time.sleep(1)
 
-    raise RuntimeError("❌ Failed to get valid JSON from AI after retries")
+    raise RuntimeError("❌ Failed to get valid JSON from AI")
 
 # ================= MAIN PIPELINE =================
 
@@ -166,16 +168,17 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
 
     segments = get_segments_from_ai(topic, script_text)
 
-    # ---------- MANIM TEMPLATE ----------
+    # -------- MANIM SCENE TEMPLATE --------
 
     scene_code = """from manim import *
 import numpy as np
 
 class GeneratedScene(Scene):
+
     def clear_except(self, *keep):
         to_remove = [m for m in self.mobjects if m not in keep]
         if to_remove:
-            self.play(FadeOut(VGroup(*to_remove)))
+            self.play(*[FadeOut(m) for m in to_remove], run_time=0.3)
 
     def construct(self):
         self.ctx = {}
@@ -188,7 +191,7 @@ class GeneratedScene(Scene):
     shutil.rmtree(temp_audio, ignore_errors=True)
     os.makedirs(temp_audio, exist_ok=True)
 
-    # ---------- SEGMENTS ----------
+    # -------- SEGMENTS --------
 
     for i, seg in enumerate(segments, start=1):
         text = seg["text"]
@@ -213,7 +216,7 @@ class GeneratedScene(Scene):
 
     shutil.rmtree(temp_audio, ignore_errors=True)
 
-    # ---------- WRITE OUTPUT ----------
+    # -------- WRITE OUTPUT --------
 
     with open(os.path.join(base_path, "scene.py"), "w", encoding="utf-8") as f:
         f.write(scene_code)
@@ -223,7 +226,7 @@ class GeneratedScene(Scene):
     with open(os.path.join(base_path, "narration.txt"), "w", encoding="utf-8") as f:
         f.write(narration_text.strip())
 
-    print("✅ Generation successful (no overlap, perfect sync, JSON-safe)")
+    print("✅ Generation successful — stable, synced, no crashes")
 
 # ================= CLI =================
 
