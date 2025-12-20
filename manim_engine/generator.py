@@ -79,6 +79,10 @@ SYNTAX RULES:
 3. Use \\n between statements
 4. Validate syntax mentally
 5. DO NOT include import, class, or def statements (already imported at top)
+6. CRITICAL: Use MathTex(r"...") for ANY text with math symbols: ^, _, \\, {{, }}
+   - Text() for plain text labels
+   - MathTex(r"x^2") for formulas, chemical formulas, superscripts/subscripts
+   - NEVER use Tex() - it will cause LaTeX errors
 
 === ADVANCED ILLUSTRATION TECHNIQUES ===
 
@@ -340,6 +344,26 @@ def build_scene_code(segments, durations):
         
         # Validate and sanitize code
         if code:
+            # Auto-fix: Convert Tex() to MathTex() when math symbols are present
+            # Look for Tex( with math symbols like ^, _, \, etc.
+            import re as regex_module
+            def fix_tex_mathsymbols(match):
+                # Check if the string contains math symbols
+                tex_content = match.group(1)
+                # Symbols that strongly suggest math mode
+                math_symbols = ['^', '_', '\\', '{', '}', '$']
+                if any(sym in tex_content for sym in math_symbols):
+                    # Convert Tex to MathTex and ensure it remains valid
+                    if tex_content.strip().startswith('r'):
+                        return f"MathTex({tex_content})"
+                    else:
+                        # Add r prefix if it's just a string literal or similar
+                        return f"MathTex(r{tex_content})"
+                return match.group(0)
+            
+            # Apply the fix
+            code = regex_module.sub(r'Tex\(([^)]+)\)', fix_tex_mathsymbols, code)
+            
             # Check for syntax errors
             test_code = f"from manim import *\nimport numpy as np\n{code}"
             if not validate_python_code(test_code):
