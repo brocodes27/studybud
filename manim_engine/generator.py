@@ -11,6 +11,19 @@ MODEL = "gpt-4.1"
 client = OpenAI()
 
 # ---------------- JSON HARD PARSE ----------------
+def sanitize_visual_text(visual: str) -> str:
+    """
+    Removes all file-based image references.
+    """
+    lowered = visual.lower()
+
+    banned = [".png", ".jpg", ".jpeg", ".gif", "image", "photo", "picture"]
+
+    if any(b in lowered for b in banned):
+        return "Abstract diagram illustrating the concept"
+
+    return visual
+
 
 def extract_json(raw):
     m = re.search(r"\{.*\}", raw, re.S)
@@ -132,7 +145,9 @@ def build_scene_code(segments, durations):
     ]
 
     for i, (seg, dur) in enumerate(zip(segments, durations)):
-        visual = seg["visual"].replace("'''", "")
+        raw_visual = seg["visual"].replace("'''", "")
+        visual = sanitize_visual_text(raw_visual)
+
         lines += [
             f"        # Segment {i+1}",
             "        self.run_segment(",
