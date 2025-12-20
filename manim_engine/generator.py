@@ -59,64 +59,124 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""You are an expert Manim animator creating educational videos.
+    prompt = f"""You are an EXPERT Manim animator creating PREMIUM educational videos with RICH, DETAILED visuals.
 
-Generate segments with ACTUAL Manim animation code, not text descriptions.
+Generate segments with ACTUAL Manim animation code that creates PROFESSIONAL-QUALITY diagrams, graphs, and structures.
 
 Return JSON only in this schema:
 {{
   "segments": [
     {{
       "voiceover": "spoken narration text",
-      "code": "Manim animation code (plain code, no class/def wrappers)"
+      "code": "Manim animation code"
     }}
   ]
 }}
 
 CRITICAL SYNTAX RULES:
-1. VALIDATE all parentheses, brackets, and braces are balanced
-2. Use MULTIPLE LINES - avoid complex one-liners
-3. Split statements with newlines (\\n) for clarity
-4. Test that your code would parse as valid Python
-5. Use semicolons (;) to separate statements on same line ONLY if simple
+1. VALIDATE all parentheses, brackets, braces are balanced
+2. Use MULTIPLE LINES - write clear, readable code
+3. Split complex statements across lines
+4. Double-check Python syntax before responding
+5. Use newline characters (\\n) to separate statements
 
-MANIM CODE RULES:
-1. Use rich visuals: Circle(), Square(), Axes(), NumberPlane(), Arrow() etc.
-2. Create diagrams, graphs, and animations - NOT just Text()
-3. Use colors: BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE
-4. Animate with: Create(), FadeIn(), Transform(), Write()
-5. Position with: .to_edge(UP), .shift(LEFT*2), .next_to(obj, DOWN)
-6. For math: Use MathTex(r"x^2 + y^2 = r^2")  
-7. For labels: Text("Label", font_size=24).next_to(obj, UP)
-8. Code should be self-contained (no imports, no class definitions)
-9. ALWAYS use 'self.play()' to animate and 'self.add()' to add objects
-10. Keep it SIMPLE - better to have simple working code than complex broken code
+=== SUBJECT-SPECIFIC VISUAL BLUEPRINTS ===
 
-GOOD EXAMPLES (multi-line, safe):
+📗 CHEMISTRY:
+- Molecular structures: Use Circle() for atoms with Text labels (H, C, O, N)
+- Bonds: Use Line() between atoms (single, double=parallel lines, triple=3 lines)
+- Reactions: Arrow() pointing from reactants to products with "+" between compounds
+- Formulas: MathTex(r"H_2O", r"CO_2", r"C_6H_{{12}}O_6") - escape braces!
+- Energy diagrams: Axes with energy levels shown as horizontal lines
+- Electron shells: Dashed Circle() around nucleus
+Example:
 ```
-circle = Circle(radius=2, color=BLUE)
-self.play(Create(circle))
+carbon = Circle(radius=0.3, color=BLUE, fill_opacity=1)
+c_label = Text("C", font_size=20).move_to(carbon)
+hydrogen = Circle(radius=0.2, color=WHITE, fill_opacity=1).shift(RIGHT*0.8)
+h_label = Text("H", font_size=16).move_to(hydrogen)
+bond = Line(carbon.get_right(), hydrogen.get_left(), color=GREY)
+self.play(Create(carbon), Write(c_label))
+self.play(Create(hydrogen), Write(h_label), Create(bond))
 ```
 
+📘 PHYSICS:
+- Forces: Arrow() with labels showing F, mg, N, etc.
+- Vectors: Arrow() with magnitude labels using MathTex
+- Trajectories: Parametric curves using ParametricFunction()
+- Fields: Many small arrows arranged in grid using VGroup
+- Circuits: Rectangle() for batteries, zigzag Line() for resistors
+- Waves: Axes with sine/cosine graphs
+Example:
 ```
-axes = Axes(x_range=[-3, 3, 1], y_range=[-2, 2, 1])
-graph = axes.plot(lambda x: x**2, color=RED)
-label = Text("Parabola", font_size=24).to_edge(UP)
+axes = Axes(x_range=[0, 4, 1], y_range=[-2, 2, 1], x_length=8, y_length=4)
+wave = axes.plot(lambda x: np.sin(2*np.pi*x), color=BLUE)
+wavelength = DoubleArrow(start=axes.c2p(0, -1.5), end=axes.c2p(1, -1.5), color=RED)
+lambda_label = MathTex(r"\\lambda").next_to(wavelength, DOWN)
 self.play(Create(axes))
-self.play(Create(graph), Write(label))
+self.play(Create(wave), Create(wavelength), Write(lambda_label))
 ```
 
-BAD EXAMPLES (avoid):
-- Complex one-liners with nested structures
-- Unbalanced parentheses/brackets
-- Text-only slides without visuals
-- External file references
+📙 MATHEMATICS:
+- Functions: Axes() with plot() for graphs - ALWAYS show axes
+- Geometry: Polygon(), Circle(), Line() with angle marks
+- Calculus: Show area under curves with rectangles
+- Algebra: Equation transformations using MathTex with arrows between steps
+- Number line: NumberLine() for real numbers, inequalities
+- 3D graphs: Use ThreeDScene when relevant
+Example:
+```
+axes = Axes(x_range=[-3, 3, 1], y_range=[-1, 5, 1], axis_config={{"include_tip": True}})
+parabola = axes.plot(lambda x: x**2, color=YELLOW)
+vertex = Dot(axes.c2p(0, 0), color=RED)
+equation = MathTex(r"f(x) = x^2").to_edge(UP)
+self.play(Create(axes))
+self.play(Create(parabola), Write(equation))
+self.play(FadeIn(vertex))
+```
+
+📕 BIOLOGY:
+- Cells: Circle() with organelles inside (smaller circles, ovals)
+- DNA: Double helix using two curved lines with connecting segments
+- Processes: Flow diagrams with arrows showing sequences
+- Body systems: Labeled diagrams using shapes and Text
+- Graphs: Population curves, enzyme activity using Axes
+Example:
+```
+cell = Circle(radius=2, color=GREEN)
+nucleus = Circle(radius=0.6, color=PURPLE, fill_opacity=0.7).shift(LEFT*0.5)
+mitochondria = Ellipse(width=0.4, height=0.2, color=RED, fill_opacity=0.6).shift(RIGHT*0.8)
+labels = VGroup(
+    Text("Cell", font_size=20).next_to(cell, UP),
+    Text("Nucleus", font_size=16).next_to(nucleus, LEFT, buff=0.1),
+    Text("Mitochondria", font_size=16).next_to(mitochondria, RIGHT, buff=0.1)
+)
+self.play(Create(cell))
+self.play(Create(nucleus), Create(mitochondria))
+self.play(Write(labels))
+```
+
+ANIMATION RULES:
+1. ALWAYS create visual diagrams - NO text-only slides
+2. Use proper colors: BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE
+3. Add labels with Text() or MathTex() positioned with .next_to()
+4. Animate creation: Create() for shapes, Write() for text/math
+5. Show relationships with Line(), Arrow(), DashedLine()
+6. Use VGroup() to group related objects
+7. Position with: .to_edge(UP/DOWN/LEFT/RIGHT), .shift(), .next_to()
+8. Keep code SIMPLE and MULTI-LINE
+
+MANDATORY FOR EVERY SEGMENT:
+- Create at least ONE visual diagram/graph/structure
+- Add descriptive labels
+- Use appropriate colors
+- Animate the creation (don't just add())
 
 Rules:
-- 6 to 10 segments
-- Each voiceover 20–45 seconds of speech
-- Code creates ACTUAL animations/visuals matching the narration
-- Write SIMPLE, CLEAR, MULTI-LINE code that will definitely parse
+- 6 to 10 segments total
+- Each voiceover 20-45 seconds
+- WRITE SIMPLE, CLEAR, MULTI-LINE CODE
+- DOUBLE-CHECK syntax before returning
 
 Topic: {topic}
 Script:
