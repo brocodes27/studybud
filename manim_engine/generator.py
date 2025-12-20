@@ -5,7 +5,8 @@ from openai import OpenAI
 from audio_engine import generate_audio
 from alignment import align_segments
 
-BASE_DIR = Path("manim_engine/jobs")
+# Use absolute path to ensure correct directory in Docker
+BASE_DIR = Path(__file__).parent / "jobs"
 MODEL = "gpt-4o"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY"))
@@ -252,7 +253,10 @@ def generate(topic, script_path):
     (job / "scene.py").write_text(scene_code)
     print(f"✅ Created scene.py")
 
-    return str(job)
+    # Return absolute path
+    job_abs = job.resolve()
+    print(f"📁 Job directory (absolute): {job_abs}")
+    return str(job_abs)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -301,7 +305,9 @@ if __name__ == "__main__":
         (job / "scene.py").write_text(scene_code)
         print(f"✅ Created scene.py")
         
-        print(f"Success: Generated files in {job}")
+        job_abs = job.resolve()
+        print(f"📁 Job directory (absolute): {job_abs}")
+        print(f"Success: Generated files in {job_abs}")
     else:
         job_path = generate(topic, script_path)
         print(f"Success: Generated files in {job_path}")
