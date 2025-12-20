@@ -21,6 +21,26 @@ const SUBJECTS_12 = {
     Humanities: ["History", "Geography", "Political Science", "Economics", "English"]
 };
 
+const SUBJECT_TOTAL_MARKS: Record<string, number> = {
+    "10 English": 80,
+    "10 Mathematics": 80,
+    "10 Science": 80,
+    "10 Social Science": 80,
+    "10 Information Technology": 50,
+    "12 Physics": 70,
+    "12 Chemistry": 70,
+    "12 Biology": 70,
+    "12 Mathematics": 80,
+    "12 Computer Science": 70,
+    "12 English": 80,
+    "12 Accountancy": 80,
+    "12 Business Studies": 80,
+    "12 Economics": 80,
+    "12 History": 80,
+    "12 Geography": 70,
+    "12 Political Science": 80,
+};
+
 export default function CBSESimulatorScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -35,11 +55,14 @@ export default function CBSESimulatorScreen() {
     const [difficulty, setDifficulty] = useState("Medium");
     const [chapters, setChapters] = useState<any[]>([]);
     const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
+    const [fullSyllabus, setFullSyllabus] = useState<any[]>([]);
     const [syllabusLoading, setSyllabusLoading] = useState(false);
+    const [useCustomMarks, setUseCustomMarks] = useState(false);
+    const [customMarks, setCustomMarks] = useState("80");
 
     // Step 1: Basic Details
     const renderStep1 = () => (
-        <View style={[styles.stepContainer, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Exam Details</Text>
 
             <View style={styles.inputGroup}>
@@ -107,7 +130,11 @@ export default function CBSESimulatorScreen() {
             <TouchableOpacity
                 style={[styles.nextButton, (!selectedClass || !selectedSubject || !examType) && styles.disabledButton]}
                 disabled={!selectedClass || !selectedSubject || !examType}
-                onPress={fetchSyllabusAndProceed}
+                onPress={() => {
+                    const defaultMarks = SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80;
+                    setCustomMarks(defaultMarks.toString());
+                    fetchSyllabusAndProceed();
+                }}
             >
                 <LinearGradient
                     colors={[Colors.dark.primary, Colors.dark.secondary]}
@@ -139,6 +166,7 @@ export default function CBSESimulatorScreen() {
 
             if (error) throw error;
             if (data && data.units) {
+                setFullSyllabus(data.units);
                 // Flatten chapters
                 const flatChapters = data.units.flatMap((u: any) => u.chapters.map((c: any) => ({ ...c, unit: u.unit })));
                 setChapters(flatChapters);
@@ -157,7 +185,7 @@ export default function CBSESimulatorScreen() {
 
     // Step 2: Select Chapters & Difficulty
     const renderStep2 = () => (
-        <View style={[styles.stepContainer, { paddingBottom: insets.bottom + 40 }]}>
+        <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Configurations</Text>
 
             <View style={styles.inputGroup}>
@@ -173,6 +201,28 @@ export default function CBSESimulatorScreen() {
                         </TouchableOpacity>
                     ))}
                 </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+                <View style={styles.rowBetween}>
+                    <Text style={styles.label}>Custom Total Marks</Text>
+                    <TouchableOpacity
+                        style={[styles.toggleBtn, useCustomMarks && styles.toggleBtnActive]}
+                        onPress={() => setUseCustomMarks(!useCustomMarks)}
+                    >
+                        <View style={[styles.toggleCircle, useCustomMarks && styles.toggleCircleActive]} />
+                    </TouchableOpacity>
+                </View>
+                {useCustomMarks && (
+                    <TextInput
+                        style={styles.marksInput}
+                        value={customMarks}
+                        onChangeText={setCustomMarks}
+                        keyboardType="numeric"
+                        placeholder="Enter total marks (e.g. 80)"
+                        placeholderTextColor={Colors.dark.textSecondary}
+                    />
+                )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -217,7 +267,7 @@ export default function CBSESimulatorScreen() {
                     <Ionicons name="flash" size={20} color="#000" />
                 </LinearGradient>
             </TouchableOpacity>
-        </View>
+        </View >
     );
 
     const generateExam = async () => {
@@ -231,8 +281,9 @@ export default function CBSESimulatorScreen() {
                     stream: selectedStream,
                     chapters: selectedChapters,
                     difficulty,
-                    totalMarks: 40, // Reduced for mobile for now? Or keep 80.
-                    sections: ['mcq', 'short', 'long']
+                    totalMarks: useCustomMarks ? parseInt(customMarks) : (SUBJECT_TOTAL_MARKS[`${selectedClass} ${selectedSubject}`] || 80),
+                    sections: ['mcq', 'short', 'long'],
+                    chapterWeightage: fullSyllabus
                 }
             });
 
@@ -278,7 +329,10 @@ export default function CBSESimulatorScreen() {
                     </Text>
                 </View>
             ) : (
-                <ScrollView style={styles.content}>
+                <ScrollView
+                    style={styles.content}
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+                >
                     {step === 1 && renderStep1()}
                     {step === 2 && renderStep2()}
                 </ScrollView>
@@ -441,5 +495,38 @@ const styles = StyleSheet.create({
     chapterTextActive: {
         color: Colors.dark.primary,
         fontWeight: '500',
+    },
+    toggleBtn: {
+        width: 50,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: Colors.dark.surface,
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        padding: 2,
+    },
+    toggleBtnActive: {
+        backgroundColor: Colors.dark.primary + '30',
+        borderColor: Colors.dark.primary,
+    },
+    toggleCircle: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: Colors.dark.textSecondary,
+    },
+    toggleCircleActive: {
+        backgroundColor: Colors.dark.primary,
+        transform: [{ translateX: 22 }],
+    },
+    marksInput: {
+        backgroundColor: Colors.dark.surface,
+        borderRadius: 12,
+        padding: 15,
+        color: Colors.dark.text,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        marginTop: 8,
     },
 });

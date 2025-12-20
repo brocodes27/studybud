@@ -57,6 +57,13 @@ You are the Lead Visual Designer for a high-end AI Educational Platform. Generat
 **JSON ESCAPING & QUOTES**:
 - **IMPORTANT**: Inside the `"code"` strings, ALWAYS use **single quotes** (`'`) for Manim strings (e.g., `Text('Hello')`). 
 - DO NOT use double quotes (`"`) inside the code blocks.
+- **BACKSLASHES**: If you use backslashes (e.g., `\alpha` in MathTex), you MUST escape them for JSON as `\\alpha`. 
+
+**LAYOUT & OVERLAP PREVENTION**:
+- **Scene Transition**: If a segment starts a new sub-topic, use `self.clear_except()` to fade out old clutter.
+- **Z-Index**: Always set labels/text to `.set_z_index(10)` to keep them above geometric shapes.
+- **Avoid Center Stacking**: Use `.to_edge(UP)` or `.shift(LEFT*3)` to distribute multiple diagrams across the screen.
+- **Sidebar Persistence**: If you save an object in `self.ctx['sidebar']`, call `self.clear_except(self.ctx['sidebar'])` to clear everything ELSE.
 
 **STRICT OUTPUT FORMAT**:
 Output ONLY valid JSON:
@@ -175,8 +182,18 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         print(f"FAILED: No JSON object found in AI response.\nContent snippet: {content[:200]}...")
         raise ValueError("AI failed to return valid JSON.")
         
+    def robust_json_loads(s):
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError:
+            # Fix common AI escaping issues: backslashes that aren't escaped for JSON
+            # We escape any backslash that isn't already followed by a double quote (JSON delimiter or escaped quote)
+            # or another backslash.
+            fixed = re.sub(r'\\(?![\\"])', r'\\\\', s)
+            return json.loads(fixed)
+
     try:
-        data = json.loads(json_str)
+        data = robust_json_loads(json_str)
         # Handle both flat and nested schemas
         if "segments" in data:
             segments = data["segments"]
@@ -198,7 +215,7 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
         "CORAL = '#fb7185'"
     ]
     
-    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def construct(self):\n        self.ctx = {} # Persistent state for variables if needed\n"
+    full_code = "from manim import *\nimport numpy as np\nimport math\nfrom random import choice, randint, random\n\n# Safety Aliases for AI hallucinations\nMathMathTex = MathTex\nMathText = MathTex\nMathMathText = MathTex\n\n" + "\n".join(color_defs) + "\n\nclass GeneratedScene(Scene):\n    def clear_except(self, *keep):\n        \"\"\"Helper to clear stage of clutter while keeping specific mobjects.\"\"\"\n        # Flat list of all mobjects to remove\n        to_fade = [m for m in self.mobjects if m not in keep]\n        if to_fade:\n            self.play(FadeOut(VGroup(*to_fade)))\n\n    def construct(self):\n        self.ctx = {} # Persistent state for variables if needed\n"
     full_audio = AudioSegment.empty()
     full_narrative_text = ""
     

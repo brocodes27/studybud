@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Brain, FileText, Zap, Target, Timer, ListTodo } from 'lucide-react';
+import { Brain, FileText, Zap, Target, Timer } from 'lucide-react';
 
 import { FlashcardGenerator } from '../components/FlashcardGenerator';
 import { PracticeTestEngine } from '../components/PracticeTestEngine';
@@ -8,7 +8,7 @@ import { PomodoroTimer } from '../components/PomodoroTimer';
 import { TodoTracker } from '../components/TodoTracker';
 
 export function StudyTools() {
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions' | 'pomodoro' | 'todo'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions' | 'focus'>('flashcards');
 
   const tabs = [
     {
@@ -36,20 +36,12 @@ export function StudyTools() {
       iconColor: 'text-neon-purple'
     },
     {
-      id: 'pomodoro' as const,
-      label: 'Focus Timer',
+      id: 'focus' as const,
+      label: 'Focus Mode',
       icon: Timer,
-      description: 'Deep work sessions',
-      color: 'from-orange-500 to-red-600',
+      description: 'Timer + Task List',
+      color: 'from-orange-500 to-rose-600',
       iconColor: 'text-orange-500'
-    },
-    {
-      id: 'todo' as const,
-      label: 'Study Tasks',
-      icon: ListTodo,
-      description: 'Organize your goals',
-      color: 'from-pink-500 to-rose-600',
-      iconColor: 'text-pink-500'
     }
   ];
 
@@ -110,8 +102,12 @@ export function StudyTools() {
           {activeTab === 'flashcards' && <FlashcardGenerator />}
           {activeTab === 'tests' && <PracticeTestEngine />}
           {activeTab === 'ai-questions' && <QuestionGenerator />}
-          {activeTab === 'pomodoro' && <PomodoroTimer />}
-          {activeTab === 'todo' && <TodoTracker />}
+          {activeTab === 'focus' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-white/10">
+              <PomodoroTimer />
+              <TodoTracker />
+            </div>
+          )}
         </div>
       </div>
     </div>

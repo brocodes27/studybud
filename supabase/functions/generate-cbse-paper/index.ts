@@ -8,6 +8,11 @@ const corsHeaders = {
 };
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 serve(async (req) => {
     if (req.method === "OPTIONS") {
@@ -15,14 +20,14 @@ serve(async (req) => {
     }
 
     try {
-        const { action, subject, classLevel, stream, chapters, difficulty, totalMarks, sections } = await req.json();
+        const { action, subject, classLevel, stream, chapters, difficulty, totalMarks, sections, chapterWeightage } = await req.json();
 
         if (!OPENAI_API_KEY) {
             throw new Error("OpenAI API key not set");
         }
 
         if (action === "syllabus") {
-            // Fetch chapters
+            // ... (keep current syllabus logic)
             const prompt = `Carefully follow the official CBSE syllabus structure for Class ${classLevel} ${subject} ${stream ? `(${stream})` : ''}.
 Return a valid JSON object with a "units" key containing an array of units.
 Each unit should have:
@@ -52,19 +57,79 @@ Do not output anything else.`;
             return new Response(text, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (action === "generate") {
-            // Generate Paper
+            // 1. Retrieve relevant PYQs (RAG)
+            let similarQuestions: any[] = [];
+            try {
+                const query = `Class ${classLevel} ${subject} questions about ${chapters.join(", ")}`;
+
+                // Get Embedding
+                const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "text-embedding-3-small",
+                        input: query
+                    })
+                });
+                const embData = await embRes.json();
+                const embedding = embData.data[0].embedding;
+
+                // Vector Search
+                const { data: matches, error: matchErr } = await supabase.rpc('match_questions', {
+                    query_embedding: embedding,
+                    match_threshold: 0.4,
+                    match_count: 10,
+                    filter_class: classLevel,
+                    filter_subject: subject,
+                });
+
+                if (!matchErr) {
+                    similarQuestions = matches || [];
+                }
+            } catch (e) {
+                console.warn("RAG retrieval failed:", e);
+            }
+
+            // 2. Construct Prompt with RAG Context
+            const ragContext = similarQuestions.length > 0
+                ? `\n\nREFERENCE THESE REAL CBSE QUESTIONS FOR STYLE AND DIFFICULTY:\n${JSON.stringify(similarQuestions.map(q => ({ q: q.question, marks: q.marks, type: q.type })), null, 2)}`
+                : "";
+
+            const weightageContext = chapterWeightage
+                ? `\n\nSTRICT CHAPTER WEIGHTAGE:\n${JSON.stringify(chapterWeightage)}\nEnsure total marks for each unit align.`
+                : "";
+
             const prompt = `Generate a CBSE Class ${classLevel} ${subject} exam paper with ${totalMarks} marks.
-Difficulty: ${difficulty}
-Chapters: ${chapters.join(", ")}
-Sections: ${sections.join(", ")}
 
-Requirements:
-- Use real-world scenarios (competency-based)
-- MCQs must have 4 options (A, B, C, D) inside an 'options' array
-- Return a JSON object with a "questions" key containing an array of questions.
-Each question: { "section": "A/B/C", "type": "mcq/short/long", "question": "text", "marks": number, "options": ["A", "B", "C", "D"], "correct_answer": "A" (if mcq) or text }
+REQUIREMENTS:
+1. Difficulty: ${difficulty}
+2. Chapters to cover: ${chapters.join(", ")}
+3. Include these question types: ${sections.join(", ")}
 
-Strictly JSON.`;
+CBSE QUALITY STANDARDS:
+- Use real-world scenarios and application-based questions (competency-based)
+- For Math/Science: Use LaTeX notation with $ symbols for formulas
+- MCQs must have exactly 4 options labeled A, B, C, D
+- Assertion-Reasoning: Include at least 2 Assertion-Reasoning type questions within the MCQ section.
+- Follow official CBSE marking scheme distribution
+${weightageContext}
+${ragContext}
+
+STRICT OUTPUT FORMAT:
+Return ONLY a valid JSON object with a "questions" key. Each question object must have:
+{
+  "section": "A" or "B" or "C",
+  "type": "mcq" or "short" or "long",
+  "question": "question text here",
+  "marks": number,
+  "options": ["A text", "B text", "C text", "D text"],
+  "correct_answer": "Option letter (A/B/C/D) for MCQs, or full answer for others"
+}
+
+Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMarks} marks total.`;
 
             const completion = await fetch("https://api.openai.com/v1/chat/completions", {
                 method: "POST",
@@ -75,7 +140,7 @@ Strictly JSON.`;
                 body: JSON.stringify({
                     model: "gpt-4o",
                     messages: [
-                        { role: "system", content: "You are an expert CBSE exam setter. Output strictly JSON." },
+                        { role: "system", content: "You are an expert CBSE exam setter." },
                         { role: "user", content: prompt }
                     ],
                     response_format: { type: "json_object" }
@@ -84,7 +149,8 @@ Strictly JSON.`;
             const data = await completion.json();
             const text = data.choices[0].message.content;
             return new Response(text, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        } else if (action === "ocr") {
+        }
+        else if (action === "ocr") {
             // Optical Character Recognition (Vision)
             const { images } = await req.json(); // Array of base64 strings
             if (!images || !Array.isArray(images)) throw new Error("Images array required");

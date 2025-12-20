@@ -29,8 +29,6 @@ interface Todo {
 }
 
 export default function ToolsScreen() {
-    const [activeTab, setActiveTab] = useState<'timer' | 'todo'>('timer');
-
     // Timer State
     const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
@@ -48,7 +46,6 @@ export default function ToolsScreen() {
     const [priority, setPriority] = useState<Todo['priority']>('medium');
 
     const timerRef = useRef<any>(null);
-    const progressAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         loadData();
@@ -160,173 +157,163 @@ export default function ToolsScreen() {
                 style={StyleSheet.absoluteFill}
             />
 
-            {/* Header Tabs */}
             <View style={styles.header}>
-                <BlurView intensity={80} tint="dark" style={styles.tabContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'timer' && styles.activeTab]}
-                        onPress={() => setActiveTab('timer')}
-                    >
-                        <Ionicons name="timer" size={20} color={activeTab === 'timer' ? Colors.dark.primary : Colors.dark.textSecondary} />
-                        <Text style={[styles.tabText, activeTab === 'timer' && styles.activeTabText]}>Timer</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'todo' && styles.activeTab]}
-                        onPress={() => setActiveTab('todo')}
-                    >
-                        <Ionicons name="list" size={20} color={activeTab === 'todo' ? Colors.dark.primary : Colors.dark.textSecondary} />
-                        <Text style={[styles.tabText, activeTab === 'todo' && styles.activeTabText]}>Tasks</Text>
-                    </TouchableOpacity>
-                </BlurView>
+                <Text style={styles.headerTitle}>Focus Center</Text>
+                <Text style={styles.headerSubtitle}>Timer & Tasks Duo</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {activeTab === 'timer' ? (
-                    <View style={styles.timerCenter}>
-                        <View style={styles.timerCircle}>
-                            <View style={[styles.timerCircleInner, { borderColor: mode === 'work' ? Colors.dark.primary : Colors.dark.accent }]}>
-                                <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-                                <Text style={styles.modeText}>{mode === 'work' ? 'FOCUS' : 'BREAK'}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.controls}>
-                            <TouchableOpacity style={styles.controlBtn} onPress={resetTimer}>
-                                <Ionicons name="refresh" size={28} color={Colors.dark.textSecondary} />
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.playBtn} onPress={toggleTimer}>
-                                <LinearGradient
-                                    colors={isActive ? ['#ff4d4d', '#ff0000'] : [Colors.dark.primary, Colors.dark.secondary]}
-                                    style={styles.playGradient}
-                                >
-                                    <Ionicons name={isActive ? "pause" : "play"} size={32} color="#fff" style={!isActive && { marginLeft: 4 }} />
-                                </LinearGradient>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.controlBtn} onPress={() => setShowSettings(!showSettings)}>
-                                <Ionicons name="settings" size={28} color={Colors.dark.textSecondary} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {showSettings && (
-                            <BlurView intensity={40} style={styles.settingsPanel}>
-                                <Text style={styles.settingsTitle}>Custom Durations</Text>
-                                <View style={styles.settingRow}>
-                                    <View style={styles.settingItem}>
-                                        <Text style={styles.settingLabel}>Focus (min)</Text>
-                                        <TextInput
-                                            style={styles.settingInput}
-                                            value={workMinutes}
-                                            onChangeText={setWorkMinutes}
-                                            keyboardType="numeric"
-                                            placeholderTextColor={Colors.dark.textSecondary}
-                                        />
-                                    </View>
-                                    <View style={styles.settingItem}>
-                                        <Text style={styles.settingLabel}>Break (min)</Text>
-                                        <TextInput
-                                            style={styles.settingInput}
-                                            value={breakMinutes}
-                                            onChangeText={setBreakMinutes}
-                                            keyboardType="numeric"
-                                            placeholderTextColor={Colors.dark.textSecondary}
-                                        />
-                                    </View>
-                                </View>
-                                <TouchableOpacity
-                                    style={styles.applyBtn}
-                                    onPress={() => {
-                                        setShowSettings(false);
-                                        resetTimer();
-                                    }}
-                                >
-                                    <Text style={styles.applyBtnText}>Apply Settings</Text>
-                                </TouchableOpacity>
-                            </BlurView>
-                        )}
-
-                        <View style={styles.statsRow}>
-                            <View style={styles.statCard}>
-                                <Text style={styles.statValue}>{sessionCount}</Text>
-                                <Text style={styles.statLabel}>Sessions</Text>
-                            </View>
-                            <View style={styles.statCard}>
-                                <Text style={styles.statValue}>{sessionCount * parseInt(workMinutes)}</Text>
-                                <Text style={styles.statLabel}>Min Focused</Text>
-                            </View>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                {/* Timer Section */}
+                <View style={styles.timerCenter}>
+                    <View style={styles.timerCircle}>
+                        <View style={[styles.timerCircleInner, { borderColor: mode === 'work' ? Colors.dark.primary : Colors.dark.accent }]}>
+                            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+                            <Text style={styles.modeText}>{mode === 'work' ? 'FOCUS' : 'BREAK'}</Text>
                         </View>
                     </View>
-                ) : (
-                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.todoContent}>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.todoInput}
-                                placeholder="Add a new task..."
-                                placeholderTextColor={Colors.dark.textSecondary}
-                                value={newTodo}
-                                onChangeText={setNewTodo}
-                            />
-                            <TouchableOpacity style={styles.addButton} onPress={addTodo}>
-                                <LinearGradient
-                                    colors={[Colors.dark.primary, Colors.dark.secondary]}
-                                    style={styles.addGradient}
-                                >
-                                    <Ionicons name="add" size={28} color="#fff" />
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        </View>
 
-                        <View style={styles.priorityRow}>
-                            {(['low', 'medium', 'high'] as const).map(p => (
-                                <TouchableOpacity
-                                    key={p}
-                                    style={[styles.priorityBtn, priority === p && styles.priorityBtnActive]}
-                                    onPress={() => setPriority(p)}
-                                >
-                                    <Text style={[styles.priorityBtnText, priority === p && styles.priorityBtnTextActive]}>
-                                        {p.toUpperCase()}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                    <View style={styles.controls}>
+                        <TouchableOpacity style={styles.controlBtn} onPress={resetTimer}>
+                            <Ionicons name="refresh" size={28} color={Colors.dark.textSecondary} />
+                        </TouchableOpacity>
 
-                        {todos.length === 0 ? (
-                            <View style={styles.emptyState}>
-                                <Ionicons name="checkbox-outline" size={64} color={Colors.dark.border} />
-                                <Text style={styles.emptyText}>No tasks yet</Text>
+                        <TouchableOpacity style={styles.playBtn} onPress={toggleTimer}>
+                            <LinearGradient
+                                colors={isActive ? ['#ff4d4d', '#ff0000'] : [Colors.dark.primary, Colors.dark.secondary]}
+                                style={styles.playGradient}
+                            >
+                                <Ionicons name={isActive ? "pause" : "play"} size={32} color="#fff" style={!isActive && { marginLeft: 4 }} />
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.controlBtn} onPress={() => setShowSettings(!showSettings)}>
+                            <Ionicons name="settings" size={28} color={Colors.dark.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {showSettings && (
+                        <BlurView intensity={40} style={styles.settingsPanel}>
+                            <Text style={styles.settingsTitle}>Custom Durations</Text>
+                            <View style={styles.settingRow}>
+                                <View style={styles.settingItem}>
+                                    <Text style={styles.settingLabel}>Focus (min)</Text>
+                                    <TextInput
+                                        style={styles.settingInput}
+                                        value={workMinutes}
+                                        onChangeText={setWorkMinutes}
+                                        keyboardType="numeric"
+                                        placeholderTextColor={Colors.dark.textSecondary}
+                                    />
+                                </View>
+                                <View style={styles.settingItem}>
+                                    <Text style={styles.settingLabel}>Break (min)</Text>
+                                    <TextInput
+                                        style={styles.settingInput}
+                                        value={breakMinutes}
+                                        onChangeText={setBreakMinutes}
+                                        keyboardType="numeric"
+                                        placeholderTextColor={Colors.dark.textSecondary}
+                                    />
+                                </View>
                             </View>
-                        ) : (
-                            todos.map(item => (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    style={styles.todoItem}
-                                    onPress={() => toggleTodo(item.id)}
-                                >
-                                    <BlurView intensity={20} style={styles.todoBlur}>
-                                        <View style={styles.todoLeft}>
-                                            <Ionicons
-                                                name={item.completed ? "checkmark-circle" : "circle-outline"}
-                                                size={24}
-                                                color={item.completed ? Colors.dark.accent : Colors.dark.primary}
-                                            />
-                                            <Text style={[
-                                                styles.todoText,
-                                                item.completed && styles.todoTextCompleted,
-                                                { borderLeftColor: item.priority === 'high' ? '#ef4444' : item.priority === 'medium' ? '#f59e0b' : '#3b82f6' }
-                                            ]}>
-                                                {item.text}
-                                            </Text>
-                                        </View>
-                                        <TouchableOpacity onPress={() => deleteTodo(item.id)}>
-                                            <Ionicons name="trash-outline" size={20} color={Colors.dark.textSecondary} />
-                                        </TouchableOpacity>
-                                    </BlurView>
-                                </TouchableOpacity>
-                            ))
-                        )}
-                    </KeyboardAvoidingView>
-                )}
+                            <TouchableOpacity
+                                style={styles.applyBtn}
+                                onPress={() => {
+                                    setShowSettings(false);
+                                    resetTimer();
+                                }}
+                            >
+                                <Text style={styles.applyBtnText}>Apply Settings</Text>
+                            </TouchableOpacity>
+                        </BlurView>
+                    )}
+
+                    <View style={styles.statsRow}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statValue}>{sessionCount}</Text>
+                            <Text style={styles.statLabel}>Sessions</Text>
+                        </View>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statValue}>{sessionCount * parseInt(workMinutes)}</Text>
+                            <Text style={styles.statLabel}>Min Focused</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Todo Section */}
+                <View style={styles.todoContent}>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="list" size={24} color={Colors.dark.primary} />
+                        <Text style={styles.sectionTitle}>Active Tasks</Text>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.todoInput}
+                            placeholder="Add a new task..."
+                            placeholderTextColor={Colors.dark.textSecondary}
+                            value={newTodo}
+                            onChangeText={setNewTodo}
+                        />
+                        <TouchableOpacity style={styles.addButton} onPress={addTodo}>
+                            <LinearGradient
+                                colors={[Colors.dark.primary, Colors.dark.secondary]}
+                                style={styles.addGradient}
+                            >
+                                <Ionicons name="add" size={28} color="#fff" />
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.priorityRow}>
+                        {(['low', 'medium', 'high'] as const).map(p => (
+                            <TouchableOpacity
+                                key={p}
+                                style={[styles.priorityBtn, priority === p && styles.priorityBtnActive]}
+                                onPress={() => setPriority(p)}
+                            >
+                                <Text style={[styles.priorityBtnText, priority === p && styles.priorityBtnTextActive]}>
+                                    {p.toUpperCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {todos.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="checkbox-outline" size={64} color={Colors.dark.border} />
+                            <Text style={styles.emptyText}>No tasks yet</Text>
+                        </View>
+                    ) : (
+                        todos.map(item => (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={styles.todoItem}
+                                onPress={() => toggleTodo(item.id)}
+                            >
+                                <BlurView intensity={20} style={styles.todoBlur}>
+                                    <View style={styles.todoLeft}>
+                                        <Ionicons
+                                            name={item.completed ? "checkmark-circle" : "circle-outline"}
+                                            size={24}
+                                            color={item.completed ? Colors.dark.accent : Colors.dark.primary}
+                                        />
+                                        <Text style={[
+                                            styles.todoText,
+                                            item.completed && styles.todoTextCompleted,
+                                            { borderLeftColor: item.priority === 'high' ? '#ef4444' : item.priority === 'medium' ? '#f59e0b' : '#3b82f6' }
+                                        ]}>
+                                            {item.text}
+                                        </Text>
+                                    </View>
+                                    <TouchableOpacity onPress={() => deleteTodo(item.id)}>
+                                        <Ionicons name="trash-outline" size={20} color={Colors.dark.textSecondary} />
+                                    </TouchableOpacity>
+                                </BlurView>
+                            </TouchableOpacity>
+                        ))
+                    )}
+                </View>
             </ScrollView>
         </View>
     );
@@ -340,34 +327,18 @@ const styles = StyleSheet.create({
     header: {
         paddingTop: 60,
         paddingHorizontal: 20,
-        zIndex: 10,
+        marginBottom: 20,
     },
-    tabContainer: {
-        flexDirection: 'row',
-        borderRadius: 20,
-        overflow: 'hidden',
-        padding: 5,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+    headerTitle: {
+        color: Colors.dark.text,
+        fontSize: 32,
+        fontWeight: Typography.weights.bold,
     },
-    tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
-        gap: 8,
-        borderRadius: 15,
-    },
-    activeTab: {
-        backgroundColor: 'rgba(0, 243, 255, 0.15)',
-    },
-    tabText: {
-        color: Colors.dark.textSecondary,
-        fontSize: Typography.sizes.sm,
-        fontWeight: Typography.weights.semibold,
-    },
-    activeTabText: {
+    headerSubtitle: {
         color: Colors.dark.primary,
+        fontSize: Typography.sizes.sm,
+        fontWeight: Typography.weights.medium,
+        opacity: 0.8,
     },
     scrollContent: {
         paddingTop: 40,
@@ -511,6 +482,18 @@ const styles = StyleSheet.create({
     },
     todoContent: {
         paddingHorizontal: 20,
+        marginTop: 20,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        color: Colors.dark.text,
+        fontSize: Typography.sizes.lg,
+        fontWeight: Typography.weights.bold,
     },
     inputContainer: {
         flexDirection: 'row',
