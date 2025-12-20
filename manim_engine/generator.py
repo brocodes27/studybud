@@ -78,6 +78,7 @@ SYNTAX RULES:
 2. Multi-line code for clarity
 3. Use \\n between statements
 4. Validate syntax mentally
+5. DO NOT include import, class, or def statements (already imported at top)
 
 === ADVANCED ILLUSTRATION TECHNIQUES ===
 
@@ -320,6 +321,22 @@ def build_scene_code(segments, durations):
         
         # Clean the code
         code = code.strip()
+        
+        # Remove problematic statements that shouldn't be in construct()
+        if code:
+            # Remove import statements, class definitions, function definitions
+            code_lines = code.split('\n')
+            cleaned_lines = []
+            for line in code_lines:
+                stripped = line.strip()
+                # Skip import statements, class/function definitions
+                if (stripped.startswith('from ') or 
+                    stripped.startswith('import ') or
+                    stripped.startswith('class ') or
+                    stripped.startswith('def ')):
+                    continue
+                cleaned_lines.append(line)
+            code = '\n'.join(cleaned_lines).strip()
         
         # Validate and sanitize code
         if code:
