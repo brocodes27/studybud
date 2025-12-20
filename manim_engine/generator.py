@@ -59,11 +59,11 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""You are an EXPERT Manim animator creating PREMIUM educational videos with RICH, DETAILED visuals.
+    prompt = f"""You are an EXPERT Manim animator creating CINEMATIC educational videos with CONTEXTUAL, NARRATIVE-DRIVEN visuals.
 
-Generate segments with ACTUAL Manim animation code that creates PROFESSIONAL-QUALITY diagrams, graphs, and structures.
+CRITICAL: Create visuals that MATCH the narration content EXACTLY. If talking about a bicycle, DRAW a bicycle. If discussing a tree, DRAW a tree. Don't show generic shapes - create ILLUSTRATIVE, CONTEXTUAL scenes.
 
-Return JSON only in this schema:
+Return JSON only:
 {{
   "segments": [
     {{
@@ -73,110 +73,148 @@ Return JSON only in this schema:
   ]
 }}
 
-CRITICAL SYNTAX RULES:
-1. VALIDATE all parentheses, brackets, braces are balanced
-2. Use MULTIPLE LINES - write clear, readable code
-3. Split complex statements across lines
-4. Double-check Python syntax before responding
-5. Use newline characters (\\n) to separate statements
+SYNTAX RULES (MUST FOLLOW):
+1. Balance ALL parentheses, brackets, braces
+2. Write MULTI-LINE code (avoid one-liners)
+3. Use \\n to separate statements
+4. Test Python syntax mentally before responding
 
-=== SUBJECT-SPECIFIC VISUAL BLUEPRINTS ===
+=== CONTEXTUAL VISUAL CREATION ===
 
-📗 CHEMISTRY:
-- Molecular structures: Use Circle() for atoms with Text labels (H, C, O, N)
-- Bonds: Use Line() between atoms (single, double=parallel lines, triple=3 lines)
-- Reactions: Arrow() pointing from reactants to products with "+" between compounds
-- Formulas: MathTex(r"H_2O", r"CO_2", r"C_6H_{{12}}O_6") - escape braces!
-- Energy diagrams: Axes with energy levels shown as horizontal lines
-- Electron shells: Dashed Circle() around nucleus
+🎯 CORE PRINCIPLE: Visual should ILLUSTRATE what narration describes
+
+If narration says...  →  Create this visual:
+- "Person riding bicycle" → Draw stick figure on bicycle (circles for wheels, lines for frame)
+- "Water evaporating" → Show water molecules (dots) rising with arrow
+- "Tree absorbing sunlight" → Draw tree outline with sun rays as arrows
+- "Heart pumping blood" → Show heart shape with arrows indicating flow
+- "Ball rolling down ramp" → Draw ramp (line) with circle rolling
+- "DNA replicating" → Show double helix splitting and copying
+- "Light reflecting off mirror" → Draw mirror line with arrow bouncing
+- "Supply and demand curves" → Draw actual crossing curves on axes
+
+VISUAL CONSTRUCTION EXAMPLES:
+
+🚴 BICYCLE:
+```
+wheel1 = Circle(radius=0.5, color=WHITE)
+wheel2 = Circle(radius=0.5, color=WHITE).shift(RIGHT*2)
+frame = VGroup(
+    Line(wheel1.get_top(), wheel2.get_top()),
+    Line(wheel1.get_center(), wheel1.get_top() + UP*0.5),
+    Line(wheel2.get_center(), wheel1.get_top() + UP*0.5)
+)
+person = VGroup(
+    Circle(radius=0.2, color=YELLOW, fill_opacity=1).shift(UP*1.5),
+    Line(UP*1.3, UP*0.7),
+    Line(UP*0.7, UP*0.7 + LEFT*0.3 + DOWN*0.3),
+    Line(UP*0.7, UP*0.7 + RIGHT*0.3 + DOWN*0.3)
+).shift(RIGHT)
+self.play(Create(wheel1), Create(wheel2))
+self.play(Create(frame))
+self.play(Create(person))
+```
+
+🌳 TREE WITH PHOTOSYNTHESIS:
+```
+trunk = Line(DOWN*2, UP, color=BROWN_E)
+leaves = VGroup(*[Circle(radius=0.3, color=GREEN, fill_opacity=0.8).shift(UP + dir) for dir in [LEFT*0.5, RIGHT*0.5, UP*0.3]])
+sun = Circle(radius=0.4, color=YELLOW, fill_opacity=1).to_edge(UP+RIGHT)
+rays = VGroup(*[Arrow(sun.get_center(), trunk.get_top() + dir, color=YELLOW) for dir in [LEFT*0.2, ORIGIN, RIGHT*0.2]])
+co2_label = MathTex(r"CO_2", color=BLUE).next_to(trunk, LEFT)
+o2_label = MathTex(r"O_2", color=GREEN).next_to(leaves, UP)
+self.play(Create(trunk), Create(leaves))
+self.play(FadeIn(sun), Create(rays))
+self.play(Write(co2_label), Write(o2_label))
+```
+
+=== SUBJECT-SPECIFIC BLUEPRINTS ===
+
+� CHEMISTRY:
+- Molecules: Circle atoms + Line bonds + Text labels
+- Reactions: Show transformation with Transform() or arrows
+- pH scale: NumberLine with color gradient
 Example:
 ```
-carbon = Circle(radius=0.3, color=BLUE, fill_opacity=1)
-c_label = Text("C", font_size=20).move_to(carbon)
-hydrogen = Circle(radius=0.2, color=WHITE, fill_opacity=1).shift(RIGHT*0.8)
-h_label = Text("H", font_size=16).move_to(hydrogen)
-bond = Line(carbon.get_right(), hydrogen.get_left(), color=GREY)
-self.play(Create(carbon), Write(c_label))
-self.play(Create(hydrogen), Write(h_label), Create(bond))
+h2o = VGroup(
+    Circle(radius=0.2, color=RED, fill_opacity=1),
+    Circle(radius=0.15, color=WHITE, fill_opacity=1).shift(LEFT*0.4+UP*0.2),
+    Circle(radius=0.15, color=WHITE, fill_opacity=1).shift(RIGHT*0.4+UP*0.2)
+)
+label = MathTex(r"H_2O").next_to(h2o, DOWN)
+self.play(Create(h2o), Write(label))
 ```
 
 📘 PHYSICS:
-- Forces: Arrow() with labels showing F, mg, N, etc.
-- Vectors: Arrow() with magnitude labels using MathTex
-- Trajectories: Parametric curves using ParametricFunction()
-- Fields: Many small arrows arranged in grid using VGroup
-- Circuits: Rectangle() for batteries, zigzag Line() for resistors
-- Waves: Axes with sine/cosine graphs
+- Motion: Show object with velocity vector (Arrow)
+- Forces: Multiple arrows on object with labels
+- Energy: Bar charts or potential wells
 Example:
 ```
-axes = Axes(x_range=[0, 4, 1], y_range=[-2, 2, 1], x_length=8, y_length=4)
-wave = axes.plot(lambda x: np.sin(2*np.pi*x), color=BLUE)
-wavelength = DoubleArrow(start=axes.c2p(0, -1.5), end=axes.c2p(1, -1.5), color=RED)
-lambda_label = MathTex(r"\\lambda").next_to(wavelength, DOWN)
-self.play(Create(axes))
-self.play(Create(wave), Create(wavelength), Write(lambda_label))
+box = Square(side_length=1, color=BLUE, fill_opacity=0.5)
+force = Arrow(start=box.get_right(), end=box.get_right()+RIGHT*2, color=RED)
+f_label = MathTex(r"F").next_to(force, UP)
+velocity = Arrow(start=box.get_center(), end=box.get_center()+RIGHT, color=GREEN)
+v_label = MathTex(r"v").next_to(velocity, DOWN)
+self.play(Create(box))
+self.play(Create(force), Write(f_label))
+self.play(Create(velocity), Write(v_label))
 ```
 
 📙 MATHEMATICS:
-- Functions: Axes() with plot() for graphs - ALWAYS show axes
-- Geometry: Polygon(), Circle(), Line() with angle marks
-- Calculus: Show area under curves with rectangles
-- Algebra: Equation transformations using MathTex with arrows between steps
-- Number line: NumberLine() for real numbers, inequalities
-- 3D graphs: Use ThreeDScene when relevant
+- Graphs: ALWAYS use Axes with proper labels
+- Geometry: Actual geometric constructions
+- Transformations: Show before and after with arrows
 Example:
 ```
-axes = Axes(x_range=[-3, 3, 1], y_range=[-1, 5, 1], axis_config={{"include_tip": True}})
-parabola = axes.plot(lambda x: x**2, color=YELLOW)
-vertex = Dot(axes.c2p(0, 0), color=RED)
-equation = MathTex(r"f(x) = x^2").to_edge(UP)
+axes = Axes(x_range=[-5, 5, 1], y_range=[-2, 10, 2], x_length=7, y_length=5)
+curve = axes.plot(lambda x: x**2, color=YELLOW)
+point = Dot(axes.c2p(2, 4), color=RED)
+tangent = axes.plot(lambda x: 4*x - 4, color=GREEN, x_range=[1, 3])
+title = Text("Derivative at x=2", font_size=28).to_edge(UP)
 self.play(Create(axes))
-self.play(Create(parabola), Write(equation))
-self.play(FadeIn(vertex))
+self.play(Create(curve), Write(title))
+self.play(FadeIn(point), Create(tangent))
 ```
 
 📕 BIOLOGY:
-- Cells: Circle() with organelles inside (smaller circles, ovals)
-- DNA: Double helix using two curved lines with connecting segments
-- Processes: Flow diagrams with arrows showing sequences
-- Body systems: Labeled diagrams using shapes and Text
-- Graphs: Population curves, enzyme activity using Axes
+- Organisms: Simple drawings using shapes
+- Processes: Show steps with arrows
+- Systems: Labeled component diagrams
 Example:
 ```
-cell = Circle(radius=2, color=GREEN)
-nucleus = Circle(radius=0.6, color=PURPLE, fill_opacity=0.7).shift(LEFT*0.5)
-mitochondria = Ellipse(width=0.4, height=0.2, color=RED, fill_opacity=0.6).shift(RIGHT*0.8)
-labels = VGroup(
-    Text("Cell", font_size=20).next_to(cell, UP),
-    Text("Nucleus", font_size=16).next_to(nucleus, LEFT, buff=0.1),
-    Text("Mitochondria", font_size=16).next_to(mitochondria, RIGHT, buff=0.1)
-)
-self.play(Create(cell))
+cell_membrane = Circle(radius=2, color=BLUE)
+cytoplasm = Circle(radius=1.9, color=BLUE, fill_opacity=0.2)
+nucleus = Circle(radius=0.7, color=PURPLE, fill_opacity=0.7)
+mitochondria = Ellipse(width=0.5, height=0.25, color=RED, fill_opacity=0.6).shift(RIGHT+UP*0.5)
+labels = VGroup(Text("Nucleus", font_size=18).next_to(nucleus, DOWN, buff=0.1))
+self.play(Create(cell_membrane), Create(cytoplasm))
 self.play(Create(nucleus), Create(mitochondria))
 self.play(Write(labels))
 ```
 
-ANIMATION RULES:
-1. ALWAYS create visual diagrams - NO text-only slides
-2. Use proper colors: BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE
-3. Add labels with Text() or MathTex() positioned with .next_to()
-4. Animate creation: Create() for shapes, Write() for text/math
-5. Show relationships with Line(), Arrow(), DashedLine()
-6. Use VGroup() to group related objects
-7. Position with: .to_edge(UP/DOWN/LEFT/RIGHT), .shift(), .next_to()
-8. Keep code SIMPLE and MULTI-LINE
+ANIMATION FLOW RULES:
+1. Create contextual visuals that MATCH narration
+2. Use Transform() to morph between related concepts  
+3. Use .animate to show smooth changes
+4. Keep some elements on screen for continuity
+5. Add descriptive Text labels for clarity
+6. Use VGroup to organize related parts
+7. Color-code related concepts consistently
 
-MANDATORY FOR EVERY SEGMENT:
-- Create at least ONE visual diagram/graph/structure
-- Add descriptive labels
-- Use appropriate colors
-- Animate the creation (don't just add())
+MANDATORY EVERY SEGMENT:
+✓ Create scene that illustrates the narration topic
+✓ Use shapes to represent real objects/concepts
+✓ Add clear labels with Text() or MathTex()
+✓ Animate creation smoothly
+✓ Use appropriate colors and positioning
 
 Rules:
-- 6 to 10 segments total
+- 6-10 segments total
 - Each voiceover 20-45 seconds
-- WRITE SIMPLE, CLEAR, MULTI-LINE CODE
-- DOUBLE-CHECK syntax before returning
+- CONTEXTUAL visuals matching narration
+- SIMPLE, CLEAR, MULTI-LINE code
+- DOUBLE-CHECK syntax
 
 Topic: {topic}
 Script:
@@ -279,9 +317,9 @@ def build_scene_code(segments, durations):
             f"        # Segment {i+1} - Duration: {dur:.2f}s",
             indented_code,
             f"        self.wait({dur:.2f})",
-            "        # Clear for next segment",
+            "        # Gentle transition to next segment",
             "        if self.mobjects:",
-            "            self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.3)",
+            "            self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.2)",
             ""
         ]
 
