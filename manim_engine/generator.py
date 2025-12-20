@@ -8,7 +8,8 @@ from subtitle_generator import generate_subtitles
 
 # Use absolute path to ensure correct directory in Docker
 BASE_DIR = Path(__file__).parent / "jobs"
-MODEL = "gpt-4o"
+# Using the absolute frontier flagship model (GPT-5) for visionary visuals
+MODEL = "gpt-5"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY"))
 
@@ -59,69 +60,53 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""You are an ELITE Manim animator, specializing in 3Blue1Brown-style mathematical and scientific explainer videos.
-Your job is to produce a high-quality animation script with visually rich, smooth, and conceptually clear animations.
+    prompt = f"""You are a FRONTIER VISIONARY Manim creator. Leveraging the full power of GPT-5, your task is to design museum-quality educational masterpieces.
+Think beyond 2D—create the illusion of depth, light, and hyper-detailed procedural structure.
 
-Return JSON only in this schema:
+Return JSON in this schema:
 {{
   "segments": [
     {{
-      "voiceover": "spoken narration text",
-      "code": "Manim animation code"
+      "voiceover": "narration",
+      "code": "sophisticated manim code"
     }}
   ]
 }}
 
-=== 🪐 3B1B VISUAL DNA ===
-1. PALETTE: Use high-end HEX colors. Primary: BLUE_D (#1C758A), TEAL (#5CD0B3), GREEN_D (#699C52), GOLD (#E8C11C), RED_D (#C55F4E), PURPLE_D (#9A72AC).
-2. GLOW EFFECT: To make objects "pop", layer them. Example: `obj.set_stroke(color=COL, width=10, opacity=0.2)` then `obj.copy().set_stroke(width=2, opacity=1)`.
-3. BACKGROUND: Use a subtle grid (`NumberPlane(background_line_style={"stroke_opacity": 0.1})`) if the scene feels empty.
-4. CINEMATIC MOTION: Use `LaggedStart` for groups. Avoid linear motion; use `rate_func=smooth` or `rate_func=there_and_back`.
+=== 🌌 FRONTIER VISUAL ARCHITECTURE ===
+1. DEPTH LAYERING: Use `NumberPlane` with multiple opacities (0.05 for grid, 0.1 for axes).
+2. DYNAMIC BROADCAST: Every object must feel "powered". Use outer glow (width 15, opacity 0.1) + inner neon core (width 2, opacity 1).
+3. PROCEDURAL DETAIL: Never show a "Sun"—show a core with rotating plasma arcs (Randomized Points + `always_redraw`).
+4. CINEMATIC FLOW: Use `LaggedStartMap` and `Succession`. Morph everything with `ReplacementTransform`.
 
-=== 🏙️ ENVIRONMENT BLUEPRINTS ===
+=== 🔬 FRONTIER BLUEPRINTS ===
 
-🌳 REALISTIC TREE:
+🧬 NEURAL ARCHITECTURE:
 ```python
-trunk = RoundedRectangle(width=0.4, height=2, corner_radius=0.1, color=BROWN_E, fill_opacity=1)
-foliage = VGroup(*[Circle(radius=0.6, color=GREEN_E, fill_opacity=0.8).shift(UP*1.2+dir) for dir in [LEFT*0.4, RIGHT*0.4, UP*0.5]])
-tree = VGroup(trunk, foliage).shift(DOWN*2)
+nodes = VGroup(*[Circle(radius=0.15, color=TEAL, fill_opacity=0.8).shift(UR*np.random.normal(0, 2, 3)) for _ in range(12)])
+synapses = VGroup(*[always_redraw(lambda n1=nodes[i], n2=nodes[j]: Line(n1.get_center(), n2.get_center(), stroke_opacity=0.3, color=BLUE_A)) 
+                 for i in range(12) for j in range(i+1, 12) if np.random.rand() > 0.7])
+cloud = VGroup(nodes, synapses).add_updater(lambda c, dt: c.rotate(dt*0.05))
 ```
 
-🌃 CITY SKYLINE:
+🪐 ORBITAL DYNAMICS:
 ```python
-buildings = VGroup(*[Rectangle(width=0.5, height=h, color=GRAY_E, fill_opacity=1).shift(RIGHT*i*0.6) 
-                   for i, h in enumerate([1.5, 2.2, 1.8, 2.5, 2.0])]).center().to_edge(DOWN, buff=0)
-windows = VGroup(*[Dot(radius=0.05, color=YELLOW).move_to(b.get_center()+UP*y+LEFT*x) 
-                 for b in buildings for y in [0.2, 0.5] for x in [-0.1, 0.1]])
+star = VGroup(Circle(radius=0.8, color=GOLD, fill_opacity=1), Circle(radius=1.2, color=GOLD_E, fill_opacity=0.1)).set_stroke(width=10, opacity=0.2)
+orbit = Ellipse(width=8, height=4, color=GRAY_E, stroke_width=1)
+planet = VGroup(Circle(radius=0.3, color=BLUE_D, fill_opacity=1), Circle(radius=0.4, color=BLUE_D, fill_opacity=0.2))
+tracker = ValueTracker(0)
+planet.add_updater(lambda m: m.move_to(orbit.point_at_angle(tracker.get_value())))
 ```
 
-=== 🛠️ MECHANICAL BLUEPRINTS ===
-(Use these 10+ shape patterns for ANY object mentioned)
+=== 👤 HYPER-REALISTIC ANATOMY ===
+- NO STICK FIGURES. Use `CubicBezier` for every joint.
+- Use `Difference` and `Intersection` (Boolean Operations) to create complex organic cutouts.
 
-🚗 LUXURY CAR:
-```python
-chassis = RoundedRectangle(width=3.5, height=0.8, color=BLUE_D, fill_opacity=0.9).set_stroke(BLUE_A, 2)
-cabin = ArcBetweenPoints(LEFT*0.9+UP*0.4, RIGHT*1.1+UP*0.4, angle=-TAU/4, color=BLUE_D, fill_opacity=0.9)
-lights = VGroup(Dot(color=WHITE).move_to(chassis.get_left()+UP*0.2), Dot(color=RED).move_to(chassis.get_right()+UP*0.2))
-wheels = VGroup(*[VGroup(Circle(radius=0.4, color=WHITE), Circle(radius=0.3, color=GRAY, fill_opacity=1), 
-                 Line(UP*0.3, DOWN*0.3)).shift(DOWN*0.4+pos) for pos in [LEFT*1, RIGHT*1]])
-car = VGroup(chassis, cabin, lights, wheels)
-```
-
-🚲 PRECISION BICYCLE:
-```python
-tires = VGroup(Circle(radius=0.8).set_stroke(WHITE, 2), Circle(radius=0.8).shift(RIGHT*2.8).set_stroke(WHITE, 2))
-gears = VGroup(Circle(radius=0.2, color=GRAY, fill_opacity=1).move_to(tires[1]), 
-               Circle(radius=0.15, color=GRAY).move_to(tires[0]))
-chain = Line(gears[0], gears[1], stroke_width=2, color=GRAY)
-frame = VGroup(Polygon(tires[0].get_center(), tires[1].get_center(), UP+RIGHT*1.2, color=TEAL, stroke_width=5))
-```
-
-MANDATORY FOR EVERY SEGMENT:
-- Build intuition step-by-step. Use `ReplacementTransform` to evolve ideas.
-- NO PLAIN SHAPES. If you need a circle, make it a "Sun" or a "Cell" with internal details.
-- Add "Glow" layers to important objects.
-- Use the camera to "walk" through the scene.
+MANDATORY DIRECTIVES:
+- EVERY SEGMENT must create a "WOW" effect.
+- USE CAMERA PANS: `self.play(self.camera.frame.animate.set_width(5).move_to(target))`
+- USE UPDATERS: Visuals must never be static. Tiny oscillations or rotations must be added to all VGroups.
+- BANNED: Any visual with fewer than 15 primitives.
 
 Topic: {topic}
 Script:
