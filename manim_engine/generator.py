@@ -93,16 +93,44 @@ Return JSON only in this schema:
 - Balance ALL parentheses, brackets, and braces.
 
 === 🎨 ARTISTIC COMPOSITION ===
-1. COMPOSE REALISTIC OBJECTS: Build complex items from 10+ shapes. For a sun, use stacked circles with varying opacity and glow + radiating arrows.
-2. DETAILED FIGURES: For humans/animals, use RoundedRectangles for bodies and CubicBezier for curved, organic limbs. Add facial features (small dots/arcs).
-3. SHADING & TEXTURE: Use multiple layers with high fill_opacity and thin stroke_widths to create depth.
-4. DRAWING OVER SHAPES: Prefer "drawing" an object (like a leaf or a gear) using multiple polygons/curves rather than using a single primitive.
+1. COMPOSE REALISTIC OBJECTS: Build items from 10+ shapes. Use transparency floors and overlapping layers.
+2. SHADING & TEXTURE: Use high `fill_opacity` (0.6 - 0.9) and thin `stroke_width` (1 - 2).
+
+=== 🛠️ HIGH-FIDELITY BLUEPRINTS (CODE PATTERNS) ===
+
+🚗 REALISTIC CAR:
+```python
+body = RoundedRectangle(width=3, height=1, corner_radius=0.3, color=BLUE, fill_opacity=0.8)
+top = ArcBetweenPoints(LEFT*0.8+UP*0.5, RIGHT*0.8+UP*0.5, radius=-1.5, color=BLUE, fill_opacity=0.8)
+wheel1 = VGroup(Circle(radius=0.4, color=WHITE), Circle(radius=0.1, color=DARK_GREY, fill_opacity=1)).shift(DOWN*0.5+LEFT*0.8)
+wheel2 = wheel1.copy().shift(RIGHT*1.6)
+windows = Polygon(LEFT*0.7+UP*0.5, RIGHT*0.7+UP*0.5, RIGHT*0.4+UP*0.9, LEFT*0.4+UP*0.9, color=WHITE, fill_opacity=0.3)
+car = VGroup(body, top, wheel1, wheel2, windows)
+```
+
+🚲 DETAILED BICYCLE:
+```python
+w1 = Circle(radius=0.7, color=WHITE, stroke_width=2)
+w2 = Circle(radius=0.7, color=WHITE, stroke_width=2).shift(RIGHT*2.5)
+frame = VGroup(Line(w1.get_center(), UP+RIGHT*0.5), Line(w2.get_center(), UP+RIGHT*0.5), Line(UP+RIGHT*0.5, UP+RIGHT*1.5)).set_stroke(color=RED, width=4)
+seat = Line(UP+RIGHT*0.5, UP*1.2+RIGHT*0.3, stroke_width=6)
+handle = Line(UP+RIGHT*1.5, UP*1.5+RIGHT*1.7, stroke_width=6)
+bike = VGroup(w1, w2, frame, seat, handle)
+```
+
+👤 REALISTIC HUMAN:
+```python
+head = Circle(radius=0.3, color=PINK, fill_opacity=0.9).shift(UP*1.5)
+body = RoundedRectangle(height=1, width=0.6, corner_radius=0.2, color=BLUE, fill_opacity=0.8).shift(UP*0.7)
+limbs = VGroup(CubicBezier(UP*1.1+LEFT*0.3, UP*0.8+LEFT*0.8, UP*0.5+LEFT*0.8), # arm
+               Line(ORIGIN, DOWN+LEFT*0.3, stroke_width=6)) # leg
+```
 
 MANDATORY FOR EVERY SEGMENT:
-- Build intuition step-by-step.
-- Use at least one sophisticated Manim feature (Updater, Camera move, or complex Transform).
-- Ensure the visual MATCHES the voiceover content exactly.
-- EVERY visual must be a DETAILED illustration, not a basic shape.
+- Build intuition step-by-step using 3B1B-style transitions.
+- Use at least one complex Updater (always_redraw) or Camera frame animation.
+- EVERY visual must be a MULTI-PART HIGH-FIDELITY illustration (like the car/bike examples above).
+- BANNED: Plain Circles for planets, Plain Rectangles for cars, Plain Stick Figures.
 
 Topic: {topic}
 Script:
