@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Brain, FileText, Zap, Target } from 'lucide-react';
+import { Brain, FileText, Zap, Target, Timer, ListTodo } from 'lucide-react';
 
 import { FlashcardGenerator } from '../components/FlashcardGenerator';
 import { PracticeTestEngine } from '../components/PracticeTestEngine';
 import { QuestionGenerator } from '../components/QuestionGenerator';
+import { PomodoroTimer } from '../components/PomodoroTimer';
+import { TodoTracker } from '../components/TodoTracker';
 
 export function StudyTools() {
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions' | 'pomodoro' | 'todo'>('flashcards');
 
   const tabs = [
     {
@@ -32,6 +34,22 @@ export function StudyTools() {
       description: 'AI-generated questions',
       color: 'from-neon-purple to-purple-600',
       iconColor: 'text-neon-purple'
+    },
+    {
+      id: 'pomodoro' as const,
+      label: 'Focus Timer',
+      icon: Timer,
+      description: 'Deep work sessions',
+      color: 'from-orange-500 to-red-600',
+      iconColor: 'text-orange-500'
+    },
+    {
+      id: 'todo' as const,
+      label: 'Study Tasks',
+      icon: ListTodo,
+      description: 'Organize your goals',
+      color: 'from-pink-500 to-rose-600',
+      iconColor: 'text-pink-500'
     }
   ];
 
@@ -65,8 +83,8 @@ export function StudyTools() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 relative overflow-hidden group ${isActive
-                      ? 'bg-white/10 text-white shadow-lg border border-white/10'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-white/10 text-white shadow-lg border border-white/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
                     }`}
                 >
                   {isActive && (
@@ -92,6 +110,8 @@ export function StudyTools() {
           {activeTab === 'flashcards' && <FlashcardGenerator />}
           {activeTab === 'tests' && <PracticeTestEngine />}
           {activeTab === 'ai-questions' && <QuestionGenerator />}
+          {activeTab === 'pomodoro' && <PomodoroTimer />}
+          {activeTab === 'todo' && <TodoTracker />}
         </div>
       </div>
     </div>
