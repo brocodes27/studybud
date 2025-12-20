@@ -17,7 +17,7 @@ except ImportError:
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from audio_engine import generate_audio
 
-# ================= OPENAI CLIENT =================
+# ================= OPENAI =================
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY")
@@ -26,17 +26,14 @@ client = OpenAI(
 # ================= SYSTEM PROMPT =================
 
 MANIM_PROMPT = r"""
-You are generating Manim code for 3Blue1Brown-style educational videos.
+Return ONLY JSON. No markdown. No explanations.
 
-STRICT RULES:
-- Return ONLY valid JSON
-- NO markdown, NO explanations
-- One visual idea per segment
-- Always position objects explicitly
-- DO NOT use Angle() directly (use placeholder, engine will handle safely)
-- No SVGMobject
-- No nested functions
-- Use MathTex for math
+You are generating Manim code for 3Blue1Brown-style videos.
+
+The output MUST contain a list of segments.
+Each segment MUST have:
+- text (string)
+- code (string)
 """
 
 # ================= JSON EXTRACTION =================
@@ -45,7 +42,7 @@ def extract_json_object(text: str):
     text = text.replace("```json", "").replace("```", "")
     start = text.find("{")
     if start == -1:
-        raise ValueError("No JSON object found")
+        raise ValueError("No JSON found")
 
     depth = 0
     for i in range(start, len(text)):
@@ -55,9 +52,36 @@ def extract_json_object(text: str):
             depth -= 1
 
         if depth == 0:
-            return json.loads(text[start:i+1])
+            return json.loads(text[start:i + 1])
 
     raise ValueError("Unbalanced JSON")
+
+# ================= SEGMENT NORMALIZATION =================
+
+def find_segments(obj):
+    """
+    Recursively search for a valid segments list.
+    """
+    if isinstance(obj, dict):
+        if "segments" in obj:
+            segs = obj["segments"]
+            if isinstance(segs, list):
+                return segs
+            elif isinstance(segs, dict):
+                return [segs]
+
+        for v in obj.values():
+            found = find_segments(v)
+            if found:
+                return found
+
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_segments(item)
+            if found:
+                return found
+
+    return None
 
 # ================= CODE CLEANER =================
 
@@ -74,7 +98,6 @@ def clean_code_block(code: str) -> str:
         if l.startswith("class ") or l.startswith("def construct"):
             continue
 
-        # Safety replacements
         if "Angle(" in line:
             line = line.replace("Angle(", "self.safe_angle(")
 
@@ -93,9 +116,7 @@ def clean_code_block(code: str) -> str:
     if not cleaned:
         return ""
 
-    return "\n".join(
-        "        " + ln if ln.strip() else "" for ln in cleaned.split("\n")
-    )
+    return "\n".join("        " + ln if ln.strip() else "" for ln in cleaned.split("\n"))
 
 # ================= FFMPEG =================
 
@@ -112,26 +133,54 @@ def setup_ffmpeg():
 # ================= AI CALL =================
 
 def get_segments_from_ai(topic, script_text, retries=3):
+    last_error = None
+
     for attempt in range(retries):
         try:
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": MANIM_PROMPT},
-                    {"role": "user", "content": f"Topic: {topic}\n\nSCRIPT:\n{script_text}"}
+                    {
+                        "role": "user",
+                        "content": f"""
+Topic: {topic}
+
+SCRIPT:
+{script_text}
+
+Split into 8–14 segments.
+"""
+                    },
                 ],
                 temperature=0.3,
-                max_tokens=4500
+                max_tokens=4500,
             )
 
-            data = extract_json_object(response.choices[0].message.content)
-            return data["segments"]
+            raw = response.choices[0].message.content
+            data = extract_json_object(raw)
+
+            segments = find_segments(data)
+            if not segments:
+                raise KeyError("segments")
+
+            # Final validation
+            valid = [
+                s for s in segments
+                if isinstance(s, dict) and "text" in s and "code" in s
+            ]
+
+            if not valid:
+                raise ValueError("No valid segments")
+
+            return valid
 
         except Exception as e:
+            last_error = e
             print(f"⚠️ AI parse failed ({attempt+1}/{retries}): {e}")
             time.sleep(1)
 
-    raise RuntimeError("AI failed to return valid JSON")
+    raise RuntimeError(f"AI failed to return usable segments: {last_error}")
 
 # ================= MAIN PIPELINE =================
 
@@ -142,8 +191,6 @@ def generate_scene_and_audio(topic, script_text, job_dir=None):
 
     segments = get_segments_from_ai(topic, script_text)
 
-    # -------- MANIM TEMPLATE --------
-
     scene_code = """from manim import *
 import numpy as np
 
@@ -153,7 +200,6 @@ class GeneratedScene(Scene):
         try:
             return Angle(line1, line2, **kwargs)
         except Exception:
-            # Graceful fallback: no angle drawn
             return VGroup()
 
     def clear_except(self, *keep):
@@ -172,8 +218,6 @@ class GeneratedScene(Scene):
     shutil.rmtree(temp_audio, ignore_errors=True)
     os.makedirs(temp_audio, exist_ok=True)
 
-    # -------- SEGMENTS --------
-
     for i, seg in enumerate(segments, start=1):
         text = seg["text"]
         code = clean_code_block(seg["code"])
@@ -181,7 +225,7 @@ class GeneratedScene(Scene):
         audio_path = os.path.join(temp_audio, f"seg_{i}.mp3")
         generate_audio(text, audio_path)
         audio = AudioSegment.from_file(audio_path)
-        duration = len(audio) / 1000
+        duration = len(audio) / 1000.0
 
         scene_code += f"""
         # ===== Segment {i} =====
@@ -195,8 +239,6 @@ class GeneratedScene(Scene):
 
     shutil.rmtree(temp_audio, ignore_errors=True)
 
-    # -------- WRITE OUTPUT --------
-
     with open(os.path.join(base_path, "scene.py"), "w", encoding="utf-8") as f:
         f.write(scene_code)
 
@@ -205,7 +247,7 @@ class GeneratedScene(Scene):
     with open(os.path.join(base_path, "narration.txt"), "w", encoding="utf-8") as f:
         f.write(narration_text.strip())
 
-    print("✅ Render-safe Manim scene generated")
+    print("✅ Generation successful — schema-robust, crash-proof")
 
 # ================= CLI =================
 
