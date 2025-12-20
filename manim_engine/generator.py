@@ -59,11 +59,10 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""You are an ELITE Manim animator creating SOPHISTICATED, DETAILED educational illustrations.
+    prompt = f"""You are an ELITE Manim animator, specializing in 3Blue1Brown-style mathematical and scientific explainer videos.
+Your job is to produce a high-quality animation script with visually rich, smooth, and conceptually clear animations.
 
-CRITICAL: Create DETAILED, REALISTIC-LOOKING illustrations, NOT basic shapes. Use curves, complex compositions, and artistic techniques to make visuals look PROFESSIONAL and ORGANIC.
-
-Return JSON only:
+Return JSON only in this schema:
 {{
   "segments": [
     {{
@@ -73,182 +72,35 @@ Return JSON only:
   ]
 }}
 
-SYNTAX RULES:
-1. Balance ALL parentheses, brackets, braces
-2. Multi-line code for clarity
-3. Use \\n between statements
-4. Validate syntax mentally
-5. DO NOT include import, class, or def statements (already imported at top)
-6. CRITICAL: Use MathTex(r"...") for ANY text with math symbols: ^, _, \\, {{, }}
-   - Text() for plain text labels
-   - MathTex(r"x^2") for formulas, chemical formulas, superscripts/subscripts
-   - NEVER use Tex() - it will cause LaTeX errors
+=== 🪐 3B1B VISUAL DNA ===
+1. PREFER: Dark background, vivid but limited color palette (BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE).
+2. SMOOTH TRANSITIONS: Use Transform, ReplacementTransform, and .animate instead of hard cuts. Build the key picture gradually.
+3. CONTINUOUS MOTION: Use ValueTracker and always_redraw for updaters (e.g., a point moving along a curve, tracing a path).
+4. CAMERA ANIMATIONS: self.play(self.camera.frame.animate.scale(0.8).move_to(target)) to focus on details.
+5. GROUPING & LAYOUT: Use VGroup, .arrange, .to_edge, .next_to to keep things premium.
+6. EMPHASIS: Use SurroundingRectangle, Indicate, or Circumscribe when highlighting key terms or features.
 
-=== ADVANCED ILLUSTRATION TECHNIQUES ===
+=== 🧪 SUBJECT-SPECIFIC BLUEPRINTS ===
+- CHEMISTRY: Realistic molecular builds, reacting via Transforms, energy levels on Axes.
+- PHYSICS: Force vectors with updaters, trajectories via ParametricFunction, field VGroups.
+- MATHEMATICS: Axes/NumberPlane with labels, updaters for moving points, MathTex formulas.
+- BIOLOGY: Organic shapes using CubicBezier/Arc, layered membranes, labeled organelle VGroups.
 
-� CREATE DETAILED, ORGANIC VISUALS:
-- Use CubicBezier() and Arc() for smooth, curved lines
-- Layer multiple shapes for depth and detail
-- Use fill_opacity to create shading and dimension
-- Combine 10-20+ small shapes to create complex objects
-- Use color gradients and varied opacity
-- Add texture with patterns of small elements
+=== 📝 SYNTAX & STRUCTURE ===
+- NO imports, class, or def statements inside segments.
+- Use MULTI-LINE code. Separated by \\n.
+- DO NOT clear the screen automatically; maintain visual continuity across segments. Transform or FadeOut specific objects only when they are no longer needed.
+- Balance ALL parentheses, brackets, and braces.
 
-🖼️ REALISTIC VISUAL EXAMPLES:
-
-🌸 DETAILED FLOWER:
-```
-# Petals using curves
-petals = VGroup(*[
-    CubicBezier(
-        [0, 0, 0],
-        [np.cos(angle)*0.3, np.sin(angle)*0.3, 0],
-        [np.cos(angle)*0.8, np.sin(angle)*0.8, 0],
-        [np.cos(angle)*1.2, np.sin(angle)*1.2, 0]
-    ).set_fill(PINK, opacity=0.7).set_stroke(PINK, width=2)
-    for angle in np.linspace(0, 2*np.pi, 8, endpoint=False)
-])
-center = Circle(radius=0.3, color=YELLOW, fill_opacity=1)
-stem = Line(DOWN*2, ORIGIN, stroke_width=8, color=GREEN)
-leaves = VGroup(*[
-    Ellipse(width=0.4, height=0.8, color=GREEN, fill_opacity=0.6).rotate(angle).shift(DOWN*0.5 + dir)
-    for angle, dir in [(PI/4, LEFT*0.3), (-PI/4, RIGHT*0.3)]
-])
-self.play(Create(stem), Create(leaves))
-self.play(Create(petals), FadeIn(center))
-```
-
-👤 DETAILED HUMAN FIGURE:
-```
-# Head with features
-head = Circle(radius=0.4, color=YELLOW_C, fill_opacity=1)
-eyes = VGroup(
-    Dot(point=head.get_center() + UP*0.1 + LEFT*0.15, radius=0.05),
-    Dot(point=head.get_center() + UP*0.1 + RIGHT*0.15, radius=0.05)
-)
-smile = Arc(radius=0.2, start_angle=-PI, angle=PI).shift(head.get_center() + DOWN*0.1).scale(0.6)
-# Body with details
-body = Rectangle(height=1.2, width=0.6, color=BLUE, fill_opacity=0.8)
-arms = VGroup(
-    CubicBezier(body.get_top() + LEFT*0.3, LEFT*1.2 + UP*0.3, LEFT*1.2, LEFT*1.2 + DOWN*0.3).set_stroke(BLUE, width=8),
-    CubicBezier(body.get_top() + RIGHT*0.3, RIGHT*1.2 + UP*0.3, RIGHT*1.2, RIGHT*1.2 + DOWN*0.3).set_stroke(BLUE, width=8)
-)
-legs = VGroup(
-    Line(body.get_bottom() + LEFT*0.2, DOWN*2.5 + LEFT*0.3, stroke_width=8, color=BLUE),
-    Line(body.get_bottom() + RIGHT*0.2, DOWN*2.5 + RIGHT*0.3, stroke_width=8, color=BLUE)
-)
-person = VGroup(head, eyes, smile, body, arms, legs).shift(DOWN*0.5)
-self.play(FadeIn(person, scale=0.5))
-```
-
-🏠 DETAILED HOUSE:
-```
-# Main structure with depth
-walls = Rectangle(width=4, height=2.5, color=ORANGE, fill_opacity=0.7, stroke_width=3)
-roof = Polygon(
-    walls.get_corner(UL), walls.get_corner(UR), walls.get_top() + UP*1.2,
-    color=MAROON_D, fill_opacity=0.8, stroke_width=3
-)
-# Windows with frames
-window1 = VGroup(
-    Rectangle(width=0.6, height=0.8, color=BLUE_C, fill_opacity=0.5),
-    Line(UP*0.4, DOWN*0.4), Line(LEFT*0.3, RIGHT*0.3)
-).shift(LEFT*1.2 + UP*0.3)
-window2 = window1.copy().shift(RIGHT*2.4)
-# Door with detail
-door = VGroup(
-    Rectangle(width=0.7, height=1.4, color=MAROON_C, fill_opacity=0.9),
-    Circle(radius=0.05, fill_opacity=1, color=GOLD).shift(RIGHT*0.25)
-).shift(RIGHT*0.8 + DOWN*0.55)
-house = VGroup(walls, roof, window1, window2, door)
-self.play(Create(walls), Create(roof))
-self.play(Create(window1), Create(window2), Create(door))
-```
-
-� DETAILED CAR:
-```
-# Car body with curves
-body = RoundedRectangle(width=3, height=1, corner_radius=0.2, color=RED, fill_opacity=0.9)
-top = Arc(radius=1.5, start_angle=0, angle=PI, color=RED, fill_opacity=0.9, stroke_width=3).scale(0.5).move_to(body.get_top() + UP*0.3)
-# Wheels with detail
-wheel1 = VGroup(
-    Circle(radius=0.4, color=GREY, fill_opacity=1),
-    Circle(radius=0.25, color=DARK_GREY, fill_opacity=1),
-    Circle(radius=0.1, color=WHITE, fill_opacity=1)
-).shift(body.get_bottom() + LEFT*0.8 + DOWN*0.3)
-wheel2 = wheel1.copy().shift(RIGHT*1.6)
-# Windows
-windows = VGroup(
-    Arc(radius=0.8, start_angle=0, angle=PI, color=BLUE_C, fill_opacity=0.4).scale([0.6, 0.4, 1]).move_to(top.get_center() + LEFT*0.5),
-    Arc(radius=0.8, start_angle=0, angle=PI, color=BLUE_C, fill_opacity=0.4).scale([0.6, 0.4, 1]).move_to(top.get_center() + RIGHT*0.5)
-)
-car = VGroup(body, top, wheel1, wheel2, windows)
-self.play(FadeIn(car, shift=LEFT))
-```
-
-🍎 DETAILED APPLE:
-```
-# Apple body with shading
-apple_body = Circle(radius=1.2, color=RED, fill_opacity=1)
-highlight = Ellipse(width=0.5, height=0.8, color=RED_A, fill_opacity=0.6).shift(UP*0.3 + LEFT*0.3)
-shadow = Ellipse(width=0.4, height=0.6, color=RED_E, fill_opacity=0.4).shift(DOWN*0.2 + RIGHT*0.3)
-# Stem and leaf
-stem = Line(UP*1.2, UP*1.6, stroke_width=6, color=BROWN)
-leaf = Ellipse(width=0.8, height=0.4, color=GREEN, fill_opacity=0.8).rotate(PI/6).shift(UP*1.4 + RIGHT*0.3)
-apple = VGroup(apple_body, shadow, highlight, stem, leaf)
-self.play(FadeIn(apple, scale=0.3))
-```
-
-=== SUBJECT-SPECIFIC DETAILED VISUALS ===
-
-📗 CHEMISTRY - Detailed Molecules:
-Use multiple circles with gradients, overlapping for 3D effect
-Add electron clouds with dashed circles and small dots
-Show bonds with thick lines or cylinders
-
-📘 PHYSICS - Realistic Scenarios:
-Create full scenes with objects, backgrounds
-Use arrows with gradient fills for forces
-Add motion blur effects with transparent copies
-
-📙 MATHEMATICS - Rich Diagrams:
-Multiple coordinate systems overlaid
-Color-coded regions with patterned fills
-Animated transformations showing steps
-
-📕 BIOLOGY - Detailed Organisms:
-Layer multiple shapes for cell membranes
-Use curves for organic shapes (cells, organs)
-Add internal structures with smaller grouped shapes
-
-COMPOSITION RULES:
-1. Build complex objects from 10+ primitive shapes
-2. Use CubicBezier for organic, curved lines
-3. Layer shapes with varying opacity for depth
-4. Add small details (dots, lines, patterns)
-5. Use color gradients (different shades of same color)
-6. Group related elements with VGroup
-7. Animate in stages (build up complexity)
-
-MANDATORY:
-✓ Create DETAILED, LAYERED illustrations
-✓ Use curves and arcs for organic shapes
-✓ Add depth with opacity and layering
-✓ Include small details for realism
-✓ Compose complex scenes from many parts
-
-Rules:
-- 6-10 segments
-- 20-45 seconds each
-- DETAILED, REALISTIC visuals
-- Multi-line, clear code
-- VALIDATE syntax
+MANDATORY FOR EVERY SEGMENT:
+- Build intuition step-by-step.
+- Use at least one sophisticated Manim feature (Updater, Camera move, or complex Transform).
+- Ensure the visual MATCHES the voiceover content exactly.
 
 Topic: {topic}
 Script:
 {script_text}
 """
-
     last_error = None
 
     for attempt in range(3):
@@ -381,9 +233,7 @@ def build_scene_code(segments, durations):
             f"        # Segment {i+1} - Duration: {dur:.2f}s",
             indented_code,
             f"        self.wait({dur:.2f})",
-            "        # Gentle transition to next segment",
-            "        if self.mobjects:",
-            "            self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.2)",
+            "        # Continuity maintained: AI handles specific object removals",
             ""
         ]
 
