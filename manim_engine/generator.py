@@ -92,10 +92,17 @@ Return JSON only in this schema:
 - DO NOT clear the screen automatically; maintain visual continuity across segments. Transform or FadeOut specific objects only when they are no longer needed.
 - Balance ALL parentheses, brackets, and braces.
 
+=== 🎨 ARTISTIC COMPOSITION ===
+1. COMPOSE REALISTIC OBJECTS: Build complex items from 10+ shapes. For a sun, use stacked circles with varying opacity and glow + radiating arrows.
+2. DETAILED FIGURES: For humans/animals, use RoundedRectangles for bodies and CubicBezier for curved, organic limbs. Add facial features (small dots/arcs).
+3. SHADING & TEXTURE: Use multiple layers with high fill_opacity and thin stroke_widths to create depth.
+4. DRAWING OVER SHAPES: Prefer "drawing" an object (like a leaf or a gear) using multiple polygons/curves rather than using a single primitive.
+
 MANDATORY FOR EVERY SEGMENT:
 - Build intuition step-by-step.
 - Use at least one sophisticated Manim feature (Updater, Camera move, or complex Transform).
 - Ensure the visual MATCHES the voiceover content exactly.
+- EVERY visual must be a DETAILED illustration, not a basic shape.
 
 Topic: {topic}
 Script:
@@ -166,6 +173,16 @@ def build_scene_code(segments, durations):
         "from manim import *",
         "import numpy as np",
         "import os",
+        "",
+        "# Polyfill for common AI hallucination",
+        "def vgroup_arrange_in_circle(self, radius=2, **kwargs):",
+        "    n = len(self)",
+        "    if n == 0: return self",
+        "    for i, m in enumerate(self):",
+        "        angle = i * (2 * TAU / n)",
+        "        m.move_to(radius * (np.cos(angle) * RIGHT + np.sin(angle) * UP))",
+        "    return self",
+        "VGroup.arrange_in_circle = vgroup_arrange_in_circle",
         "",
         "class GeneratedScene(MovingCameraScene):",
         "    def construct(self):",
