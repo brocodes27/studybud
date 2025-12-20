@@ -59,27 +59,44 @@ def fallback_segments(topic, script):
 
 
 def get_segments_from_ai(topic, script_text):
-    prompt = f"""
-You are an educational video planner.
+    prompt = f"""You are an expert Manim animator creating educational videos.
 
-Return JSON only.
+Generate segments with ACTUAL Manim animation code, not text descriptions.
 
-Preferred schema:
+Return JSON only in this schema:
 {{
   "segments": [
     {{
-      "visual": "what appears visually",
-      "voiceover": "spoken narration"
+      "voiceover": "spoken narration text",
+      "code": "Manim animation code (plain code, no class/def wrappers)"
     }}
   ]
 }}
 
+MANIM CODE RULES:
+1. Use rich visuals: Circle(), Square(), Axes(), NumberPlane(), VMobject, etc.
+2. Create diagrams, graphs, and animations - NOT just Text()
+3. Use colors: BLUE, RED, GREEN, YELLOW, PURPLE, ORANGE
+4. Animate with: Create(), FadeIn(), Transform(), Write(), MoveToTarget()
+5. Position with: .to_edge(UP), .shift(LEFT*2), .next_to(obj, DOWN)
+6. For math: Use MathTex(r"x^2 + y^2 = r^2")
+7. For labels: Text("Label", font_size=24).next_to(obj, UP)
+8. Code should be self-contained (no imports, no class definitions)
+9. Use 'self.play()' and 'self.add()' to show objects
+10. IMPORTANT: Create visual diagrams, NOT walls of text
+
+EXAMPLES:
+Good: "circle = Circle(radius=2, color=BLUE); self.play(Create(circle))"
+Bad: "self.play(Write(Text('A circle')))"
+
+Good: "axes = Axes(); graph = axes.plot(lambda x: x**2, color=RED); self.play(Create(axes), Create(graph))"
+Bad: "self.text_block('This shows a parabola')"
+
 Rules:
 - 6 to 10 segments
-- Each voiceover 20–45 seconds
-- No markdown
-- No explanations outside JSON
-- Escape quotes properly
+- Each voiceover 20–45 seconds of speech
+- Code creates actual animations/visuals matching the narration
+- Escape quotes: use single quotes inside code strings
 
 Topic: {topic}
 Script:
@@ -142,48 +159,31 @@ def build_scene_code(segments, durations):
         "import numpy as np",
         "import os",
         "",
-        "INDIGO = '#4b0082'",
-        "VIOLET = '#7c3aed'",
-        "",
         "class GeneratedScene(Scene):",
-        "    def run_segment(self, duration, fn=None):",
-        "        if fn:",
-        "            try:",
-        "                fn()",
-        "            except Exception as e:",
-        "                print(f'⚠️ Segment error: {e}')",
-        "        self.wait(max(0.1, duration))",
-        "",
-        "    def clear(self):",
-        "        if self.mobjects:",
-        "            self.play(",
-        "                *[FadeOut(m) for m in self.mobjects],",
-        "                run_time=0.4,",
-        "                lag_ratio=0.05",
-        "            )",
-        "",
-        "    def text_block(self, txt, size=36):",
-        "        t = Text(txt, font_size=size, line_spacing=1.25)",
-        "        self.play(Write(t))",
-        "        return t",
-        "",
         "    def construct(self):",
-        "        self.ctx = {}",
         ""
     ]
 
     for i, (seg, dur) in enumerate(zip(segments, durations)):
-        raw_visual = seg["visual"].replace("'''", "")
-        visual = sanitize_visual_text(raw_visual)
+        code = seg.get("code", "")
+        
+        # Clean and indent the code
+        code = code.strip()
+        if code:
+            # Indent each line appropriately for being inside construct()
+            code_lines = code.split('\n')
+            indented_code = '\n'.join('        ' + line if line.strip() else '' for line in code_lines)
+        else:
+            # Fallback to text if no code provided
+            indented_code = f"        title = Text('Segment {i+1}', font_size=36)\n        self.play(Write(title))"
 
         lines += [
-            f"        # Segment {i+1}",
-            "        self.run_segment(",
-            f"            duration={dur:.2f},",
-            "            fn=lambda:",
-            f"                self.text_block('''{visual}''')",
-            "        )",
-            "        self.clear()",
+            f"        # Segment {i+1} - Duration: {dur:.2f}s",
+            indented_code,
+            f"        self.wait({dur:.2f})",
+            "        # Clear for next segment",
+            "        if self.mobjects:",
+            "            self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.3)",
             ""
         ]
 
@@ -192,7 +192,7 @@ def build_scene_code(segments, durations):
 # ---------------- MAIN ----------------
 def normalize_segments(raw_segments):
     """
-    Ensures every segment has visual + voiceover
+    Ensures every segment has code + voiceover
     """
     cleaned = []
 
@@ -200,14 +200,15 @@ def normalize_segments(raw_segments):
         if not isinstance(seg, dict):
             continue
 
-        visual = seg.get("visual") or seg.get("scene") or seg.get("description")
+        # Try to get code (new schema) or visual (old schema)
+        code = seg.get("code") or seg.get("visual") or seg.get("scene") or ""
         voice = seg.get("voiceover") or seg.get("narration") or seg.get("text")
 
         if not voice:
             continue
 
         cleaned.append({
-            "visual": visual or f"Concept explanation segment {i+1}",
+            "code": code,
             "voiceover": voice
         })
 
