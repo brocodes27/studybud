@@ -77,7 +77,7 @@ export class OpenAIService {
   /**
    * Analyze images with GPT-4 Vision / multimodal models
    */
-  async analyzeImagesWithVision(images: string[], prompt?: string, model?: string): Promise<string> {
+  async analyzeImagesWithVision(images: string[], prompt?: string, model?: string, maxTokens?: number): Promise<string> {
     if (!images || images.length === 0) throw new Error('No images provided');
 
     const content: any[] = [];
@@ -91,7 +91,7 @@ export class OpenAIService {
       messages: [
         { role: 'user', content },
       ],
-      max_tokens: 2048,
+      max_tokens: maxTokens || 2048,
       temperature: 0.2,
     } as any;
 

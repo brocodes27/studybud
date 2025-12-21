@@ -199,7 +199,7 @@ export const guidedPaperService = {
     `;
 
         try {
-            const response = await OpenAIService.getInstance().analyzeImagesWithVision(imagesForAnalysis, prompt);
+            const response = await OpenAIService.getInstance().analyzeImagesWithVision(imagesForAnalysis, prompt, undefined, 4096);
 
             // Parse JSON
             let parsed;
@@ -215,10 +215,45 @@ export const guidedPaperService = {
                     cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
                 }
 
+                // 3. Try to repair incomplete JSON
+                // If JSON ends with incomplete array item, close it properly
+                if (cleanResponse.endsWith(',')) {
+                    cleanResponse = cleanResponse.slice(0, -1); // Remove trailing comma
+                }
+                if (cleanResponse.endsWith(',\n')) {
+                    cleanResponse = cleanResponse.slice(0, -2); // Remove trailing comma + newline
+                }
+
+                // Ensure JSON is properly closed
+                if (!cleanResponse.endsWith('}')) {
+                    // Try to find and close the last array
+                    if (cleanResponse.includes('"questions": [')) {
+                        cleanResponse = cleanResponse + ']}';
+                    }
+                }
+
                 parsed = JSON.parse(cleanResponse);
-            } catch (e) {
+            } catch (parseError) {
                 console.error("AI Response Parsing Failed. Raw Response:", response);
-                throw new Error("Failed to parse AI response as JSON");
+                
+                // Attempt recovery: manually extract what we can
+                const questionRegex = /"question_number":\s*(\d+),?\s*"question_text":\s*"([^"]*(?:\\.[^"]*)*)"/g;
+                const questions = [];
+                let match;
+
+                while ((match = questionRegex.exec(response)) !== null) {
+                    questions.push({
+                        question_number: parseInt(match[1]),
+                        question_text: match[2].replace(/\\"/g, '"')
+                    });
+                }
+
+                if (questions.length > 0) {
+                    console.log(`Recovered ${questions.length} questions from malformed JSON`);
+                    parsed = { questions };
+                } else {
+                    throw new Error("Failed to parse AI response as JSON and recovery failed");
+                }
             }
 
             if (!parsed.questions || !Array.isArray(parsed.questions)) {
