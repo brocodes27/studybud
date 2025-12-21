@@ -195,6 +195,14 @@ def build_scene_code(segments, durations):
         "    return self.get_center()",
         "Mobject.point_at_angle = m_point_at_angle",
         "",
+        "try:",
+        "    if not hasattr(Camera, 'frame'):",
+        "        from manim.mobject.types.vectorized_mobject import VMobject",
+        "        # Create a dummy frame if it's missing (failsafe)",
+        "        Camera.frame = property(lambda self: getattr(self, '_dummy_frame', VMobject()))",
+        "except:",
+        "    pass",
+        "",
         "class GeneratedScene(MovingCameraScene):",
         "    def construct(self):",
         "        grid = NumberPlane(background_line_style={'stroke_opacity': 0.1})",
@@ -234,7 +242,10 @@ def build_scene_code(segments, durations):
             # Better Fallback: Display voiceover text on screen
             code = f"txt = Text('{voiceover[:60]}...', font_size=24).to_edge(UP)\nself.play(Write(txt))"
         
-        # 4. Indent for construct() method
+        # 4. Ensure 'scene' variable exists (AI often uses 'scene' instead of 'self')
+        code = "scene = self\n" + code
+        
+        # 5. Indent for construct() method
         indented = textwrap.indent(code, "        ")
         
         lines += [
