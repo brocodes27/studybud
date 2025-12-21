@@ -34,6 +34,7 @@ const navLinks = [
   { href: '/create', label: 'Create Plan', icon: CalendarPlus, color: 'text-neon-green' },
   { href: '/plans', label: 'Study Plans', icon: BookOpen, color: 'text-neon-purple' },
   // { href: '/ai-buddy', label: 'AI Study Buddy', icon: Brain, color: 'text-pink-500' }, // Removed in favor of Ranjan Sir
+  { href: '/guided-paper', label: 'Guided Paper Solver', icon: HelpCircle, color: 'text-amber-500' },
   { href: '/curriculum', label: 'Curriculum', icon: ListChecks, color: 'text-yellow-400' },
   { href: '/tools', label: 'Study Tools', icon: Wrench, color: 'text-cyan-400' },
   { href: '/videos', label: 'Video Lessons', icon: Video, color: 'text-neon-green' },
@@ -43,7 +44,7 @@ const navLinks = [
   { href: '/social', label: 'Social', icon: Users, color: 'text-blue-400' },
   { href: '/notifications', label: 'Notifications', icon: Bell, color: 'text-red-400' },
   { href: '/my-notes', label: 'My Meeting Notes', icon: Mic, color: 'text-violet-400' },
-  { href: '/guided-paper', label: 'Guided Paper Solver', icon: HelpCircle, color: 'text-amber-500' },
+
 
 ];
 
