@@ -1,6 +1,7 @@
 
 import { supabase } from './supabase';
 import { OpenAIService } from './openaiService';
+import { pdfFileToImageDataUrls } from './pdfToImages';
 
 export interface GuidedPaper {
     id: string;
@@ -143,6 +144,28 @@ export const guidedPaperService = {
         // 1. Get Public URL
         const { data: { publicUrl } } = supabase.storage.from('paper-uploads').getPublicUrl(filePath);
 
+        let imagesForAnalysis: string[] = [];
+
+        try {
+            // Check if PDF
+            if (filePath.toLowerCase().endsWith('.pdf')) {
+                // Fetch the blob
+                const res = await fetch(publicUrl);
+                const blob = await res.blob();
+                const file = new File([blob], "paper.pdf", { type: "application/pdf" });
+
+                // Convert to images
+                imagesForAnalysis = await pdfFileToImageDataUrls(file);
+            } else {
+                // It's an image. OpenAI accepts URLs.
+                imagesForAnalysis = [publicUrl];
+            }
+        } catch (e) {
+            console.error("Error preparing images:", e);
+            await supabase.from('guided_papers').update({ status: 'error' }).eq('id', paperId);
+            return { success: false, error: e };
+        }
+
         // 2. Call OpenAI Vision to extract
         const prompt = `
       You are an expert OCR and exam digitizer.
@@ -164,7 +187,7 @@ export const guidedPaperService = {
     `;
 
         try {
-            const response = await OpenAIService.getInstance().analyzeImagesWithVision([publicUrl], prompt);
+            const response = await OpenAIService.getInstance().analyzeImagesWithVision(imagesForAnalysis, prompt);
 
             // Parse JSON
             let parsed;
