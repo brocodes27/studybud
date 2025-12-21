@@ -147,23 +147,33 @@ export const guidedPaperService = {
         let imagesForAnalysis: string[] = [];
 
         try {
-            // Check if PDF
-            if (filePath.toLowerCase().endsWith('.pdf')) {
-                // Fetch the blob
-                const res = await fetch(publicUrl);
-                const blob = await res.blob();
-                const file = new File([blob], "paper.pdf", { type: "application/pdf" });
+            console.log("Starting extraction for:", filePath);
 
-                // Convert to images
+            // Fetch the file as blob
+            const res = await fetch(publicUrl);
+            if (!res.ok) throw new Error(`Failed to fetch file: ${res.statusText}`);
+            const blob = await res.blob();
+
+            if (filePath.toLowerCase().endsWith('.pdf')) {
+                console.log("Processing PDF...");
+                const file = new File([blob], "paper.pdf", { type: "application/pdf" });
                 imagesForAnalysis = await pdfFileToImageDataUrls(file);
+                console.log(`Converted PDF to ${imagesForAnalysis.length} images`);
             } else {
-                // It's an image. OpenAI accepts URLs.
-                imagesForAnalysis = [publicUrl];
+                console.log("Processing Image...");
+                // Convert Image Blob to Base64
+                const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                imagesForAnalysis = [base64];
             }
         } catch (e) {
             console.error("Error preparing images:", e);
             await supabase.from('guided_papers').update({ status: 'error' }).eq('id', paperId);
-            return { success: false, error: e };
+            throw e; // Propagate to stop execution
         }
 
         // 2. Call OpenAI Vision to extract
@@ -171,7 +181,9 @@ export const guidedPaperService = {
       You are an expert OCR and exam digitizer.
       Extract all questions from this exam paper image.
       
-      Return STRICT JSON format:
+      Return ONLY the raw JSON object. Do not include markdown formatting like \`\`\`json.
+      
+      Structure:
       {
         "questions": [
           { "question_number": 1, "question_text": "..." },
@@ -192,15 +204,20 @@ export const guidedPaperService = {
             // Parse JSON
             let parsed;
             try {
-                // Find JSON block
-                const jsonStart = response.indexOf('{');
-                const jsonEnd = response.lastIndexOf('}');
+                // 1. Remove Markdown code blocks if present
+                let cleanResponse = response.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                // 2. Find the widest JSON object content
+                const jsonStart = cleanResponse.indexOf('{');
+                const jsonEnd = cleanResponse.lastIndexOf('}');
+
                 if (jsonStart !== -1 && jsonEnd !== -1) {
-                    parsed = JSON.parse(response.substring(jsonStart, jsonEnd + 1));
-                } else {
-                    parsed = JSON.parse(response);
+                    cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
                 }
+
+                parsed = JSON.parse(cleanResponse);
             } catch (e) {
+                console.error("AI Response Parsing Failed. Raw Response:", response);
                 throw new Error("Failed to parse AI response as JSON");
             }
 
