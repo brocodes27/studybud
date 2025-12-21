@@ -112,20 +112,12 @@ export const guidedPaperService = {
 
         const { data, error } = await supabase
             .from('guided_attempts')
-            .update({ as: 'test', current_hint_level: currentLevel + 1 }) // 'as: test' is likely not valid, just update level
-            .eq('id', attemptId)
-            .select() // need to re-select to allow returning updated row
-            .single();
-
-        // Correcting update query
-        const { data: updatedData, error: updateError } = await supabase
-            .from('guided_attempts')
             .update({ current_hint_level: currentLevel + 1 })
             .eq('id', attemptId)
             .select()
             .single();
 
-        return { data: updatedData, error: updateError };
+        return { data, error };
     },
 
     async getHint(questionId: string, hintLevel: number): Promise<string | null> {

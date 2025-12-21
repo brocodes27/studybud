@@ -39,9 +39,9 @@ export class OpenAIService {
       try {
         const errorData = JSON.parse(text);
         if (errorData.details) {
-          errorMessage += ` - ${errorData.error || 'Unknown error'}: ${errorData.details}`;
+          errorMessage += ` - ${typeof errorData.error === 'object' ? JSON.stringify(errorData.error) : errorData.error || 'Unknown error'}: ${errorData.details}`;
         } else if (errorData.error) {
-          errorMessage += ` - ${errorData.error}`;
+          errorMessage += ` - ${typeof errorData.error === 'object' ? JSON.stringify(errorData.error) : errorData.error}`;
         } else {
           errorMessage += ` - ${text}`;
         }
@@ -66,7 +66,7 @@ export class OpenAIService {
     const body = {
       model: this.model,
       messages,
-      max_completion_tokens: 8192,  // Updated for newer models
+      max_tokens: 8192,  // Use max_tokens for gpt-4o compatibility
       temperature: 0.7,
     };
     const data = await this.authorizedFetch(body);
@@ -91,7 +91,7 @@ export class OpenAIService {
       messages: [
         { role: 'user', content },
       ],
-      max_completion_tokens: 2048,
+      max_tokens: 2048,
       temperature: 0.2,
     } as any;
 
