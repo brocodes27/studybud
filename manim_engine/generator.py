@@ -23,25 +23,23 @@ def sanitize_visual_text(visual: str) -> str:
     return visual
 
 def extract_json(raw):
-    """Robust JSON extraction from AI response."""
+    """Robust JSON extraction from AI response, handling markdown and extra text."""
+    # Remove markdown code blocks if present
+    clean_raw = re.sub(r'```json\s*(.*?)\s*```', r'\1', raw, flags=re.DOTALL)
+    clean_raw = re.sub(r'```\s*(.*?)\s*```', r'\1', clean_raw, flags=re.DOTALL)
+    
     # Find the first { and the last }
-    start = raw.find('{')
-    end = raw.rfind('}')
+    start = clean_raw.find('{')
+    end = clean_raw.rfind('}')
     if start == -1 or end == -1:
-        raise ValueError("No JSON object found in response")
+        # Fallback for if it returned a list [...]
+        start = clean_raw.find('[')
+        end = clean_raw.rfind(']')
+        if start == -1 or end == -1:
+            raise ValueError("No JSON object or list found in response")
     
-    json_str = raw[start:end+1]
-    
-    # Common AI mistake: unescaped backslashes in code
-    # We try to fix basic ones, but json.loads is usually better at reporting where
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        # Try a more aggressive fix for unescaped backslashes if simple load fails
-        fixed_str = json_str.replace('\\', '\\\\')
-        # But wait, that might double-escape things that were already escaped.
-        # Let's try to just load it and provide helpful error if it's dead.
-        raise
+    json_str = clean_raw[start:end+1]
+    return json.loads(json_str)
 
 # ---------------- AI SEGMENTS ----------------
 def fallback_segments(topic, script):
@@ -67,12 +65,12 @@ def fallback_segments(topic, script):
 
 def get_segments_from_ai(topic, script_text):
     """Calls AI to generate segments. Tries multiple models if primary fails."""
+    # Ensure current flagship is tried first
     models_to_try = [MODEL, "gpt-4o", "gpt-4-turbo"]
     
     prompt = f"""You are a FRONTIER VISIONARY Manim creator. Design a museum-quality educational masterpiece.
-Think beyond 2D—create the illusion of depth, light, and hyper-detailed procedural structure.
+Your output MUST be a JSON object containing an array of segments.
 
-RETURN ONLY VALID JSON. NO MARKDOWN. NO BACKTICKS. NO DISCOUSE.
 SCHEMA:
 {{
   "segments": [
@@ -84,20 +82,19 @@ SCHEMA:
 }}
 
 === 🪐 VISUAL DNA ===
-1. DEPTH: Use NumberPlane(background_line_style={{"stroke_opacity": 0.05}}).
-2. GLOW: Layer objects for 'bloom'. `obj.set_stroke(opacity=0.2, width=12)` + `obj.copy().set_stroke(opacity=1, width=2)`.
-3. MOTION: Avoid linear paths. Use `rate_func=smooth` or `rate_func=rush_into`. Use `LaggedStart`.
-4. CONTINUITY: Transform objects using `ReplacementTransform`. Do not clear screen between segments. Use `self.camera.frame.animate` to move focus.
+- Use NumberPlane(background_line_style={{"stroke_opacity": 0.05}}).
+- Layer objects for 'bloom': stroke_width=12/opacity=0.2 + stroke_width=2/opacity=1.
+- Use ReplacementTransform for continuity. Move focus with self.camera.frame.animate.
 
-=== 🛠️ BLUEPRINT SAMPLES ===
+=== 🛠️ BLUEPRINTS ===
 🚗 CAR: RoundedRectangle chassis + Arc roof + VGroup wheels.
-🚲 BIKE: Circle tires + Line frame + line handles.
+🚲 BIKE: Circle tires + Line frame.
 👤 PERSON: Circle head + RoundedRectangle body + CubicBezier limbs.
 
 MANDATORY:
-- CODE MUST BE MULTI-LINE.
-- NO 'import', 'class', or 'def' inside segments.
-- Visuals MUST be detailed (15+ primitives).
+- Output JSON only.
+- NO 'import', 'class', or 'def' inside code fields.
+- Visuals must be detailed compositions.
 
 Topic: {topic}
 Script: {script_text}
@@ -108,30 +105,43 @@ Script: {script_text}
         print(f"📡 Requesting segments from {model_name}...")
         for attempt in range(2):
             try:
-                response = client.chat.completions.create(
-                    model=model_name,
-                    messages=[
-                        {"role": "system", "content": "You are a professional Manim animator. Output JSON only."},
+                # 1. Try with strict JSON mode
+                api_args = {
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": "You are a professional Manim animator. Output valid JSON in the requested schema."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.3,
-                    max_completion_tokens=4000
-                    
-                )
+                    "temperature": 0.3,
+                    "max_completion_tokens": 4000
+                }
+                
+                # Only use json_object mode for newer models (gpt-4o, gpt-5.x)
+                if any(x in model_name for x in ["gpt-4o", "gpt-5"]):
+                    api_args["response_format"] = {"type": "json_object"}
+                
+                response = client.chat.completions.create(**api_args)
                 raw = response.choices[0].message.content.strip()
                 data = extract_json(raw)
                 
-                # Check for segments
+                # Validate data structure
                 raw_segs = None
-                if isinstance(data, list): raw_segs = data
+                if isinstance(data, list): 
+                    raw_segs = data
                 elif isinstance(data, dict):
                     raw_segs = data.get("segments") or data.get("data")
+                    # Handle if the whole dict IS the segment list wrap
+                    if not raw_segs and any(k in data for k in ["voiceover", "code"]):
+                        raw_segs = [data]
                 
                 if raw_segs and isinstance(raw_segs, list):
-                    return normalize_segments(raw_segs)
+                    segs = normalize_segments(raw_segs)
+                    if segs: return segs
                 
             except Exception as e:
                 print(f"⚠️ {model_name} attempt {attempt+1} failed: {e}")
+                # Some models might not support max_completion_tokens or response_format
+                continue
     
     print("❌ All AI models failed. Using deterministic fallback.")
     return fallback_segments(topic, script_text)
