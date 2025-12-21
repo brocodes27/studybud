@@ -105,32 +105,48 @@ Script: {script_text}
         print(f"📡 Requesting segments from {model_name}...")
         for attempt in range(2):
             try:
-                # 1. Try with strict JSON mode
+                # 1. Prepare API arguments
                 api_args = {
                     "model": model_name,
                     "messages": [
-                        {"role": "system", "content": "You are a professional Manim animator. Output valid JSON in the requested schema."},
                         {"role": "user", "content": prompt}
                     ],
-                    "temperature": 0.3,
-                    "max_completion_tokens": 4000
+                    "max_completion_tokens": 12000 # Increased for complex reasoning + long code
                 }
                 
-                # Only use json_object mode for newer models (gpt-4o, gpt-5.x)
-                if any(x in model_name for x in ["gpt-4o", "gpt-5"]):
-                    api_args["response_format"] = {"type": "json_object"}
+                # Handling for reasoning models (o1, gpt-5 variants)
+                if any(x in model_name for x in ["o1", "o3", "thinking"]):
+                    # Reasoning models often prefer temperature 1.0 or none
+                    pass 
+                else:
+                    api_args["temperature"] = 0.3
+
+                # NOTE: We are intentionaly NOT using response_format={"type": "json_object"} 
+                # for gpt-5.1 because reasoning models often need to "think" in plain text 
+                # before the block, and strict JSON mode can cause them to return empty strings 
+                # or fail if they can't suppress their reasoning.
                 
                 response = client.chat.completions.create(**api_args)
                 raw = response.choices[0].message.content.strip()
-                data = extract_json(raw)
                 
-                # Validate data structure
+                if not raw:
+                    print(f"⚠️ {model_name} returned empty response")
+                    continue
+                
+                try:
+                    data = extract_json(raw)
+                except ValueError as e:
+                    print(f"⚠️ {model_name} extraction failed: {e}")
+                    print(f"🔍 DEBUG: Raw Response (first 300 chars): {raw[:300]}")
+                    print(f"🔍 DEBUG: Raw Response (last 300 chars): {raw[-300:]}")
+                    continue
+                
+                # Check for segments
                 raw_segs = None
                 if isinstance(data, list): 
                     raw_segs = data
                 elif isinstance(data, dict):
                     raw_segs = data.get("segments") or data.get("data")
-                    # Handle if the whole dict IS the segment list wrap
                     if not raw_segs and any(k in data for k in ["voiceover", "code"]):
                         raw_segs = [data]
                 
@@ -140,7 +156,6 @@ Script: {script_text}
                 
             except Exception as e:
                 print(f"⚠️ {model_name} attempt {attempt+1} failed: {e}")
-                # Some models might not support max_completion_tokens or response_format
                 continue
     
     print("❌ All AI models failed. Using deterministic fallback.")
