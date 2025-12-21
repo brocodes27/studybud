@@ -114,7 +114,8 @@ Script: {script_text}
                         {"role": "system", "content": "You are a professional Manim animator. Output JSON only."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.3
+                    temperature=0.3,
+                    max_completion_tokens=4000
                     
                 )
                 raw = response.choices[0].message.content.strip()
