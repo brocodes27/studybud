@@ -47,6 +47,7 @@ import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
 import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
+import GuidedPaperSolver from './pages/GuidedPaperSolver';
 
 
 function AppContent() {
@@ -239,6 +240,7 @@ function AppContent() {
             <Route path="/voice-selector" element={<VoiceSelector />} />
             <Route path="/elliot-test" element={<ElliotVoiceTest />} />
             <Route path="/voice-lesson" element={<VoiceLesson />} />
+            <Route path="/guided-paper" element={<GuidedPaperSolver />} />
             <Route path="/teacher" element={<TeacherPortal />}>
               <Route index element={<TeacherPanel />} />
               <Route path="class/:id" element={<TeacherClassDashboard />} />

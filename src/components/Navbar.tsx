@@ -22,7 +22,8 @@ import {
   Sparkles,
   Crown,
   Brain,
-  Video
+  Video,
+  HelpCircle
 } from 'lucide-react';
 
 const navLinks = [
@@ -42,6 +43,7 @@ const navLinks = [
   { href: '/social', label: 'Social', icon: Users, color: 'text-blue-400' },
   { href: '/notifications', label: 'Notifications', icon: Bell, color: 'text-red-400' },
   { href: '/my-notes', label: 'My Meeting Notes', icon: Mic, color: 'text-violet-400' },
+  { href: '/guided-paper', label: 'Guided Paper Solver', icon: HelpCircle, color: 'text-amber-500' },
 
 ];
 
