@@ -208,8 +208,11 @@ def build_scene_code(segments, durations):
             code_lines = [l for l in code.split('\n') if not any(l.strip().startswith(x) for x in ['import ', 'from ', 'class ', 'def '])]
             code = '\n'.join(code_lines).strip()
         
-        # 2. Fix Tex -> MathTex
+        # 2. Fix Hallucinations (GPT-5 often uses MathMathTex or MathText)
         if code:
+            code = code.replace("MathMathTex", "MathTex")
+            code = code.replace("MathText", "MathTex")
+            
             import re as regex
             def to_math(m):
                 content = m.group(1)
