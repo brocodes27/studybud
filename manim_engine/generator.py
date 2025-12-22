@@ -10,7 +10,7 @@ from subtitle_generator import generate_subtitles
 # Use absolute path to ensure correct directory in Docker
 BASE_DIR = Path(__file__).parent / "jobs"
 # Default model (can be changed by user)
-MODEL = "gpt-5.1"
+MODEL = "gpt-4o-mini"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY"))
 
@@ -112,7 +112,7 @@ Script: {script_text}
                     "messages": [
                         {"role": "user", "content": prompt}
                     ],
-                    "max_completion_tokens": 12000 # Increased for complex reasoning + long code
+                    "max_completion_tokens": 4000 # Increased for complex reasoning + long code
                 }
                 
                 # Handling for reasoning models (o1, gpt-5 variants)
