@@ -2,6 +2,7 @@ import json, uuid, re, sys, os, textwrap
 from pathlib import Path
 from openai import OpenAI
 
+# Ensure these modules are available in your environment
 from audio_engine import generate_audio
 from alignment import align_segments
 from subtitle_generator import generate_subtitles
@@ -25,8 +26,8 @@ def sanitize_visual_text(visual: str) -> str:
 def extract_json(raw):
     """Robust JSON extraction from AI response, handling markdown and extra text."""
     # Remove markdown code blocks if present
-    clean_raw = re.sub(r'```json\s*(.*?)\s*```', r'\1', raw, flags=re.DOTALL)
-    clean_raw = re.sub(r'```\s*(.*?)\s*```', r'\1', clean_raw, flags=re.DOTALL)
+    clean_raw = re.sub(r'``````', r'\1', raw, flags=re.DOTALL)
+    clean_raw = re.sub(r'``````', r'\1', clean_raw, flags=re.DOTALL)
     
     # Find the first { and the last }
     start = clean_raw.find('{')
@@ -214,21 +215,38 @@ def build_scene_code(segments, durations):
             code_lines = [l for l in code.split('\n') if not any(l.strip().startswith(x) for x in ['import ', 'from ', 'class ', 'def '])]
             code = '\n'.join(code_lines).strip()
         
-        # 2. Fix Hallucinations (GPT-5 often uses MathMathTex or MathText)
+        # 2. Fix Hallucinations & LaTeX Errors
         if code:
             code = code.replace("MathMathTex", "MathTex")
             code = code.replace("MathText", "MathTex")
             
             import re as regex
-            def to_math(m):
+
+            # A. Prevent converting valid Tex with $ to MathTex (which creates double math mode)
+            def tex_to_mathtex(m):
                 content = m.group(1)
-                # If it looks like math, make it MathTex
-                if any(x in content for x in ['^', '_', '\\', '{', '}', '$']):
+                # If it contains $, it's valid Tex logic (e.g. Tex("Axis $x$")). Keep it as Tex.
+                if '$' in content:
+                    return m.group(0)
+                # Only convert if it has math symbols but NO dollars (e.g. Tex("\alpha"))
+                if any(x in content for x in ['^', '_', '\\', '{', '}']):
                     pref = "" if content.strip().startswith('r') else "r"
                     return f"MathTex({pref}{content})"
                 return m.group(0)
-            code = regex.sub(r'Tex\(([^)]+)\)', to_math, code)
-        
+            
+            # This regex finds Tex(...) calls
+            code = regex.sub(r'Tex\(([^)]+)\)', tex_to_mathtex, code)
+
+            # B. Clean illegal $ signs inside MathTex (e.g. MathTex(r"$\pi$") -> MathTex(r"\pi"))
+            def clean_mathtex(m):
+                content = m.group(1)
+                # Remove unescaped $ signs inside MathTex
+                cleaned = regex.sub(r'(?<!\\)\$', '', content)
+                return f"MathTex({cleaned})"
+            
+            # This regex finds MathTex(...) calls
+            code = regex.sub(r'MathTex\(([^)]+)\)', clean_mathtex, code)
+            
         # 3. Final Validation
         if not code or not validate_python_code(f"from manim import *\n{code}"):
             # Better Fallback: Display voiceover text on screen
@@ -248,6 +266,7 @@ def build_scene_code(segments, durations):
         ]
         
     return "\n".join(lines)
+
 
 def normalize_segments(raw):
     """Standardizes segment objects."""
@@ -290,6 +309,7 @@ def generate(topic, script_path):
     generate_subtitles(segments, durations, str(job / "subtitles.vtt"))
     
     return str(job.resolve())
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
