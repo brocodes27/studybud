@@ -4,22 +4,19 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Video,
     BookOpen,
-    Clock,
     AlertCircle,
     Atom,
     Calculator,
     FlaskConical,
     Globe2,
     Sparkles,
-    Loader2
+    Loader2,
+    ChevronLeft
 } from 'lucide-react';
 
 import { format } from 'date-fns';
 import { BlackboardPlayer } from '../components/BlackboardPlayer';
 import { ManimVideoPlayer } from '../components/ManimVideoPlayer';
-
-
-
 
 interface Lesson {
     day: number;
@@ -46,41 +43,34 @@ interface ChapterFolder {
 }
 
 type SubjectVisual = {
-    gradient: string;
-    accent: string;
+    color: string;
     icon: JSX.Element;
 };
 
 const subjectVisuals: Record<string, SubjectVisual> = {
     math: {
-        gradient: 'from-purple-500/30 via-indigo-500/25 to-blue-500/30',
-        accent: 'shadow-[0_0_25px_rgba(129,140,248,0.25)]',
-        icon: <Calculator className="w-7 h-7" />
+        color: 'bg-neo-secondary',
+        icon: <Calculator className="w-8 h-8 stroke-[3px]" />
     },
     physics: {
-        gradient: 'from-emerald-500/25 via-cyan-500/25 to-blue-500/25',
-        accent: 'shadow-[0_0_25px_rgba(16,185,129,0.25)]',
-        icon: <Atom className="w-7 h-7" />
+        color: 'bg-neo-accent',
+        icon: <Atom className="w-8 h-8 stroke-[3px]" />
     },
     chemistry: {
-        gradient: 'from-orange-400/25 via-pink-500/25 to-amber-500/25',
-        accent: 'shadow-[0_0_25px_rgba(249,115,22,0.25)]',
-        icon: <FlaskConical className="w-7 h-7" />
+        color: 'bg-neo-bg',
+        icon: <FlaskConical className="w-8 h-8 stroke-[3px]" />
     },
     biology: {
-        gradient: 'from-green-500/25 via-emerald-500/25 to-lime-500/25',
-        accent: 'shadow-[0_0_25px_rgba(34,197,94,0.25)]',
-        icon: <Sparkles className="w-7 h-7" />
+        color: 'bg-neo-muted',
+        icon: <Sparkles className="w-8 h-8 stroke-[3px]" />
     },
     geography: {
-        gradient: 'from-cyan-500/25 via-teal-500/25 to-blue-500/25',
-        accent: 'shadow-[0_0_25px_rgba(6,182,212,0.25)]',
-        icon: <Globe2 className="w-7 h-7" />
+        color: 'bg-neo-secondary',
+        icon: <Globe2 className="w-8 h-8 stroke-[3px]" />
     },
     general: {
-        gradient: 'from-slate-500/25 via-slate-700/25 to-black/30',
-        accent: 'shadow-[0_0_20px_rgba(148,163,184,0.25)]',
-        icon: <Sparkles className="w-7 h-7" />
+        color: 'bg-white',
+        icon: <Sparkles className="w-8 h-8 stroke-[3px]" />
     }
 };
 
@@ -120,7 +110,6 @@ export const VideoLessons = () => {
     useEffect(() => {
         if (!user) return;
 
-        // Fetch existing generations
         const fetchGens = async () => {
             const { data } = await supabase
                 .from('video_generations')
@@ -138,7 +127,6 @@ export const VideoLessons = () => {
         };
         fetchGens();
 
-        // Subscribe to updates
         const channel = supabase
             .channel('video-lessons-status')
             .on('postgres_changes',
@@ -175,10 +163,6 @@ export const VideoLessons = () => {
             plans?.forEach((plan: any) => {
                 if (plan.plan?.daily_schedule) {
                     plan.plan.daily_schedule.forEach((day: any) => {
-                        // Smart Chapter Extraction:
-                        // 1. Use explicit 'chapter' if available
-                        // 2. If 'topic' has the format "ChapterName: TopicName", separate them
-                        // 3. Fallback to 'Uncategorized'
                         let finalChapter = day.chapter;
                         let finalTopic = day.topic;
 
@@ -193,19 +177,18 @@ export const VideoLessons = () => {
                         allLessons.push({
                             day: day.day,
                             date: day.date,
-                            topic: finalTopic, // Use clean topic if split
+                            topic: finalTopic,
                             description: day.description,
                             subject: plan.subject,
                             plan_id: plan.id,
                             plan_name: plan.plan_name || `${plan.subject} Plan`,
-                            chapter: finalChapter || 'General Checkpoint', // Better default than 'Uncategorized'
+                            chapter: finalChapter || 'General Checkpoint',
                             question_type: day.question_type
                         });
                     });
                 }
             });
 
-            // Sort by date descending (newest first)
             setLessons(allLessons.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         } catch (error) {
             console.error('Error fetching lessons:', error);
@@ -214,24 +197,12 @@ export const VideoLessons = () => {
         }
     };
 
-    const getQuestionTypeColor = (type: string) => {
-        const colors: Record<string, string> = {
-            'MCQ': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-            'Short Answer': 'bg-green-500/20 text-green-300 border-green-500/30',
-            'Numerical': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-            'Long Answer': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-            'Case Study': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-            'Practice Test': 'bg-red-500/20 text-red-300 border-red-500/30',
-            'Revision': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-        };
+    const getQuestionTypeBadge = (type: string) => (
+        <span className="text-[10px] font-black uppercase tracking-widest border-2 border-black px-2 py-0.5 bg-white shadow-[2px_2px_0px_0px_#000]">
+            {type}
+        </span>
+    );
 
-        for (const key in colors) {
-            if (type.toLowerCase().includes(key.toLowerCase())) return colors[key];
-        }
-        return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    };
-
-    // Derived Data for Folders
     const plans: PlanFolder[] = Array.from(new Set(lessons.map(l => l.plan_id))).map(id => {
         const planLessons = lessons.filter(l => l.plan_id === id);
         return {
@@ -258,18 +229,14 @@ export const VideoLessons = () => {
         const topicKey = cleanTopic.toLowerCase();
         const existingGen = generations[topicKey];
 
-        // Reset state
         setCurrentGenerationId(undefined);
         setIsPreparing(true);
         setGenerationError(null);
 
-        // Always open player to show progress or play
         setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
         setRenderMode('premium');
 
         if (existingGen) {
-            // If it's already completed or processing, the player will handle it
-            // If it failed, we'll try to trigger a new one below without passing the old ID
             if (existingGen.status !== 'failed') {
                 setCurrentGenerationId(existingGen.id);
                 setIsPreparing(false);
@@ -277,7 +244,6 @@ export const VideoLessons = () => {
             }
         }
 
-        // Trigger or re-trigger generation
         try {
             const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
 
@@ -314,10 +280,7 @@ export const VideoLessons = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in relative min-h-screen">
-            {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-neon-green/10 rounded-full blur-3xl -z-10"></div>
-
+        <div className="space-y-12 animate-fade-in relative min-h-screen pb-20">
             {playingLesson && renderMode === 'classic' && (
                 <BlackboardPlayer
                     topic={playingLesson.topic}
@@ -337,97 +300,78 @@ export const VideoLessons = () => {
                 />
             )}
 
-            <div className="flex items-center gap-4 mb-8">
-                {viewMode !== 'plans' && (
-                    <button
-                        onClick={() => {
-                            if (viewMode === 'lessons') {
-                                setViewMode('chapters');
-                                setSelectedChapter(null);
-                            } else {
-                                setViewMode('plans');
-                                setSelectedPlan(null);
-                            }
-                        }}
-                        className="p-2 rounded-full hover:bg-white/10 transition-colors"
-                    >
-                        <Clock className="w-6 h-6 rotate-180 transform" /> {/* Using Clock as simple back icon fallback if ArrowLeft unavailable, or just recycle icons */}
-                    </button>
-                )}
-                <div className="bg-gradient-to-br from-neon-green to-emerald-600 p-4 rounded-2xl shadow-lg shadow-neon-green/20">
-                    <Video className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-3xl font-bold text-white">
-                        {viewMode === 'plans' ? 'Video Library' :
-                            <span className="flex items-center gap-2">
-                                <span onClick={() => { setViewMode('plans'); setSelectedPlan(null); }} className="cursor-pointer hover:text-neon-green transition-colors">Library</span>
-                                <span className="text-gray-600">/</span>
-                                {viewMode === 'chapters' ? selectedPlan?.name :
-                                    <span className="flex items-center gap-2">
-                                        <span onClick={() => { setViewMode('chapters'); setSelectedChapter(null); }} className="cursor-pointer hover:text-neon-green transition-colors">{selectedPlan?.name}</span>
-                                        <span className="text-gray-600">/</span>
-                                        {selectedChapter}
-                                    </span>}
-                            </span>}
-                    </h1>
-                    <p className="text-gray-400">
-                        {viewMode === 'plans' ? 'Select a study plan to view lessons' :
-                            viewMode === 'chapters' ? 'Select a chapter to browse topics' :
-                                `${currentLessons.length} lessons available`}
-                    </p>
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b-8 border-black pb-10">
+                <div className="flex items-center gap-6">
+                    <div className="bg-neo-accent border-4 border-black p-5 shadow-[8px_8px_0px_0px_#000] rotate-3">
+                        <Video className="h-10 w-10 text-white stroke-[3px]" />
+                    </div>
+                    <div>
+                        <h1 className="text-5xl font-black text-black uppercase tracking-tighter italic leading-none">
+                            {viewMode === 'plans' ? 'VIDEO_ARCHIVE' :
+                                viewMode === 'chapters' ? 'CHAPTER_INDEX' : 'TOPIC_NODES'}
+                        </h1>
+                        <p className="text-black/40 font-black uppercase tracking-widest text-sm mt-3 flex items-center gap-3">
+                            {viewMode !== 'plans' && (
+                                <button
+                                    onClick={() => {
+                                        if (viewMode === 'lessons') { setViewMode('chapters'); setSelectedChapter(null); }
+                                        else { setViewMode('plans'); setSelectedPlan(null); }
+                                    }}
+                                    className="flex items-center gap-2 hover:text-black transition-colors"
+                                >
+                                    <ChevronLeft className="w-5 h-5 stroke-[3px]" /> REVERT
+                                </button>
+                            )}
+                            {viewMode === 'plans' ? 'PROTOCOL: KNOWLEDGE_RETRIEVAL_V1' :
+                                viewMode === 'chapters' ? `PLAN: ${selectedPlan?.name.toUpperCase()}` :
+                                    `SECTION: ${selectedChapter?.toUpperCase()}`}
+                        </p>
+                    </div>
                 </div>
             </div>
 
             {loading ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-green"></div>
+                <div className="flex flex-col items-center justify-center h-96 space-y-8">
+                    <div className="w-24 h-24 border-8 border-black border-t-neo-accent animate-spin" />
+                    <h3 className="text-3xl font-black text-black uppercase tracking-tighter italic">LOADING_ARCHIVES...</h3>
                 </div>
             ) : (
-                <>
+                <div className="space-y-16">
                     {/* PLANS VIEW */}
                     {viewMode === 'plans' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                             {plans.length === 0 ? (
-                                <div className="col-span-full glass-panel p-12 rounded-3xl border border-white/10 text-center">
-                                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-6">
-                                        <AlertCircle className="w-8 h-8 text-gray-400" />
+                                <div className="col-span-full bg-white border-8 border-black p-20 shadow-[16px_16px_0px_0px_#000] text-center rotate-1">
+                                    <div className="w-24 h-24 bg-neo-muted border-4 border-black flex items-center justify-center mx-auto mb-10 shadow-[8px_8px_0px_0px_#000]">
+                                        <AlertCircle className="w-12 h-12 text-black stroke-[3px]" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">No Study Plans Found</h3>
-                                    <p className="text-gray-400 max-w-md mx-auto">
-                                        Create a study plan to generate your personalized video lessons.
-                                    </p>
+                                    <h3 className="text-4xl font-black text-black uppercase tracking-tighter mb-4">NO_PLANS_DETECTED</h3>
+                                    <p className="text-black/60 font-bold uppercase tracking-widest text-sm">INITIALIZE A STUDY SEQUENCE TO GENERATE VISUAL ASSETS.</p>
                                 </div>
-                            ) : plans.map((plan) => (
+                            ) : plans.map((plan, idx) => (
                                 <div
                                     key={plan.id}
                                     onClick={() => {
                                         setSelectedPlan(plan);
-                                        // Calculate chapters for this plan immediately to check count
                                         const planChapters = Array.from(new Set(lessons.filter(l => l.plan_id === plan.id).map(l => l.chapter!)));
-
-                                        if (planChapters.length === 1) {
-                                            // Auto-skip to lessons if only 1 chapter
-                                            setSelectedChapter(planChapters[0]);
-                                            setViewMode('lessons');
-                                        } else {
-                                            setViewMode('chapters');
-                                        }
+                                        if (planChapters.length === 1) { setSelectedChapter(planChapters[0]); setViewMode('lessons'); }
+                                        else { setViewMode('chapters'); }
                                     }}
-                                    className="glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 cursor-pointer transition-all hover:bg-white/5 group"
+                                    className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[18px_18px_0px_0px_#000] cursor-pointer transition-all group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-xl bg-neon-blue/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <BookOpen className="w-6 h-6 text-neon-blue" />
+                                    <div className="flex items-center gap-6 mb-8">
+                                        <div className="w-16 h-16 border-4 border-black bg-neo-secondary flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:rotate-12 transition-transform">
+                                            <BookOpen className="w-8 h-8 text-black stroke-[3px]" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">{plan.name}</h3>
-                                            <span className="text-sm text-gray-400">{plan.subject}</span>
+                                            <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic leading-none">{plan.name}</h3>
+                                            <span className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2 block">{plan.subject}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm text-gray-500 mt-4 pt-4 border-t border-white/5">
-                                        <span>{plan.lessonCount} Lessons</span>
-                                        <span className="group-hover:translate-x-1 transition-transform">View →</span>
+                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-black/10">
+                                        <span className="bg-black text-white px-3 py-1 -rotate-2">{plan.lessonCount} NODES</span>
+                                        <span className="text-neo-accent group-hover:translate-x-2 transition-transform italic">ACCESS_DIR »</span>
                                     </div>
                                 </div>
                             ))}
@@ -436,27 +380,24 @@ export const VideoLessons = () => {
 
                     {/* CHAPTERS VIEW */}
                     {viewMode === 'chapters' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {chapters.map((chapter) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            {chapters.map((chapter, idx) => (
                                 <div
                                     key={chapter.name}
-                                    onClick={() => {
-                                        setSelectedChapter(chapter.name);
-                                        setViewMode('lessons');
-                                    }}
-                                    className="glass-card p-6 rounded-2xl border border-white/10 hover:border-purple-500/40 cursor-pointer transition-all hover:bg-white/5 group"
+                                    onClick={() => { setSelectedChapter(chapter.name); setViewMode('lessons'); }}
+                                    className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[18px_18px_0px_0px_#4D96FF] cursor-pointer transition-all group ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <Video className="w-6 h-6 text-purple-400" />
+                                    <div className="flex items-center gap-6 mb-8">
+                                        <div className="w-16 h-16 border-4 border-black bg-neo-bg flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:-rotate-12 transition-transform">
+                                            <Video className="w-8 h-8 text-black stroke-[3px]" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-white group-hover:text-purple-400 transition-colors line-clamp-1">{chapter.name}</h3>
+                                            <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic leading-none line-clamp-1">{chapter.name}</h3>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm text-gray-500 mt-4 pt-4 border-t border-white/5">
-                                        <span>{chapter.lessonCount} Topics</span>
-                                        <span className="group-hover:translate-x-1 transition-transform">View →</span>
+                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-black/10">
+                                        <span className="bg-black text-white px-3 py-1 rotate-1">{chapter.lessonCount} TOPICS</span>
+                                        <span className="text-neo-bg group-hover:translate-x-2 transition-transform italic">SCAN_FLOW »</span>
                                     </div>
                                 </div>
                             ))}
@@ -465,96 +406,80 @@ export const VideoLessons = () => {
 
                     {/* LESSONS VIEW */}
                     {viewMode === 'lessons' && (
-                        <div className="animate-fade-in-up">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {currentLessons.map((lesson, index) => {
-                                    const visual = getSubjectVisual(lesson.subject);
-                                    return (
-                                        <div key={`${lesson.plan_id}-${index}`} className={`glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col h-full group bg-black/20 hover:bg-black/40 ${visual.accent}`}>
-                                            <div className="relative mb-4 h-32 rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-                                                <div className={`absolute inset-0 bg-gradient-to-br ${visual.gradient}`}></div>
-                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.15),transparent_38%)] opacity-60"></div>
-                                                <div className="relative flex h-full items-start justify-between p-4">
-                                                    <div className="space-y-2">
-                                                        <span className="text-[11px] uppercase tracking-wider text-white/80 bg-black/30 px-2 py-1 rounded-md border border-white/10 inline-flex w-fit">
-                                                            {lesson.chapter}
-                                                        </span>
-                                                        <p className="text-sm text-white/90 font-semibold leading-tight line-clamp-2 max-w-[16rem]">
-                                                            {lesson.topic}
-                                                        </p>
-                                                        <span className="text-xs text-white/70 flex items-center gap-2">
-                                                            <span className="inline-flex w-2 h-2 rounded-full bg-white/80"></span>
-                                                            {lesson.subject}
-                                                        </span>
-                                                    </div>
-                                                    <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white">
-                                                        {visual.icon}
-                                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            {currentLessons.map((lesson, idx) => {
+                                const visual = getSubjectVisual(lesson.subject);
+                                const cleanTopic = getCleanTopic(lesson.topic).toLowerCase();
+                                const isGenerating = generations[cleanTopic]?.status === 'processing' || generations[cleanTopic]?.status === 'pending';
+
+                                return (
+                                    <div key={`${lesson.plan_id}-${idx}`} className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] transition-all flex flex-col h-full group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
+                                        {/* Card Header Illustration */}
+                                        <div className="relative mb-8 h-40 border-4 border-black bg-black overflow-hidden shadow-[4px_4px_0px_0px_#000]">
+                                            <div className={`absolute inset-0 opacity-20 ${visual.color}`} />
+                                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 2px, transparent 2px)', backgroundSize: '20px 20px' }} />
+                                            <div className="relative flex h-full items-center justify-center p-6 text-center flex-col gap-4">
+                                                <div className={`w-16 h-16 border-4 border-black ${visual.color} flex items-center justify-center shadow-[4px_4px_0px_0px_#000] rotate-12 group-hover:rotate-0 transition-transform`}>
+                                                    {visual.icon}
                                                 </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded-md">{format(new Date(lesson.date), 'MMM d')}</span>
-                                                    <span className="text-xs font-bold text-neon-blue bg-neon-blue/10 px-2 py-1 rounded-md border border-neon-blue/20">{lesson.subject}</span>
-                                                </div>
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(lesson.question_type)}`}>
-                                                    {lesson.question_type}
-                                                </span>
-                                            </div>
-
-                                            <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem] group-hover:text-neon-green transition-colors">
-                                                {lesson.topic}
-                                            </h3>
-
-                                            <p className="text-sm text-gray-400 line-clamp-3 mb-6 flex-grow">
-                                                {lesson.description}
-                                            </p>
-
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-                                                        setRenderMode('classic');
-                                                    }}
-                                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 text-white/80 font-bold border border-white/10 hover:bg-white/10 transition-all hover:scale-[1.02]"
-                                                >
-                                                    <BookOpen className="w-4 h-4" />
-                                                    Blackboard
-                                                </button>
-                                                <button
-                                                    onClick={() => handlePlayPremium(lesson)}
-                                                    className={`flex-[1.5] flex items-center justify-center gap-2 py-3 rounded-xl font-bold border transition-all hover:scale-[1.02] ${generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'processing' ||
-                                                        generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'pending'
-                                                        ? 'bg-white/5 text-gray-400 border-white/10'
-                                                        : 'bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]'
-                                                        }`}
-                                                >
-                                                    {generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'processing' ||
-                                                        generations[getCleanTopic(lesson.topic).toLowerCase()]?.status === 'pending' ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            {generations[getCleanTopic(lesson.topic).toLowerCase()]?.progress || 0}% Ready
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Sparkles className="w-4 h-4 fill-current text-white/80" />
-                                                            Premium Video
-                                                        </>
-                                                    )}
-                                                </button>
+                                                <p className="text-white font-black uppercase tracking-widest text-[10px] italic">NODE_{idx.toString().padStart(3, '0')}</p>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
+
+                                        <div className="flex justify-between items-start mb-6 gap-3 flex-wrap">
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-[10px] font-black text-black/40 uppercase italic">{format(new Date(lesson.date), 'MMM dd')}</span>
+                                                <span className="text-xs font-black text-neo-accent uppercase tracking-tighter italic">{lesson.subject}</span>
+                                            </div>
+                                            {getQuestionTypeBadge(lesson.question_type)}
+                                        </div>
+
+                                        <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-tighter italic leading-none line-clamp-2 min-h-[3rem] group-hover:text-neo-accent transition-colors">
+                                            {lesson.topic}
+                                        </h3>
+
+                                        <p className="text-sm font-bold text-black/60 uppercase tracking-widest line-clamp-3 mb-10 flex-grow leading-tight italic">
+                                            {lesson.description}
+                                        </p>
+
+                                        <div className="flex flex-col gap-4 mt-auto">
+                                            <button
+                                                onClick={() => {
+                                                    setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+                                                    setRenderMode('classic');
+                                                }}
+                                                className="w-full py-4 border-4 border-black bg-white font-black uppercase italic tracking-tighter text-xl hover:bg-neo-bg transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] flex items-center justify-center gap-3"
+                                            >
+                                                <BookOpen className="w-5 h-5 stroke-[3px]" />
+                                                CLASSIC_VIEW
+                                            </button>
+                                            <button
+                                                onClick={() => handlePlayPremium(lesson)}
+                                                className={`w-full py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] flex items-center justify-center gap-4 ${isGenerating
+                                                    ? 'bg-neo-bg text-black animate-pulse'
+                                                    : 'bg-black text-white hover:bg-neo-accent hover:text-black'
+                                                    }`}
+                                            >
+                                                {isGenerating ? (
+                                                    <>
+                                                        <Loader2 className="w-6 h-6 animate-spin stroke-[4px]" />
+                                                        <span>SYNCING_{generations[cleanTopic]?.progress || 0}%</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="w-6 h-6 stroke-[3px]" />
+                                                        <span>PREMIUM_SYNC</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
-
-
-                </>
+                </div>
             )}
         </div>
     );
 };
-

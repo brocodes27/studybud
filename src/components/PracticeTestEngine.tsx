@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Clock, CheckCircle, X, RotateCcw, Trophy, Target, Play, Pause, XCircle, BarChart3, Brain, Zap, Plus, Settings, Users, Calendar, TrendingUp, BookOpen, Star, Award, Copy, Share2, Download, Eye, EyeOff, Filter, Search, SortAsc, SortDesc, ChevronLeft, ChevronRight, Home, Book } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { FileText, Clock, CheckCircle, X, Trophy, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -44,10 +43,10 @@ interface PracticeTestEngineProps {
   subject?: string;
 }
 
-export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps) {
-  const { user, session } = useAuth();
+export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
+  const { user, session } = useAuth() as any;
   const { showToast } = useToast();
-  const { paymentData, initiatePayment } = usePayment();
+  const { initiatePayment } = usePayment();
   const [tests, setTests] = useState<PracticeTest[]>([]);
   const [currentTest, setCurrentTest] = useState<PracticeTest | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -61,8 +60,6 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [availablePlans, setAvailablePlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
-  const [showPaywall, setShowPaywall] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -88,9 +85,6 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-  useEffect(() => {
-    setShowPaywall(false); // Never show paywall
-  }, []);
 
   const fetchAvailablePlans = async () => {
     try {
@@ -264,7 +258,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
     try {
       // Save attempt to database
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('practice_test_attempts')
         .insert({
           user_id: user?.id,
@@ -273,9 +267,7 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           score: score,
           total_questions: currentTest.total_questions,
           time_taken_minutes: timeTaken
-        })
-        .select()
-        .single();
+        });
 
       if (error) throw error;
 
@@ -304,81 +296,84 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   };
 
   const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-400';
-    if (percentage >= 60) return 'text-yellow-400';
-    return 'text-red-400';
+    if (percentage >= 80) return 'text-neo-secondary';
+    if (percentage >= 60) return 'text-neo-bg';
+    return 'text-neo-accent';
   };
 
-  const handleSubscribe = async () => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const _handleSubscribe = async () => {
     try {
       await initiatePayment();
     } catch (error) {
       console.error('Payment error:', error);
-      showToast('Failed to start payment. Please try again.', 'error');
+      showToast('SESSION_PAYMENT_INTERRUPT', 'error');
     }
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-green"></div>
+      <div className="flex flex-col items-center justify-center p-20 space-y-8">
+        <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
+        <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic">LOADING_CHAMBERS...</h3>
       </div>
     );
   }
 
   if (showResults && testResults) {
     return (
-      <div className="space-y-6">
+      <div className="p-10 space-y-10 bg-neo-bg/10 min-h-full">
         {/* Results Header */}
-        <div className="glass-panel rounded-2xl p-6 border border-white/10 text-center">
-          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-2xl mb-4 inline-block shadow-lg shadow-orange-500/20">
-            <Trophy className="h-12 w-12 text-white" />
+        <div className="bg-white border-8 border-black p-12 text-center shadow-[20px_20px_0px_0px_#000] rotate-1">
+          <div className="bg-neo-secondary border-4 border-black p-6 rounded-none mb-8 inline-block shadow-[8px_8px_0px_0px_#000] -rotate-12">
+            <Trophy className="h-20 w-20 text-black stroke-[3px]" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-2">Test Completed!</h3>
-          <div className="flex items-center justify-center gap-8 text-center">
-            <div>
-              <p className={`text-4xl font-bold ${getScoreColor(testResults.percentage)}`}>
+          <h3 className="text-5xl font-black text-black mb-10 uppercase tracking-tighter italic leading-none">EXAM_SEQUENCE_COMPLETE</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000]">
+              <p className={`text-6xl font-black ${getScoreColor(testResults.percentage)} italic`}>
                 {testResults.score}/{testResults.total}
               </p>
-              <p className="text-gray-400">Score</p>
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">TOTAL_SCORE</p>
             </div>
-            <div>
-              <p className="text-4xl font-bold text-neon-blue">{testResults.percentage}%</p>
-              <p className="text-gray-400">Accuracy</p>
+            <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] rotate-2">
+              <p className="text-6xl font-black text-neo-accent italic">{testResults.percentage}%</p>
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">ACCURACY_INDEX</p>
             </div>
-            <div>
-              <p className="text-4xl font-bold text-neon-purple">{testResults.timeTaken}m</p>
-              <p className="text-gray-400">Time Taken</p>
+            <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] -rotate-2">
+              <p className="text-6xl font-black text-neo-muted italic">{testResults.timeTaken}M</p>
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">TIME_EXPENDED</p>
             </div>
           </div>
         </div>
 
         {/* Question Review */}
-        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-          <h4 className="text-lg font-semibold text-white mb-4">Question Review</h4>
-          <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
+          <h4 className="text-2xl font-black text-black uppercase tracking-tighter italic mb-8 border-b-4 border-black pb-4">RETROSPECTIVE_ANALYSIS</h4>
+          <div className="space-y-8 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
             {testResults.questions.map((question: Question, index: number) => {
               const userAnswer = testResults.userAnswers[index];
               const isCorrect = userAnswer === question.correct_answer;
 
               return (
-                <div key={index} className={`p-4 rounded-lg border ${isCorrect ? 'border-green-500/30 bg-green-500/10' : 'border-red-500/30 bg-red-500/10'
-                  }`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`p-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                      {isCorrect ? <CheckCircle className="h-4 w-4 text-white" /> : <X className="h-4 w-4 text-white" />}
+                <div key={index} className={`p-8 border-4 border-black shadow-[6px_6px_0px_0px_#000] ${isCorrect ? 'bg-neo-secondary/30' : 'bg-neo-accent/10'}`}>
+                  <div className="flex items-start gap-6">
+                    <div className={`p-2 border-2 border-black ${isCorrect ? 'bg-neo-secondary' : 'bg-neo-accent'} -rotate-12`}>
+                      {isCorrect ? <CheckCircle className="h-6 w-6 text-black stroke-[4px]" /> : <X className="h-6 w-6 text-white stroke-[4px]" />}
                     </div>
                     <div className="flex-grow">
-                      <p className="text-white font-medium mb-2">{question.question}</p>
-                      <div className="space-y-1">
+                      <p className="text-xl font-black text-black uppercase tracking-tight italic mb-6 leading-tight">{question.question}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {question.options.map((option, optionIndex) => (
-                          <div key={optionIndex} className={`p-2 rounded text-sm ${optionIndex === question.correct_answer
-                              ? 'bg-green-500/20 text-green-400'
-                              : optionIndex === userAnswer && !isCorrect
-                                ? 'bg-red-500/20 text-red-400'
-                                : 'text-gray-400'
+                          <div key={optionIndex} className={`p-4 border-2 border-black font-black uppercase text-xs tracking-widest ${optionIndex === question.correct_answer
+                            ? 'bg-neo-secondary'
+                            : optionIndex === userAnswer && !isCorrect
+                              ? 'bg-neo-accent text-white'
+                              : 'bg-white text-black/40'
                             }`}>
-                            {option}
+                            {String.fromCharCode(65 + optionIndex)}. {option}
                           </div>
                         ))}
                       </div>
@@ -390,21 +385,21 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-8">
           <button
             onClick={() => {
               setShowResults(false);
               setCurrentTest(null);
             }}
-            className="flex-1 bg-gradient-to-r from-neon-blue to-neon-purple text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg shadow-neon-blue/20"
+            className="flex-1 bg-black text-white py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
           >
-            Back to Tests
+            TERMINATE_SESSION
           </button>
           <button
             onClick={() => startTest(currentTest!)}
-            className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 px-6 rounded-xl transition-colors duration-200 border border-white/10"
+            className="flex-1 bg-white text-black py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-secondary hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#4D96FF] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
           >
-            Retake Test
+            REBOOT_SEQUENCE
           </button>
         </div>
       </div>
@@ -415,45 +410,53 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
     const question = currentTest.questions[currentQuestion];
 
     return (
-      <div className="space-y-6">
+      <div className="p-10 space-y-12 bg-white border-l-8 border-black min-h-full">
         {/* Test Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
           <div>
-            <h3 className="text-xl font-bold text-white">{currentTest.title}</h3>
-            <p className="text-gray-400">Question {currentQuestion + 1} of {currentTest.total_questions}</p>
+            <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">{currentTest.title.toUpperCase()}</h3>
+            <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-3">DEPLOYED_INDEX: {currentQuestion + 1} / {currentTest.total_questions}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className={`px-4 py-2 rounded-lg border ${timeLeft < 300 ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-neon-blue/20 border-neon-blue/50 text-neon-blue'
-              }`}>
-              <Clock className="h-4 w-4 inline mr-2" />
+          <div className="flex items-center gap-6">
+            <div className={`
+                px-8 py-4 border-4 border-black font-black text-4xl italic tabular-nums shadow-[6px_6px_0px_0px_#000] rotate-2
+                ${timeLeft < 300 ? 'bg-neo-accent text-white' : 'bg-neo-secondary'}
+            `}>
+              <Clock className="h-8 w-8 inline mr-3 stroke-[4px]" />
               {formatTime(timeLeft)}
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-white/10 rounded-full h-2">
+        <div className="w-full bg-black/5 border-4 border-black h-8 relative overflow-hidden">
           <div
-            className="bg-gradient-to-r from-neon-blue to-neon-purple h-2 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+            className="bg-neo-accent h-full transition-all duration-300 border-r-4 border-black shadow-[4px_0_10px_rgba(0,0,0,0.1)]"
             style={{ width: `${((currentQuestion + 1) / currentTest.total_questions) * 100}%` }}
           ></div>
         </div>
 
         {/* Question */}
-        <div className="glass-card rounded-2xl p-8 border border-white/10">
-          <h4 className="text-xl font-semibold text-white mb-6">{question.question}</h4>
+        <div className="bg-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_#000] -rotate-1 relative">
+          <div className="absolute -top-6 left-10 bg-black text-white px-6 py-2 font-black uppercase text-xs tracking-[0.3em] rotate-1">
+            QUERY_PACKET_{currentQuestion + 1}
+          </div>
+          <h4 className="text-3xl font-black text-black mb-12 uppercase tracking-tight italic leading-snug">{question.question}</h4>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {question.options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => selectAnswer(index)}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${answers[currentQuestion] === index
-                    ? 'border-neon-blue bg-neon-blue/20 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                    : 'border-white/10 hover:border-white/30 text-gray-300 hover:bg-white/5'
-                  }`}
+                className={`
+                    w-full text-left p-8 border-4 border-black font-black uppercase tracking-tighter italic text-xl transition-all duration-200 
+                    ${answers[currentQuestion] === index
+                    ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1'
+                    : 'bg-white shadow-[6px_6px_0px_0px_#000] hover:bg-neo-bg hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#000]'
+                  }
+                `}
               >
-                <span className="font-medium mr-3 text-gray-500">{String.fromCharCode(65 + index)}.</span>
+                <span className="inline-block bg-black text-white px-3 py-1 mr-4 -rotate-12 border-2 border-black">{String.fromCharCode(65 + index)}</span>
                 {option}
               </button>
             ))}
@@ -461,26 +464,29 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-t-4 border-black pt-10">
           <button
             onClick={previousQuestion}
             disabled={currentQuestion === 0}
-            className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:text-gray-600 text-white px-6 py-3 rounded-xl transition-colors duration-200 border border-white/10"
+            className="w-full md:w-auto bg-white border-4 border-black px-10 py-4 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-muted disabled:opacity-20 transition-all shadow-[6px_6px_0px_0px_#000]"
           >
-            Previous
+            REVERT_INPUT
           </button>
 
-          <div className="flex gap-2 overflow-x-auto max-w-[50%] pb-2 custom-scrollbar">
+          <div className="flex gap-3 flex-wrap justify-center max-w-[50%]">
             {Array.from({ length: currentTest.total_questions }, (_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentQuestion(i)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors duration-200 flex-shrink-0 ${i === currentQuestion
-                    ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/30'
+                className={`
+                    w-10 h-10 border-4 border-black font-black text-sm flex items-center justify-center transition-all
+                    ${i === currentQuestion
+                    ? 'bg-black text-white shadow-[4px_4px_0px_0px_#FF6B6B] -translate-y-1'
                     : answers[i] !== -1
-                      ? 'bg-neon-green/20 text-neon-green border border-neon-green/30'
-                      : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/5'
-                  }`}
+                      ? 'bg-neo-secondary shadow-none'
+                      : 'bg-white hover:bg-neo-bg shadow-[2px_2px_0px_0px_#000]'
+                  }
+                `}
               >
                 {i + 1}
               </button>
@@ -490,16 +496,16 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           {currentQuestion === currentTest.total_questions - 1 ? (
             <button
               onClick={submitTest}
-              className="bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg shadow-neon-green/20"
+              className="w-full md:w-auto bg-black text-white px-10 py-4 border-4 border-black font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
             >
-              Submit Test
+              FINAL_UPLOAD
             </button>
           ) : (
             <button
               onClick={nextQuestion}
-              className="bg-neon-blue hover:bg-blue-500 text-white px-6 py-3 rounded-xl transition-colors duration-200 shadow-lg shadow-neon-blue/20"
+              className="w-full md:w-auto bg-black text-white px-10 py-4 border-4 border-black font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
             >
-              Next
+              COMMIT_NEXT
             </button>
           )}
         </div>
@@ -510,77 +516,56 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
   const selectedPlanData = availablePlans.find(plan => plan.id === (selectedPlan || planId));
 
   return (
-    <div className="space-y-6 relative">
-      {/* Razorpay Paywall Overlay */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="glass-card rounded-2xl p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
-            <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
-            <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all features.</p>
-            <button
-              onClick={handleSubscribe}
-              className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
-            >
-              Go to Subscription
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="p-10 space-y-12 relative bg-neo-bg/10 min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-neon-green to-emerald-600 p-2 rounded-lg shadow-lg shadow-neon-green/20">
-            <FileText className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-white">Practice Tests</h3>
-            <p className="text-gray-400">AI-generated practice exams from your study plans</p>
-          </div>
+      <div className="flex items-center gap-6">
+        <div className="bg-neo-secondary border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] rotate-3">
+          <FileText className="h-10 w-10 text-black stroke-[3px]" />
+        </div>
+        <div>
+          <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">TEST_CHAMBER</h3>
+          <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: VALIDATION_INTERFACE</p>
         </div>
       </div>
 
       {/* Plan Selection and Generation */}
-      <div className="glass-panel rounded-2xl p-6 border border-white/10">
-        <h4 className="text-lg font-semibold text-white mb-4">Generate New Practice Test</h4>
+      <div className="bg-white border-8 border-black p-10 shadow-[16px_16px_0px_0px_#000] rotate-1">
+        <h4 className="text-2xl font-black text-black uppercase tracking-tighter italic mb-8 border-b-4 border-black pb-4">GENERATE_EXAM_PACKET</h4>
 
-        <div className="space-y-4">
-          {/* Study Plan Selection */}
+        <div className="space-y-10">
           {!planId && availablePlans.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Study Plan
-              </label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic">SOURCE_PLAN</label>
               <select
                 value={selectedPlan}
                 onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-green focus:outline-none focus:ring-1 focus:ring-neon-green"
+                className="w-full bg-white border-4 border-black px-6 py-4 font-black text-xl italic focus:bg-neo-secondary outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
               >
-                <option value="" className="bg-gray-900">Choose a study plan...</option>
+                <option value="">SELECT SOURCE...</option>
                 {availablePlans.map((plan) => (
-                  <option key={plan.id} value={plan.id} className="bg-gray-900">
-                    {plan.subject} - Class {plan.class} (Exam: {new Date(plan.exam_date).toLocaleDateString()})
+                  <option key={plan.id} value={plan.id}>
+                    {plan.subject.toUpperCase()} - CLASS_{plan.class}
                   </option>
                 ))}
               </select>
             </div>
           )}
 
-          {/* Plan Details Display */}
           {selectedPlanData && (
-            <div className="glass-card rounded-xl p-4 border border-neon-green/30 bg-neon-green/5">
-              <h5 className="font-semibold text-neon-green mb-2">Selected Plan Details</h5>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Subject:</span>
-                  <span className="text-white ml-2">{selectedPlanData.subject}</span>
+            <div className="bg-neo-secondary/10 border-4 border-black p-6 -rotate-1">
+              <h5 className="font-black text-black uppercase tracking-widest text-xs mb-4">PACKET_PARAMETERS</h5>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-[10px] font-black uppercase tracking-widest">
+                <div className="flex flex-col gap-1">
+                  <span className="text-black/40 italic">SUBJECT:</span>
+                  <span className="text-black text-lg font-black italic">{selectedPlanData.subject}</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">Class:</span>
-                  <span className="text-white ml-2">{selectedPlanData.class}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-black/40 italic">CLASS:</span>
+                  <span className="text-black text-lg font-black italic">{selectedPlanData.class}</span>
                 </div>
-                <div className="col-span-2">
-                  <span className="text-gray-400">Chapters:</span>
-                  <span className="text-white ml-2">{selectedPlanData.chapters}</span>
+                <div className="col-span-2 md:col-span-1 flex flex-col gap-1">
+                  <span className="text-black/40 italic">CONSTRAINTS:</span>
+                  <span className="text-black text-lg font-black italic truncate">{selectedPlanData.chapters}</span>
                 </div>
               </div>
             </div>
@@ -589,18 +574,18 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
           <button
             onClick={generateTest}
             disabled={isGenerating || (!selectedPlan && !planId)}
-            className="w-full bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 disabled:from-gray-700 disabled:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed disabled:text-gray-500 shadow-lg shadow-neon-green/20"
+            className="w-full bg-black text-white py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000] disabled:opacity-50 flex items-center justify-center gap-6"
           >
             {isGenerating ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Generating Practice Test...
-              </div>
+              <>
+                <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                PROCESSING_PACKET...
+              </>
             ) : (
-              <div className="flex items-center justify-center gap-2">
-                <Target className="h-5 w-5" />
-                Generate Practice Test (20 Questions, 30 mins)
-              </div>
+              <>
+                <Target className="h-10 w-10 stroke-[4px]" />
+                COMPILED_TEST (20Q / 30M)
+              </>
             )}
           </button>
         </div>
@@ -608,32 +593,37 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
       {/* Available Tests */}
       {tests.length === 0 ? (
-        <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
-          <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
-            <FileText className="h-16 w-16 text-gray-500 mx-auto" />
-          </div>
-          <h4 className="text-xl font-semibold text-white mb-2">No Practice Tests</h4>
-          <p className="text-gray-400 mb-6">Generate AI-powered practice tests from your study plans</p>
+        <div className="bg-white border-8 border-black p-20 text-center shadow-[16px_16px_0px_0px_#000] rotate-1">
+          <FileText className="h-20 w-20 text-black/10 mx-auto mb-8" />
+          <h4 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">CHAMBER_EMPTY</h4>
+          <p className="text-black font-bold uppercase tracking-widest text-sm mb-10 leading-relaxed">NO ACTIVE TEST PACKETS FOUND. INITIALIZE GENERATION PROTOCOL.</p>
         </div>
       ) : (
         <div>
-          <h4 className="text-lg font-semibold text-white mb-4">Available Practice Tests</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {tests.map((test) => (
-              <div key={test.id} className="glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-green/30 transition-all duration-300">
-                <h4 className="text-lg font-semibold text-white mb-2">{test.title}</h4>
-                <p className="text-gray-400 mb-4">{test.subject}</p>
+          <h4 className="text-3xl font-black text-black uppercase tracking-tighter italic mb-10 border-b-4 border-black pb-4">ACTIVE_CHAMBERS</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {tests.map((test, idx) => (
+              <div key={test.id} className={`
+                bg-white border-4 border-black p-8 shadow-[10px_10px_0px_0px_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[14px_14px_0px_0px_#000]
+                ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}
+              `}>
+                <h4 className="text-3xl font-black text-black mb-2 uppercase tracking-tight italic leading-none">{test.title}</h4>
+                <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mb-8 italic">{test.subject}</p>
 
-                <div className="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                  <span className="flex items-center gap-1"><Target className="h-3 w-3" /> {test.total_questions} questions</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {test.duration_minutes} mins</span>
+                <div className="grid grid-cols-2 gap-4 mb-10">
+                  <div className="bg-neo-bg p-3 border-2 border-black flex items-center gap-3 font-black uppercase text-[10px] tracking-widest">
+                    <Target className="h-5 w-5 stroke-[3px]" /> {test.total_questions} NODES
+                  </div>
+                  <div className="bg-neo-bg p-3 border-2 border-black flex items-center gap-3 font-black uppercase text-[10px] tracking-widest">
+                    <Clock className="h-5 w-5 stroke-[3px]" /> {test.duration_minutes} MINS
+                  </div>
                 </div>
 
                 <button
                   onClick={() => startTest(test)}
-                  className="w-full bg-gradient-to-r from-neon-green to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-neon-green/20"
+                  className="w-full bg-black text-white py-4 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[6px_6px_0px_0px_#FF6B6B]"
                 >
-                  Start Test
+                  INITIALIZE_CHAMBER
                 </button>
               </div>
             ))}
@@ -643,24 +633,32 @@ export function PracticeTestEngine({ planId, subject }: PracticeTestEngineProps)
 
       {/* Recent Attempts */}
       {attempts.length > 0 && (
-        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-          <h4 className="text-lg font-semibold text-white mb-4">Recent Attempts</h4>
-          <div className="space-y-3">
-            {attempts.slice(0, 5).map((attempt) => (
-              <div key={attempt.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
-                <div>
-                  <p className="text-white font-medium">
-                    Score: {attempt.score}/{attempt.total_questions}
-                  </p>
-                  <p className="text-gray-400 text-sm">
-                    {new Date(attempt.completed_at).toLocaleDateString()}
-                  </p>
+        <div className="bg-white border-4 border-black p-10 shadow-[12px_12px_0px_0px_#000]">
+          <h4 className="text-2xl font-black text-black uppercase tracking-tighter italic mb-8 border-b-4 border-black pb-4">MISSION_LOG</h4>
+          <div className="space-y-6">
+            {attempts.slice(0, 5).map((attempt, idx) => (
+              <div key={attempt.id} className={`
+                flex flex-col md:flex-row items-center justify-between p-6 border-4 border-black transition-all hover:bg-neo-bg/50
+                ${idx % 2 === 0 ? '-rotate-[0.5deg]' : 'rotate-[0.5deg]'}
+              `}>
+                <div className="flex items-center gap-8 mb-4 md:mb-0">
+                  <div className="bg-black text-white p-3 border-2 border-black">
+                    <FileText className="h-6 w-6 stroke-[3px]" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-black uppercase italic leading-none">
+                      SCORE: <span className={getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}>{attempt.score}/{attempt.total_questions}</span>
+                    </p>
+                    <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">{new Date(attempt.completed_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-bold ${getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}`}>
-                    {Math.round((attempt.score / attempt.total_questions) * 100)}%
-                  </p>
-                  <p className="text-gray-400 text-sm">{attempt.time_taken_minutes}m</p>
+                <div className="text-right flex items-center gap-10">
+                  <div className="flex flex-col items-end">
+                    <p className={`text-4xl font-black italic leading-none ${getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}`}>
+                      {Math.round((attempt.score / attempt.total_questions) * 100)}%
+                    </p>
+                    <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">{attempt.time_taken_minutes}M EXPENDED</p>
+                  </div>
                 </div>
               </div>
             ))}

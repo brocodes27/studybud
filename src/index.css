@@ -1,6 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,58 +7,40 @@
 
 @layer base {
   :root {
-    /* Futuristic Dark Theme Tokens */
-    --background: 240 30% 6%;
-    /* Deep Space Blue */
-    --foreground: 210 40% 98%;
+    --neo-bg: #FFFDF5;
+    --neo-ink: #000000;
+    --neo-accent: #FF6B6B;
+    --neo-secondary: #FFD93D;
+    --neo-muted: #C4B5FD;
+    --neo-white: #FFFFFF;
 
-    --card: 240 25% 10%;
-    --card-foreground: 210 40% 98%;
+    --shadow-neo-sm: 4px 4px 0px 0px #000;
+    --shadow-neo: 8px 8px 0px 0px #000;
+    --shadow-neo-lg: 12px 12px 0px 0px #000;
 
-    --popover: 240 30% 8%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 190 100% 50%;
-    /* Neon Cyan */
-    --primary-foreground: 240 30% 6%;
-
-    --secondary: 260 100% 60%;
-    /* Neon Purple */
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 240 20% 15%;
-    --muted-foreground: 215 20% 70%;
-
-    --accent: 150 100% 50%;
-    /* Neon Green */
-    --accent-foreground: 240 30% 6%;
-
-    --destructive: 0 100% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 240 20% 15%;
-    --input: 240 20% 15%;
-    --ring: 190 100% 50%;
-
-    --radius: 1rem;
-
-    --sidebar-width: 18rem;
-    --sidebar-gap: 1.5rem;
+    --background: var(--neo-bg);
+    --foreground: var(--neo-ink);
+    --primary: var(--neo-accent);
+    --secondary: var(--neo-secondary);
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    @apply border-black;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: var(--neo-bg);
+    color: var(--neo-ink);
+    @apply font-sans antialiased;
     background-image:
-      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 25%);
+      radial-gradient(circle, #000 1.5px, transparent 1.5px);
+    background-size: 30px 30px;
     background-attachment: fixed;
+  }
+
+  ::selection {
+    background-color: var(--neo-secondary);
+    color: var(--neo-ink);
   }
 
   h1,
@@ -68,132 +49,135 @@
   h4,
   h5,
   h6 {
-    @apply font-display tracking-tight;
+    @apply font-black uppercase tracking-tighter leading-none;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Neo-brutalist Utilities */
+.neo-border {
+  @apply border-4 border-black;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
+.neo-shadow-sm {
+  box-shadow: var(--shadow-neo-sm);
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+.neo-shadow {
+  box-shadow: var(--shadow-neo);
 }
 
-/* Futuristic Glassmorphism */
-.glass {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg;
+.neo-shadow-lg {
+  box-shadow: var(--shadow-neo-lg);
 }
 
-.glass-card {
-  @apply bg-[#0f111a]/60 backdrop-blur-2xl border border-white/5 shadow-xl rounded-2xl;
+/* Interactive Components */
+.neo-button {
+  @apply neo-border px-6 py-3 font-bold uppercase tracking-wide transition-all duration-100 flex items-center justify-center gap-2 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:brightness-110;
+  background-color: var(--neo-accent);
+  box-shadow: var(--shadow-neo-sm);
 }
 
-.glass-panel {
-  @apply bg-[#0a0b14]/80 backdrop-blur-3xl border-r border-white/5 shadow-2xl;
+.neo-button-secondary {
+  @apply neo-button;
+  background-color: var(--neo-secondary);
 }
 
-/* Neon Glow Utilities */
-.text-glow {
-  text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+.neo-button-muted {
+  @apply neo-button;
+  background-color: var(--neo-muted);
 }
 
-.border-glow {
-  box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.05);
+.neo-button-white {
+  @apply neo-button;
+  background-color: var(--neo-white);
 }
 
-/* Text Gradients */
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-neon-blue via-blue-400 to-neon-purple;
+.neo-card {
+  @apply neo-border p-6 transition-all duration-200;
+  background-color: var(--neo-white);
+  box-shadow: var(--shadow-neo);
 }
 
-.gradient-text-primary {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-cyan-400;
+.neo-card:hover {
+  @apply -translate-y-1;
+  box-shadow: var(--shadow-neo-lg);
 }
 
-/* Animations */
-@keyframes float {
+.neo-input {
+  @apply neo-border px-4 py-3 font-bold text-lg focus:outline-none placeholder:text-black/40 transition-colors;
+  background-color: var(--neo-white);
+}
+
+.neo-input:focus {
+  background-color: var(--neo-secondary);
+}
+
+/* Layout Utilities */
+.marquee-container {
+  @apply neo-border border-x-0 bg-black text-white overflow-hidden whitespace-nowrap py-3;
+}
+
+.marquee-content {
+  display: inline-block;
+  animation: marquee 25s linear infinite;
+  @apply font-black uppercase text-2xl tracking-widest;
+}
+
+@keyframes marquee {
   0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
+    transform: translateX(0%);
   }
 
   100% {
-    transform: translateY(0px);
+    transform: translateX(-100%);
   }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+/* Custom Scrollbar (Brutalist style) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
 }
 
-/* Card Styles */
-.card {
-  @apply glass-card p-6 transition-all duration-300 hover:bg-white/5 hover:border-white/10;
+::-webkit-scrollbar-track {
+  @apply border-l-4 border-black;
+  background-color: var(--neo-bg);
 }
 
-.card-elevated {
-  @apply glass-card p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-neon-blue/20 hover:border-neon-blue/30;
+::-webkit-scrollbar-thumb {
+  @apply bg-black transition-colors;
 }
 
-/* Button Styles */
-.btn-primary {
-  @apply bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-white/10 relative overflow-hidden;
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--neo-accent);
 }
 
-.btn-secondary {
-  @apply bg-white/5 text-white font-medium py-3 px-6 rounded-xl border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 backdrop-blur-md;
+/* Sticker Effect */
+.sticker {
+  @apply neo-border rounded-full px-4 py-1 font-black text-xs uppercase tracking-widest inline-block;
 }
 
-.btn-accent {
-  @apply bg-gradient-to-r from-purple-500 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-white/10;
+.rotate-sticker-1 {
+  @apply rotate-1;
 }
 
-/* Input Styles */
-.input-field {
-  @apply bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-neon-blue/50 focus:ring-1 focus:ring-neon-blue/50 transition-all duration-200 backdrop-blur-sm;
+.rotate-sticker-2 {
+  @apply -rotate-2;
 }
 
-/* Sidebar Layout */
-.page-with-sidebar {
-  padding-left: 0;
+.rotate-sticker-3 {
+  @apply rotate-3;
 }
 
-@media (min-width: 768px) {
-  .page-with-sidebar {
-    padding-left: calc(var(--sidebar-width, 18rem) + var(--sidebar-gap, 1rem));
-    transition: padding-left 0.3s ease;
-  }
-}
-
-body.sidebar-collapsed {
-  --sidebar-width: 5rem;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-  @apply w-10 h-10 border-4 border-slate-700 border-t-sky-500 rounded-full animate-spin;
-}
-
-/* Tour Overlay */
-.tour-overlay {
-  @apply fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm;
-}
-
-.tour-highlight {
-  @apply fixed z-[101] rounded-xl ring-4 ring-sky-500/50;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
-}
-
-.tour-bubble {
-  @apply glass-panel p-4 rounded-xl max-w-sm text-white;
+/* Remove previous styles */
+.glass,
+.glass-card,
+.glass-panel,
+.text-glow,
+.border-glow,
+.gradient-text,
+.gradient-text-primary {
+  @apply bg-white border-4 border-black;
+  box-shadow: 4px 4px 0px 0px #000;
+  text-shadow: none;
 }

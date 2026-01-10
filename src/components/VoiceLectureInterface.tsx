@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import VAPIService from '../lib/vapiService';
 import { useAuth } from '../contexts/AuthContext';
+import { X, Mic, Send, Brain, Target, MessageSquare } from 'lucide-react';
 
 interface VoiceLectureInterfaceProps {
   lessonId: string;
@@ -18,13 +19,13 @@ interface Message {
   isTyping?: boolean;
 }
 
-const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
+export function VoiceLectureInterface({
   lessonId,
   lessonTitle,
   topic,
   onComplete,
   onClose
-}) => {
+}: VoiceLectureInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -33,7 +34,7 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
   const [isCallActive, setIsCallActive] = useState(false);
   const [callId, setCallId] = useState<string | null>(null);
   const [selectedPersonality, setSelectedPersonality] = useState('friendly');
-  const [status, setStatus] = useState<string>('Initializing...');
+  const [status, setStatus] = useState<string>('NITIALIZING_CORES...');
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -41,10 +42,8 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
   const { user } = useAuth() as any;
 
   useEffect(() => {
-    // Initialize VAPI call when component mounts
     initializeVAPICall();
-    
-    // Cleanup on unmount
+
     return () => {
       if (wsConnection) {
         wsConnection.close();
@@ -57,99 +56,70 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
 
   const initializeVAPICall = async () => {
     try {
-      setStatus('Initializing voice call...');
+      setStatus('CONNECTING_VAPI_CORE...');
       const call = await vapiService.initializeCall(topic, selectedPersonality);
       setCallId(call.id);
-      
-      // Check if this is a real call or fallback
+
       if (call.id.startsWith('mock-call') || call.id.startsWith('fallback-call')) {
-        // This is a fallback/mock call
         setIsCallActive(false);
-        setStatus('Voice service unavailable - using text mode');
-        addMessage('ai', `Hello! I'm your AI tutor. Let's explore ${topic} together. Since voice features are currently unavailable, you can type your responses and I'll help you learn through text-based conversation.`);
+        setStatus('VOICE_STREAM_NULL: FALLBACK_TO_TEXT');
+        addMessage('ai', `HELLO_HUMAN! I'M YOUR NEURAL_MODERATOR. LET'S EXPLORE ${topic.toUpperCase()} TOGETHER. VOICE_CIRCUITS_ARE_OFFLINE. PROTOCOL: TEXT_INPUT_ACTIVE.`);
         return;
       }
-      
-      // This is a real VAPI call
+
       setIsCallActive(true);
-      setStatus('Connecting to voice service...');
-      
-      // Connect to VAPI WebSocket stream
+      setStatus('ESTABLISHING_SYNC...');
+
       const ws = vapiService.connectToCall(call.id, handleWebSocketMessage);
       setWsConnection(ws);
-      
+
       if (ws) {
-        setStatus('Connected! Speak to your AI tutor.');
-        // Add initial greeting
+        setStatus('SYNC_ESTABLISHED: SPEAK_NOW');
         setTimeout(() => {
-          addMessage('ai', `Hello! I'm Elliot, your AI tutor. Let's explore ${topic} together. What do you know about this topic?`);
+          addMessage('ai', `GREETINGS. I AM ELLIOT_V2. SYSTEM_SYNC_COMPLETE. SUBJECT: ${topic.toUpperCase()}. INITIALIZING_QUERY_STREAM.`);
         }, 1000);
       } else {
-        throw new Error('Failed to connect to voice stream');
+        throw new Error('STREAM_CONNECT_FAILURE');
       }
     } catch (error) {
-      console.error('Error initializing VAPI call:', error);
-      setStatus('Voice service unavailable - using text mode');
-      
-      // Provide a fallback experience
-      addMessage('ai', `Hello! I'm your AI tutor. Let's explore ${topic} together. Since voice features are currently unavailable, you can type your responses and I'll help you learn through text-based conversation.`);
-      
-      // Set up fallback mode
+      console.error('VAPI_INIT_ERROR:', error);
+      setStatus('PROTOCOL_FAILURE: TEXT_OVERRIDE');
+      addMessage('ai', `CRITICAL_ERROR: VOICE_SYSTEMS_COMPROMISED. SWITCHING_TO_TEXT_SYNC. LET'S ANALYZE ${topic.toUpperCase()}.`);
       setIsCallActive(false);
       setCallId('fallback-' + Date.now());
     }
   };
 
   const handleWebSocketMessage = (data: any) => {
-    console.log('WebSocket message received:', data);
-    
     switch (data.type) {
       case 'message':
-        // AI is speaking
         setIsSpeaking(true);
         addMessage('ai', data.content);
-        // Play audio if available
-        if (data.audioUrl) {
-          playAudio(data.audioUrl);
-        }
+        if (data.audioUrl) playAudio(data.audioUrl);
         break;
-        
       case 'user-input':
-        // User spoke
         setIsListening(false);
         addMessage('user', data.content);
         break;
-        
       case 'listening':
-        // AI is listening for user input
         setIsListening(true);
         setIsSpeaking(false);
-        setStatus('Listening... Speak now!');
+        setStatus('CORE_LISTENING...');
         break;
-        
       case 'speaking':
-        // AI is speaking
         setIsSpeaking(true);
         setIsListening(false);
-        setStatus('AI is speaking...');
+        setStatus('AI_TRANSMITTING...');
         break;
-        
-      case 'error':
-        console.error('VAPI WebSocket error:', data);
-        setStatus('Connection error - trying to reconnect...');
-        break;
-        
       default:
-        console.log('Unknown WebSocket message type:', data.type);
+        console.log('UNHANDLED_WS_PACKET:', data.type);
     }
   };
 
   const playAudio = (audioUrl: string) => {
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
-      audioRef.current.play().catch(error => {
-        console.error('Error playing audio:', error);
-      });
+      audioRef.current.play().catch(console.error);
     }
   };
 
@@ -161,32 +131,27 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const addMessage = (type: 'ai' | 'user', content: string, isTyping?: boolean) => {
-    const newMessage: Message = {
+  const addMessage = (type: 'ai' | 'user', content: string) => {
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       type,
       content,
-      timestamp: new Date(),
-      isTyping
-    };
-    setMessages(prev => [...prev, newMessage]);
+      timestamp: new Date()
+    }]);
   };
 
   const handleVoiceInput = () => {
     if (isCallActive && wsConnection) {
       if (isListening) {
-        // Stop listening
         setIsListening(false);
-        setStatus('Voice input stopped');
+        setStatus('SYNC_PAUSED');
       } else {
-        // Start listening
         setIsListening(true);
-        setStatus('Listening for voice input...');
-        // Send a message to VAPI to start listening
+        setStatus('LISTENING_FOR_WAVES...');
         wsConnection.send(JSON.stringify({ type: 'start-listening' }));
       }
     } else {
-      setStatus('Voice service not available');
+      setStatus('VOICE_IO_DENIED');
     }
   };
 
@@ -195,119 +160,106 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
     if (!currentInput.trim()) return;
 
     addMessage('user', currentInput);
-    
+
     if (isCallActive && wsConnection) {
-      // Send text input to VAPI
-      wsConnection.send(JSON.stringify({ 
-        type: 'text-input', 
-        content: currentInput 
+      wsConnection.send(JSON.stringify({
+        type: 'text-input',
+        content: currentInput
       }));
     } else {
-      // Fallback: simulate AI response
       setTimeout(() => {
-        addMessage('ai', `I understand you said: "${currentInput}". Let's continue our conversation about ${topic}. What would you like to know more about?`);
+        addMessage('ai', `SYNC_RECEIVED: "${currentInput.toUpperCase()}". PROCESSING_QUERY_UPSTREAM. WHAT_IS_YOUR_NEXT_ITERATION?`);
       }, 1000);
     }
-    
+
     setCurrentInput('');
   };
 
   const completeLesson = async () => {
     setIsCompleted(true);
-    setStatus('Lesson completed!');
-    
-    // Save conversation data
+    setStatus('SEQUENCE_COMPLETE');
+
     if (callId && user) {
       try {
         await vapiService.saveVoiceLectureData(user.id, lessonId, {
           topic,
-          transcript: messages.map(m => `${m.type}: ${m.content}`).join('\n'),
+          transcript: messages.map(m => `${m.type.toUpperCase()}: ${m.content}`).join('\n'),
           progress: 100,
           accuracy: 85,
           xpEarned: 50
         });
       } catch (error) {
-        console.error('Error saving voice lecture data:', error);
+        console.error('DATA_SYNC_ERROR:', error);
       }
     }
-    
-    // Call completion callback
+
     onComplete(85, 50);
   };
 
-  const speakMessage = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] backdrop-blur-[4px] p-4">
+      <div className="bg-white border-8 border-black max-w-4xl w-full max-h-[90vh] flex flex-col shadow-[32px_32px_0px_0px_#000]">
+
         {/* Header */}
-        <div className="bg-gray-700 p-4 rounded-t-xl flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-bold text-white">{lessonTitle}</h2>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isCallActive ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-              <span className="text-sm text-gray-300">
-                {isCallActive ? 'Voice Active' : 'Text Mode Only'}
-              </span>
+        <div className="p-8 border-b-8 border-black bg-white flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="bg-neo-secondary border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] rotate-3">
+              <Brain className="h-10 w-10 text-black stroke-[4px]" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic leading-none">{lessonTitle}</h2>
+              <div className="flex items-center gap-3 mt-2">
+                <span className={`px-3 py-0.5 font-black uppercase text-[10px] tracking-widest border-2 border-black ${isCallActive ? 'bg-neo-accent text-white' : 'bg-neo-bg text-black'}`}>
+                  {isCallActive ? 'VOICE_SYNC_ON' : 'TEXT_MODE_ONLY'}
+                </span>
+                <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic truncate max-w-[200px]">
+                  [{status}]
+                </span>
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <select 
-              value={selectedPersonality} 
+
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedPersonality}
               onChange={(e) => setSelectedPersonality(e.target.value)}
               disabled={isCallActive}
-              className="bg-gray-600 text-white px-3 py-1 rounded text-sm"
+              className="bg-white border-4 border-black px-4 py-2 font-black uppercase text-xs tracking-widest italic outline-none focus:bg-neo-bg transition-all"
             >
-              <option value="friendly">Friendly</option>
-              <option value="encouraging">Encouraging</option>
-              <option value="strict">Strict</option>
-              <option value="socratic">Socratic</option>
+              <option value="friendly">NEUTRAL_FRIENDLY</option>
+              <option value="encouraging">HIGH_ENCOURAGE</option>
+              <option value="strict">MASTER_STRICT</option>
+              <option value="socratic">SOCRATIC_DEEP</option>
             </select>
-            
+
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="bg-white border-4 border-black p-2 hover:bg-neo-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="h-8 w-8 stroke-[4px]" />
             </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[60vh]">
+        <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-neo-bg/5 custom-scrollbar">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  message.type === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-white'
-                }`}
+                className={`max-w-[80%] p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] relative ${message.type === 'user'
+                    ? 'bg-neo-secondary -rotate-1'
+                    : 'bg-white rotate-1'
+                  }`}
               >
-                {message.isTyping ? (
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                ) : (
-                  <p>{message.content}</p>
-                )}
-                <span className="text-xs opacity-70 mt-1 block">
-                  {message.timestamp.toLocaleTimeString()}
+                <div className={`absolute -top-4 ${message.type === 'user' ? '-right-4' : '-left-4'} bg-black text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest`}>
+                  {message.type.toUpperCase()}_ID
+                </div>
+                <p className="font-black text-xl italic uppercase tracking-tight leading-tight">{message.content}</p>
+                <span className="text-[10px] font-black opacity-30 mt-4 block uppercase tracking-widest">
+                  SYNC_TIME: {message.timestamp.toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -315,72 +267,60 @@ const VoiceLectureInterface: React.FC<VoiceLectureInterfaceProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Voice Controls */}
-        <div className="bg-gray-700 p-4 rounded-b-xl">
-          {!isCallActive ? (
-            <div className="text-center mb-4">
-              <div className="bg-yellow-600 text-white p-3 rounded-lg mb-4">
-                <p className="font-semibold">🎤 Voice Mode Unavailable</p>
-                <p className="text-sm">Please check your VAPI API key configuration</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center space-x-4 mb-4">
-              <button
-                onClick={handleVoiceInput}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                  isListening
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+        {/* Controls */}
+        <div className="p-8 border-t-8 border-black bg-white space-y-8">
+          <div className="flex items-center gap-6">
+            <button
+              onClick={handleVoiceInput}
+              className={`flex-1 flex items-center justify-center gap-4 px-10 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none ${isListening
+                  ? 'bg-neo-accent text-white animate-pulse'
+                  : 'bg-neo-secondary text-black'
                 }`}
-              >
-                {isListening ? (
-                  <>
-                    <div className="w-4 h-4 bg-red-400 rounded-full animate-pulse"></div>
-                    <span>Stop Listening</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                    </svg>
-                    <span>Start Voice</span>
-                  </>
-                )}
-              </button>
-
-              {isSpeaking && (
-                <div className="flex items-center space-x-2 text-green-400">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>AI Speaking...</span>
-                </div>
+            >
+              {isListening ? (
+                <>
+                  <Target className="h-8 w-8 animate-spin" />
+                  <span>STOP_SCANNING_VOICE</span>
+                </>
+              ) : (
+                <>
+                  <Mic className="h-8 w-8 stroke-[4px]" />
+                  <span>INITIALIZE_VOICE_SYNC</span>
+                </>
               )}
-            </div>
-          )}
+            </button>
+            <button
+              onClick={completeLesson}
+              className="px-10 py-6 border-4 border-black bg-black text-white font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000]"
+            >
+              FINISH_CONV
+            </button>
+          </div>
 
-          {/* Text Input Fallback */}
-          <form onSubmit={handleTextInput} className="flex space-x-2">
-            <input
-              type="text"
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              placeholder="Type your message here..."
-              className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <form onSubmit={handleTextInput} className="flex gap-6">
+            <div className="relative flex-grow">
+              <input
+                type="text"
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                placeholder="TYPE_SYSTEM_INPUT_HERE..."
+                className="w-full bg-white border-4 border-black px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-neo-bg outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
+              />
+              <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 text-black/20 h-8 w-8" />
+            </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-black text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000] active:translate-y-1 active:shadow-none"
             >
-              Send
+              <Send className="h-8 w-8 stroke-[4px]" />
             </button>
           </form>
         </div>
 
-        {/* Hidden Audio Element */}
         <audio ref={audioRef} style={{ display: 'none' }} />
       </div>
     </div>
   );
-};
+}
 
-export default VoiceLectureInterface; 
+export default VoiceLectureInterface;

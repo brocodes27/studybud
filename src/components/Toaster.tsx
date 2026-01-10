@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { CheckCircle, XCircle, AlertCircle, Info, X, LucideIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Toast {
   id: string;
@@ -21,92 +22,91 @@ const toastIcons = {
 };
 
 const toastStyles = {
-  success: 'bg-success-500/10 border-success-500/20 text-success-100',
-  error: 'bg-destructive/10 border-destructive/20 text-red-100',
-  warning: 'bg-warning-500/10 border-warning-500/20 text-warning-100',
-  info: 'bg-primary-500/10 border-primary-500/20 text-primary-100',
+  success: 'bg-neo-secondary border-black text-black',
+  error: 'bg-neo-accent border-black text-black',
+  warning: 'bg-neo-muted border-black text-black',
+  info: 'bg-white border-black text-black',
 };
 
 const iconStyles = {
-  success: 'text-success-400',
-  error: 'text-red-400',
-  warning: 'text-warning-400',
-  info: 'text-primary-400',
+  success: 'text-black',
+  error: 'text-black',
+  warning: 'text-black',
+  info: 'text-black',
 };
 
-export const Toaster: React.FC<ToasterProps> = ({ toasts = [], removeToast = () => {} }) => {
-  // Don't render if no toasts
+export const Toaster: React.FC<ToasterProps> = ({ toasts = [], removeToast = () => { } }) => {
   if (!toasts || toasts.length === 0) {
     return null;
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-3">
-      {toasts.map((toast) => {
-        const Icon = toastIcons[toast.type];
-        return (
-          <Toast
-            key={toast.id}
-            toast={toast}
-            icon={Icon}
-            onRemove={removeToast}
-          />
-        );
-      })}
+    <div className="fixed top-8 right-8 z-[100] flex flex-col gap-6 items-end">
+      <AnimatePresence mode="popLayout">
+        {toasts.map((toast) => {
+          const Icon = toastIcons[toast.type];
+          return (
+            <Toast
+              key={toast.id}
+              toast={toast}
+              icon={Icon}
+              onRemove={removeToast}
+            />
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 };
 
 interface ToastProps {
   toast: Toast;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   onRemove: (id: string) => void;
 }
 
 const Toast: React.FC<ToastProps> = ({ toast, icon: Icon, onRemove }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // Animate in
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
   useEffect(() => {
     if (toast.duration) {
       const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => onRemove(toast.id), 300);
+        onRemove(toast.id);
       }, toast.duration);
       return () => clearTimeout(timer);
     }
   }, [toast.id, toast.duration, onRemove]);
 
-  const handleRemove = () => {
-    setIsVisible(false);
-    setTimeout(() => onRemove(toast.id), 300);
-  };
-
   return (
-    <div
-      className={`transform transition-all duration-300 ease-out ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-      }`}
+    <motion.div
+      layout
+      initial={{ x: 100, opacity: 0, rotate: 5 }}
+      animate={{ x: 0, opacity: 1, rotate: 0 }}
+      exit={{ x: 100, opacity: 0, scale: 0.9 }}
+      className={`relative group border-4 ${toastStyles[toast.type]} shadow-[8px_8px_0px_0px_#000] p-6 min-w-[320px] max-w-md flex items-center gap-5`}
     >
-      <div className={`flex items-center p-4 rounded-2xl border backdrop-blur-xl shadow-2xl min-w-80 max-w-md ${toastStyles[toast.type]}`}>
-        <div className={`flex-shrink-0 ${iconStyles[toast.type]}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="ml-3 flex-1">
-          <p className="text-sm font-medium">{toast.message}</p>
-        </div>
-        <button
-          onClick={handleRemove}
-          className="ml-4 flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors duration-200 focus-ring"
-        >
-          <X className="w-4 h-4" />
-        </button>
+      <div className={`flex-shrink-0 ${iconStyles[toast.type]} bg-white border-4 border-black p-2 -rotate-3 group-hover:rotate-0 transition-transform`}>
+        <Icon className="w-6 h-6" strokeWidth={3} />
       </div>
-    </div>
+
+      <div className="flex-1">
+        <p className="font-black uppercase tracking-tight italic text-lg leading-tight">
+          {toast.message}
+        </p>
+      </div>
+
+      <button
+        onClick={() => onRemove(toast.id)}
+        className="flex-shrink-0 bg-white border-4 border-black p-2 shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all hover:bg-neo-accent"
+      >
+        <X className="w-5 h-5 text-black stroke-[3px]" />
+      </button>
+
+      {/* Background patterns */}
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none overflow-hidden">
+        <div
+          className="w-full h-full"
+          style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '8px 8px' }}
+        />
+      </div>
+    </motion.div>
   );
 };

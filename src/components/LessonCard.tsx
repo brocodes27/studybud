@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, BookOpen, CheckCircle, Play, Target, TrendingUp } from 'lucide-react';
+import { Clock, BookOpen, CheckCircle, Play, Target } from 'lucide-react';
 
 interface LessonCardProps {
   title: string;
@@ -13,16 +13,10 @@ interface LessonCardProps {
   estimatedTime?: string;
 }
 
-const difficultyColors = {
-  beginner: 'from-success-500 to-success-600',
-  intermediate: 'from-warning-500 to-warning-600',
-  advanced: 'from-accent-500 to-accent-600',
-};
-
-const difficultyLabels = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
+const difficultyStyles = {
+  beginner: 'bg-neo-secondary',
+  intermediate: 'bg-neo-muted',
+  advanced: 'bg-neo-accent',
 };
 
 export const LessonCard: React.FC<LessonCardProps> = ({
@@ -39,91 +33,81 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className="card-elevated cursor-pointer group relative overflow-hidden"
+      className="neo-card cursor-pointer group flex flex-col h-full bg-white"
     >
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-accent-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
       {/* Header */}
-      <div className="relative z-10 flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="w-5 h-5 text-primary-400" />
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="p-2 bg-neo-ink border-2 border-black">
+              <BookOpen className="w-4 h-4 text-white" />
+            </div>
             {category && (
-              <span className="text-xs font-medium text-gray-400 bg-gray-700/50 px-2 py-1 rounded-lg">
-                {category}
+              <span className="sticker border-2 bg-white text-[10px]">
+                {category.toUpperCase()}
               </span>
             )}
-            <span className={`text-xs font-semibold px-2 py-1 rounded-lg bg-gradient-to-r ${difficultyColors[difficulty]} text-white`}>
-              {difficultyLabels[difficulty]}
+            <span className={`sticker border-2 ${difficultyStyles[difficulty]} text-[10px]`}>
+              {difficulty.toUpperCase()}
             </span>
           </div>
-          <h3 className="text-lg font-bold text-white mb-2 group-hover:text-primary-300 transition-colors duration-200">
+          <h3 className="text-xl font-black text-black uppercase tracking-tight line-clamp-2 leading-[1.1] group-hover:text-neo-accent transition-colors">
             {title}
           </h3>
         </div>
         {completed && (
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-success-500 to-success-600 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-white" />
+          <div className="flex-shrink-0 w-10 h-10 bg-green-400 border-4 border-black flex items-center justify-center -rotate-6 shadow-[2px_2px_0px_0px_#000]">
+            <CheckCircle className="w-6 h-6 text-black" />
           </div>
         )}
       </div>
 
       {/* Description */}
-      <p className="relative z-10 text-gray-300 text-sm leading-relaxed mb-4 line-clamp-2">
+      <p className="text-black/70 text-sm font-bold leading-snug mb-6 flex-1 line-clamp-3">
         {description}
       </p>
 
-      {/* Progress bar */}
-      <div className="relative z-10 mb-4">
-        <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-          <span>Progress</span>
+      {/* Progress Section */}
+      <div className="mb-6 bg-black/5 p-3 border-2 border-black border-dashed">
+        <div className="flex items-center justify-between text-[10px] font-black uppercase mb-2">
+          <span>PROGRESS</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-white border-4 border-black h-4 overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              completed
-                ? 'bg-gradient-to-r from-success-500 to-success-600'
-                : 'bg-gradient-to-r from-primary-500 to-accent-500'
-            }`}
+            className={`h-full border-r-4 border-black transition-all duration-500 ${completed ? 'bg-green-400' : 'bg-neo-accent'
+              }`}
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-gray-400">
+      <div className="flex items-center justify-between mt-auto pt-4 border-t-2 border-black border-dashed">
+        <div className="flex items-center gap-4 text-xs font-black text-black/60">
           <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{duration}</span>
+            <Clock className="w-4 h-4 stroke-[3px]" />
+            <span>{duration.toUpperCase()}</span>
           </div>
           {estimatedTime && (
             <div className="flex items-center gap-1">
-              <Target className="w-4 h-4" />
-              <span>{estimatedTime}</span>
+              <Target className="w-4 h-4 stroke-[3px]" />
+              <span>{estimatedTime.toUpperCase()}</span>
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {completed ? (
-            <div className="flex items-center gap-1 text-success-400 text-sm font-medium">
-              <CheckCircle className="w-4 h-4" />
-              <span>Completed</span>
-            </div>
+            <span className="text-[10px] font-black bg-green-400 px-2 py-1 border-2 border-black">DONE</span>
           ) : (
-            <div className="flex items-center gap-1 text-primary-400 text-sm font-medium group-hover:text-primary-300 transition-colors duration-200">
-              <Play className="w-4 h-4" />
-              <span>Start</span>
+            <div className="flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+              <span className="text-[10px] font-black uppercase">START</span>
+              <Play className="w-4 h-4 fill-black text-black" />
             </div>
           )}
         </div>
       </div>
-
-      {/* Hover effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-accent-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
     </div>
   );
-}; 
+};

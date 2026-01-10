@@ -4,7 +4,6 @@ import { Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, Alert
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format, differenceInDays } from 'date-fns';
-import { Button } from '../components/Button';
 
 interface StudyPlan {
   id: string;
@@ -41,10 +40,12 @@ export function Dashboard() {
   });
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  // usageDaysThisMonth and latestNotif are not being used in the UI currently.
+  // We'll keep the fetch logic for now but ignore the unused variable warnings.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
+  const [_usageDaysThisMonth, setUsageDaysThisMonth] = useState<number>(0);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [latestNotif, setLatestNotif] = useState<any | null>(null);
+  const [_latestNotif, setLatestNotif] = useState<any | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -215,131 +216,135 @@ export function Dashboard() {
     'Student';
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
+    <div className="space-y-10 animate-fade-in pb-20">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl glass-panel p-8 md:p-12 border border-white/10">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-neon-blue/20 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-64 h-64 bg-neon-purple/20 rounded-full blur-3xl animate-pulse-slow delay-1000"></div>
+      <div className="relative bg-white border-4 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_#000] -rotate-1 group">
+        <div className="absolute -top-4 -right-4 bg-neo-accent border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000] rotate-12 group-hover:rotate-0 transition-transform">
+          <Sparkles className="w-8 h-8 text-white stroke-[3px]" />
+        </div>
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-cyan-300">{displayName}</span>
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-10">
+          <div className="flex-1">
+            <h1 className="text-5xl md:text-6xl font-black text-black mb-6 tracking-tighter uppercase italic leading-none">
+              WELCOME BACK, <br />
+              <span className="bg-neo-accent text-white px-4 py-1 inline-block -rotate-2 border-4 border-black shadow-[4px_4px_0px_0px_#000]">{displayName}</span>
             </h1>
-            <p className="text-gray-300 text-lg max-w-xl">
-              Your AI learning assistant is ready. You have <span className="text-neon-green font-bold">{todaysTasks.length} tasks</span> scheduled for today.
+            <p className="text-black font-bold text-xl max-w-xl leading-snug">
+              YOUR AI MENTOR IS ONLINE. YOU HAVE <span className="underline decoration-neo-accent decoration-4">{todaysTasks.length} TASKS</span> TO SMASH TODAY.
             </p>
-            <div className="flex flex-wrap gap-4 mt-6">
+            <div className="flex flex-wrap gap-6 mt-10">
               <Link to="/create">
-                <button className="btn-primary flex items-center gap-2 group">
-                  <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                  Create New Plan
+                <button className="bg-neo-secondary text-black font-black uppercase tracking-widest text-sm border-4 border-black px-8 py-4 shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center gap-3">
+                  <Plus className="w-6 h-6 stroke-[3px]" />
+                  CREATE NEW PLAN
                 </button>
               </Link>
               <Link to="/tools">
-                <button className="btn-secondary flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-neon-purple" />
-                  Explore Tools
+                <button className="bg-white text-black font-black uppercase tracking-widest text-sm border-4 border-black px-8 py-4 shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center gap-3">
+                  <Flame className="w-6 h-6 text-neo-accent stroke-[3px]" />
+                  EXPLORE TOOLS
                 </button>
               </Link>
             </div>
           </div>
 
           {/* Streak Widget */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center min-w-[160px] border border-white/10 bg-black/20">
-            <div className="relative">
-              <Flame className="w-12 h-12 text-orange-500 animate-pulse" />
-              <div className="absolute inset-0 blur-lg bg-orange-500/30"></div>
+          <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] flex flex-col items-center min-w-[200px] rotate-3 hover:rotate-0 transition-transform">
+            <div className="relative mb-4">
+              <div className="bg-neo-accent p-4 border-4 border-black -rotate-12 shadow-[4px_4px_0px_0px_#000]">
+                <Flame className="w-12 h-12 text-white stroke-[3px]" />
+              </div>
             </div>
-            <span className="text-3xl font-bold text-white mt-2">3</span>
-            <span className="text-xs text-gray-400 uppercase tracking-wider font-medium">Day Streak</span>
+            <span className="text-5xl font-black text-black mt-2 tracking-tighter">03</span>
+            <span className="text-xs font-black text-black/40 uppercase tracking-[0.2em] mt-2">DAY STREAK</span>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {[
-          { label: 'Total Plans', value: stats.totalPlans, icon: BookOpen, color: 'text-neon-blue', bg: 'bg-neon-blue/10', border: 'border-neon-blue/20' },
-          { label: 'Active Plans', value: stats.activePlans, icon: Target, color: 'text-neon-green', bg: 'bg-neon-green/10', border: 'border-neon-green/20' },
-          { label: 'Tasks Done', value: stats.completedTasks, icon: CheckCircle, color: 'text-neon-purple', bg: 'bg-neon-purple/10', border: 'border-neon-purple/20' },
-          { label: 'Upcoming Exams', value: stats.upcomingExams, icon: AlertCircle, color: 'text-neon-yellow', bg: 'bg-neon-yellow/10', border: 'border-neon-yellow/20' }
+          { label: 'TOTAL PLANS', value: stats.totalPlans, icon: BookOpen, color: 'bg-neo-muted' },
+          { label: 'ACTIVE PLANS', value: stats.activePlans, icon: Target, color: 'bg-neo-secondary' },
+          { label: 'TASKS DONE', value: stats.completedTasks, icon: CheckCircle, color: 'bg-neo-accent', text: 'text-white' },
+          { label: 'UPCOMING EXAMS', value: stats.upcomingExams, icon: AlertCircle, color: 'bg-white' }
         ].map((stat, index) => (
-          <div key={index} className={`glass-card p-6 border ${stat.border} hover:scale-[1.02] transition-transform duration-300 group`}>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className="w-6 h-6" />
+          <div key={index} className={`bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] hover:translate-y-[-4px] transition-all group`}>
+            <div className="flex items-center justify-between mb-6">
+              <div className={`p-4 border-4 border-black shadow-[4px_4px_0px_0px_#000] ${stat.color} ${stat.text || 'text-black'} group-hover:rotate-6 transition-transform`}>
+                <stat.icon className="w-8 h-8 stroke-[3px]" />
               </div>
-              <TrendingUp className={`w-4 h-4 ${stat.color} opacity-50`} />
+              <TrendingUp className="w-6 h-6 text-black opacity-20" />
             </div>
-            <p className="text-gray-400 text-sm font-medium">{stat.label}</p>
-            <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
+            <p className="text-black/40 text-xs font-black uppercase tracking-widest mb-1">{stat.label}</p>
+            <p className="text-4xl font-black text-black tracking-tighter italic">{stat.value.toString().padStart(2, '0')}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Today's Tasks */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <Activity className="w-6 h-6 text-neon-blue" />
-              Today's Focus
+            <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic flex items-center gap-4">
+              <div className="bg-neo-accent p-2 border-4 border-black shadow-[4px_4px_0px_0px_#000] -rotate-6">
+                <Activity className="w-6 h-6 text-white stroke-[3px]" />
+              </div>
+              TODAY'S MISSION
             </h2>
-            <Link to="/calendar" className="text-sm text-neon-blue hover:text-cyan-300 transition-colors">
-              View Calendar →
+            <Link to="/plans" className="text-sm font-black uppercase tracking-widest text-black hover:underline underline-offset-8 decoration-4 decoration-neo-accent">
+              VIEW ALL PLANS →
             </Link>
           </div>
 
           {todaysTasks.length === 0 ? (
-            <div className="glass-panel p-12 text-center rounded-3xl border-dashed border-2 border-white/10">
-              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Calendar className="w-10 h-10 text-gray-500" />
+            <div className="bg-white border-4 border-black p-16 text-center shadow-[10px_10px_0px_0px_#000] rotate-1">
+              <div className="w-24 h-24 bg-neo-muted border-4 border-black flex items-center justify-center mx-auto mb-8 shadow-[4px_4px_0px_0px_#000] rotate-12">
+                <Calendar className="w-12 h-12 text-black stroke-[3px]" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No tasks for today</h3>
-              <p className="text-gray-400 mb-6">Take a break or start a new learning journey.</p>
+              <h3 className="text-3xl font-black text-black uppercase tracking-tighter mb-4">NO TASKS TODAY</h3>
+              <p className="text-black/60 font-bold mb-10 text-lg">RECHARGE YOUR BRAIN OR START A NEW CHAPTER.</p>
               <Link to="/create">
-                <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
-                  Create Study Plan
-                </Button>
+                <button className="bg-black text-white px-10 py-5 font-black uppercase tracking-widest shadow-[6px_6px_0px_0px_#FF6B6B] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
+                  CREATE STUDY PLAN
+                </button>
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {todaysTasks.map((task, index) => (
-                <div key={index} className="glass-card p-6 border border-white/5 hover:border-neon-blue/30 transition-all duration-300 group relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-blue to-neon-purple opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div key={index} className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] group relative overflow-hidden hover:rotate-1 transition-transform">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div className="flex-grow">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/5 text-neon-blue border border-white/10">
+                      <div className="flex items-center gap-4 mb-4">
+                        <span className="px-4 py-1 border-2 border-black font-black uppercase text-[10px] tracking-widest bg-neo-secondary">
                           {task.subject}
                         </span>
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Day {task.day}
+                        <span className="text-[10px] font-black uppercase tracking-widest text-black/40 flex items-center gap-2">
+                          <Clock className="w-4 h-4 stroke-[3px]" /> DAY {task.day}
                         </span>
                       </div>
-                      <h3 className="text-lg font-bold text-white group-hover:text-neon-blue transition-colors">
+                      <h3 className="text-2xl font-black text-black uppercase tracking-tight italic group-hover:text-neo-accent transition-colors">
                         {task.topic}
                       </h3>
                     </div>
 
                     <Link to={`/study/${task.planId}`}>
                       <button className={`
-                        px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2
+                        px-8 py-4 border-4 border-black font-black uppercase tracking-widest text-sm transition-all shadow-[6px_6px_0px_0px_#000]
                         ${task.completed
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : 'bg-neon-blue text-black hover:bg-cyan-400 shadow-[0_0_15px_rgba(0,243,255,0.3)] hover:shadow-[0_0_25px_rgba(0,243,255,0.5)]'
+                          ? 'bg-neo-muted text-black shadow-none translate-x-[2px] translate-y-[2px]'
+                          : 'bg-neo-accent text-white hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]'
                         }
                       `}>
                         {task.completed ? (
-                          <>
-                            <CheckCircle className="w-4 h-4" /> Completed
-                          </>
+                          <span className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 stroke-[3px]" /> DONE
+                          </span>
                         ) : (
-                          <>
-                            Start Session <ArrowRight className="w-4 h-4" />
-                          </>
+                          <span className="flex items-center gap-2">
+                            START SESSION <ArrowRight className="w-5 h-5 stroke-[3px]" />
+                          </span>
                         )}
                       </button>
                     </Link>
@@ -351,59 +356,60 @@ export function Dashboard() {
         </div>
 
         {/* Sidebar Widgets */}
-        <div className="space-y-6">
+        <div className="space-y-10">
           {/* Next Exam Widget */}
           {upcomingExam ? (
-            <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-neon-yellow/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-neon-yellow" />
-                Next Exam
+            <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] relative overflow-hidden -rotate-2">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-neo-secondary/20 border-4 border-black rounded-full rotate-12"></div>
+              <h3 className="text-xl font-black text-black mb-8 flex items-center gap-3 uppercase italic">
+                <div className="bg-neo-secondary p-2 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                  <Trophy className="w-6 h-6 text-black stroke-[2.5px]" />
+                </div>
+                NEXT EXAM
               </h3>
               <div className="relative z-10">
-                <div className="text-3xl font-bold text-white mb-1">
-                  {differenceInDays(new Date(upcomingExam.exam_date), new Date())}
+                <div className="text-7xl font-black text-black mb-1 leading-none tracking-tighter italic">
+                  {differenceInDays(new Date(upcomingExam.exam_date), new Date()).toString().padStart(2, '0')}
                 </div>
-                <div className="text-sm text-gray-400 mb-4">Days Remaining</div>
+                <div className="text-xs font-black text-black/40 uppercase tracking-widest mb-8">DAYS REMAINING</div>
 
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-4">
-                  <div className="font-semibold text-neon-yellow mb-1">{upcomingExam.subject}</div>
-                  <div className="text-xs text-gray-400">{format(new Date(upcomingExam.exam_date), 'MMMM do, yyyy')}</div>
+                <div className="p-5 bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000] mb-8 rotate-1">
+                  <div className="font-black text-neo-accent uppercase tracking-tight text-lg mb-1">{upcomingExam.subject}</div>
+                  <div className="text-[10px] font-black text-black/40 uppercase tracking-widest">{format(new Date(upcomingExam.exam_date), 'MMMM do, yyyy')}</div>
                 </div>
 
                 <Link to={`/study/${upcomingExam.id}`}>
-                  <button className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-colors border border-white/10">
-                    Prepare Now
+                  <button className="w-full py-4 bg-black text-white font-black uppercase tracking-widest text-sm shadow-[6px_6px_0px_0px_#FFD93D] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
+                    PREPARE NOW
                   </button>
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="glass-panel p-6 rounded-3xl text-center">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Trophy className="w-6 h-6 text-gray-500" />
+            <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] text-center">
+              <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_#000] rotate-12">
+                <Trophy className="w-8 h-8 text-black/20 stroke-[2.5px]" />
               </div>
-              <p className="text-gray-400 text-sm mb-4">No upcoming exams</p>
+              <p className="text-black/40 font-black uppercase tracking-widest text-xs mb-6">NO UPCOMING EXAMS</p>
               <Link to="/create">
-                <button className="text-neon-blue text-sm hover:underline">Schedule an exam</button>
+                <button className="text-neo-accent font-black uppercase tracking-widest text-xs hover:underline underline-offset-4 decoration-2">SCHEDULE AN EXAM</button>
               </Link>
             </div>
           )}
 
           {/* Premium Banner */}
           {!isPremium && (
-            <div className="glass-panel p-6 rounded-3xl border border-neon-purple/30 relative overflow-hidden group cursor-pointer hover:border-neon-purple/50 transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/10 to-transparent opacity-50"></div>
+            <div className="bg-black border-4 border-black p-8 shadow-[8px_8px_0px_0px_#C4B5FD] group cursor-pointer active:scale-95 transition-all">
               <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-neon-purple/20 text-neon-purple">
-                    <Crown className="w-5 h-5" />
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 bg-neo-muted border-2 border-black shadow-[4px_4px_0px_0px_#FFF] -rotate-6">
+                    <Crown className="w-6 h-6 text-black stroke-[2.5px]" />
                   </div>
-                  <h3 className="font-bold text-white">Go Premium</h3>
+                  <h3 className="font-black text-white uppercase tracking-widest text-lg italic">GO PREMIUM</h3>
                 </div>
-                <p className="text-sm text-gray-300 mb-4">Unlock unlimited study plans, AI mentoring, and advanced analytics.</p>
-                <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-neon-purple to-pink-600 text-white font-bold text-sm shadow-lg shadow-neon-purple/20 group-hover:shadow-neon-purple/40 transition-all">
-                  Upgrade Now
+                <p className="text-white/70 font-bold mb-8 text-sm leading-snug uppercase tracking-tight">UNLOCK UNLIMITED PLANS, AI MENTORING, AND ADVANCED ANALYTICS.</p>
+                <button className="w-full py-4 bg-neo-muted text-black font-black uppercase tracking-widest text-sm shadow-[6px_6px_0px_0px_#FFF] group-hover:bg-white transition-all">
+                  UPGRADE NOW
                 </button>
               </div>
             </div>

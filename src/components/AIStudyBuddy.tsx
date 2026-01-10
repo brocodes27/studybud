@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Brain } from 'lucide-react';
+import { Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
@@ -89,6 +89,7 @@ export function AIStudyBuddy({
   const [showContext, setShowContext] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [wasVoiceInput, setWasVoiceInput] = useState(false);
+  const [showTodayMission, setShowTodayMission] = useState(true);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Conversational flow state
@@ -1008,7 +1009,7 @@ What shall we tackle today?`;
   };
 
   return (
-    <div className="flex flex-col h-full glass-panel overflow-hidden border-r border-white/10 rounded-none">
+    <div className="flex flex-col h-full bg-neo-bg overflow-hidden border-r-4 border-black">
       {/* Header */}
       <Header
         title={title}
@@ -1044,35 +1045,87 @@ What shall we tackle today?`;
         }
         const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
         return (
-          <div className="mt-4 glass-card border border-white/10 rounded-xl p-4 backdrop-blur-sm" data-tour="ranjan-today-panel">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-neon-blue/20 rounded-lg">
-                <Brain className="h-4 w-4 text-neon-blue" />
+          <div className="mx-4 mt-6 bg-white border-4 border-black p-5 shadow-[6px_6px_0px_0px_#000] sticky top-0 z-20" data-tour="ranjan-today-panel">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-neo-accent border-2 border-black -rotate-6">
+                  <Brain className="h-5 w-5 text-white" strokeWidth={3} />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-tighter italic">TODAY'S MISSION</h3>
               </div>
-              <h3 className="text-sm font-bold text-white">Today's Plan</h3>
+              <button
+                onClick={() => setShowTodayMission(!showTodayMission)}
+                className="p-1 border-2 border-black hover:bg-neo-bg transition-colors"
+                title={showTodayMission ? "Collapse" : "Expand"}
+              >
+                {showTodayMission ? (
+                  <ChevronUp className="h-4 w-4 stroke-[3px]" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 stroke-[3px]" />
+                )}
+              </button>
             </div>
-            <div className="text-xs text-gray-400 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300">{plan?.subject}</span>
-                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-gray-300">Class {plan?.class}</span>
-              </div>
-              <div className="mt-2 text-gray-300"><strong className="text-neon-blue">Topic:</strong> {today?.topic || 'General'}</div>
-              <div className="text-gray-400"><strong className="text-neon-purple">Focus:</strong> {today?.description || 'No specific description'}</div>
-            </div>
-            <div className="mt-4 overflow-x-auto scrollbar-none">
-              <div className="inline-flex gap-2 pr-1">
-                <button onClick={() => sendMessage(`Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.`)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors whitespace-nowrap" data-tour="ranjan-explain">Explain Topic</button>
-                <button onClick={() => sendMessage(`Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.`)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors whitespace-nowrap" data-tour="ranjan-practice">5 Practices</button>
-                <button onClick={() => sendMessage(`Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.`)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors whitespace-nowrap" data-tour="ranjan-quiz">Daily Mock Test</button>
-                <button onClick={() => sendMessage(`Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.`)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors whitespace-nowrap" data-tour="ranjan-summary">5-Bullet Summary</button>
-                <button onClick={() => sendMessage(`Based on my studyContext, suggest a reshuffled plan for the next 7 days as simple day-wise bullets (bold allowed only).`)} className="text-xs bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg border border-white/10 transition-colors whitespace-nowrap" data-tour="ranjan-reshuffle-7">Reshuffle 7 Days</button>
-                <button onClick={() => skillsEngine.startSkill('dailyStudy')} className="text-xs bg-neon-blue/20 hover:bg-neon-blue/30 text-neon-blue px-3 py-1.5 rounded-lg border border-neon-blue/30 transition-colors whitespace-nowrap" data-tour="ranjan-start-study">Start Today's Study</button>
-                <button onClick={() => skillsEngine.startSkill('rescheduler')} className="text-xs bg-neon-yellow/20 hover:bg-neon-yellow/30 text-neon-yellow px-3 py-1.5 rounded-lg border border-neon-yellow/30 transition-colors whitespace-nowrap" data-tour="ranjan-rescheduler">Reschedule Missed Days</button>
-                <button onClick={toggleTodayCompletion} disabled={isTogglingCompletion} className={`text-xs ${isTodayCompleted ? 'bg-neon-green/20 hover:bg-neon-green/30 text-neon-green border-neon-green/30' : 'bg-white/5 hover:bg-white/10 text-gray-300 border-white/10'} px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap`} data-tour="ranjan-mark-done">
-                  {isTodayCompleted ? '✓ Done' : 'Mark Done'}
-                </button>
-              </div>
-            </div>
+
+            {showTodayMission && (
+              <>
+                <div className="space-y-3 mb-6">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-neo-secondary border-2 border-black font-black uppercase text-[10px] tracking-widest">{plan?.subject}</span>
+                    <span className="px-3 py-1 bg-neo-muted border-2 border-black font-black uppercase text-[10px] tracking-widest text-black">CLASS {plan?.class}</span>
+                  </div>
+                  <div className="p-3 bg-neo-bg border-2 border-black">
+                    <p className="text-xs font-black uppercase tracking-tight mb-1 text-black/40">TOPIC</p>
+                    <p className="text-md font-black uppercase tracking-tight italic">{today?.topic || 'GENERAL STUDY'}</p>
+                  </div>
+                  <p className="text-xs font-bold text-black/70 leading-snug">{today?.description || 'No specific description'}</p>
+                </div>
+
+                <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+                  <div className="inline-flex gap-3 pb-2">
+                    {[
+                      { label: "EXPLAIN TOPIC", tour: "ranjan-explain", color: "bg-white", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
+                      { label: "5 PRACTICES", tour: "ranjan-practice", color: "bg-white", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
+                      { label: "DAILY MOCK TEST", tour: "ranjan-quiz", color: "bg-white", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
+                      { label: "5-BULLET SUMMARY", tour: "ranjan-summary", color: "bg-white", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
+                    ].map((btn) => (
+                      <button
+                        key={btn.label}
+                        onClick={() => sendMessage(btn.text)}
+                        className={`text-[10px] font-black uppercase tracking-widest ${btn.color} border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
+                        data-tour={btn.tour}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => skillsEngine.startSkill('dailyStudy')}
+                      className="text-[10px] font-black uppercase tracking-widest bg-neo-accent text-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
+                      data-tour="ranjan-start-study"
+                    >
+                      START STUDY
+                    </button>
+
+                    <button
+                      onClick={() => skillsEngine.startSkill('rescheduler')}
+                      className="text-[10px] font-black uppercase tracking-widest bg-neo-secondary border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
+                      data-tour="ranjan-rescheduler"
+                    >
+                      RESCHEDULE
+                    </button>
+
+                    <button
+                      onClick={toggleTodayCompletion}
+                      disabled={isTogglingCompletion}
+                      className={`text-[10px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-black' : 'bg-neo-muted text-black'} border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
+                      data-tour="ranjan-mark-done"
+                    >
+                      {isTodayCompleted ? '✓ COMPLETED' : 'MARK DONE'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )
       })()}
@@ -1088,27 +1141,26 @@ What shall we tackle today?`;
         }
         const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
         return (
-          <div className="px-4 pt-3">
-            <div className="flex items-center gap-3">
-              <div className="text-[11px] text-gray-300">
-                <strong>Today's:</strong> {today?.topic || 'General'}
+          <div className="px-6 pt-6 pb-2">
+            <div className="flex flex-wrap items-center gap-4 bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
+              <div className="text-xs font-black uppercase tracking-tight">
+                <span className="text-black/40">TODAY:</span> {today?.topic || 'GENERAL'}
               </div>
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex items-center gap-3">
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="text-[11px] bg-black/40 text-white border border-white/10 rounded-full px-2 py-1 focus:border-neon-blue focus:outline-none"
+                  className="text-[10px] font-black uppercase bg-neo-bg border-4 border-black px-3 py-1.5 focus:outline-none"
                   data-tour="ranjan-plan-select"
-                  title="Select Study Plan"
                 >
                   {studyPlans.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-gray-900">
-                      {p.subject} - Class {p.class}
+                    <option key={p.id} value={p.id}>
+                      {p.subject} - CLASS {p.class}
                     </option>
                   ))}
                 </select>
                 <button
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white border border-white/10 transition-colors"
+                  className="px-4 py-1.5 bg-neo-accent text-white border-4 border-black shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] text-[10px] font-black uppercase"
                   onClick={() => {
                     const plan = studyPlans.find(p => p.id === selectedPlan);
                     if (plan) {
@@ -1118,7 +1170,7 @@ What shall we tackle today?`;
                   }}
                   data-tour="ranjan-quick-reschedule"
                 >
-                  Reschedule/Backlog
+                  RESCHEDULE
                 </button>
               </div>
             </div>

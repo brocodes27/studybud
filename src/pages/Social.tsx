@@ -11,9 +11,9 @@ export function Social() {
       <div className="text-center mb-12">
         <div className="flex items-center justify-center gap-4 mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
-            <Users className="w-8 h-8 text-white" />
+            <Users className="w-8 h-8 text-black" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
+          <h1 className="text-4xl md:text-5xl font-bold text-black">
             Social <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-blue-400">Learning</span>
           </h1>
         </div>

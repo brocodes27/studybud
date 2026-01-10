@@ -1,8 +1,6 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
-import arrowRight from '../../assets/arrow-right.svg';
-import star from '../../assets/star.png';
-import spring from '../../assets/spring.png';
+import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 
 export function LandingCTA() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -10,43 +8,53 @@ export function LandingCTA() {
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
-  const translateY = useTransform(scrollYProgress, [0, 1], [150, -150]);
+  const translateY = useTransform(scrollYProgress, [0, 1], [100, -100]);
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, 45]);
 
   return (
-    <section ref={sectionRef} className="py-24 overflow-x-clip">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="relative text-center">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">Ready to transform your productivity?</h2>
-          <p className="text-white/60 mt-5 text-xl max-w-2xl mx-auto">Join thousands of students already using ElevenFolks to achieve more.</p>
+    <section ref={sectionRef} className="py-32 bg-neo-bg relative border-t-8 border-black overflow-hidden">
+      {/* Halftone Overlay */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '25px 25px' }} />
 
-          <motion.img
-            src={star}
-            alt="Star"
-            width={360}
-            className="absolute -left-[350px] -top-[137px] hidden md:block drop-shadow-[0_0_50px_rgba(255,255,0,0.2)]"
-            style={{ translateY }}
-          />
-          <motion.img
-            src={spring}
-            alt="Spring"
-            width={360}
-            className="absolute -right-[331px] -top-[19px] hidden md:block drop-shadow-[0_0_50px_rgba(50,255,100,0.2)]"
-            style={{ translateY }}
-          />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="relative text-center max-w-4xl mx-auto">
+          <motion.div
+            style={{ translateY, rotate }}
+            className="absolute -left-20 -top-20 hidden md:flex w-32 h-32 bg-neo-accent border-4 border-black items-center justify-center shadow-[8px_8px_0px_0px_#000]"
+          >
+            <Sparkles className="w-16 h-16 text-black stroke-[2.5px]" />
+          </motion.div>
+
+          <motion.div
+            style={{ translateY: useTransform(scrollYProgress, [0, 1], [-100, 100]), rotate: useTransform(scrollYProgress, [0, 1], [0, -45]) }}
+            className="absolute -right-20 -bottom-20 hidden md:flex w-32 h-32 bg-neo-secondary border-4 border-black items-center justify-center shadow-[8px_8px_0px_0px_#000]"
+          >
+            <Zap className="w-16 h-16 text-black stroke-[2.5px]" />
+          </motion.div>
+
+          <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-black leading-none italic">
+            READY TO <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>TRANSFORM</span> <br />
+            YOUR PRODUCTIVITY?
+          </h2>
+          <p className="text-black/70 mt-8 text-2xl font-bold max-w-2xl mx-auto italic leading-tight">
+            Join thousands of students already using <span className="underline decoration-neo-secondary decoration-8">ElevenFolks</span> to achieve more.
+          </p>
         </div>
-        <div className="flex gap-4 mt-10 justify-center">
+
+        <div className="flex flex-col sm:flex-row gap-6 mt-16 justify-center">
           <button
-            className="px-6 py-3 bg-white text-black rounded-full font-bold hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            className="neo-button bg-neo-accent text-black text-2xl py-6 px-12"
             onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            Get for free
+            GET STARTED FOR FREE
+            <ArrowRight className="h-8 w-8 stroke-[3.5px]" />
           </button>
           <button
-            className="px-6 py-3 text-white font-medium flex items-center gap-2 hover:text-neon-blue transition-colors"
+            className="neo-button-muted border-4 border-black text-2xl py-6 px-12"
             onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <span>Learn more</span>
-            <img src={arrowRight} className="h-5 w-5 invert" alt="arrow" />
+            LEARN MORE
           </button>
         </div>
       </div>
@@ -55,3 +63,4 @@ export function LandingCTA() {
 }
 
 export default LandingCTA;
+

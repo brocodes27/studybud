@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { Input } from '../../components/Input';
-import { User, Shield } from 'lucide-react';
+import { User, Shield, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function LandingAuth() {
@@ -28,7 +28,6 @@ export function LandingAuth() {
       if (error) {
         showToast(error.message || 'Google sign-in failed', 'error');
       }
-      // On success, Supabase will redirect; no further action needed here.
     } catch (e: any) {
       showToast(e.message || 'Google sign-in failed', 'error');
     } finally {
@@ -69,84 +68,152 @@ export function LandingAuth() {
   };
 
   return (
-    <section id="auth" className="py-24 px-6 overflow-x-clip">
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-6">
-          <span className="inline-block py-1 px-3 rounded-lg bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-medium text-sm">Get started</span>
+    <section id="auth" className="py-32 px-6 bg-neo-bg relative border-t-8 border-black">
+      {/* Decorative dots */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '24px 24px' }} />
+
+      <div className="max-w-xl mx-auto relative z-10">
+        <div className="text-center mb-12">
+          <motion.span
+            initial={{ rotate: -1 }}
+            whileInView={{ rotate: 1 }}
+            className="sticker bg-neo-muted border-4 border-black mb-4 px-6 text-sm py-2"
+          >
+            SECURE ACCESS
+          </motion.span>
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black mt-6 leading-none">
+            {isSignUp ? 'JOIN THE' : 'WELCOME'}<br />
+            <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>REVOLUTION</span>
+          </h2>
         </div>
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md p-8 shadow-2xl"
+          viewport={{ once: true }}
+          className="neo-card bg-white p-10 md:p-12"
         >
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? 'Join ElevenFolks Today' : 'Welcome Back'}</h2>
-            <p className="text-white/50 text-sm">{isSignUp ? 'Start your learning journey with AI-powered study tools' : 'Continue your learning journey'}</p>
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-black uppercase tracking-tight text-black mb-2">
+              {isSignUp ? 'New Account' : 'Returning User'}
+            </h3>
+            <p className="text-black/50 font-bold uppercase text-sm">
+              {isSignUp ? 'Start your AI learning journey' : 'Resume your study sessions'}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {isSignUp && (
               <>
-                <Input label="Full Name" placeholder="Enter your full name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: (e.target as HTMLInputElement).value })} required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-blue" />
+                <Input
+                  label="FULL NAME"
+                  placeholder="e.g., Alex Rivers"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: (e.target as HTMLInputElement).value })}
+                  required
+                  className="neo-input"
+                />
 
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-white/70">I am a:</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setSelectedRole('student')} className={`p-4 rounded-xl border transition flex flex-col items-center justify-center ${selectedRole === 'student' ? 'border-neon-blue bg-neon-blue/10 text-neon-blue' : 'border-white/10 text-white/60 hover:bg-white/5 hover:border-white/20'}`}>
-                      <User className="w-5 h-5 mb-2" />
-                      <span className="text-sm font-medium">Student</span>
+                <div className="space-y-4">
+                  <label className="block text-sm font-black uppercase tracking-widest text-black">IDENTIFY AS:</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('student')}
+                      className={`p-6 border-4 border-black transition-all flex flex-col items-center justify-center gap-3 shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${selectedRole === 'student' ? 'bg-neo-accent' : 'bg-white hover:bg-black/5'}`}
+                    >
+                      <User className="w-8 h-8 text-black stroke-[2.5px]" />
+                      <span className="text-sm font-black uppercase tracking-tighter italic">Student</span>
                     </button>
-                    <button type="button" onClick={() => setSelectedRole('teacher')} className={`p-4 rounded-xl border transition flex flex-col items-center justify-center ${selectedRole === 'teacher' ? 'border-neon-blue bg-neon-blue/10 text-neon-blue' : 'border-white/10 text-white/60 hover:bg-white/5 hover:border-white/20'}`}>
-                      <Shield className="w-5 h-5 mb-2" />
-                      <span className="text-sm font-medium">Teacher</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole('teacher')}
+                      className={`p-6 border-4 border-black transition-all flex flex-col items-center justify-center gap-3 shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${selectedRole === 'teacher' ? 'bg-neo-secondary' : 'bg-white hover:bg-black/5'}`}
+                    >
+                      <Shield className="w-8 h-8 text-black stroke-[2.5px]" />
+                      <span className="text-sm font-black uppercase tracking-tighter italic">Teacher</span>
                     </button>
                   </div>
                 </div>
 
                 {selectedRole === 'student' && (
-                  <Input label="Grade/Class" placeholder="e.g., Class 12, Grade 10" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: (e.target as HTMLInputElement).value })} required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-blue" />
+                  <Input
+                    label="GRADE / CLASS"
+                    placeholder="e.g., Class 12"
+                    value={formData.grade}
+                    onChange={(e) => setFormData({ ...formData, grade: (e.target as HTMLInputElement).value })}
+                    required
+                    className="neo-input"
+                  />
                 )}
 
-                <Input label="School/Institution" placeholder="Enter your school name" value={formData.school} onChange={(e) => setFormData({ ...formData, school: (e.target as HTMLInputElement).value })} required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-blue" />
+                <Input
+                  label="INSTITUTION"
+                  placeholder="Enter school name"
+                  value={formData.school}
+                  onChange={(e) => setFormData({ ...formData, school: (e.target as HTMLInputElement).value })}
+                  required
+                  className="neo-input"
+                />
               </>
             )}
 
-            <Input label="Email" type="email" placeholder="Enter your email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: (e.target as HTMLInputElement).value })} required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-blue" />
-            <Input label="Password" type="password" placeholder="Enter your password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: (e.target as HTMLInputElement).value })} required className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-neon-blue" />
+            <Input
+              label="EMAIL ADDRESS"
+              type="email"
+              placeholder="alex@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: (e.target as HTMLInputElement).value })}
+              required
+              className="neo-input"
+            />
+            <Input
+              label="PASSWORD"
+              type="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: (e.target as HTMLInputElement).value })}
+              required
+              className="neo-input"
+            />
 
             <button
               type="submit"
               disabled={formLoading}
-              className="w-full py-3 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="neo-button w-full bg-black text-white text-xl py-5"
             >
-              {formLoading ? 'Please wait…' : (isSignUp ? 'Create Account' : 'Sign In')}
+              {formLoading ? 'PROCESSING...' : (isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN')}
+              <ArrowRight className="h-6 w-6 stroke-[3px]" />
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-white/60 hover:text-white text-sm transition-colors">
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-black font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 decoration-4 decoration-neo-accent transition-all"
+            >
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
           </div>
 
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="mx-3 text-white/40 text-sm">or</span>
-            <div className="flex-1 h-px bg-white/10" />
+          <div className="flex items-center my-10">
+            <div className="flex-1 h-1 bg-black" />
+            <span className="mx-4 font-black uppercase text-black italic text-xl">OR</span>
+            <div className="flex-1 h-1 bg-black" />
           </div>
 
           <button
             type="button"
             disabled={googleLoading}
             onClick={handleGoogleSignIn}
-            className="w-full border border-white/10 bg-white/5 text-white hover:bg-white/10 py-3 rounded-xl transition-colors flex items-center justify-center font-medium"
+            className="neo-button w-full bg-white text-black text-lg py-4"
           >
-            <span className="mr-3 inline-flex bg-white rounded-full p-0.5">
+            <span className="mr-3 inline-flex bg-white border-2 border-black rounded-none p-1">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 9.656 8.337 6.306 14.691z" /><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 16.108 18.961 13 24 13c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.17 0 9.86-1.977 13.409-5.197l-6.19-5.236C29.133 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.553 5.047C9.482 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-3.994 5.566l.003-.002 6.19 5.236C35.246 40.416 40 34.667 40 26c0-1.341-.138-2.65-.389-3.917z" /></svg>
             </span>
-            {googleLoading ? 'Signing in…' : 'Continue with Google'}
+            {googleLoading ? 'WAITING...' : 'CONTINUE WITH GOOGLE'}
           </button>
         </motion.div>
       </div>
@@ -155,3 +222,4 @@ export function LandingAuth() {
 }
 
 export default LandingAuth;
+

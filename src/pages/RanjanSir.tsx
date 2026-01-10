@@ -1,5 +1,5 @@
 import { AIStudyBuddy } from '../components/AIStudyBuddy';
-import { Power } from 'lucide-react';
+import { Power, Brain } from 'lucide-react';
 
 export function RanjanSir() {
   const now = new Date();
@@ -34,38 +34,46 @@ Your identity:
 - You are always "Ranjan Sir"—a caring mentor guiding the student daily.`;
 
   return (
-    <div className="min-h-screen">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 border-blue-100">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="inline-block h-6 w-6 rounded-full bg-blue-500" />
-            <div>
-              <div className="text-lg font-bold tracking-wide text-blue-900">RANJAN SIR</div>
-              <div className="text-xs text-blue-700/70">AI Mentor System v2.0</div>
+    <div className="min-h-screen space-y-12 animate-fade-in pb-20">
+      {/* Top bar sticker effect */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b-8 border-black pb-10">
+        <div className="flex items-center gap-6">
+          <div className="bg-neo-secondary border-4 border-black p-5 shadow-[8px_8px_0px_0px_#000] rotate-3 hover:rotate-0 transition-transform">
+            <Brain className="h-10 w-10 text-black stroke-[4px]" />
+          </div>
+          <div>
+            <h1 className="text-5xl font-black text-black uppercase tracking-tighter italic leading-none">RANJAN_SIR</h1>
+            <p className="text-black/40 font-black uppercase tracking-widest text-sm mt-3 italic">AI_MENTOR_SYSTEM_V2.0</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="bg-white border-4 border-black px-6 py-3 shadow-[4px_4px_0px_0px_#000] -rotate-1">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-widest">STATUS: ONLINE</span>
+              <div className="h-4 w-4 bg-neo-secondary border-2 border-black animate-pulse" />
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="uppercase tracking-wide text-blue-900/80">Status: Online</span>
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" />
-            <Power className="h-4 w-4 text-blue-700/70" />
-          </div>
+          <button className="bg-black text-white p-4 border-4 border-black shadow-[4px_4px_0px_0px_#FF6B6B] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all">
+            <Power className="h-6 w-6 stroke-[4px]" />
+          </button>
         </div>
       </div>
 
-      {/* Chat panel */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 h-full">
-        <div className="rounded-2xl border border-blue-100 bg-white/80 backdrop-blur overflow-hidden h-[calc(100vh-140px)] shadow-xl shadow-blue-500/5">
-          <AIStudyBuddy
-            title="RANJAN SIR"
-            subtitle="AI Mentor System v2.0"
-            welcomeContent={welcome}
-            functionPath="ai-study-buddy"
-            extraContext={personaContext}
-            variant="mentor"
-            storageNamespace="ranjan_sir"
-          />
-        </div>
+      {/* Chat panel container */}
+      <div className="bg-white border-8 border-black shadow-[32px_32px_0px_0px_#000] -rotate-1 relative overflow-hidden h-[calc(100vh-280px)] min-h-[600px]">
+        {/* Background mechanical patterns */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+
+        <AIStudyBuddy
+          title="RANJAN SIR"
+          subtitle="AI_MENTOR_SYSTEM_V2.0_ENGAGED"
+          welcomeContent={welcome}
+          functionPath="ai-study-buddy"
+          extraContext={personaContext}
+          variant="mentor"
+          storageNamespace="ranjan_sir"
+        />
       </div>
     </div>
   );

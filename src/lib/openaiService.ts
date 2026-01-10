@@ -150,6 +150,26 @@ export class OpenAIService {
   }
 
   /**
+   * Search for similar questions in CUET Question Bank
+   */
+  async searchCuetQuestions(
+    embedding: number[],
+    matchThreshold: number,
+    matchCount: number,
+    filterSubject?: string
+  ) {
+    const { data, error } = await supabase.rpc('match_cuet_questions', {
+      query_embedding: embedding,
+      match_threshold: matchThreshold,
+      match_count: matchCount,
+      filter_subject: filterSubject,
+    });
+
+    if (error) throw new Error(`CUET Vector Search Error: ${error.message}`);
+    return data;
+  }
+
+  /**
    * Generate speech from text using OpenAI TTS
    */
   async generateSpeech(input: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'onyx'): Promise<ArrayBuffer> {

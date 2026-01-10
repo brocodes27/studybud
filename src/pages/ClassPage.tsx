@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, FileText, Bell, Link as LinkIcon, Download, LogOut, AlertTriangle, Calendar, Clock, Plus } from 'lucide-react';
+import { BookOpen, FileText, Bell, Link as LinkIcon, Download, LogOut, AlertTriangle, Calendar, Clock, Plus, XCircle, Sparkles } from 'lucide-react';
 
 interface ClassInfo {
     id: string;
@@ -261,23 +261,25 @@ const ClassPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-blue"></div>
+            <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center space-y-8">
+                <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
+                <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic">LOADING_UNIT_DATA...</h2>
             </div>
         );
     }
 
     if (!classInfo && !loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="glass-panel p-8 rounded-2xl border border-red-500/20 text-center max-w-md">
-                    <h2 className="text-2xl font-bold text-red-400 mb-2">Class Not Found</h2>
-                    <p className="text-gray-400">The class you are looking for does not exist or you don't have access.</p>
+            <div className="min-h-screen bg-neo-bg flex items-center justify-center p-4">
+                <div className="bg-white p-12 border-8 border-black shadow-[16px_16px_0px_0px_#000] text-center max-w-lg">
+                    <XCircle className="h-20 w-20 text-red-600 mx-auto mb-6 stroke-[3px]" />
+                    <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">UNIT_NOT_FOUND</h2>
+                    <p className="text-black font-bold uppercase tracking-tight mb-8">THE REQUESTED CLASS UNIT DOES NOT EXIST OR YOUR CREDENTIALS HAVE EXPIRED.</p>
                     <button
                         onClick={() => navigate('/my-classes')}
-                        className="mt-6 bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl transition-colors"
+                        className="bg-black text-white px-10 py-4 font-black uppercase tracking-widest text-xl border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                     >
-                        Go Back
+                        RETURN_TO_BASE
                     </button>
                 </div>
             </div>
@@ -289,209 +291,246 @@ const ClassPage = () => {
     }
 
     return (
-        <div className="min-h-screen relative p-4 md:p-8 animate-fade-in">
-            {/* Background Glow */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
+        <div className="min-h-screen bg-neo-bg animate-fade-in pb-20">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 py-12">
+                {/* Header */}
+                <div className="mb-12 border-b-8 border-black pb-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <div className="flex items-center gap-4 mb-2">
+                                <div className="bg-neo-accent p-3 border-4 border-black shadow-[4px_4px_0px_0px_#000] -rotate-2">
+                                    <BookOpen className="h-8 w-8 text-white stroke-[3px]" />
+                                </div>
+                                <h1 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none whitespace-nowrap">
+                                    {classInfo.class_name}
+                                </h1>
+                            </div>
+                            <div className="flex items-center gap-3 mt-4">
+                                <span className="text-xs font-black uppercase tracking-widest text-black/60">UNIT_SYNC_ID:</span>
+                                <span className="font-mono text-lg font-black text-neo-accent bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_0px_#000] select-all">
+                                    {classInfo.class_code || classInfo.id}
+                                </span>
+                            </div>
+                        </div>
 
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-                        <BookOpen className="h-8 w-8 text-neon-blue" />
-                        {classInfo.class_name}
-                    </h1>
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                        <span>Class Code:</span>
-                        <span className="font-mono text-neon-blue bg-black/40 px-2 py-1 rounded border border-white/10 select-all">{classInfo.class_code || classInfo.id}</span>
+                        <div className="flex items-center gap-4">
+                            {role === 'student' && (
+                                <button
+                                    className="flex items-center gap-2 bg-white text-red-600 px-6 py-3 font-black uppercase tracking-widest text-sm border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                    onClick={handleLeaveClass}
+                                >
+                                    <LogOut className="h-5 w-5 stroke-[3px]" />
+                                    ABANDON_UNIT
+                                </button>
+                            )}
+                            {role === 'teacher' && (
+                                <button
+                                    className="flex items-center gap-2 bg-white text-red-600 px-6 py-3 font-black uppercase tracking-widest text-sm border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                    onClick={handleDisbandClass}
+                                >
+                                    <AlertTriangle className="h-5 w-5 stroke-[3px]" />
+                                    TERMINATE_UNIT
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-                    {TABS.map(tab => (
+                <div className="flex flex-wrap gap-4 mb-10 pb-4 overflow-x-auto no-scrollbar">
+                    {TABS.map(t => (
                         <button
-                            key={tab}
-                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-200 whitespace-nowrap ${activeTab === tab
-                                ? 'bg-neon-blue text-white shadow-lg shadow-neon-blue/20'
-                                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5'
+                            key={t}
+                            className={`px-8 py-4 font-black uppercase tracking-widest text-sm transition-all border-4 border-black ${activeTab === t
+                                ? 'bg-neo-accent text-white shadow-[6px_6px_0px_0px_#000] -translate-y-1'
+                                : 'bg-white text-black hover:bg-neo-secondary hover:shadow-[4px_4px_0px_0px_#000] hover:-translate-y-0.5'
                                 }`}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => setActiveTab(t)}
                         >
-                            {tab}
+                            {t}
                         </button>
                     ))}
                 </div>
 
-                {/* Tab Content */}
-                <div className="glass-panel rounded-2xl p-6 border border-white/10 min-h-[400px]">
+                {/* Tab Content Container */}
+                <div className="bg-white border-8 border-black shadow-[16px_16px_0px_0px_#000] p-8 md:p-12 min-h-[500px] relative overflow-hidden">
+                    {/* Visual noise/accent */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-black/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+
                     {activeTab === 'Overview' && (
-                        <div className="space-y-8">
+                        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div>
-                                <h2 className="text-2xl font-bold text-white mb-2">Welcome to {classInfo.class_name}</h2>
-                                <p className="text-gray-400">Here you can see announcements, assignments, and resources.</p>
+                                <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4 border-b-4 border-black inline-block pb-2">
+                                    UNIT_INTELLIGENCE
+                                </h2>
+                                <p className="text-lg font-bold text-black/60 uppercase tracking-tight">STATUS_REPORT: ALL SYSTEMS OPERATIONAL. VIEW TASKS AND UPDATES BELOW.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="glass-card p-6 rounded-xl border border-white/10 hover:border-neon-purple/30 transition-colors">
-                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                                        <Bell className="h-5 w-5 text-neon-purple" />
-                                        Latest Announcement
-                                    </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="bg-neo-bg p-8 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 transition-transform group">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="bg-neo-accent p-3 border-2 border-black group-hover:bg-white transition-colors">
+                                            <Bell className="h-6 w-6 text-white group-hover:text-neo-accent stroke-[3px]" />
+                                        </div>
+                                        <h3 className="font-black text-black uppercase tracking-widest">LATEST_INTEL</h3>
+                                    </div>
                                     {announcements.length > 0 ? (
-                                        <div className="text-gray-300 line-clamp-3">{announcements[0].message || announcements[0].content}</div>
-                                    ) : <div className="text-gray-500 italic">No announcements yet.</div>}
+                                        <div className="text-black font-bold text-sm leading-relaxed border-l-4 border-black pl-4">
+                                            {announcements[0].message || announcements[0].content}
+                                        </div>
+                                    ) : (
+                                        <div className="text-black/30 font-black uppercase tracking-widest text-xs italic">SYSTEM_IDLE: NO_ACTIVE_UPDATES</div>
+                                    )}
                                 </div>
 
-                                <div className="glass-card p-6 rounded-xl border border-white/10 hover:border-neon-blue/30 transition-colors">
-                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                                        <FileText className="h-5 w-5 text-neon-blue" />
-                                        Latest Assignment
-                                    </h3>
+                                <div className="bg-neo-bg p-8 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 transition-transform group">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="bg-neo-secondary p-3 border-2 border-black group-hover:bg-white transition-colors">
+                                            <FileText className="h-6 w-6 text-black stroke-[3px]" />
+                                        </div>
+                                        <h3 className="font-black text-black uppercase tracking-widest">ACTIVE_MISSION</h3>
+                                    </div>
                                     {assignments.length > 0 ? (
-                                        <div className="text-gray-300 line-clamp-2">{assignments[0].title}</div>
-                                    ) : <div className="text-gray-500 italic">No assignments yet.</div>}
+                                        <div className="text-black font-bold text-sm leading-relaxed border-l-4 border-black pl-4">
+                                            {assignments[0].title}
+                                        </div>
+                                    ) : (
+                                        <div className="text-black/30 font-black uppercase tracking-widest text-xs italic">MISSION_NULL: NO_ASSIGNMENTS_PENDING</div>
+                                    )}
                                 </div>
 
-                                <div className="glass-card p-6 rounded-xl border border-white/10 hover:border-neon-green/30 transition-colors">
-                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                                        <LinkIcon className="h-5 w-5 text-neon-green" />
-                                        Latest Resource
-                                    </h3>
+                                <div className="bg-neo-bg p-8 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 transition-transform group">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="bg-neo-green p-3 border-2 border-black group-hover:bg-white transition-colors">
+                                            <LinkIcon className="h-6 w-6 text-black stroke-[3px]" />
+                                        </div>
+                                        <h3 className="font-black text-black uppercase tracking-widest">CORE_RESOURCES</h3>
+                                    </div>
                                     {resources.length > 0 ? (
-                                        <div className="text-gray-300 line-clamp-2">{resources[0].title}</div>
-                                    ) : <div className="text-gray-500 italic">No resources yet.</div>}
+                                        <div className="text-black font-bold text-sm leading-relaxed border-l-4 border-black pl-4">
+                                            {resources[0].title}
+                                        </div>
+                                    ) : (
+                                        <div className="text-black/30 font-black uppercase tracking-widest text-xs italic">DATABASE_EMPTY: NO_RESOURCES_SYNCED</div>
+                                    )}
                                 </div>
-                            </div>
-
-                            {/* Leave/Disband Class Buttons */}
-                            <div className="pt-8 border-t border-white/10">
-                                {role === 'student' && (
-                                    <button
-                                        className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-6 py-3 rounded-xl transition-colors border border-red-500/20"
-                                        onClick={handleLeaveClass}
-                                    >
-                                        <LogOut className="h-5 w-5" />
-                                        Leave Class
-                                    </button>
-                                )}
-                                {role === 'teacher' && (
-                                    <button
-                                        className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-6 py-3 rounded-xl transition-colors border border-red-500/20"
-                                        onClick={handleDisbandClass}
-                                    >
-                                        <AlertTriangle className="h-5 w-5" />
-                                        Disband Class
-                                    </button>
-                                )}
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'Assignments' && (
-                        <div>
+                        <div className="animate-in fade-in duration-300">
                             {role === 'teacher' && (
-                                <form onSubmit={handleCreateAssignment} className="mb-8 p-6 bg-black/40 rounded-xl border border-white/10">
-                                    <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
-                                        <Plus className="h-5 w-5 text-neon-blue" />
-                                        Create New Assignment
+                                <div className="mb-12 p-8 bg-neo-bg border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+                                    <h3 className="text-xl font-black mb-6 text-black uppercase tracking-tighter italic flex items-center gap-3 border-b-2 border-black pb-2">
+                                        <Plus className="h-6 w-6 text-black stroke-[4px]" />
+                                        DEPLOY_NEW_MISSION
                                     </h3>
-                                    {formError && <p className="text-red-400 mb-4 text-sm bg-red-500/10 p-2 rounded border border-red-500/20">{formError}</p>}
-                                    <div className="space-y-4">
+                                    {formError && (
+                                        <p className="bg-red-600 text-white font-black uppercase tracking-widest text-xs p-3 border-2 border-black mb-6">
+                                            ERROR: {formError}
+                                        </p>
+                                    )}
+                                    <form onSubmit={handleCreateAssignment} className="space-y-6">
                                         <input
                                             type="text"
-                                            placeholder="Title"
+                                            placeholder="MISSION_TITLE"
                                             value={assignmentTitle}
                                             onChange={e => setAssignmentTitle(e.target.value)}
                                             required
-                                            className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none placeholder-gray-600"
+                                            className="w-full px-6 py-4 bg-white border-4 border-black font-bold text-black focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all placeholder:text-black/20"
                                         />
                                         <textarea
-                                            placeholder="Description"
+                                            placeholder="MISSION_PARAMETERS_&_DETAILS"
                                             value={assignmentDesc}
                                             onChange={e => setAssignmentDesc(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none placeholder-gray-600 min-h-[100px]"
+                                            className="w-full px-6 py-4 bg-white border-4 border-black font-bold text-black focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all placeholder:text-black/20 min-h-[120px]"
                                         />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm text-gray-400 mb-1">Due Date</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-black/60 ml-2">DEADLINE_TIMESTAMP</label>
                                                 <input
                                                     type="date"
                                                     value={assignmentDueDate}
                                                     onChange={e => setAssignmentDueDate(e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none"
+                                                    className="w-full px-6 py-4 bg-white border-4 border-black font-black uppercase text-black focus:outline-none focus:bg-neo-secondary transition-all"
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-sm text-gray-400 mb-1">Attachment</label>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-black/60 ml-2">INTEL_ATTACHMENT</label>
                                                 <input
                                                     type="file"
                                                     onChange={e => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
-                                                    className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-neon-blue/10 file:text-neon-blue hover:file:bg-neon-blue/20"
+                                                    className="w-full px-6 py-3.5 bg-white border-4 border-black font-bold text-black file:bg-black file:text-white file:border-none file:px-4 file:py-1 file:font-black file:uppercase file:text-[10px] file:mr-4 file:cursor-pointer"
                                                 />
                                             </div>
                                         </div>
-                                        <button type="submit" className="bg-neon-blue hover:bg-neon-blue/80 text-white px-6 py-3 rounded-xl transition-colors font-semibold shadow-lg shadow-neon-blue/20">
-                                            Add Assignment
+                                        <button type="submit" className="bg-neo-accent text-white px-10 py-5 font-black uppercase tracking-widest text-xl border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all">
+                                            AUTHORIZE_MISSION
                                         </button>
-                                    </div>
-                                </form>
+                                    </form>
+                                </div>
                             )}
-                            <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                                <FileText className="h-6 w-6 text-neon-blue" />
-                                Assignments
+
+                            <h3 className="text-3xl font-black mb-8 text-black uppercase tracking-tighter italic flex items-center gap-4">
+                                <div className="bg-neo-accent p-2 border-2 border-black rotate-3">
+                                    <FileText className="h-8 w-8 text-white stroke-[3px]" />
+                                </div>
+                                ACTIVE_MISSIONS
                             </h3>
+
                             {assignments.length === 0 ? (
-                                <div className="text-center py-12 bg-white/5 rounded-xl border border-white/5">
-                                    <FileText className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                                    <p className="text-gray-400">No assignments yet.</p>
+                                <div className="text-center py-20 bg-neo-bg border-4 border-black border-dashed">
+                                    <FileText className="h-20 w-20 text-black/10 mx-auto mb-6 stroke-[2px]" />
+                                    <p className="text-black font-black uppercase tracking-widest italic opacity-40">NO_ASSIGNMENTS_CURRENTLY_LOGGED</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-8">
                                     {assignments.map(a => (
-                                        <div key={a.id} className="glass-card p-6 rounded-xl border border-white/10 hover:border-neon-blue/30 transition-all duration-200">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="text-lg font-bold text-white">{a.title}</h4>
+                                        <div key={a.id} className="bg-white p-8 border-4 border-black shadow-[10px_10px_0px_0px_#000] group hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[14px_14px_0px_0px_#000] transition-all">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-black pb-4">
+                                                <h4 className="text-2xl font-black text-black uppercase tracking-tighter italic">{a.title}</h4>
                                                 {a.due_date && (
-                                                    <span className="text-xs font-medium px-2 py-1 rounded bg-neon-yellow/10 text-neon-yellow border border-neon-yellow/20 flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        Due: {new Date(a.due_date).toLocaleDateString()}
-                                                    </span>
+                                                    <div className="bg-neo-secondary text-black px-4 py-2 text-xs font-black uppercase tracking-widest border-2 border-black shadow-[4px_4px_0px_0px_#000] flex items-center gap-2">
+                                                        <Clock className="h-4 w-4 stroke-[3px]" />
+                                                        EXPIRY: {new Date(a.due_date).toLocaleDateString()}
+                                                    </div>
                                                 )}
                                             </div>
-                                            <p className="text-gray-300 mb-4 whitespace-pre-wrap">{a.description}</p>
+                                            <p className="text-black font-bold leading-relaxed mb-8 border-l-8 border-neo-accent/20 pl-6">{a.description}</p>
 
-                                            <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-white/5">
+                                            <div className="flex flex-wrap items-center gap-6 mt-8 pt-6 border-t-2 border-black/10">
                                                 {a.file_url && (
                                                     a.file_url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
-                                                        <div className="w-full mb-2">
-                                                            <img src={a.file_url} alt={a.title} className="max-h-64 rounded-lg border border-white/10" />
+                                                        <div className="w-full mb-4 bg-neo-bg p-4 border-4 border-black shadow-[6px_6px_0px_0px_#000]">
+                                                            <img src={a.file_url} alt={a.title} className="max-h-80 w-auto rounded-none border-2 border-black mx-auto" />
                                                         </div>
                                                     ) : (
                                                         <a
                                                             href={a.file_url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 text-neon-blue hover:text-neon-blue/80 bg-neon-blue/10 px-3 py-1.5 rounded-lg transition-colors border border-neon-blue/20"
+                                                            className="flex items-center gap-3 bg-white text-black px-6 py-3 font-black uppercase tracking-widest text-xs border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                                                         >
-                                                            <Download className="h-4 w-4" />
-                                                            Download Attachment
+                                                            <Download className="h-4 w-4 stroke-[3px]" />
+                                                            DOWNLOAD_INTEL
                                                         </a>
                                                     )
                                                 )}
 
-                                                {/* Take Mock Test action if JSON is attached */}
                                                 {a.file_url && /\.json(\?|$)/i.test(a.file_url) && (
                                                     <button
-                                                        className="flex items-center gap-2 bg-neon-green hover:bg-neon-green/80 text-black font-semibold px-4 py-2 rounded-lg transition-colors shadow-lg shadow-neon-green/20"
+                                                        className="flex items-center gap-3 bg-neo-green text-black px-8 py-3 font-black uppercase tracking-widest text-sm border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                                                         onClick={() => handleTakeMockTest(a)}
                                                     >
-                                                        <FileText className="h-4 w-4" />
-                                                        Take Mock Test
+                                                        <Sparkles className="h-5 w-5 stroke-[3px]" />
+                                                        ENGAGE_SIMULATION
                                                     </button>
                                                 )}
 
-                                                <div className="ml-auto text-xs text-gray-500 flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3" />
-                                                    Posted: {new Date(a.created_at).toLocaleDateString()}
+                                                <div className="ml-auto flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-black/40">
+                                                    <Calendar className="h-4 w-4" />
+                                                    LOGGED: {new Date(a.created_at).toLocaleDateString()}
                                                 </div>
                                             </div>
                                         </div>
@@ -502,42 +541,53 @@ const ClassPage = () => {
                     )}
 
                     {activeTab === 'Announcements' && (
-                        <div>
+                        <div className="animate-in fade-in duration-300">
                             {role === 'teacher' && (
-                                <form onSubmit={handleCreateAnnouncement} className="mb-8 p-6 bg-black/40 rounded-xl border border-white/10">
-                                    <h3 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
-                                        <Plus className="h-5 w-5 text-neon-purple" />
-                                        Create Announcement
+                                <div className="mb-12 p-8 bg-neo-bg border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+                                    <h3 className="text-xl font-black mb-6 text-black uppercase tracking-tighter italic flex items-center gap-3 border-b-2 border-black pb-2">
+                                        <Plus className="h-6 w-6 text-black stroke-[4px]" />
+                                        BROADCAST_UPDATE
                                     </h3>
-                                    {formError && <p className="text-red-400 mb-4 text-sm bg-red-500/10 p-2 rounded border border-red-500/20">{formError}</p>}
-                                    <textarea
-                                        placeholder="Write your announcement here..."
-                                        value={announcementContent}
-                                        onChange={e => setAnnouncementContent(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-purple focus:outline-none placeholder-gray-600 min-h-[100px] mb-4"
-                                    />
-                                    <button type="submit" className="bg-neon-purple hover:bg-neon-purple/80 text-white px-6 py-3 rounded-xl transition-colors font-semibold shadow-lg shadow-neon-purple/20">
-                                        Post Announcement
-                                    </button>
-                                </form>
+                                    {formError && (
+                                        <p className="bg-red-600 text-white font-black uppercase tracking-widest text-xs p-3 border-2 border-black mb-6">
+                                            ERROR: {formError}
+                                        </p>
+                                    )}
+                                    <form onSubmit={handleCreateAnnouncement}>
+                                        <textarea
+                                            placeholder="ENTER_TRANSMISSION_DATA..."
+                                            value={announcementContent}
+                                            onChange={e => setAnnouncementContent(e.target.value)}
+                                            className="w-full px-6 py-4 bg-white border-4 border-black font-bold text-black focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all placeholder:text-black/20 min-h-[120px] mb-8"
+                                        />
+                                        <button type="submit" className="bg-neo-accent text-white px-10 py-5 font-black uppercase tracking-widest text-xl border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all">
+                                            BROADCAST_NOW
+                                        </button>
+                                    </form>
+                                </div>
                             )}
-                            <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                                <Bell className="h-6 w-6 text-neon-purple" />
-                                Announcements
+
+                            <h3 className="text-3xl font-black mb-8 text-black uppercase tracking-tighter italic flex items-center gap-4">
+                                <div className="bg-neo-accent p-2 border-2 border-black -rotate-3">
+                                    <Bell className="h-8 w-8 text-white stroke-[3px]" />
+                                </div>
+                                UNIT_ANNOUNCEMENTS
                             </h3>
+
                             {announcements.length === 0 ? (
-                                <div className="text-center py-12 bg-white/5 rounded-xl border border-white/5">
-                                    <Bell className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                                    <p className="text-gray-400">No announcements yet.</p>
+                                <div className="text-center py-20 bg-neo-bg border-4 border-black border-dashed">
+                                    <Bell className="h-20 w-20 text-black/10 mx-auto mb-6 stroke-[2px]" />
+                                    <p className="text-black font-black uppercase tracking-widest italic opacity-40">NO_COMMUNICATIONS_EXCHANGED</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-8">
                                     {announcements.map(a => (
-                                        <div key={a.id} className="glass-card p-6 rounded-xl border border-white/10 hover:border-neon-purple/30 transition-all duration-200">
-                                            <div className="text-gray-200 whitespace-pre-wrap mb-3">{a.message || a.content}</div>
-                                            <div className="text-xs text-gray-500 flex items-center gap-1 pt-3 border-t border-white/5">
-                                                <Calendar className="h-3 w-3" />
-                                                Posted: {new Date(a.created_at).toLocaleString()}
+                                        <div key={a.id} className="bg-white p-8 border-4 border-black shadow-[8px_8px_0px_0px_#000] relative">
+                                            <div className="absolute top-0 left-0 w-2 h-full bg-neo-accent" />
+                                            <div className="text-black font-bold text-lg leading-relaxed mb-6 whitespace-pre-wrap">{a.message || a.content}</div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-black/40 flex items-center gap-2 pt-4 border-t-2 border-black/5">
+                                                <Calendar className="h-4 w-4" />
+                                                TIMESTAMP: {new Date(a.created_at).toLocaleString()}
                                             </div>
                                         </div>
                                     ))}
@@ -547,32 +597,38 @@ const ClassPage = () => {
                     )}
 
                     {activeTab === 'Resources' && (
-                        <div>
-                            <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                                <LinkIcon className="h-6 w-6 text-neon-green" />
-                                Resources
+                        <div className="animate-in fade-in duration-300">
+                            <h3 className="text-3xl font-black mb-10 text-black uppercase tracking-tighter italic flex items-center gap-4">
+                                <div className="bg-neo-green p-2 border-2 border-black rotate-2">
+                                    <LinkIcon className="h-8 w-8 text-black stroke-[3px]" />
+                                </div>
+                                DATABASE_RESOURCES
                             </h3>
+
                             {resources.length === 0 ? (
-                                <div className="text-center py-12 bg-white/5 rounded-xl border border-white/5">
-                                    <LinkIcon className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                                    <p className="text-gray-400">No resources yet.</p>
+                                <div className="text-center py-20 bg-neo-bg border-4 border-black border-dashed">
+                                    <LinkIcon className="h-20 w-20 text-black/10 mx-auto mb-6 stroke-[2px]" />
+                                    <p className="text-black font-black uppercase tracking-widest italic opacity-40">RESOURCE_VAULT_EMPTY</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {resources.map(r => (
-                                        <div key={r.id} className="glass-card p-5 rounded-xl border border-white/10 hover:border-neon-green/30 transition-all duration-200 flex flex-col">
-                                            <h4 className="font-bold text-white mb-3">{r.title}</h4>
+                                        <div key={r.id} className="bg-white p-8 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex flex-col group">
+                                            <div className="flex-1">
+                                                <div className="bg-neo-secondary/10 px-3 py-1 border-2 border-black inline-block mb-4 text-[10px] font-black uppercase tracking-widest">CONTENT_TYPE: {r.type || 'RAW_DATA'}</div>
+                                                <h4 className="text-xl font-black text-black uppercase tracking-tight italic mb-6 line-clamp-2">{r.title}</h4>
+                                            </div>
 
-                                            <div className="mt-auto pt-3 flex items-center gap-3">
+                                            <div className="pt-6 border-t-2 border-black flex items-center gap-4">
                                                 {r.file_url && (
                                                     <a
                                                         href={r.file_url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center gap-2 text-sm text-neon-blue hover:text-neon-blue/80 bg-neon-blue/10 px-3 py-1.5 rounded-lg transition-colors border border-neon-blue/20"
+                                                        className="flex-1 flex items-center justify-center gap-3 bg-neo-accent text-white px-6 py-3 font-black uppercase tracking-widest text-xs border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-all"
                                                     >
-                                                        <Download className="h-4 w-4" />
-                                                        Download
+                                                        <Download className="h-4 w-4 stroke-[3px]" />
+                                                        FETCH_FILE
                                                     </a>
                                                 )}
                                                 {r.url && !r.file_url && (
@@ -580,16 +636,16 @@ const ClassPage = () => {
                                                         href={r.url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="flex items-center gap-2 text-sm text-neon-green hover:text-neon-green/80 bg-neon-green/10 px-3 py-1.5 rounded-lg transition-colors border border-neon-green/20"
+                                                        className="flex-1 flex items-center justify-center gap-3 bg-neo-green text-black px-6 py-3 font-black uppercase tracking-widest text-xs border-2 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none transition-all"
                                                     >
-                                                        <LinkIcon className="h-4 w-4" />
-                                                        Open Link
+                                                        <LinkIcon className="h-4 w-4 stroke-[3px]" />
+                                                        EXTERNAL_LINK
                                                     </a>
                                                 )}
                                             </div>
 
-                                            <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-white/5">
-                                                {new Date(r.created_at).toLocaleDateString()}
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-black/40 mt-6 text-right">
+                                                SYNCED: {new Date(r.created_at).toLocaleDateString()}
                                             </div>
                                         </div>
                                     ))}

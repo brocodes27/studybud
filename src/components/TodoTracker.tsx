@@ -52,45 +52,48 @@ export function TodoTracker() {
     ];
 
     return (
-        <div className="p-8 text-white max-w-2xl mx-auto min-h-[500px]">
-            <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-neon-purple/20 rounded-xl flex items-center justify-center">
-                    <ListTodo className="text-neon-purple w-6 h-6" />
+        <div className="p-10 text-black max-w-3xl mx-auto min-h-full bg-neo-bg/20">
+            <div className="flex items-center gap-6 mb-12">
+                <div className="w-16 h-16 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] -rotate-6">
+                    <ListTodo className="text-white w-8 h-8 stroke-[3px]" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold">Study Tasks</h2>
-                    <p className="text-gray-400 text-sm">Organize your academic goals</p>
+                    <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none">STUDY TASKS</h2>
+                    <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: ORGANIZATION_SEQUENCE</p>
                 </div>
             </div>
 
-            <form onSubmit={addTodo} className="space-y-4 mb-8">
-                <div className="flex gap-2">
+            <form onSubmit={addTodo} className="space-y-6 mb-12">
+                <div className="flex flex-col md:flex-row gap-4">
                     <input
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="What do you need to study?"
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-neon-purple outline-none transition-all placeholder:text-gray-600"
+                        placeholder="DEFINE NEW OBJECTIVE..."
+                        className="flex-1 bg-white border-4 border-black px-6 py-4 font-black uppercase tracking-tight italic text-lg focus:bg-neo-secondary outline-none transition-all placeholder:text-black/20 shadow-[6px_6px_0px_0px_#000]"
                     />
                     <button
                         type="submit"
-                        className="bg-neon-purple hover:bg-purple-600 text-white px-6 rounded-xl transition-all shadow-lg shadow-neon-purple/20 flex items-center gap-2 font-bold"
+                        className="bg-black text-white px-10 py-4 border-4 border-black font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[4px_4px_0px_0px_#000] flex items-center justify-center gap-3"
                     >
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden md:inline">Add</span>
+                        <Plus className="w-6 h-6 stroke-[4px]" />
+                        ADD
                     </button>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-4">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             type="button"
                             onClick={() => setCategory(cat.id)}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all border ${category === cat.id
-                                ? `border-white/20 ${cat.bg} ${cat.color} scale-105`
-                                : 'border-transparent bg-white/5 text-gray-500 hover:bg-white/10'
-                                }`}
+                            className={`
+                                px-6 py-2 border-4 border-black font-black uppercase text-[10px] tracking-widest transition-all 
+                                ${category === cat.id
+                                    ? `bg-neo-secondary shadow-[4px_4px_0px_0px_#000] -translate-y-1`
+                                    : 'bg-white hover:bg-neo-muted hover:shadow-[2px_2px_0px_0px_#000]'
+                                }
+                            `}
                         >
                             {cat.label}
                         </button>
@@ -98,52 +101,59 @@ export function TodoTracker() {
                 </div>
             </form>
 
-            <div className="space-y-3">
+            <div className="space-y-6">
                 {todos.length === 0 ? (
-                    <div className="text-center py-12 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                        <Target className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-50" />
-                        <p className="text-gray-500">No tasks yet. Start by adding one above!</p>
+                    <div className="text-center py-20 bg-white border-8 border-dashed border-black/10 rotate-1">
+                        <Target className="w-16 h-16 text-black/10 mx-auto mb-6" />
+                        <p className="font-black text-black/20 uppercase tracking-[0.3em] text-sm">NO ACTIVE TARGETS FOUND</p>
                     </div>
                 ) : (
                     todos.sort((a, b) => {
                         if (a.completed !== b.completed) return a.completed ? 1 : -1;
                         return b.createdAt - a.createdAt;
-                    }).map((todo) => (
+                    }).map((todo, idx) => (
                         <div
                             key={todo.id}
-                            className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 ${todo.completed
-                                ? 'bg-black/20 border-white/5 opacity-60'
-                                : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/[0.07]'
-                                }`}
+                            className={`
+                                group flex items-center gap-6 p-6 border-4 border-black transition-all duration-200 
+                                ${todo.completed
+                                    ? 'bg-neo-muted/30 border-black/20 opacity-50 shadow-none'
+                                    : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#000]'
+                                }
+                                ${idx % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}
+                            `}
                         >
                             <button
                                 onClick={() => toggleTodo(todo.id)}
-                                className={`transition-colors ${todo.completed ? 'text-neon-green' : 'text-gray-500 hover:text-white'}`}
+                                className={`
+                                    w-10 h-10 border-4 border-black flex items-center justify-center transition-all
+                                    ${todo.completed ? 'bg-neo-secondary' : 'bg-white hover:bg-neo-muted'}
+                                `}
                             >
-                                {todo.completed ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                                {todo.completed ? <CheckCircle2 className="w-6 h-6 stroke-[4px]" /> : <Circle className="w-6 h-6 stroke-[3px]" />}
                             </button>
 
                             <div className="flex-1 min-w-0">
-                                <p className={`text-sm md:text-base truncate transition-all ${todo.completed ? 'line-through text-gray-500' : 'text-gray-200'}`}>
+                                <p className={`text-xl font-black uppercase tracking-tight italic transition-all ${todo.completed ? 'line-through text-black/40' : 'text-black'}`}>
                                     {todo.text}
                                 </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-[10px] uppercase tracking-wider font-bold ${categories.find(c => c.id === todo.category)?.color
+                                <div className="flex items-center gap-4 mt-2">
+                                    <div className={`px-2 py-0.5 border-2 border-black font-black uppercase text-[8px] tracking-widest ${todo.category === 'urgent' ? 'bg-neo-accent text-white' :
+                                            todo.category === 'regular' ? 'bg-neo-secondary' : 'bg-neo-muted'
                                         }`}>
                                         {todo.category}
-                                    </span>
-                                    <span className="text-[10px] text-gray-600">•</span>
-                                    <span className="text-[10px] text-gray-600">
-                                        {new Date(todo.createdAt).toLocaleDateString()}
+                                    </div>
+                                    <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic">
+                                        TIMESTAMP: {new Date(todo.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => deleteTodo(todo.id)}
-                                className="p-2 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                className="p-3 border-4 border-black bg-white hover:bg-neo-accent hover:text-white transition-all active:shadow-none shadow-[2px_2px_0px_0px_#000]"
                             >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-5 h-5 stroke-[3px]" />
                             </button>
                         </div>
                     ))
@@ -151,4 +161,5 @@ export function TodoTracker() {
             </div>
         </div>
     );
+
 }

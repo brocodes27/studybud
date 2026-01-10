@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    title = 'AI Study Buddy',
+    title = 'ELEVENFOLKS AI',
     subtitle = 'Your personal learning assistant',
     onClear,
     variant = 'default',
@@ -17,31 +17,31 @@ export const Header: React.FC<HeaderProps> = ({
     const isMentor = variant === 'mentor';
     return (
         <>{!isMentor && (
-            <div className="flex items-center gap-4 p-5 border-b border-white/10 glass-card backdrop-blur-md rounded-t-2xl">
-                <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-neon-blue to-neon-purple rounded-xl opacity-75 group-hover:opacity-100 blur transition duration-200"></div>
-                    <div className="relative bg-black p-2.5 rounded-xl border border-white/10">
-                        <Brain className="h-6 w-6 text-neon-blue" />
+            <div className="flex items-center gap-5 p-6 border-b-4 border-black bg-black text-white relative z-30">
+                <div className="flex-shrink-0">
+                    <div className="bg-neo-accent p-3 border-2 border-white -rotate-3 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
+                        <Brain className="h-7 w-7 text-white stroke-[2.5px]" />
                     </div>
                 </div>
                 <div className="flex-1">
-                    <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                        {title}
-                        <Sparkles className="h-4 w-4 text-neon-yellow animate-pulse-slow" />
+                    <h2 className="text-xl font-black uppercase tracking-tighter italic flex items-center gap-2">
+                        {title.toUpperCase()}
+                        <Sparkles className="h-5 w-5 text-neo-secondary" />
                     </h2>
-                    <p className="text-xs text-gray-400 font-medium">{subtitle}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">{subtitle}</p>
                 </div>
                 {onClear && (
                     <button
                         type="button"
                         onClick={onClear}
-                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all duration-200 group"
+                        className="p-3 bg-white text-black border-4 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:bg-neo-accent hover:text-white active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all group"
                         title="Clear Chat"
                     >
-                        <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                        <Trash2 className="h-5 w-5 stroke-[2.5px] group-hover:scale-110 transition-transform" />
                     </button>
                 )}
             </div>
         )}</>
     );
 };
+

@@ -1,96 +1,68 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles, AlertCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles, AlertCircle, Monitor as TerminalIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface ManimVideoPlayerProps {
-    videoUrl?: string; // Optional now, can come from DB
+    videoUrl?: string;
     topic: string;
-    generationId?: string; // If provided, we track live progress
-    isPreparing?: boolean; // If true, we are waiting for a generation ID to be fetched
-    error?: string | null;  // External error from the parent (e.g. API failure)
+    generationId?: string;
+    isPreparing?: boolean;
+    error?: string | null;
     onClose: () => void;
 }
 
-export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, topic, generationId, isPreparing, error: externalError, onClose }) => {
+export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, error: externalError, onClose }: ManimVideoPlayerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [isMuted, setIsMuted] = useState(false);
+    const [_isMuted, _setIsMuted] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isFullscreen, setIsFullscreen] = useState(false);
 
-    // Generation State
     const [isGenerating, setIsGenerating] = useState(!!generationId || !!isPreparing);
     const [currentProgress, setCurrentProgress] = useState(0);
     const [logs, setLogs] = useState<{ time: string, msg: string }[]>([]);
     const [actualSrc, setActualSrc] = useState<string | null>(videoUrl || null);
 
-    // Reset internal state when topic or base video changes
     useEffect(() => {
         setIsGenerating(!!generationId || !!isPreparing);
         setError(externalError || null);
         setActualSrc(videoUrl || null);
         setLogs([]);
-    }, [topic, videoUrl, externalError]);
-
-    // Sync state and clear errors when transition happens
-    useEffect(() => {
-        if (generationId || isPreparing) {
-            setIsGenerating(true);
-            if (!externalError) setError(null);
-            if (generationId) setLogs([]);
-        }
-    }, [generationId, isPreparing, externalError]);
+    }, [topic, videoUrl, externalError, generationId, isPreparing]);
 
     const toggleFullscreen = () => {
         if (!containerRef.current) return;
         if (!document.fullscreenElement) {
             containerRef.current.requestFullscreen().catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                console.error(`Fullscreen request failed: ${err.message}`);
             });
-            setIsFullscreen(true);
         } else {
             document.exitFullscreen();
-            setIsFullscreen(false);
         }
     };
 
     useEffect(() => {
-        const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
-        };
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    }, []);
-
-    // Real-Time Generation Tracking
-    useEffect(() => {
         if (!generationId) {
-            // Fallback to simulation or instant play if URL exists
             if (videoUrl && !actualSrc) setActualSrc(videoUrl);
-
-            // If we are preparing, we are still "generating" (loading)
             if (videoUrl && !isPreparing) setIsGenerating(false);
             return;
         }
 
         setIsGenerating(true);
 
-        // Initial fetch
         supabase.from('video_generations').select('*').eq('id', generationId).single().then(({ data }) => {
             if (data) {
                 if (data.status === 'completed') {
                     setActualSrc(data.video_url);
                     setIsGenerating(false);
                 } else if (data.status === 'failed') {
-                    setError("Generation Failed: " + (data.logs?.[data.logs.length - 1]?.msg || "Internal engine error"));
+                    setError("ENGINE_CRASH: " + (data.logs?.[data.logs.length - 1]?.msg || "INTERNAL_CIRCUIT_FAILURE"));
                     setIsGenerating(false);
                 }
                 if (data.progress) setCurrentProgress(data.progress);
                 if (data.logs) setLogs(data.logs);
-                else if (data.current_step) setLogs([{ time: new Date().toLocaleTimeString(), msg: data.current_step }]);
             }
         });
 
@@ -101,12 +73,7 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                 { event: 'UPDATE', schema: 'public', table: 'video_generations', filter: `id=eq.${generationId}` },
                 (payload) => {
                     const newItem = payload.new as any;
-
-                    // Update Logs & Progress
-                    if (newItem.progress !== undefined) {
-                        setCurrentProgress(newItem.progress);
-                    }
-
+                    if (newItem.progress !== undefined) setCurrentProgress(newItem.progress);
                     if (newItem.current_step) {
                         setLogs(prev => {
                             const last = prev[prev.length - 1];
@@ -114,17 +81,13 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
                             return [...prev, { time: new Date().toLocaleTimeString().split(' ')[0], msg: newItem.current_step }];
                         });
                     }
-
-                    // Complete
                     if (newItem.status === 'completed' && newItem.video_url) {
                         setActualSrc(newItem.video_url);
                         setIsGenerating(false);
                         setCurrentProgress(100);
                     }
-
-                    // Fail
                     if (newItem.status === 'failed') {
-                        setError("Generation Failed: " + (newItem.logs?.[newItem.logs.length - 1]?.msg || "Unknown error"));
+                        setError("SYNC_FAILURE: " + (newItem.logs?.[newItem.logs.length - 1]?.msg || "UNKNOWN_ERROR"));
                         setIsGenerating(false);
                     }
                 }
@@ -136,9 +99,6 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
         };
     }, [generationId]);
 
-    // Cleanup simulations (removed for brevity/conflict avoidance) or keep if manual mode needed.
-    // ...
-
     useEffect(() => {
         if (logContainerRef.current) {
             logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
@@ -149,10 +109,7 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
         if (videoRef.current) {
             if (isPlaying) videoRef.current.pause();
             else {
-                videoRef.current.play().catch(err => {
-                    console.error("Playback failed:", err);
-                    setError("Video file not found or playback error.");
-                });
+                videoRef.current.play().catch(() => setError("BUFFER_READ_ERROR: SOURCE_NOT_FOUND"));
             }
             setIsPlaying(!isPlaying);
         }
@@ -174,218 +131,171 @@ export const ManimVideoPlayer: React.FC<ManimVideoPlayerProps> = ({ videoUrl, to
     };
 
     const handleError = () => {
-        // Only trigger error if we are definitively not generating and not expecting to start
-        if (!isGenerating && !generationId && !isPreparing) {
-            if (!error) {
-                setError("Unable to load video. It might still be processing or failed to initialize. Please try refreshing or re-generating.");
-            }
+        if (!isGenerating && !generationId && !isPreparing && !error) {
+            setError("IO_LOAD_FAILURE: RECOVERY_IN_PROGRESS");
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
             <div
                 ref={containerRef}
-                className={`relative w-full ${isFullscreen ? 'h-full' : 'max-w-5xl aspect-video'} rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] class-glass`}
+                className="relative w-full max-w-6xl bg-white border-8 border-black shadow-[32px_32px_0px_0px_#000] overflow-hidden flex flex-col"
             >
-
-                {/* Generation Loading State */}
-                {isGenerating && !error && (
-                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl px-8">
-                        <div className="relative mb-8">
-                            <div className="w-32 h-32 rounded-full border-4 border-white/5 border-t-neon-green animate-spin" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Sparkles className="text-neon-green w-10 h-10 animate-pulse" />
-                            </div>
+                {/* Close Button Header */}
+                <div className="p-4 border-b-8 border-black bg-white flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-black text-white px-4 py-1 font-black uppercase text-xs italic -rotate-1">
+                            MODULE_ID: MANIM_V1
                         </div>
+                        <h2 className="text-2xl font-black text-black uppercase tracking-tighter italic truncate max-w-md">{topic}</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 border-4 border-black bg-white hover:bg-neo-accent transition-all shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                        <X className="h-8 w-8 stroke-[4px]" />
+                    </button>
+                </div>
 
-                        <div className="text-center space-y-2 max-w-md">
-                            <h3 className="text-3xl font-black text-white tracking-tight uppercase italic">
-                                Rendering <span className="text-neon-green">Masterpiece</span>
-                            </h3>
-                            <p className="text-gray-400 font-medium">Topic: {topic}</p>
-                        </div>
-
-                        <div className="mt-12 w-full max-w-sm">
-                            <div className="flex justify-between text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2 px-1">
-                                <span>Engine Progress</span>
-                                <span className="text-neon-green">{currentProgress}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 p-[1px]">
-                                <div
-                                    className="h-full bg-gradient-to-r from-emerald-600 to-neon-green transition-all duration-700 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.4)]"
-                                    style={{ width: `${currentProgress}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Live Log Terminal */}
-                        <div className="mt-12 w-full max-w-2xl bg-black/40 rounded-2xl border border-white/10 overflow-hidden">
-                            <div className="px-4 py-2 bg-white/5 border-b border-white/10 flex items-center gap-2">
-                                <div className="flex gap-1.5">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/40" />
+                {/* Main View Area */}
+                <div className="relative aspect-video bg-black/10 flex-grow">
+                    {isGenerating && !error && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white px-12">
+                            <div className="relative mb-12">
+                                <div className="w-40 h-40 border-8 border-black border-t-neo-accent animate-spin" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Sparkles className="text-black w-12 h-12 stroke-[4px] animate-pulse" />
                                 </div>
-                                <span className="text-[10px] font-mono text-gray-500 ml-2">manim-engine --verbose</span>
                             </div>
-                            <div
-                                ref={logContainerRef}
-                                className="p-4 h-32 font-mono text-xs text-emerald-400 overflow-y-auto space-y-1"
-                            >
-                                {logs.map((log, i) => (
-                                    <div key={i} className="flex gap-3 opacity-80 animate-in fade-in slide-in-from-left-2 duration-300">
-                                        <span className="text-gray-600">[{log.time}]</span>
-                                        <span className="text-emerald-500">▶</span>
-                                        <span className="flex-1">{log.msg}</span>
+                            <h3 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-4">ENGINE_RENDER</h3>
+                            <p className="text-black/40 font-black uppercase tracking-widest text-sm mb-12 italic">PROTOCOL: NEURAL_VISUALIZATION_V2</p>
+
+                            <div className="w-full max-w-xl space-y-4">
+                                <div className="flex justify-between font-black uppercase italic text-xl">
+                                    <span>CONSTRUCTION_SYNC</span>
+                                    <span className="text-neo-accent">{currentProgress}%</span>
+                                </div>
+                                <div className="h-12 w-full bg-black border-4 border-black relative">
+                                    <div
+                                        className="h-full bg-neo-accent transition-all duration-700"
+                                        style={{ width: `${currentProgress}%` }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center mix-blend-difference">
+                                        <span className="text-white font-black uppercase tracking-[0.5em] text-xs">BUFFERING_MATRICES</span>
                                     </div>
-                                ))}
-                                {logs.length === 0 && <div className="text-gray-600 animate-pulse">Waiting for engine response...</div>}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="mt-12 flex items-center gap-4">
-                            <button
-                                onClick={onClose}
-                                className="px-8 py-3 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold border border-white/5"
-                            >
-                                Finish in Background
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Error State */}
-                {error && (
-                    <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl px-12 text-center">
-                        <div className="w-20 h-20 rounded-3xl bg-red-500/20 border border-red-500/30 flex items-center justify-center mb-8">
-                            <AlertCircle className="text-red-500 w-10 h-10" />
-                        </div>
-                        <h3 className="text-3xl font-black text-white italic tracking-tight mb-4 uppercase">Generation <span className="text-red-500">Failed</span></h3>
-                        <p className="text-gray-400 text-lg max-w-xl mb-12 leading-relaxed">
-                            {error}
-                        </p>
-
-                        <div className="bg-red-500/5 border border-red-500/10 p-4 rounded-xl mb-12 max-w-lg">
-                            <p className="text-xs text-red-400/80 italic font-mono">
-                                Potential cause: Temporary LaTeX rendering error or server timeout. Try generating the video again or contact support.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={onClose}
-                                className="px-10 py-4 rounded-2xl bg-white text-black font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-xl shadow-white/5"
-                            >
-                                Dismiss
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Header */}
-                {!isGenerating && !error && (
-                    <div className="absolute top-0 left-0 right-0 p-6 z-20 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                                <div className="w-4 h-4 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(74,222,128,0.5)]" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-white tracking-tight">{topic}</h2>
-                                <p className="text-xs text-emerald-400/80 font-medium tracking-widest uppercase">Premium Manim Lesson</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all">
-                            <X size={24} />
-                        </button>
-                    </div>
-                )}
-
-                {/* Video Surface */}
-                {!isGenerating && actualSrc && (
-                    <video
-                        key={actualSrc}
-                        ref={videoRef}
-                        src={actualSrc}
-                        className="w-full h-full object-cover"
-                        onTimeUpdate={handleTimeUpdate}
-                        onEnded={() => setIsPlaying(false)}
-                        onError={handleError}
-                        crossOrigin="anonymous"
-                    >
-                        {/* Subtitles Track */}
-                        <track
-                            kind="captions"
-                            src={actualSrc.replace('.mp4', '.vtt')}
-                            srcLang="en"
-                            label="English"
-                            default
-                            onLoad={() => console.log(`Subtitles loaded: ${actualSrc.replace('.mp4', '.vtt')}`)}
-                            onError={(e) => console.error(`Subtitles failed to load: ${actualSrc.replace('.mp4', '.vtt')}`, e)}
-                        />
-                    </video>
-                )}
-
-                {/* Controls Overlay */}
-                {!isGenerating && !error && (
-                    <div className="absolute inset-0 z-10 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end">
-                        <div className="p-8 pb-10 space-y-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-
-                            {/* Progress Bar */}
-                            <div className="group relative h-1.5 w-full bg-white/10 rounded-full cursor-pointer hover:h-2.5 transition-all">
-                                <input
-                                    type="range"
-                                    className="absolute inset-0 w-full opacity-0 z-20 cursor-pointer"
-                                    min="0"
-                                    max="100"
-                                    step="0.1"
-                                    value={progress}
-                                    onChange={handleSeek}
-                                />
+                            {/* Logs Terminal */}
+                            <div className="mt-12 w-full max-w-3xl bg-black border-4 border-black shadow-[12px_12px_0px_0px_#000] rotate-1">
+                                <div className="px-4 py-2 bg-black border-b-2 border-white/20 flex items-center gap-2">
+                                    <div className="flex gap-2">
+                                        <div className="w-2 h-2 bg-neo-accent" />
+                                        <div className="w-2 h-2 bg-neo-secondary" />
+                                        <div className="w-2 h-2 bg-neo-bg" />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-white/40 ml-2 uppercase tracking-widest flex items-center gap-2">
+                                        <TerminalIcon className="h-3 w-3" />
+                                        elevenfolks-manim-engine --verbose
+                                    </span>
+                                </div>
                                 <div
-                                    className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all z-10"
-                                    style={{ width: `${progress}%` }}
-                                />
+                                    ref={logContainerRef}
+                                    className="p-6 h-40 font-mono text-sm text-neo-secondary overflow-y-auto custom-scrollbar"
+                                >
+                                    {logs.map((log, i) => (
+                                        <div key={i} className="flex gap-4 mb-1">
+                                            <span className="text-white/20 whitespace-nowrap">[{log.time}]</span>
+                                            <span className="text-neo-accent font-black">»</span>
+                                            <span className="flex-1 uppercase font-bold text-xs tracking-tight">{log.msg}</span>
+                                        </div>
+                                    ))}
+                                    {logs.length === 0 && <div className="text-white/20 animate-pulse italic uppercase text-xs">INITIALIZING_ENGINE_CORES...</div>}
+                                </div>
                             </div>
+                        </div>
+                    )}
 
-                            {/* Buttons */}
-                            <div className="flex items-center justify-between gap-6">
-                                <div className="flex items-center gap-6">
-                                    <button onClick={togglePlay} className="p-4 rounded-2xl bg-white text-black hover:scale-105 active:scale-95 transition-all">
-                                        {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
-                                    </button>
-                                    <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0; }} className="text-white/60 hover:text-white transition-all">
-                                        <RotateCcw size={22} />
-                                    </button>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => setIsMuted(!isMuted)} className="text-white/60 hover:text-white transition-all">
-                                            <Volume2 size={22} />
+                    {error && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-neo-accent px-12 text-center">
+                            <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] -rotate-2 mb-10">
+                                <AlertCircle className="text-black w-20 h-20 stroke-[4px]" />
+                            </div>
+                            <h3 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-6">SYNC_CRITICAL_FAILURE</h3>
+                            <p className="text-black font-black text-2xl max-w-2xl mb-12 uppercase italic leading-tight">
+                                {error}
+                            </p>
+                            <button
+                                onClick={onClose}
+                                className="px-16 py-6 bg-black text-white border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-white hover:text-black transition-all shadow-[12px_12px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
+                            >
+                                ABORT_AND_EXIT
+                            </button>
+                        </div>
+                    )}
+
+                    {!isGenerating && actualSrc && (
+                        <video
+                            key={actualSrc}
+                            ref={videoRef}
+                            src={actualSrc}
+                            className="w-full h-full bg-black object-contain"
+                            onTimeUpdate={handleTimeUpdate}
+                            onEnded={() => setIsPlaying(false)}
+                            onError={handleError}
+                            crossOrigin="anonymous"
+                        />
+                    )}
+
+                    {/* Controls */}
+                    {!isGenerating && !error && (
+                        <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8 bg-gradient-to-t from-black/60 to-transparent">
+                            <div className="bg-white border-4 border-black p-6 shadow-[16px_16px_0px_0px_#000] space-y-6">
+                                {/* Progress Seeker */}
+                                <div className="relative h-6 bg-black border-2 border-black group cursor-pointer">
+                                    <div
+                                        className="h-full bg-neo-accent transition-all duration-100"
+                                        style={{ width: `${progress}%` }}
+                                    />
+                                    <input
+                                        type="range"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        min="0" max="100" step="0.1"
+                                        value={progress}
+                                        onChange={handleSeek}
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-6">
+                                        <button onClick={togglePlay} className="p-4 border-4 border-black bg-black text-white hover:bg-neo-accent hover:text-black transition-all active:translate-y-1">
+                                            {isPlaying ? <Pause className="h-8 w-8 stroke-[4px]" /> : <Play className="h-8 w-8 stroke-[4px]" />}
                                         </button>
-                                        <div className="w-20 h-1 bg-white/10 rounded-full">
-                                            <div className="w-1/2 h-full bg-emerald-500/60 rounded-full" />
+                                        <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0; }} className="p-4 border-4 border-black bg-white hover:bg-neo-secondary transition-all active:translate-y-1">
+                                            <RotateCcw className="h-6 w-6 stroke-[3px]" />
+                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-black text-white px-4 py-2 font-black uppercase text-xs italic">
+                                                VOL_TRACKER
+                                            </div>
+                                            <div className="w-32 h-4 bg-black/10 border-2 border-black p-0.5">
+                                                <div className="w-1/2 h-full bg-neo-secondary" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-4">
-                                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-bold uppercase tracking-widest">
-                                        1080P HD
+                                    <div className="flex items-center gap-6">
+                                        <div className="bg-neo-secondary border-2 border-black px-4 py-1 font-black text-xs uppercase italic rotate-1">
+                                            1080P_HD_READY
+                                        </div>
+                                        <button onClick={toggleFullscreen} className="p-4 border-4 border-black bg-white hover:bg-neo-accent transition-all">
+                                            <Maximize className="h-6 w-6 stroke-[3px]" />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={toggleFullscreen}
-                                        className="text-white/60 hover:text-white transition-all hover:scale-110 active:scale-90"
-                                    >
-                                        <Maximize size={22} />
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
-};
-
-
-
+}

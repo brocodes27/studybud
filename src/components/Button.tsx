@@ -2,31 +2,40 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'ghost' | 'outline';
+  variant?: 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'ghost' | 'outline' | 'muted' | 'white';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   loading?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   children: React.ReactNode;
   className?: string;
+  shadow?: 'sm' | 'md' | 'lg';
 }
 
 const buttonVariants = {
-  primary: 'btn-primary',
-  secondary: 'btn-secondary',
-  accent: 'btn-accent',
-  success: 'bg-green-600 hover:bg-green-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
-  warning: 'bg-yellow-600 hover:bg-yellow-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
-  danger: 'bg-red-600 hover:bg-red-700 text-primary-foreground font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-background shadow-lg hover:shadow-xl',
-  ghost: 'bg-transparent hover:bg-foreground/5 text-foreground/80 hover:text-foreground font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:ring-offset-2 focus:ring-offset-background',
-  outline: 'bg-transparent border-2 border-border hover:border-primary-500 text-foreground/80 hover:text-foreground font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-background',
+  primary: 'neo-button',
+  secondary: 'neo-button-secondary',
+  accent: 'neo-button', // same as primary/accent in neo style
+  muted: 'neo-button-muted',
+  white: 'neo-button-white',
+  success: 'neo-button bg-green-400',
+  warning: 'neo-button bg-yellow-400',
+  danger: 'neo-button bg-red-500',
+  ghost: 'bg-transparent hover:bg-black/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
+  outline: 'neo-border bg-transparent hover:bg-black/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
 };
 
 const buttonSizes = {
-  sm: 'px-3 py-2 text-sm',
-  md: 'px-4 py-2.5 text-sm',
-  lg: 'px-6 py-3 text-base',
-  xl: 'px-8 py-4 text-lg',
+  sm: 'px-4 py-2 text-xs',
+  md: 'px-6 py-3 text-sm',
+  lg: 'px-8 py-4 text-base',
+  xl: 'px-10 py-5 text-lg',
+};
+
+const shadowSizes = {
+  sm: 'shadow-[2px_2px_0px_0px_#000]',
+  md: 'shadow-[4px_4px_0px_0px_#000]',
+  lg: 'shadow-[6px_6px_0px_0px_#000]',
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -38,10 +47,12 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   className = '',
   disabled,
+  shadow = 'md',
   ...props
 }) => {
-  const baseClasses = buttonVariants[variant];
+  const baseClasses = buttonVariants[variant as keyof typeof buttonVariants] || buttonVariants.primary;
   const sizeClasses = buttonSizes[size];
+  const shadowClasses = shadowSizes[shadow];
   const isDisabled = disabled || loading;
 
   return (
@@ -49,7 +60,8 @@ export const Button: React.FC<ButtonProps> = ({
       className={`
         ${baseClasses}
         ${sizeClasses}
-        ${isDisabled ? 'opacity-60 cursor-not-allowed transform-none' : ''}
+        ${variant !== 'ghost' ? shadowClasses : ''}
+        ${isDisabled ? 'opacity-60 cursor-not-allowed grayscale' : ''}
         ${className}
       `}
       disabled={isDisabled}
@@ -62,7 +74,7 @@ export const Button: React.FC<ButtonProps> = ({
         {!loading && icon && iconPosition === 'left' && (
           <span className="flex-shrink-0">{icon}</span>
         )}
-        <span>{children}</span>
+        <span className="font-black">{children}</span>
         {!loading && icon && iconPosition === 'right' && (
           <span className="flex-shrink-0">{icon}</span>
         )}
@@ -71,7 +83,6 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-// Specialized button components for common use cases
 export const PrimaryButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) => (
   <Button variant="primary" {...props} />
 );
@@ -81,7 +92,7 @@ export const SecondaryButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) =
 );
 
 export const AccentButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) => (
-  <Button variant="accent" {...props} />
+  <Button variant="muted" {...props} />
 );
 
 export const SuccessButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) => (
@@ -103,3 +114,4 @@ export const GhostButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) => (
 export const OutlineButton: React.FC<Omit<ButtonProps, 'variant'>> = (props) => (
   <Button variant="outline" {...props} />
 );
+

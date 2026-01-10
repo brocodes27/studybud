@@ -954,40 +954,52 @@ Rules:
       <div ref={containerRef} className="absolute inset-0">
         <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
 
-        {/* Faint dust overlay for realism */}
-        <div className="pointer-events-none absolute inset-0 opacity-20 mix-blend-screen" aria-hidden="true">
-          <div className="absolute left-[20%] top-[10%] w-1 h-1 bg-white rounded-full animate-pulse"></div>
-          <div className="absolute left-[70%] top-[30%] w-1 h-1 bg-white rounded-full animate-ping"></div>
-          <div className="absolute left-[40%] top-[70%] w-1 h-1 bg-white rounded-full animate-pulse"></div>
+        {/* Dust Overlay (kept as sharp points for texture) */}
+        <div className="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
+          <div className="absolute left-[20%] top-[10%] w-2 h-2 bg-white/20 border border-white/40"></div>
+          <div className="absolute left-[70%] top-[30%] w-1 h-1 bg-white/30"></div>
+          <div className="absolute left-[40%] top-[70%] w-3 h-3 bg-white/10 rotate-45"></div>
         </div>
 
-        {/* Minimal controls kept off the board edges before play */}
+        {/* Controls */}
         {!isPlaying && (
-          <div className="absolute top-4 right-4 flex items-center gap-3 text-white/70">
-            <button onClick={handleClose} className="p-2 hover:text-white" title="Close">
-              <X className="w-6 h-6" />
+          <div className="absolute top-8 right-8 z-50">
+            <button
+              onClick={handleClose}
+              className="bg-white border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000] hover:bg-neo-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              title="TERMINATE_SESSION"
+            >
+              <X className="w-8 h-8 text-black stroke-[4px]" />
             </button>
           </div>
         )}
 
         {/* Start overlay */}
         {!isPlaying && currentIndex === -1 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white space-y-6">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-12 z-40 bg-black/40">
             {loading ? (
-              <>
-                <div className="animate-spin h-12 w-12 border-2 border-white/30 border-t-white rounded-full" />
-                <p className="text-lg text-white/70">Preparing the blackboard and narration...</p>
-              </>
+              <div className="bg-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_#000] rotate-2 flex flex-col items-center max-w-xl">
+                <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin mb-8" />
+                <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">COMPILING_LESSON</h2>
+                <p className="text-black/60 font-black uppercase tracking-widest text-xs">CALIBRATING_CHALK_VECTORS + NEURAL_VOICE_CORE</p>
+              </div>
             ) : (
-              <>
+              <div className="bg-white border-8 border-black p-12 shadow-[32px_32px_0px_0px_#000] -rotate-1 max-w-2xl">
+                <div className="bg-neo-secondary border-4 border-black p-6 mb-8 inline-block shadow-[8px_8px_0px_0px_#000] rotate-6">
+                  <Play className="w-16 h-16 text-black fill-current" />
+                </div>
+                <h2 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-6">ARCHIVE_READY</h2>
+                <p className="text-black/60 font-black uppercase tracking-widest text-sm mb-12">
+                  PROTOCOLS ENGAGED: BROWSER_SYNTH_V2 + CHEMDoodle_RENDER_ENGINE
+                </p>
+
                 <button
                   onClick={startLesson}
-                  className="px-10 py-5 rounded-full bg-[#39ff14]/20 border border-[#39ff14]/60 text-2xl font-semibold hover:bg-[#39ff14]/30 transition shadow-[0_0_30px_rgba(57,255,20,0.25)]"
+                  className="w-full py-6 bg-black text-white border-4 border-black font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:text-black transition-all shadow-[12px_12px_0px_0px_#000] active:shadow-none active:translate-x-[6px] active:translate-y-[6px]"
                 >
-                  <Play className="inline w-7 h-7 mr-3" /> Start Lesson
+                  INITIALIZE_CHAMBER
                 </button>
-                <p className="text-white/60 max-w-2xl">Voice leads. The chalk follows on a single canvas with ChemDoodle coordinates and chalk animations.</p>
-              </>
+              </div>
             )}
           </div>
         )}

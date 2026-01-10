@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Plus, RotateCcw, Check, X, Star, Zap, BookOpen, Filter, Grid, List } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Brain, RotateCcw, BookOpen, Grid, List, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
-import Tesseract from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import { usePayment } from '../hooks/usePayment';
 
@@ -36,19 +34,10 @@ interface FlashcardGeneratorProps {
   topics?: string[];
 }
 
-// Razorpay script loader
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = resolve;
-    document.body.appendChild(script);
-  });
-};
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
-export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGeneratorProps) {
+export function FlashcardGenerator({ planId, topics = [] }: FlashcardGeneratorProps) {
   const { user, session, isPremium } = useAuth() as any;
   const { showToast } = useToast();
   const { initiatePayment } = usePayment();
@@ -207,7 +196,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       }
       // Ensure topic is set for each flashcard (use selected topic from dropdown, fallback to 'General')
       const topicValue = selectedTopic && selectedTopic.trim() ? selectedTopic.trim() : 'General';
-      const flashcardsWithTopic = newFlashcards.map(card => ({
+      const _flashcardsWithTopic = newFlashcards.map(card => ({
         ...card,
         topic: topicValue,
       }));
@@ -231,7 +220,8 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     setStudyMode('review');
   };
 
-  const getDifficultyColor = (difficulty: string) => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const _getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy': return 'text-green-400 bg-green-500/20';
       case 'medium': return 'text-yellow-400 bg-yellow-500/20';
@@ -240,7 +230,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
     }
   };
 
-  const handleDeleteFlashcard = async (id: string) => {
+  const _handleDeleteFlashcard = async (id: string) => {
     if (!window.confirm('Delete this flashcard?')) return;
     try {
       const { error } = await supabase.from('flashcards').delete().eq('id', id);
@@ -251,6 +241,7 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       showToast('Failed to delete flashcard', 'error');
     }
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   const handleDeleteTopic = async (topic: string) => {
     if (!window.confirm(`Delete all flashcards for topic "${topic}"?`)) return;
@@ -278,15 +269,20 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   // Show paywall if not subscribed
   if (isPremium === false) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="glass-card p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
-          <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
-          <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all flashcard and study features.</p>
+      <div className="flex items-center justify-center min-h-[400px] p-8">
+        <div className="bg-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_#000] text-center max-w-md w-full -rotate-1">
+          <div className="w-20 h-20 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] mx-auto mb-8 -rotate-12">
+            <Zap className="h-10 w-10 text-white stroke-[4px]" />
+          </div>
+          <h2 className="text-4xl font-black mb-4 text-black uppercase tracking-tighter italic">GATEWAY LOCKED</h2>
+          <p className="mb-8 text-black font-bold uppercase tracking-widest text-sm leading-relaxed">
+            SUBSCRIBE FOR <span className="bg-neo-secondary px-2 border-2 border-black inline-block rotate-2">₹199</span> TO ACCESS THE FULL NEURAL RECALL ARCHIVE.
+          </p>
           <button
             onClick={() => initiatePayment()}
-            className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
+            className="w-full bg-black text-white px-8 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
           >
-            Subscribe Now
+            INITIALIZE ACCESS
           </button>
         </div>
       </div>
@@ -294,261 +290,255 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="p-10 space-y-12 relative bg-neo-bg/10 min-h-full">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-neon-blue to-blue-600 p-2 rounded-lg shadow-lg shadow-neon-blue/20">
-            <Brain className="h-6 w-6 text-white" />
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+        <div className="flex items-center gap-6">
+          <div className="bg-neo-accent border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] -rotate-6">
+            <Brain className="h-10 w-10 text-white stroke-[3px]" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">AI Flashcards</h3>
-            <p className="text-gray-400">Smart spaced repetition learning</p>
+            <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">NEURAL RECALL</h3>
+            <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: SPACED_REPETITION_GENESIS</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setStudyMode('topics')}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'topics'
-                ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
-                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-          >
-            Topics ({topicGroups.length})
-          </button>
-          <button
-            onClick={() => setStudyMode('generate')}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'generate'
-                ? 'bg-neon-purple/20 border-neon-purple text-neon-purple'
-                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-          >
-            Generate
-          </button>
-          <button
-            onClick={() => {
-              setFlashcards(allFlashcards);
-              setStudyMode('review');
-            }}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 border ${studyMode === 'review'
-                ? 'bg-neon-green/20 border-neon-green text-neon-green'
-                : 'bg-black/20 border-white/10 text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-          >
-            Review All ({allFlashcards.length})
-          </button>
+
+        <div className="flex flex-wrap gap-4">
+          {[
+            { id: 'topics', label: `TOPICS (${topicGroups.length})`, color: 'bg-neo-secondary' },
+            { id: 'generate', label: 'GENERATE', color: 'bg-neo-accent', text: 'text-white' },
+            { id: 'review', label: `REVIEW ALL (${allFlashcards.length})`, color: 'bg-neo-muted' }
+          ].map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => {
+                if (mode.id === 'review') setFlashcards(allFlashcards);
+                setStudyMode(mode.id as any);
+              }}
+              className={`
+                px-8 py-4 border-4 border-black font-black uppercase tracking-tighter italic text-lg transition-all
+                ${studyMode === mode.id
+                  ? `${mode.color} ${mode.text || 'text-black'} shadow-[6px_6px_0px_0px_#000] -translate-y-1`
+                  : 'bg-white text-black hover:bg-neo-bg hover:shadow-[2px_2px_0px_0px_#000]'
+                }
+              `}
+            >
+              {mode.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main Content Area */}
       {studyMode === 'topics' ? (
-        /* Topics Overview */
-        <div className="space-y-6">
-          {/* View Controls */}
-          <div className="flex items-center justify-between">
-            <h4 className="text-lg font-semibold text-white">Study by Topic</h4>
-            <div className="flex gap-2">
+        <div className="space-y-10">
+          <div className="flex items-center justify-between border-b-4 border-black pb-6">
+            <h4 className="text-2xl font-black text-black uppercase tracking-tighter italic">ARCHIVE SUB-SECTIONS</h4>
+            <div className="flex gap-4">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all duration-200 border ${viewMode === 'grid'
-                    ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
-                    : 'bg-black/20 border-white/10 text-gray-400 hover:text-white'
-                  }`}
+                className={`p-3 border-4 border-black transition-all ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white'}`}
               >
-                <Grid className="h-4 w-4" />
+                <Grid className="h-6 w-6 stroke-[3px]" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all duration-200 border ${viewMode === 'list'
-                    ? 'bg-neon-blue/20 border-neon-blue text-neon-blue'
-                    : 'bg-black/20 border-white/10 text-gray-400 hover:text-white'
-                  }`}
+                className={`p-3 border-4 border-black transition-all ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white'}`}
               >
-                <List className="h-4 w-4" />
+                <List className="h-6 w-6 stroke-[3px]" />
               </button>
             </div>
           </div>
-          {/* Show No Flashcards Yet only in content area */}
+
           {topicGroups.length === 0 ? (
-            <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
-              <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
-                <BookOpen className="h-16 w-16 text-gray-500 mx-auto" />
+            <div className="bg-white border-8 border-black p-20 text-center shadow-[16px_16px_0px_0px_#000] rotate-1">
+              <div className="bg-neo-muted border-4 border-black p-8 inline-block mb-10 -rotate-12">
+                <BookOpen className="h-20 w-20 text-black stroke-[3px]" />
               </div>
-              <h4 className="text-xl font-semibold text-white mb-2">No Flashcards Yet</h4>
-              <p className="text-gray-400 mb-6">Generate AI-powered flashcards from your study plans</p>
+              <h4 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">ARCHIVE EMPTY</h4>
+              <p className="text-black font-bold uppercase tracking-widest text-sm mb-12">NO NEURAL DATA DETECTED. INITIALIZE GENERATION SEQUENCE.</p>
               <button
                 onClick={() => setStudyMode('generate')}
-                className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
+                className="bg-neo-accent text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000]"
               >
-                <Plus className="h-5 w-5 inline mr-2" />
-                Generate Flashcards
+                START GENERATION
               </button>
             </div>
           ) : (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10' : 'space-y-6'}>
               {topicGroups.map((group, index) => (
                 <div
                   key={index}
-                  className={`glass-card rounded-2xl p-6 border border-white/10 hover:border-neon-blue/30 transition-all duration-300 ${viewMode === 'list' ? 'flex items-center justify-between' : ''
-                    }`}
+                  className={`
+                    bg-white border-4 border-black p-8 shadow-[10px_10px_0px_0px_#000] transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000]
+                    ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'}
+                    ${viewMode === 'list' ? 'flex items-center justify-between gap-10' : ''}
+                  `}
                 >
                   <div className={viewMode === 'list' ? 'flex-grow' : ''}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-lg font-semibold text-white">{group.topic}</h5>
-                      <button
-                        className="text-red-400 hover:text-red-300 text-xs font-semibold ml-4 transition-colors"
-                        onClick={() => handleDeleteTopic(group.topic)}
-                      >
-                        Delete Topic
-                      </button>
+                    <div className="flex items-center justify-between mb-6">
+                      <h5 className="text-2xl font-black text-black uppercase tracking-tighter italic leading-none">{group.topic}</h5>
                     </div>
-                    <div className={`${viewMode === 'list' ? 'flex items-center gap-6' : 'space-y-3'}`}>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <BookOpen className="h-4 w-4 text-neon-blue" />
-                        {group.totalCards} cards
+                    <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-black/40">
+                      <div className="bg-neo-secondary p-1 border-2 border-black">
+                        <BookOpen className="h-4 w-4 text-black stroke-[3px]" />
                       </div>
+                      {group.totalCards} NEURAL_NODES
                     </div>
                   </div>
-                  <button
-                    onClick={() => startTopicReview(group.topic)}
-                    className={`bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-neon-blue/50 font-semibold py-3 px-6 rounded-xl transition-all duration-200 ${viewMode === 'list' ? 'ml-4' : 'w-full mt-4'
-                      }`}
-                  >
-                    Study Topic
-                  </button>
+                  <div className={`flex flex-col gap-4 ${viewMode === 'list' ? 'md:flex-row' : 'mt-8'}`}>
+                    <button
+                      onClick={() => startTopicReview(group.topic)}
+                      className="flex-1 bg-black text-white font-black uppercase italic py-4 px-8 border-4 border-black shadow-[4px_4px_0px_0px_#FF6B6B] hover:bg-neo-accent active:shadow-none transition-all text-center"
+                    >
+                      STUDY_NODE
+                    </button>
+                    <button
+                      className="bg-white text-neo-accent border-4 border-neo-accent hover:bg-neo-accent hover:text-white font-black uppercase text-[10px] tracking-widest py-2 px-4 transition-all"
+                      onClick={() => handleDeleteTopic(group.topic)}
+                    >
+                      PURGE_TOPIC
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       ) : studyMode === 'generate' ? (
-        /* Generate Mode */
-        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-          <h4 className="text-lg font-semibold text-white mb-4">Generate New Flashcards</h4>
-          <div className="space-y-4">
-            {/* Study Plan Selection */}
+        <div className="bg-white border-8 border-black p-12 shadow-[16px_16px_0px_0px_#000] rotate-1 max-w-4xl mx-auto">
+          <h4 className="text-3xl font-black text-black uppercase tracking-tighter italic mb-10 border-b-4 border-black pb-4">GENERATION_CONFIG</h4>
+          <div className="space-y-10">
             {!planId && availablePlans.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Select Study Plan
-                </label>
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic">SOURCE_PLAN</label>
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+                  className="w-full bg-white border-4 border-black px-6 py-4 font-black text-xl italic focus:bg-neo-secondary outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
                 >
-                  <option value="" className="bg-gray-900">Choose a study plan...</option>
+                  <option value="">SELECT SOURCE...</option>
                   {availablePlans.map((plan) => (
-                    <option key={plan.id} value={plan.id} className="bg-gray-900">
-                      {plan.subject} - Class {plan.class} (Exam: {new Date(plan.exam_date).toLocaleDateString()})
+                    <option key={plan.id} value={plan.id}>
+                      {plan.subject.toUpperCase()} - CLASS_{plan.class}
                     </option>
                   ))}
                 </select>
               </div>
             )}
-            {/* No Plans Available Message */}
-            {availablePlans.length === 0 && (
-              <div className="glass-card rounded-xl p-4 border border-yellow-500/30 bg-yellow-500/10">
-                <p className="text-yellow-400 text-sm">
-                  No study plans found. Please create a study plan first to generate contextual flashcards.
-                </p>
-              </div>
-            )}
-            {/* Topic Dropdown Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Select Topic <span className="text-red-400">*</span>
-              </label>
+
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic">TARGET_AREA <span className="text-neo-accent">*</span></label>
               <select
                 value={selectedTopic}
                 onChange={e => setSelectedTopic(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-blue focus:outline-none focus:ring-1 focus:ring-neon-blue"
+                className="w-full bg-white border-4 border-black px-6 py-4 font-black text-xl italic focus:bg-neo-secondary outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
                 required
               >
-                <option value="" className="bg-gray-900">Choose a topic...</option>
+                <option value="">DEFINE TARGET...</option>
                 {availableTopics.map((topic, idx) => (
-                  <option key={idx} value={topic} className="bg-gray-900">{topic}</option>
+                  <option key={idx} value={topic}>{topic.toUpperCase()}</option>
                 ))}
               </select>
             </div>
+
             <button
               onClick={generateFlashcards}
               disabled={isGenerating || (!selectedPlan && !planId) || !selectedTopic}
-              className="w-full bg-gradient-to-r from-neon-purple to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:from-gray-700 disabled:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:cursor-not-allowed disabled:text-gray-500 shadow-lg shadow-neon-purple/20"
+              className="w-full bg-black text-white py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000] disabled:opacity-50 flex items-center justify-center gap-6"
             >
               {isGenerating ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Generating Flashcards...
-                </div>
+                <>
+                  <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  PROCESSING...
+                </>
               ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <Zap className="h-5 w-5" />
-                  Generate AI Flashcards
-                </div>
+                <>
+                  <Zap className="h-10 w-10 stroke-[4px]" />
+                  CONSTRUCT_ARCHIVE
+                </>
               )}
             </button>
           </div>
         </div>
       ) : studyMode === 'review' ? (
-        /* Review Mode */
-        <div className="space-y-6">
-          {/* Review Header */}
-          <div className="flex items-center justify-between">
+        <div className="space-y-12 max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b-4 border-black pb-6">
             <div>
-              <h4 className="text-lg font-semibold text-white">
-                {activeTopicFilter === 'all' ? 'Reviewing All Cards' : `Reviewing: ${activeTopicFilter}`}
+              <h4 className="text-3xl font-black text-black uppercase tracking-tighter italic">
+                {activeTopicFilter === 'all' ? 'FULL_ARCHIVE_SYNC' : `NODE: ${activeTopicFilter.toUpperCase()}`}
               </h4>
-              <p className="text-gray-400">Card {currentCard + 1} of {flashcards.length}</p>
+              <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">INDEX: {currentCard + 1} / {flashcards.length}</p>
+            </div>
+            <div className="bg-black text-white px-4 py-1 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_#FF6B6B]">
+              SPACED_PROTOCOLS: ACTIVE
             </div>
           </div>
-          {/* Show No Flashcards Yet only in content area for review mode */}
+
           {flashcards.length === 0 ? (
-            <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
-              <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/5">
-                <BookOpen className="h-16 w-16 text-gray-500 mx-auto" />
-              </div>
-              <h4 className="text-xl font-semibold text-white mb-2">No Flashcards Yet</h4>
-              <p className="text-gray-400 mb-6">Generate AI-powered flashcards from your study plans</p>
+            <div className="bg-white border-8 border-black p-20 text-center shadow-[16px_16px_0px_0px_#000] -rotate-1">
+              <BookOpen className="h-20 w-20 text-black/10 mx-auto mb-8" />
+              <h4 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">DATA_NOT_FOUND</h4>
               <button
                 onClick={() => setStudyMode('generate')}
-                className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg shadow-neon-purple/20"
+                className="bg-neo-accent text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl shadow-[8px_8px_0px_0px_#000]"
               >
-                <Plus className="h-5 w-5 inline mr-2" />
-                Generate Flashcards
+                INITIALIZE_CORE
               </button>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center min-h-[300px]">
+            <div className="flex flex-col items-center gap-12">
               <div
-                className={`glass-card rounded-2xl p-8 border border-white/10 text-center max-w-xl w-full cursor-pointer transition-all duration-500 transform perspective-1000 ${isFlipped ? 'bg-neon-blue/10 border-neon-blue/50' : 'bg-black/40 hover:border-white/20'}`}
+                className={`
+                    w-full min-h-[400px] border-8 border-black p-12 text-center cursor-pointer transition-all duration-300 relative overflow-hidden
+                    ${isFlipped ? 'bg-neo-secondary shadow-none translate-x-2 translate-y-2' : 'bg-white shadow-[20px_20px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[24px_24px_0px_0px_#000]'}
+                `}
                 onClick={() => setIsFlipped(f => !f)}
-                style={{ minHeight: '240px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}
               >
-                <div className="text-xl font-bold text-white mb-6">
-                  {flashcards[currentCard].question}
+                <div className="relative z-10 flex flex-col items-center justify-center min-h-[300px]">
+                  <div className="absolute top-0 left-0 bg-black text-white px-4 py-1 font-black uppercase text-[10px] tracking-[0.2em] -rotate-2">
+                    {isFlipped ? 'RESPONSE_DATA' : 'QUERY_NODE'}
+                  </div>
+
+                  <h5 className={`text-4xl md:text-5xl font-black tracking-tighter italic leading-tight ${isFlipped ? 'text-black' : 'text-black'}`}>
+                    {isFlipped ? flashcards[currentCard].answer : flashcards[currentCard].question}
+                  </h5>
+
+                  <div className="mt-12 flex items-center justify-center gap-4">
+                    <div className="w-12 h-1 bg-black/10"></div>
+                    <p className="text-[10px] font-black text-black/40 uppercase tracking-widest italic">
+                      {isFlipped ? 'CLICK_TO_RESET' : 'CLICK_TO_REVEAL'}
+                    </p>
+                    <div className="w-12 h-1 bg-black/10"></div>
+                  </div>
                 </div>
-                <div className={`text-lg transition-opacity duration-300 ${isFlipped ? 'opacity-100 text-neon-blue' : 'opacity-0'}`}>
-                  {isFlipped ? flashcards[currentCard].answer : ''}
+
+                {/* Decorative Elements */}
+                <div className="absolute bottom-4 right-4 text-black/5 font-black text-8xl pointer-events-none select-none italic -rotate-12">
+                  {isFlipped ? 'EF_RE_CALL' : 'EF_QUE_RY'}
                 </div>
-                {!isFlipped && (
-                  <div className="text-gray-500 text-sm mt-4 italic">Click to reveal answer</div>
-                )}
               </div>
-              <div className="flex justify-between w-full max-w-xl mt-6 gap-4">
+
+              <div className="flex justify-between w-full gap-8">
                 <button
                   onClick={() => { setCurrentCard(c => Math.max(0, c - 1)); setIsFlipped(false); }}
                   disabled={currentCard === 0}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex-1 bg-white border-4 border-black py-6 font-black uppercase italic italic tracking-tighter text-2xl shadow-[8px_8px_0px_0px_#000] hover:bg-neo-muted disabled:opacity-20 active:shadow-none transition-all flex items-center justify-center gap-4"
                 >
-                  Previous
+                  <div className="p-2 border-2 border-black bg-black text-white">
+                    <RotateCcw className="w-6 h-6 stroke-[3px] -scale-x-100" />
+                  </div>
+                  PREV_DATA
                 </button>
                 <button
                   onClick={() => { setCurrentCard(c => Math.min(flashcards.length - 1, c + 1)); setIsFlipped(false); }}
                   disabled={currentCard === flashcards.length - 1}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="flex-1 bg-black text-white border-4 border-black py-6 font-black uppercase italic italic tracking-tighter text-2xl shadow-[8px_8px_0px_0px_#4D96FF] hover:bg-neo-accent active:shadow-none transition-all flex items-center justify-center gap-4"
                 >
-                  Next
+                  NEXT_DATA
+                  <div className="p-2 border-2 border-white bg-white text-black">
+                    <RotateCcw className="w-6 h-6 stroke-[3px]" />
+                  </div>
                 </button>
               </div>
             </div>
@@ -557,4 +547,5 @@ export function FlashcardGenerator({ planId, subject, topics = [] }: FlashcardGe
       ) : null}
     </div>
   );
+
 }

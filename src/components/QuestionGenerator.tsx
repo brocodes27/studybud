@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import Tesseract from 'tesseract.js';
-import { Upload, FileText, Save, Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { Upload, FileText, Save, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
@@ -22,7 +22,7 @@ export function QuestionGenerator() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [saveAllStatus, setSaveAllStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [topicError, setTopicError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -31,7 +31,6 @@ export function QuestionGenerator() {
     setSaveAllStatus('idle');
     setTopicError(null);
     try {
-      // Call your Supabase Edge Function that wraps Gemini AI
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-questions-from-notes`, {
         method: 'POST',
         headers: {
@@ -56,7 +55,7 @@ export function QuestionGenerator() {
   const handleSaveAll = async () => {
     if (!user?.id || questions.length === 0) return;
     if (!topic.trim()) {
-      setTopicError('Please enter a topic for your flashcards.');
+      setTopicError('ENTER_TOPIC_LABEL');
       return;
     }
     setSaveAllStatus('saving');
@@ -81,7 +80,7 @@ export function QuestionGenerator() {
     setOcrProgress(null);
     try {
       const file = e.target.files?.[0];
-      if (!file) throw new Error('No file selected');
+      if (!file) throw new Error('NO_FILE_DETECTED');
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let text = '';
@@ -91,7 +90,6 @@ export function QuestionGenerator() {
         const pageText = content.items.map((item: any) => item.str).join(' ');
         text += pageText + '\n';
       }
-      // If text is too short, try OCR
       if (text.replace(/\s/g, '').length < 30) {
         let ocrText = '';
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -120,7 +118,7 @@ export function QuestionGenerator() {
         setNotes(text.trim());
       }
     } catch (err: any) {
-      setPdfError('Failed to extract text from PDF. Please try another file.');
+      setPdfError('PDF_EXTRACTION_FAILURE: RETRY_WITH_CLEAN_SOURCE');
     } finally {
       setPdfLoading(false);
       setOcrProgress(null);
@@ -128,140 +126,153 @@ export function QuestionGenerator() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-8 glass-panel rounded-2xl border border-white/10 shadow-xl mt-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-gradient-to-br from-neon-purple to-pink-600 p-2 rounded-lg shadow-lg shadow-neon-purple/20">
-          <Sparkles className="h-6 w-6 text-white" />
+    <div className="max-w-4xl mx-auto p-12 bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] rotate-1 mt-12 mb-20">
+      <div className="flex items-center gap-6 mb-10 border-b-8 border-black pb-8">
+        <div className="bg-neo-accent border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] -rotate-6">
+          <Sparkles className="h-10 w-10 text-white stroke-[3px]" />
         </div>
-        <h2 className="text-2xl font-bold text-white">AI Question Generator</h2>
+        <div>
+          <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">QUERY_ARCHITECT</h2>
+          <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: NEURAL_QUESTION_SYNTHESIS</p>
+        </div>
       </div>
 
-      <div className="mb-6 flex flex-col gap-4">
-        <div className="relative">
+      <div className="space-y-10">
+        <div className="relative group">
           <textarea
-            className="w-full h-48 p-4 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-purple focus:outline-none focus:ring-1 focus:ring-neon-purple resize-none transition-all"
-            placeholder="Paste your notes here..."
+            className="w-full h-64 p-8 bg-white border-4 border-black font-black uppercase tracking-tight italic text-xl focus:bg-neo-bg outline-none transition-all shadow-[8px_8px_0px_0px_#000] resize-none"
+            placeholder="INSERT_NOTES_DATA_PACKETS_HERE..."
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
-          <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-            {notes.length} characters
+          <div className="absolute -bottom-4 right-6 bg-black text-white px-4 py-1 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#FF6B6B]">
+            DATA_VOLUME: {notes.length} BYTES
           </div>
         </div>
 
-        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-          <div className="flex-shrink-0 bg-white/10 p-2 rounded-lg">
-            <Upload className="h-5 w-5 text-neon-blue" />
+        <div className="flex flex-col md:flex-row items-center gap-8 p-8 border-4 border-black bg-neo-bg/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 py-1 px-4 bg-black text-white font-black text-[10px] uppercase italic -rotate-1 translate-x-1">
+            OCR_OVERRIDE_ACTIVE
           </div>
-          <div className="flex-grow">
-            <label className="text-gray-300 font-medium block mb-1">Upload PDF Notes</label>
+          <div className="flex-shrink-0 bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
+            <Upload className="h-8 w-8 text-black stroke-[3px]" />
+          </div>
+          <div className="flex-grow space-y-2">
+            <label className="text-black font-black uppercase tracking-widest text-xs italic block">SOURCE_PDF_INJECTION</label>
             <input
               type="file"
               accept="application/pdf"
               onChange={handlePdfUpload}
-              className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-neon-blue/10 file:text-neon-blue hover:file:bg-neon-blue/20 transition-all cursor-pointer"
+              className="w-full text-xs font-black uppercase italic cursor-pointer file:bg-black file:text-white file:border-none file:px-6 file:py-2 file:mr-4 file:font-black file:uppercase file:italic hover:file:bg-neo-accent transition-all animate-none"
               disabled={pdfLoading}
             />
           </div>
           {pdfLoading && (
-            <div className="flex items-center gap-2 text-neon-blue text-sm font-medium">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {ocrProgress !== null ? `OCR: ${ocrProgress}%` : 'Extracting...'}
+            <div className="bg-neo-accent text-white px-6 py-3 border-4 border-black font-black uppercase tracking-tighter italic shadow-[6px_6px_0px_0px_#000] animate-pulse">
+              {ocrProgress !== null ? `DECODING: ${ocrProgress}%` : 'EXTRACTING...'}
             </div>
           )}
         </div>
+
         {pdfError && (
-          <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-            <AlertCircle className="h-4 w-4" />
-            {pdfError}
+          <div className="flex items-center gap-4 text-white bg-neo-accent border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
+            <AlertCircle className="h-6 w-6 stroke-[3px]" />
+            <span className="font-black uppercase text-xs italic tracking-widest">{pdfError}</span>
           </div>
         )}
-      </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-2">Topic Name <span className="text-red-400">*</span></label>
-        <input
-          className="w-full p-3 rounded-xl bg-black/40 text-white border border-white/10 focus:border-neon-purple focus:outline-none focus:ring-1 focus:ring-neon-purple transition-all"
-          placeholder="e.g., Thermodynamics, Organic Chemistry"
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-        />
-        {topicError && <div className="text-red-400 text-sm mt-2">{topicError}</div>}
-      </div>
-
-      <button
-        className="w-full bg-gradient-to-r from-neon-purple to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-neon-purple/20 transition-all transform hover:scale-[1.02]"
-        onClick={handleGenerate}
-        disabled={loading || !notes.trim()}
-      >
-        {loading ? (
-          <div className="flex items-center justify-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Generating Questions...
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Generate Questions
-          </div>
-        )}
-      </button>
-
-      {error && (
-        <div className="mt-4 flex items-center gap-2 text-red-400 bg-red-500/10 p-4 rounded-xl border border-red-500/20">
-          <AlertCircle className="h-5 w-5" />
-          {error}
+        <div className="space-y-4">
+          <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic block">CLASSIFICATION_TAG <span className="text-neo-accent">*</span></label>
+          <input
+            className="w-full py-5 px-8 bg-white border-4 border-black font-black text-2xl uppercase italic tracking-tighter focus:bg-neo-secondary outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
+            placeholder="E.G. ORGANIC_SYNTHESIS_ALPHA"
+            value={topic}
+            onChange={e => setTopic(e.target.value)}
+          />
+          {topicError && <div className="bg-black text-white px-4 py-1 inline-block font-black uppercase text-[10px] tracking-widest -rotate-2">{topicError}</div>}
         </div>
-      )}
 
-      {questions.length > 0 && (
-        <div className="mt-8 animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <FileText className="h-5 w-5 text-neon-blue" />
-              Generated Questions
-            </h3>
-            <div className="flex items-center gap-2">
+        <button
+          className="w-full bg-black text-white py-8 border-4 border-black font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000] disabled:opacity-50"
+          onClick={handleGenerate}
+          disabled={loading || !notes.trim()}
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-6">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+              PROCESSING...
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-6">
+              <Sparkles className="h-10 w-10 stroke-[4px]" />
+              EXECUTE_SYNTHESIS
+            </span>
+          )}
+        </button>
+
+        {error && (
+          <div className="flex items-center gap-6 text-white bg-black border-4 border-black p-8 shadow-[8px_8px_0px_0px_#FF6B6B] -rotate-1">
+            <AlertCircle className="h-10 w-10 text-neo-accent stroke-[3px]" />
+            <span className="text-xl font-black uppercase tracking-tight italic">{error}</span>
+          </div>
+        )}
+
+        {questions.length > 0 && (
+          <div className="mt-16 space-y-10 border-t-8 border-black pt-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+              <h3 className="text-3xl font-black text-black uppercase tracking-tighter italic flex items-center gap-6">
+                <div className="bg-neo-secondary border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000]">
+                  <FileText className="h-8 w-8 text-black stroke-[3px]" />
+                </div>
+                SYNTHESIZED_QUERIES
+              </h3>
               <button
-                className={`flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 transition-all shadow-lg shadow-green-600/20`}
+                className={`
+                    px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-xl transition-all shadow-[8px_8px_0px_0px_#000]
+                    ${saveAllStatus === 'saved' ? 'bg-neo-secondary text-black' : 'bg-black text-white hover:bg-neo-accent'}
+                `}
                 onClick={handleSaveAll}
                 disabled={saveAllStatus === 'saving' || saveAllStatus === 'saved'}
               >
                 {saveAllStatus === 'saving' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Saving...
-                  </>
+                  <span className="flex items-center gap-4">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    LINKING...
+                  </span>
                 ) : saveAllStatus === 'saved' ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" /> All Saved!
-                  </>
+                  <span className="flex items-center gap-4">
+                    <CheckCircle className="h-6 w-6 stroke-[4px]" /> SUCCESS_INDEXED
+                  </span>
                 ) : (
-                  <>
-                    <Save className="h-4 w-4" /> Save as Flashcards
-                  </>
+                  <span className="flex items-center gap-4">
+                    <Save className="h-6 w-6 stroke-[4px]" /> COMMIT_TO_ARCHIVE
+                  </span>
                 )}
               </button>
             </div>
+
+            {saveAllStatus === 'error' && (
+              <div className="bg-neo-accent text-white p-4 border-4 border-black font-black uppercase text-xs tracking-widest text-center italic shadow-[4px_4px_0px_0px_#000]">
+                TRANSMISSION_ERROR: ARCHIVE_SYNC_FAILED
+              </div>
+            )}
+
+            <ul className="grid grid-cols-1 gap-6">
+              {questions.map((q, i) => (
+                <li key={i} className={`
+                    bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] transition-all flex gap-8
+                    ${i % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}
+                `}>
+                  <span className="flex-shrink-0 w-12 h-12 border-4 border-black bg-black text-white flex items-center justify-center text-xl font-black italic -rotate-12 translate-x-[-10px]">
+                    {i + 1}
+                  </span>
+                  <span className="text-xl font-black text-black uppercase tracking-tight italic leading-relaxed">{q}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          {saveAllStatus === 'error' && (
-            <div className="mb-4 text-red-400 text-sm bg-red-500/10 p-2 rounded border border-red-500/20">
-              Error saving flashcards. Please try again.
-            </div>
-          )}
-
-          <ul className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-            {questions.map((q, i) => (
-              <li key={i} className="glass-card p-4 rounded-xl text-gray-200 border border-white/5 hover:border-white/20 transition-all flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-neon-blue">
-                  {i + 1}
-                </span>
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

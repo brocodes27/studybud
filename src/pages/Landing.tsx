@@ -9,15 +9,13 @@ import LandingAuth from '../sections/landing/LandingAuth';
 import LandingTestimonials from '../sections/landing/LandingTestimonials';
 import LandingFooter from '../sections/landing/LandingFooter';
 
-// Light marketing landing (no heavy animations)
-
 const Landing: React.FC = () => {
   const { role, loading } = useAuth() as any;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="loading-spinner w-12 h-12"></div>
+      <div className="min-h-screen flex items-center justify-center bg-neo-bg">
+        <div className="w-16 h-16 border-8 border-black border-t-neo-accent animate-spin" />
       </div>
     );
   }
@@ -27,7 +25,7 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[radial-gradient(ellipse_200%_100%_at_bottom_left,#000_0%,#111_100%)] text-white">
+    <div className="min-h-screen bg-neo-bg text-black selection:bg-neo-accent selection:text-black">
       <LandingHeader />
       <LandingHero />
       <LandingBenefits />

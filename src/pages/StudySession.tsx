@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Pause, CheckCircle, BookOpen, ArrowLeft, ArrowRight, Calendar, Clock } from 'lucide-react';
+import { Play, Pause, CheckCircle, BookOpen, ArrowLeft, ArrowRight, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -92,7 +92,7 @@ export function StudySession() {
       setStudyPlan(data);
     } catch (error) {
       console.error('Error fetching study plan:', error);
-      showToast('Failed to load study plan', 'error');
+      showToast('SESSION_READ_ERROR', 'error');
       navigate('/plans');
     } finally {
       setLoading(false);
@@ -158,14 +158,14 @@ export function StudySession() {
       setStudyTime(0);
       setNotes('');
 
-      showToast('Study session completed!', 'success');
+      showToast('LOG_SUCCESS: SESSION_RECORDED', 'success');
 
       if (currentDay < studyPlan.plan.daily_schedule.length - 1) {
         setCurrentDay(currentDay + 1);
       }
     } catch (error) {
       console.error('Error completing task:', error);
-      showToast('Failed to save study session', 'error');
+      showToast('UPLOAD_CRITICAL: LOG_FAILURE', 'error');
     }
   };
 
@@ -182,16 +182,23 @@ export function StudySession() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-neon-blue"></div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
+        <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
+        <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic">RETRIEVING_DATA...</h2>
       </div>
     );
   }
 
   if (!studyPlan) {
     return (
-      <div className="text-center py-12 glass-panel rounded-2xl border border-white/10">
-        <p className="text-gray-400">Study plan not found</p>
+      <div className="bg-neo-accent border-8 border-black p-12 text-center shadow-[16px_16px_0px_0px_#000] rotate-1">
+        <h3 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">BUFFER_NULL: PLAN_NOT_FOUND</h3>
+        <button
+          onClick={() => navigate('/plans')}
+          className="mt-8 bg-black text-white px-10 py-4 font-black uppercase tracking-widest border-4 border-black shadow-[6px_6px_0px_0px_#fff]"
+        >
+          REVERT_TO_BASE
+        </button>
       </div>
     );
   }
@@ -200,78 +207,67 @@ export function StudySession() {
   const isCurrentTaskCompleted = completedTasks.has(currentTask.day);
 
   return (
-    <div className="space-y-8 animate-fade-in relative p-4 md:p-8">
-      {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
-
+    <div className="space-y-12 animate-fade-in relative pb-20">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/plans')}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-200"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Back to Plans
-        </button>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b-8 border-black pb-10">
         <div>
-          <h1 className="text-3xl font-bold text-white">{studyPlan.subject}</h1>
-          <p className="text-gray-400 flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-neon-purple" />
-            Exam: {format(new Date(studyPlan.exam_date), 'MMMM d, yyyy')}
+          <button
+            onClick={() => navigate('/plans')}
+            className="flex items-center gap-3 text-black/40 font-black uppercase tracking-[0.2em] mb-4 hover:text-black transition-colors"
+          >
+            <ArrowLeft className="h-6 w-6 stroke-[4px]" /> REVERT_TO_BASE
+          </button>
+          <h1 className="text-6xl md:text-8xl font-black text-black uppercase tracking-tighter italic leading-none">{studyPlan.subject}</h1>
+          <p className="text-black font-black uppercase tracking-widest text-sm mt-4 flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-neo-accent stroke-[3px]" />
+            DEADLINE: {format(new Date(studyPlan.exam_date), 'MMM dd, yyyy')}
           </p>
         </div>
-      </div>
 
-      {/* Upcoming (reflects reschedules) */}
-      {(() => {
-        const upcoming = getUpcoming(studyPlan);
-        return (
-          <div className="glass-panel rounded-2xl p-6 border border-white/10">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-neon-green" />
-              Upcoming
-            </h3>
-            {upcoming.length > 0 ? (
-              <ul className="space-y-3">
+        {/* Upcoming Sticker */}
+        {(() => {
+          const upcoming = getUpcoming(studyPlan);
+          if (upcoming.length === 0) return null;
+          return (
+            <div className="bg-white border-4 border-black p-6 shadow-[10px_10px_0px_0px_#000] rotate-2 max-w-xs">
+              <h3 className="text-[10px] font-black text-black/30 mb-3 uppercase tracking-widest border-b-2 border-black/10 pb-2">NEXT_CHUNKS</h3>
+              <ul className="space-y-2">
                 {upcoming.map((d) => (
-                  <li key={`${studyPlan.id}-${d.date}-${d.topic}`} className="flex items-center gap-3 text-sm text-gray-300 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <span className="text-neon-blue font-mono">{format(new Date(`${d.date}T00:00:00`), 'MMM dd')}</span>
-                    <span className="w-1.5 h-1.5 bg-gray-500 rounded-full"></span>
-                    <span>{d.topic}</span>
+                  <li key={`${studyPlan.id}-${d.date}-${d.topic}`} className="flex items-center gap-3 text-[10px] font-black uppercase">
+                    <span className="text-neo-accent italic">{format(new Date(`${d.date}T00:00:00`), 'MMM dd')}</span>
+                    <span className="truncate">{d.topic}</span>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <div className="text-sm text-gray-500 italic">No upcoming sessions</div>
-            )}
-          </div>
-        );
-      })()}
+            </div>
+          );
+        })()}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Study Plan Navigation */}
         <div className="lg:col-span-1">
-          <div className="glass-panel rounded-2xl p-6 border border-white/10 h-full max-h-[600px] flex flex-col">
-            <h3 className="text-lg font-bold text-white mb-4">Study Schedule</h3>
-            <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
+          <div className="bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] rotate-1 h-full max-h-[700px] flex flex-col">
+            <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic mb-8 border-b-4 border-black pb-4">TIMELINE_MAP</h3>
+            <div className="space-y-4 overflow-y-auto pr-4 custom-scrollbar flex-1">
               {studyPlan.plan.daily_schedule.map((task, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentDay(index)}
-                  className={`w-full text-left p-3 rounded-xl transition-all duration-200 border ${index === currentDay
-                      ? 'bg-neon-blue/20 border-neon-blue/50 shadow-lg shadow-neon-blue/10'
-                      : completedTasks.has(task.day)
-                        ? 'bg-neon-green/10 border-neon-green/30 opacity-70'
-                        : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                  className={`w-full text-left p-6 border-4 border-black transition-all group relative ${index === currentDay
+                    ? 'bg-neo-secondary shadow-none translate-x-[4px] translate-y-[4px]'
+                    : completedTasks.has(task.day)
+                      ? 'bg-neo-muted/20 opacity-60 shadow-[4px_4px_0px_0px_#000]'
+                      : 'bg-white shadow-[6px_6px_0px_0px_#000] hover:bg-neo-bg hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#000]'
                     }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`font-medium text-sm ${index === currentDay ? 'text-white' : 'text-gray-400'}`}>Day {task.day}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-black text-xs uppercase italic">NODE_{task.day.toString().padStart(3, '0')}</span>
                     {completedTasks.has(task.day) && (
-                      <CheckCircle className="h-4 w-4 text-neon-green" />
+                      <CheckCircle className="h-5 w-5 text-neo-secondary stroke-[4px]" />
                     )}
                   </div>
-                  <p className={`text-xs truncate ${index === currentDay ? 'text-gray-300' : 'text-gray-500'}`}>{task.topic}</p>
+                  <p className="text-sm font-black uppercase tracking-tight leading-tight line-clamp-2 italic">{task.topic}</p>
                 </button>
               ))}
             </div>
@@ -279,47 +275,47 @@ export function StudySession() {
         </div>
 
         {/* Main Study Area */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-12">
           {/* Current Task */}
-          <div className="glass-panel rounded-2xl p-8 border border-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-neon-purple/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
+          <div className="bg-white border-8 border-black p-12 shadow-[24px_24px_0px_0px_#000] relative overflow-hidden -rotate-1">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-neo-accent/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
 
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-10 pb-6 border-b-4 border-black/10">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Day {currentTask.day}</h2>
-                <p className="text-gray-400">{format(new Date(currentTask.date), 'MMMM d, yyyy')}</p>
+                <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">NODE_{currentTask.day.toString().padStart(3, '0')}</h2>
+                <p className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2">{format(new Date(currentTask.date), 'MMMM dd, yyyy')}</p>
               </div>
               {isCurrentTaskCompleted && (
-                <div className="flex items-center gap-2 bg-neon-green/20 text-neon-green px-4 py-2 rounded-full border border-neon-green/30 shadow-lg shadow-neon-green/10">
-                  <CheckCircle className="h-5 w-5" />
-                  Completed
+                <div className="bg-neo-secondary border-4 border-black px-6 py-2 shadow-[6px_6px_0px_0px_#000] rotate-6 flex items-center gap-3">
+                  <CheckCircle className="h-6 w-6 text-black stroke-[4px]" />
+                  <span className="font-black text-black uppercase italic tracking-widest text-sm">ARCHIVED</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-10">
               <div>
-                <h3 className="text-xl font-semibold text-white mb-3">{currentTask.topic}</h3>
-                <span className="inline-block px-3 py-1 bg-neon-blue/20 text-neon-blue rounded-lg text-sm font-medium border border-neon-blue/30">
-                  {currentTask.question_type}
+                <h3 className="text-4xl font-black text-black mb-4 uppercase tracking-tighter italic leading-tight">{currentTask.topic}</h3>
+                <span className="inline-block px-4 py-2 bg-black text-white font-black uppercase text-[10px] tracking-[0.3em] -rotate-1 border-2 border-black">
+                  LEVEL: {currentTask.question_type.toUpperCase()}
                 </span>
               </div>
 
-              <div className="bg-black/40 rounded-xl p-6 border border-white/5">
-                <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-neon-purple" />
-                  Study Focus
+              <div className="bg-neo-bg/10 border-4 border-black p-10 rotate-1 shadow-[8px_8px_0px_0px_#000]">
+                <h4 className="font-black text-black uppercase tracking-widest text-xs mb-6 flex items-center gap-3">
+                  <BookOpen className="h-6 w-6 text-neo-accent stroke-[3px]" />
+                  MISSION_DIRECTIVES
                 </h4>
-                <p className="text-gray-300 leading-relaxed">{currentTask.description}</p>
+                <p className="text-xl font-black text-black leading-snug italic uppercase tracking-tight">{currentTask.description}</p>
               </div>
 
               {currentTask.practice_questions && currentTask.practice_questions.length > 0 && (
-                <div className="bg-neon-blue/5 rounded-xl p-6 border border-neon-blue/20">
-                  <h4 className="font-semibold text-neon-blue mb-4">Practice Questions</h4>
-                  <div className="space-y-3">
+                <div className="bg-white border-4 border-black p-10 -rotate-1 shadow-[12px_12px_0px_0px_#000]">
+                  <h4 className="font-black text-black uppercase tracking-[0.2em] text-xs mb-8">QUERY_PACKETS_PENDING</h4>
+                  <div className="space-y-6">
                     {currentTask.practice_questions.map((question, index) => (
-                      <div key={index} className="bg-black/40 rounded-lg p-4 border border-white/5 hover:border-neon-blue/30 transition-colors">
-                        <p className="text-gray-300 text-sm leading-relaxed">{question}</p>
+                      <div key={index} className="bg-neo-bg/5 border-2 border-black p-6 hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                        <p className="text-black font-black uppercase text-sm leading-tight italic">{question}</p>
                       </div>
                     ))}
                   </div>
@@ -328,29 +324,32 @@ export function StudySession() {
             </div>
           </div>
 
-          {/* Study Timer */}
-          <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
-            <div className="text-7xl font-bold text-white mb-6 font-mono tracking-wider drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+          {/* Study Timer Sticker */}
+          <div className="bg-black text-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_#000] text-center rotate-1 relative">
+            {/* Mechanical decoration */}
+            <div className="absolute -top-4 -left-4 w-12 h-12 bg-neo-accent border-4 border-black rotate-12 shadow-[4px_4px_0px_0px_#000]"></div>
+
+            <div className="text-8xl md:text-9xl font-black mb-10 font-mono tracking-tighter tabular-nums text-neo-secondary italic drop-shadow-[8px_8px_0px_#000]">
               {formatTime(studyTime)}
             </div>
 
-            <div className="flex justify-center gap-4 mb-8">
+            <div className="flex flex-col md:flex-row justify-center gap-6 mb-12">
               <button
                 onClick={toggleStudySession}
-                className={`flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${isStudying
-                    ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 shadow-red-500/10'
-                    : 'bg-neon-green text-black hover:bg-neon-green/90 shadow-neon-green/20'
+                className={`flex items-center justify-center gap-4 px-12 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl transition-all shadow-[8px_8px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] ${isStudying
+                  ? 'bg-neo-accent text-white'
+                  : 'bg-neo-secondary text-black'
                   }`}
               >
                 {isStudying ? (
                   <>
-                    <Pause className="h-6 w-6" />
-                    Pause Study
+                    <Pause className="h-10 w-10 stroke-[4px]" />
+                    HALT_SESS
                   </>
                 ) : (
                   <>
-                    <Play className="h-6 w-6" />
-                    Start Study
+                    <Play className="h-10 w-10 stroke-[4px]" />
+                    INIT_SESS
                   </>
                 )}
               </button>
@@ -358,47 +357,47 @@ export function StudySession() {
               {!isCurrentTaskCompleted && studyTime > 0 && (
                 <button
                   onClick={completeTask}
-                  className="flex items-center gap-2 bg-neon-blue hover:bg-neon-blue/80 text-white px-8 py-4 rounded-xl font-bold text-lg transition-colors duration-200 shadow-lg shadow-neon-blue/20"
+                  className="flex items-center justify-center gap-4 bg-white text-black px-12 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl transition-all shadow-[8px_8px_0px_0px_#000] hover:bg-neo-secondary active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
                 >
-                  <CheckCircle className="h-6 w-6" />
-                  Complete Task
+                  <CheckCircle className="h-10 w-10 stroke-[4px]" />
+                  COMMIT_LOG
                 </button>
               )}
             </div>
 
-            {/* Notes */}
-            <div className="text-left bg-black/40 p-6 rounded-xl border border-white/5">
-              <label className="block text-sm font-semibold text-gray-400 mb-3">
-                Study Notes (Optional)
+            {/* Notes Input */}
+            <div className="text-left bg-white/5 p-10 border-4 border-black shadow-[6px_6px_0px_0px_#000]">
+              <label className="block text-[10px] font-black text-white/40 mb-4 uppercase tracking-[0.3em]">
+                ADDITIONAL_INSIGHTS_LOG
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes about your study session..."
+                placeholder="INPUT DATA..."
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none transition-colors duration-200 resize-none placeholder-gray-600"
+                className="w-full px-8 py-5 bg-white border-4 border-black text-black font-black text-xl uppercase italic tracking-tighter focus:bg-neo-bg outline-none transition-all resize-none placeholder-black/20"
               />
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between gap-8">
             <button
               onClick={() => setCurrentDay(Math.max(0, currentDay - 1))}
               disabled={currentDay === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 border border-white/5"
+              className="flex items-center gap-3 px-8 py-4 bg-white border-4 border-black font-black uppercase tracking-widest text-xs hover:bg-neo-bg disabled:opacity-20 transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
             >
-              <ArrowLeft className="h-5 w-5" />
-              Previous Day
+              <ArrowLeft className="h-5 w-5 stroke-[4px]" />
+              REVERT_DAY
             </button>
 
             <button
               onClick={() => setCurrentDay(Math.min(studyPlan.plan.daily_schedule.length - 1, currentDay + 1))}
               disabled={currentDay === studyPlan.plan.daily_schedule.length - 1}
-              className="flex items-center gap-2 px-6 py-3 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 border border-white/5"
+              className="flex items-center gap-3 px-8 py-4 bg-white border-4 border-black font-black uppercase tracking-widest text-xs hover:bg-neo-bg disabled:opacity-20 transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
             >
-              Next Day
-              <ArrowRight className="h-5 w-5" />
+              COMMIT_NEXT
+              <ArrowRight className="h-5 w-5 stroke-[4px]" />
             </button>
           </div>
         </div>

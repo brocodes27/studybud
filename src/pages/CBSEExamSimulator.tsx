@@ -685,7 +685,7 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep1 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+        <h2 className="text-3xl font-bold text-black mb-2 flex items-center justify-center gap-3">
           <BookOpen className="w-8 h-8 text-neon-blue" />
           Exam Configuration
         </h2>
@@ -698,7 +698,7 @@ const CBSEExamSimulator: React.FC = () => {
               Class
             </label>
             <select
-              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-black focus:border-neon-blue focus:outline-none appearance-none"
               value={selectedClass}
               onChange={(e) => {
                 setSelectedClass(e.target.value);
@@ -719,7 +719,7 @@ const CBSEExamSimulator: React.FC = () => {
                 Stream
               </label>
               <select
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
+                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-black focus:border-neon-blue focus:outline-none appearance-none"
                 value={selectedStream}
                 onChange={(e) => {
                   setSelectedStream(
@@ -741,7 +741,7 @@ const CBSEExamSimulator: React.FC = () => {
               Subject
             </label>
             <select
-              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-black focus:border-neon-blue focus:outline-none appearance-none"
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
               disabled={
@@ -770,7 +770,7 @@ const CBSEExamSimulator: React.FC = () => {
               Exam Type
             </label>
             <select
-              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none appearance-none"
+              className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-black focus:border-neon-blue focus:outline-none appearance-none"
               value={examType}
               onChange={(e) => setExamType(e.target.value)}
             >
@@ -785,7 +785,7 @@ const CBSEExamSimulator: React.FC = () => {
         </div>
         <div className="mt-8 flex justify-center">
           <button
-            className="bg-gradient-to-r from-neon-blue to-blue-600 hover:from-neon-blue/80 hover:to-blue-600/80 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-neon-blue/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="bg-gradient-to-r from-neon-blue to-blue-600 hover:from-neon-blue/80 hover:to-blue-600/80 text-black font-bold py-3 px-8 rounded-xl shadow-lg shadow-neon-blue/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             disabled={!selectedSubject || !selectedClass || !examType}
             onClick={() => setStep(2)}
           >
@@ -800,7 +800,7 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+        <h2 className="text-3xl font-bold text-black mb-2 flex items-center justify-center gap-3">
           <FileText className="w-8 h-8 text-neon-purple" />
           Chapter Selection & Settings
         </h2>
@@ -810,7 +810,7 @@ const CBSEExamSimulator: React.FC = () => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="glass-panel p-6 rounded-2xl border border-white/10">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
             <Layers className="w-5 h-5 text-neon-purple" />
             Chapters (with weightage)
           </h3>
@@ -860,7 +860,7 @@ const CBSEExamSimulator: React.FC = () => {
                 className="mb-3 bg-black/40 rounded-xl border border-white/10 p-4"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-white text-base">
+                  <span className="font-bold text-black text-base">
                     {unit.unit}
                   </span>
                   <span className="text-xs font-mono bg-neon-blue/20 text-neon-blue px-2 py-1 rounded">
@@ -949,7 +949,7 @@ const CBSEExamSimulator: React.FC = () => {
 
         <div className="space-y-6">
           <div className="glass-panel p-6 rounded-2xl border border-white/10">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
               <Zap className="w-5 h-5 text-neon-yellow" />
               Exam Parameters
             </h3>
@@ -966,7 +966,7 @@ const CBSEExamSimulator: React.FC = () => {
                       onClick={() => setDifficulty(d)}
                       className={`py-2 rounded-lg font-medium transition-all duration-200 ${difficulty === d
                         ? "bg-neon-blue text-black shadow-lg shadow-neon-blue/20"
-                        : "bg-black/40 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10"
+                        : "bg-black/40 text-gray-400 hover:bg-white/10 hover:text-black border border-white/10"
                         }`}
                     >
                       {d}
@@ -1014,7 +1014,7 @@ const CBSEExamSimulator: React.FC = () => {
                     value={customMarks}
                     onChange={(e) => setCustomMarks(Number(e.target.value))}
                     disabled={!useCustomMarks}
-                    className={`w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none ${!useCustomMarks ? 'opacity-50' : ''}`}
+                    className={`w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-black focus:border-neon-blue focus:outline-none ${!useCustomMarks ? 'opacity-50' : ''}`}
                   />
                   <label className="flex items-center gap-2 whitespace-nowrap cursor-pointer">
                     <input
@@ -1037,13 +1037,13 @@ const CBSEExamSimulator: React.FC = () => {
 
           <div className="flex justify-between gap-4">
             <button
-              className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-3 px-6 rounded-xl border border-white/10 transition-all"
+              className="flex-1 bg-white/5 hover:bg-white/10 text-black font-semibold py-3 px-6 rounded-xl border border-white/10 transition-all"
               onClick={() => setStep(1)}
             >
               Back
             </button>
             <button
-              className="flex-1 bg-gradient-to-r from-neon-purple to-pink-600 hover:from-neon-purple/80 hover:to-pink-600/80 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-neon-purple/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-r from-neon-purple to-pink-600 hover:from-neon-purple/80 hover:to-pink-600/80 text-black font-bold py-3 px-6 rounded-xl shadow-lg shadow-neon-purple/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               disabled={selectedChapters.length === 0 || selectedSections.length === 0}
               onClick={() => {
                 setStep(3);
@@ -1103,7 +1103,7 @@ const CBSEExamSimulator: React.FC = () => {
   const renderStep3 = () => (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+        <h2 className="text-3xl font-bold text-black mb-2 flex items-center justify-center gap-3">
           <CheckCircle className="w-8 h-8 text-neon-green" />
           Preview & Start
         </h2>
@@ -1113,7 +1113,7 @@ const CBSEExamSimulator: React.FC = () => {
       {assembling ? (
         <div className="glass-panel p-12 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-neon-blue mb-6"></div>
-          <h3 className="text-xl font-bold text-white mb-2">Generating Your Exam Paper...</h3>
+          <h3 className="text-xl font-bold text-black mb-2">Generating Your Exam Paper...</h3>
           <p className="text-gray-400 max-w-md">
             Our AI is assembling questions based on the latest CBSE patterns, selected chapters, and difficulty level.
           </p>
@@ -1123,7 +1123,7 @@ const CBSEExamSimulator: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-panel p-6 rounded-2xl border border-white/10 max-h-[600px] overflow-y-auto custom-scrollbar" ref={previewRef}>
               <div className="text-center border-b border-white/10 pb-6 mb-6">
-                <h1 className="text-2xl font-bold text-black dark:text-white uppercase tracking-wider mb-2">
+                <h1 className="text-2xl font-bold text-black dark:text-black uppercase tracking-wider mb-2">
                   CBSE {examType} Examination
                 </h1>
                 <div className="flex justify-center gap-6 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -1173,7 +1173,7 @@ const CBSEExamSimulator: React.FC = () => {
 
           <div className="space-y-6">
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
-              <h3 className="text-lg font-bold text-white mb-4">Actions</h3>
+              <h3 className="text-lg font-bold text-black mb-4">Actions</h3>
               <div className="space-y-3">
                 <button
                   onClick={() => {
@@ -1194,7 +1194,7 @@ const CBSEExamSimulator: React.FC = () => {
 
                 <button
                   onClick={handleExportPDF}
-                  className="w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 px-4 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-white/5 hover:bg-white/10 text-black font-semibold py-3 px-4 rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
                 >
                   <Download className="w-5 h-5" />
                   Download PDF
@@ -1225,7 +1225,7 @@ const CBSEExamSimulator: React.FC = () => {
                       }
                     }}
                     disabled={docxDownloading}
-                    className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-neon-purple/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full bg-neon-purple hover:bg-neon-purple/80 text-black font-semibold py-3 px-4 rounded-xl shadow-lg shadow-neon-purple/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {docxDownloading ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -1242,30 +1242,30 @@ const CBSEExamSimulator: React.FC = () => {
             </div>
 
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
-              <h3 className="text-lg font-bold text-white mb-4">Exam Summary</h3>
+              <h3 className="text-lg font-bold text-black mb-4">Exam Summary</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-gray-400">
                   <span>Total Questions</span>
-                  <span className="text-white font-medium">{questions.length}</span>
+                  <span className="text-black font-medium">{questions.length}</span>
                 </div>
                 <div className="flex justify-between text-gray-400">
                   <span>Total Marks</span>
-                  <span className="text-white font-medium">{customMarks}</span>
+                  <span className="text-black font-medium">{customMarks}</span>
                 </div>
                 <div className="flex justify-between text-gray-400">
                   <span>Difficulty</span>
-                  <span className="text-white font-medium">{difficulty}</span>
+                  <span className="text-black font-medium">{difficulty}</span>
                 </div>
                 <div className="flex justify-between text-gray-400">
                   <span>Sections</span>
-                  <span className="text-white font-medium">{selectedSections.length}</span>
+                  <span className="text-black font-medium">{selectedSections.length}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setStep(2)}
-              className="w-full text-gray-400 hover:text-white py-2 transition-colors text-sm"
+              className="w-full text-gray-400 hover:text-black py-2 transition-colors text-sm"
             >
               Back to Settings
             </button>
@@ -1284,21 +1284,21 @@ const CBSEExamSimulator: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Brain className="w-8 h-8 text-neon-blue" />
-              CBSE Exam Simulator
+            <h1 className="text-2xl md:text-3xl font-bold text-black flex items-center gap-2 md:gap-3">
+              <Brain className="w-6 h-6 md:w-8 md:h-8 text-neon-blue" />
+              CBSE Simulator
             </h1>
-            <p className="text-gray-400">Generate and practice with AI-powered CBSE papers</p>
+            <p className="text-xs md:text-sm text-gray-400">Generate papers with AI</p>
           </div>
 
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+          <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 w-full md:w-auto overflow-x-auto no-scrollbar">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${activeTab === tab
+                className={`px-4 md:px-6 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap text-xs md:text-sm ${activeTab === tab
                   ? "bg-neon-blue text-black shadow-lg shadow-neon-blue/20"
-                  : "text-gray-400 hover:text-white"
+                  : "text-gray-400 hover:text-black"
                   }`}
               >
                 {tab}
@@ -1317,7 +1317,7 @@ const CBSEExamSimulator: React.FC = () => {
         ) : (
           <div className="space-y-6 animate-fade-in">
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-black mb-6 flex items-center gap-2">
                 <Clock className="w-6 h-6 text-neon-green" />
                 Past Exam Results
               </h2>
@@ -1334,34 +1334,34 @@ const CBSEExamSimulator: React.FC = () => {
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-left">
                     <thead>
-                      <tr className="text-gray-400 border-b border-white/10">
-                        <th className="px-4 py-3 font-medium">Date</th>
-                        <th className="px-4 py-3 font-medium">Score</th>
-                        <th className="px-4 py-3 font-medium">Questions</th>
-                        <th className="px-4 py-3 font-medium">Weaknesses</th>
-                        <th className="px-4 py-3 font-medium">Action</th>
+                      <tr className="text-gray-400 border-b border-white/10 text-[10px] md:text-sm">
+                        <th className="px-2 md:px-4 py-3 font-medium">Date</th>
+                        <th className="px-2 md:px-4 py-3 font-medium">Score</th>
+                        <th className="hidden md:table-cell px-4 py-3 font-medium">Questions</th>
+                        <th className="hidden lg:table-cell px-4 py-3 font-medium">Weaknesses</th>
+                        <th className="px-2 md:px-4 py-3 font-medium text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       {savedResults.map((res) => (
-                        <tr key={res.id} className="hover:bg-white/5 transition-colors">
-                          <td className="px-4 py-3 text-white">
+                        <tr key={res.id} className="hover:bg-white/5 transition-colors text-[10px] md:text-sm">
+                          <td className="px-2 md:px-4 py-3 text-black">
                             {new Date(res.exam_date).toLocaleDateString()}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 md:px-4 py-3">
                             <span className="text-neon-green font-mono font-bold">
                               {res.total_score} / {res.max_score}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-300">
+                          <td className="hidden md:table-cell px-4 py-3 text-gray-300">
                             {res.questions_count}
                           </td>
-                          <td className="px-4 py-3 text-gray-400 max-w-xs truncate">
+                          <td className="hidden lg:table-cell px-4 py-3 text-gray-400 max-w-xs truncate">
                             {res.student_weaknesses || '-'}
                           </td>
-                          <td className="px-4 py-3">
-                            <button className="text-neon-blue hover:text-neon-blue/80 text-sm font-medium">
-                              View Details
+                          <td className="px-2 md:px-4 py-3 text-right">
+                            <button className="text-neon-blue hover:text-neon-blue/80 font-medium">
+                              View
                             </button>
                           </td>
                         </tr>

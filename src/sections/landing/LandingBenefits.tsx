@@ -3,46 +3,66 @@ import { motion } from 'framer-motion';
 
 export function LandingBenefits() {
   return (
-    <section id="benefits" className="px-6 py-24 overflow-x-clip relative">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-3xl mx-auto">
-          <span className="inline-block py-1 px-3 rounded-lg bg-neon-blue/10 border border-neon-blue/20 text-neon-blue font-medium text-sm mb-4">Benefits</span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white mt-3 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">One space for your study and your work</h2>
-          <p className="text-white/60 mt-4 text-lg">Keep everything in one place, from your plan to practice tests. With ElevenFolks, organize, collaborate, and learn faster.</p>
+    <section id="benefits" className="px-6 py-32 bg-neo-bg relative border-t-8 border-black overflow-hidden">
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <motion.span
+            initial={{ rotate: -1 }}
+            whileInView={{ rotate: 1 }}
+            className="sticker bg-neo-accent border-4 border-black mb-4"
+          >
+            BENEFITS
+          </motion.span>
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black mt-6 leading-none">
+            EVERYTHING IN <br />
+            <span className="text-neo-muted" style={{ WebkitTextStroke: '2px black' }}>ONE SPACE</span>
+          </h2>
+          <p className="text-black/70 mt-6 text-xl font-bold max-w-2xl mx-auto">
+            Keep everything in one place, from your plan to practice tests.
+            With <span className="text-black underline decoration-neo-accent decoration-4">ElevenFolks</span>, organize, collaborate, and learn faster.
+          </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6 mt-16">
+
+        <div className="grid md:grid-cols-3 gap-10 mt-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.05 }}
-            className="rounded-2xl border border-white/10 p-8 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-neon-blue/30 transition-all group"
+            viewport={{ once: true }}
+            className="neo-card bg-white group"
           >
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><BookOpen className="w-6 h-6" /></div>
-            <h3 className="font-bold text-xl text-white mb-3">Connect your plan</h3>
-            <p className="text-white/50 leading-relaxed">Create AI-powered study plans aligned to your goals and exam dates.</p>
+            <div className="w-16 h-16 bg-neo-accent border-4 border-black flex items-center justify-center mb-8 shadow-[4px_4px_0px_0px_#000] -rotate-3 transition-transform group-hover:rotate-0">
+              <BookOpen className="w-8 h-8 text-black stroke-[2.5px]" />
+            </div>
+            <h3 className="font-black text-2xl text-black mb-4 uppercase tracking-tight">Connect your plan</h3>
+            <p className="text-black/60 font-bold leading-snug">Create AI-powered study plans aligned to your goals and exam dates. No more guesswork.</p>
           </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
-            className="rounded-2xl border border-white/10 p-8 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-blue-500/30 transition-all group"
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="neo-card bg-white group"
           >
-            <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><BarChart3 className="w-6 h-6" /></div>
-            <h3 className="font-bold text-xl text-white mb-3">Stay organized</h3>
-            <p className="text-white/50 leading-relaxed">Track progress, analyse performance, and keep notes that the AI remembers.</p>
+            <div className="w-16 h-16 bg-neo-secondary border-4 border-black flex items-center justify-center mb-8 shadow-[4px_4px_0px_0px_#000] rotate-2 transition-transform group-hover:rotate-0">
+              <BarChart3 className="w-8 h-8 text-black stroke-[2.5px]" />
+            </div>
+            <h3 className="font-black text-2xl text-black mb-4 uppercase tracking-tight">Stay organized</h3>
+            <p className="text-black/60 font-bold leading-snug">Track progress, analyse performance, and keep notes that the AI remembers. Everything in focus.</p>
           </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}
-            className="rounded-2xl border border-white/10 p-8 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-amber-500/30 transition-all group"
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="neo-card bg-white group"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform"><MessageCircle className="w-6 h-6" /></div>
-            <h3 className="font-bold text-xl text-white mb-3">Collaborate effectively</h3>
-            <p className="text-white/50 leading-relaxed">Use AI Study Buddy for instant help and explanations across topics.</p>
+            <div className="w-16 h-16 bg-neo-muted border-4 border-black flex items-center justify-center mb-8 shadow-[4px_4px_0px_0px_#000] -rotate-2 transition-transform group-hover:rotate-0">
+              <MessageCircle className="w-8 h-8 text-black stroke-[2.5px]" />
+            </div>
+            <h3 className="font-black text-2xl text-black mb-4 uppercase tracking-tight">Collaborate effectively</h3>
+            <p className="text-black/60 font-bold leading-snug">Use AI Study Buddy for instant help and explanations across topics. Your 24/7 tutor.</p>
           </motion.div>
         </div>
       </div>
@@ -51,3 +71,4 @@ export function LandingBenefits() {
 }
 
 export default LandingBenefits;
+

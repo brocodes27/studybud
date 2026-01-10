@@ -16,9 +16,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const inputVariants = {
-  default: 'form-input',
-  filled: 'w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200',
-  outline: 'w-full px-4 py-3 bg-transparent border-2 border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200',
+  default: 'neo-input w-full',
+  filled: 'neo-input w-full bg-white',
+  outline: 'neo-input w-full bg-transparent',
 };
 
 const inputSizes = {
@@ -45,8 +45,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   const [showPassword, setShowPassword] = React.useState(false);
   const [hasValue, setHasValue] = React.useState(false);
 
-  const inputType = showPasswordToggle && type === 'password' 
-    ? (showPassword ? 'text' : 'password') 
+  const inputType = showPasswordToggle && type === 'password'
+    ? (showPassword ? 'text' : 'password')
     : type;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,69 +71,69 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-black uppercase tracking-widest text-neo-ink mb-2">
           {label}
         </label>
       )}
-      
+
       <div className="relative">
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neo-ink">
             {leftIcon}
           </div>
         )}
-        
+
         <input
           ref={ref}
           type={inputType}
           className={`
             ${baseClasses}
             ${sizeClasses}
-            ${leftIcon ? 'pl-10' : ''}
-            ${(rightIcon || showPasswordToggle || (clearable && hasValue)) ? 'pr-10' : ''}
-            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
+            ${leftIcon ? 'pl-12' : ''}
+            ${(rightIcon || showPasswordToggle || (clearable && hasValue)) ? 'pr-12' : ''}
+            ${error ? 'bg-red-50 focus:bg-red-100 border-red-500' : ''}
             ${className}
           `}
           onChange={handleChange}
           {...props}
         />
-        
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
           {clearable && hasValue && (
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 text-gray-400 hover:text-white focus-ring"
+              className="p-1 hover:bg-neo-secondary border-2 border-transparent hover:border-black transition-all text-neo-ink"
             >
               <X className="w-4 h-4" />
             </button>
           )}
-          
+
           {showPasswordToggle && type === 'password' && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="p-1 rounded-lg hover:bg-gray-700/50 transition-colors duration-200 text-gray-400 hover:text-white focus-ring"
+              className="p-1 hover:bg-neo-secondary border-2 border-transparent hover:border-black transition-all text-neo-ink"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           )}
-          
+
           {rightIcon && !showPasswordToggle && !(clearable && hasValue) && (
-            <div className="text-gray-400">
+            <div className="text-neo-ink">
               {rightIcon}
             </div>
           )}
         </div>
       </div>
-      
+
       {(error || helperText) && (
         <div className="mt-2">
           {error && (
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm font-bold text-red-600 uppercase tracking-tight">{error}</p>
           )}
           {helperText && !error && (
-            <p className="text-sm text-gray-400">{helperText}</p>
+            <p className="text-sm font-medium text-black/60">{helperText}</p>
           )}
         </div>
       )}
@@ -143,11 +143,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 
 Input.displayName = 'Input';
 
-// Specialized input components for common use cases
 export const SearchInput: React.FC<Omit<InputProps, 'leftIcon' | 'placeholder'>> = (props) => (
   <Input
-    leftIcon={<Search className="w-4 h-4" />}
-    placeholder="Search..."
+    leftIcon={<Search className="w-6 h-6 stroke-[3px]" />}
+    placeholder="SEARCH..."
     {...props}
   />
 );
@@ -173,3 +172,4 @@ export const NumberInput: React.FC<Omit<InputProps, 'type'>> = (props) => (
     {...props}
   />
 );
+

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Calendar, CheckCircle, Clock, Target, Award, BookOpen, BarChart3, Zap, Trophy, Flame, Star } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { TrendingUp, CheckCircle, Clock, Target, BarChart3, Zap, Trophy, Flame, Star } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { format, subDays, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { format, subDays, differenceInDays } from 'date-fns';
 
 interface ProgressData {
   totalStudyTime: number;
@@ -190,111 +190,95 @@ export function Progress() {
     return Math.round((progressData.completedTasks / progressData.totalTasks) * 100);
   };
 
-  const COLORS = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
+        <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
+        <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic">CALCULATING_TRAJECTORY...</h2>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
-      {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
-
+    <div className="space-y-12 animate-fade-in relative pb-20">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
-          Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Progress</span>
+      <div className="text-center mb-16">
+        <h1 className="text-6xl md:text-8xl font-black text-black mb-6 tracking-tighter uppercase italic">
+          GROWTH <span className="bg-neo-accent text-white px-6 py-2 inline-block -rotate-2 border-4 border-black shadow-[8px_8px_0px_0px_#000]">METRICS</span>
         </h1>
-        <p className="text-gray-400 text-lg">Track your learning journey and celebrate your achievements</p>
+        <p className="text-black font-bold text-xl uppercase tracking-widest bg-neo-secondary border-4 border-black px-6 py-2 inline-block rotate-1 shadow-[4px_4px_0px_0px_#000]">
+          VISUALIZING MENTAL ACQUISITION
+        </p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-neon-blue/20 flex items-center justify-center text-neon-blue">
-            <Clock className="w-6 h-6" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        {[
+          { label: 'TOTAL STUDY TIME', value: formatTime(progressData.totalStudyTime), icon: Clock, color: 'bg-neo-muted' },
+          { label: 'TASKS COMPLETED', value: progressData.completedTasks, icon: CheckCircle, color: 'bg-neo-secondary' },
+          { label: 'CURRENT STREAK', value: `${progressData.streakDays} DAYS`, icon: Flame, color: 'bg-neo-accent', text: 'text-white' },
+          { label: 'COMPLETION RATE', value: `${getCompletionRate()}%`, icon: Target, color: 'bg-white' }
+        ].map((stat, index) => (
+          <div key={index} className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] hover:translate-y-[-4px] transition-all group">
+            <div className="flex items-center gap-5">
+              <div className={`w-14 h-14 border-4 border-black ${stat.color} ${stat.text || 'text-black'} flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:rotate-6 transition-transform`}>
+                <stat.icon className="w-8 h-8 stroke-[3px]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-2xl font-black text-black tracking-tighter italic leading-none mt-1">{stat.value}</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-gray-400 text-sm">Total Study Time</p>
-            <p className="text-2xl font-bold text-white">{formatTime(progressData.totalStudyTime)}</p>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-neon-green/20 flex items-center justify-center text-neon-green">
-            <CheckCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-gray-400 text-sm">Tasks Completed</p>
-            <p className="text-2xl font-bold text-white">{progressData.completedTasks}</p>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-neon-purple/20 flex items-center justify-center text-neon-purple">
-            <Flame className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-gray-400 text-sm">Current Streak</p>
-            <p className="text-2xl font-bold text-white">{progressData.streakDays} Days</p>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-neon-yellow/20 flex items-center justify-center text-neon-yellow">
-            <Target className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-gray-400 text-sm">Completion Rate</p>
-            <p className="text-2xl font-bold text-white">{getCompletionRate()}%</p>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
         {/* Weekly Progress Chart */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-neon-blue to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
-              <TrendingUp className="w-5 h-5 text-white" />
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] rotate-1">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-12 h-12 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] -rotate-6">
+              <TrendingUp className="w-6 h-6 text-white stroke-[3px]" />
             </div>
-            <h3 className="text-xl font-bold text-white">Weekly Study Activity</h3>
+            <h3 className="text-2xl font-black text-black uppercase tracking-tight italic">WEEKLY ACTIVITY</h3>
           </div>
-          <div className="h-80">
+          <div className="h-80 border-2 border-black/5 p-4 bg-neo-bg/30">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={progressData.weeklyProgress}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <CartesianGrid strokeDasharray="0" stroke="#000" strokeOpacity={0.1} />
                 <XAxis
                   dataKey="date"
-                  stroke="#9ca3af"
-                  fontSize={12}
+                  stroke="#000"
+                  fontSize={10}
+                  fontWeight="900"
+                  tick={{ fill: '#000' }}
                 />
                 <YAxis
-                  stroke="#9ca3af"
-                  fontSize={12}
+                  stroke="#000"
+                  fontSize={10}
+                  fontWeight="900"
+                  tick={{ fill: '#000' }}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    color: '#F9FAFB',
-                    backdropFilter: 'blur(10px)'
+                    backgroundColor: '#fff',
+                    border: '4px solid #000',
+                    borderRadius: '0',
+                    boxShadow: '4px 4px 0px 0px #000',
+                    fontSize: '10px',
+                    fontWeight: '900',
+                    textTransform: 'uppercase'
                   }}
                 />
                 <Line
-                  type="monotone"
+                  type="stepAfter"
                   dataKey="minutes"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  stroke="#FF6B6B"
+                  strokeWidth={4}
+                  dot={{ fill: '#000', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: '#000', strokeWidth: 3 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -302,48 +286,56 @@ export function Progress() {
         </div>
 
         {/* Subject Progress Chart */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-neon-green to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-neon-green/20">
-              <BarChart3 className="w-5 h-5 text-white" />
+        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] -rotate-1">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-12 h-12 bg-neo-secondary border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] rotate-6">
+              <BarChart3 className="w-6 h-6 text-black stroke-[3px]" />
             </div>
-            <h3 className="text-xl font-bold text-white">Subject Progress</h3>
+            <h3 className="text-2xl font-black text-black uppercase tracking-tight italic">SUBJECT STATUS</h3>
           </div>
-          <div className="h-80">
+          <div className="h-80 border-2 border-black/5 p-4 bg-neo-bg/30">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={progressData.subjectProgress}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <CartesianGrid strokeDasharray="0" stroke="#000" strokeOpacity={0.1} />
                 <XAxis
                   dataKey="subject"
-                  stroke="#9ca3af"
-                  fontSize={12}
+                  stroke="#000"
+                  fontSize={10}
+                  fontWeight="900"
                   angle={-45}
                   textAnchor="end"
                   height={80}
+                  tick={{ fill: '#000' }}
                 />
                 <YAxis
-                  stroke="#9ca3af"
-                  fontSize={12}
+                  stroke="#000"
+                  fontSize={10}
+                  fontWeight="900"
+                  tick={{ fill: '#000' }}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    color: '#F9FAFB',
-                    backdropFilter: 'blur(10px)'
+                    backgroundColor: '#fff',
+                    border: '4px solid #000',
+                    borderRadius: '0',
+                    boxShadow: '4px 4px 0px 0px #000',
+                    fontSize: '10px',
+                    fontWeight: '900',
+                    textTransform: 'uppercase'
                   }}
                 />
                 <Bar
                   dataKey="completed"
-                  fill="#10b981"
-                  radius={[4, 4, 0, 0]}
+                  fill="#4D96FF"
+                  stroke="#000"
+                  strokeWidth={2}
                 />
                 <Bar
                   dataKey="total"
-                  fill="#374151"
-                  radius={[4, 4, 0, 0]}
-                  opacity={0.3}
+                  fill="#fff"
+                  stroke="#000"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -352,46 +344,33 @@ export function Progress() {
       </div>
 
       {/* Achievements Section */}
-      <div className="glass-panel p-6 rounded-2xl border border-white/10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-neon-yellow to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <Trophy className="w-5 h-5 text-white" />
+      <div className="bg-white border-4 border-black p-10 shadow-[16px_16px_0px_0px_#000]">
+        <div className="flex items-center gap-4 mb-12">
+          <div className="w-16 h-16 bg-neo-muted border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] -rotate-12">
+            <Trophy className="w-8 h-8 text-black stroke-[3px]" />
           </div>
-          <h3 className="text-xl font-bold text-white">Recent Achievements</h3>
+          <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic">LATEST ACHIEVEMENTS</h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 bg-gradient-to-br from-neon-blue to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
-              <Star className="w-6 h-6 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { title: 'STUDY STREAK', desc: `MAINTAINED ${progressData.streakDays} DAY STREAK`, icon: Star, color: 'bg-neo-accent', text: 'text-white' },
+            { title: 'TASK MASTER', desc: `COMPLETED ${progressData.completedTasks} TASKS`, icon: CheckCircle, color: 'bg-neo-secondary' },
+            { title: 'TIME WARRIOR', desc: `STUDIED FOR ${formatTime(progressData.totalStudyTime)}`, icon: Zap, color: 'bg-neo-muted' }
+          ].map((achievement, idx) => (
+            <div key={idx} className="flex items-center gap-6 p-6 bg-neo-bg border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:rotate-1 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_#000] transition-all group">
+              <div className={`w-16 h-16 border-4 border-black flex-shrink-0 ${achievement.color} ${achievement.text || 'text-black'} flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:-rotate-12 transition-transform`}>
+                <achievement.icon className="w-8 h-8 stroke-[3px]" />
+              </div>
+              <div>
+                <h4 className="font-black text-black uppercase tracking-tight italic text-lg">{achievement.title}</h4>
+                <p className="text-[10px] font-black text-black/40 uppercase tracking-widest leading-snug mt-1">{achievement.desc}</p>
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold text-white">Study Streak</h4>
-              <p className="text-sm text-gray-400">Maintained {progressData.streakDays} day streak</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-neon-green/20">
-              <CheckCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-white">Task Master</h4>
-              <p className="text-sm text-gray-400">Completed {progressData.completedTasks} tasks</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
-            <div className="w-12 h-12 bg-gradient-to-br from-neon-purple to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-neon-purple/20">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-white">Time Warrior</h4>
-              <p className="text-sm text-gray-400">Studied for {formatTime(progressData.totalStudyTime)}</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
+
 }

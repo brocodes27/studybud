@@ -46,66 +46,69 @@ export function StudyTools() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-12 animate-fade-in pb-20">
       {/* Header */}
-      <div className="text-center mb-12 relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-neon-purple rounded-2xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
-            <Zap className="w-8 h-8 text-white" />
+      <div className="text-center mb-16 relative">
+        <div className="flex flex-col items-center justify-center gap-6">
+          <div className="w-24 h-24 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] -rotate-12">
+            <Zap className="w-12 h-12 text-white stroke-[4px]" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Study Tools</span>
+          <h1 className="text-6xl md:text-8xl font-black text-black tracking-tighter uppercase italic leading-none">
+            <span className="bg-white px-8 py-4 border-8 border-black shadow-[12px_12px_0px_0px_#000] inline-block rotate-2">STUDY TOOLS</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-          Supercharge your learning with AI-powered flashcards, practice tests, and question generators designed to maximize your academic success.
-        </p>
+        <div className="mt-12 bg-neo-muted border-4 border-black p-6 inline-block -rotate-1 shadow-[4px_4px_0px_0px_#000] max-w-2xl">
+          <p className="text-lg font-black text-black uppercase tracking-widest leading-snug">
+            SUPERCHARGE YOUR ARCHIVE WITH AI-POWERED FLASHCARDS, PRACTICE TESTS, AND QUESTION GENERATORS.
+          </p>
+        </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex justify-center mb-8">
-        <div className="glass-panel p-2 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
-          <div className="flex flex-col md:flex-row gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 relative overflow-hidden group ${isActive
-                    ? 'bg-white/10 text-white shadow-lg border border-white/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }`}
-                >
-                  {isActive && (
-                    <div className={`absolute inset-0 bg-gradient-to-r ${tab.color} opacity-10`}></div>
-                  )}
-                  <div className={`p-2 rounded-lg ${isActive ? `bg-gradient-to-br ${tab.color}` : 'bg-white/5 group-hover:bg-white/10'}`}>
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : tab.iconColor}`} />
-                  </div>
-                  <div className="text-left">
-                    <div className={`font-bold ${isActive ? 'text-white' : 'text-gray-300'}`}>{tab.label}</div>
-                    <div className="text-xs opacity-70">{tab.description}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+      <div className="flex justify-center mb-12">
+        <div className="flex flex-wrap justify-center gap-6">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-4 px-8 py-5 border-4 border-black transition-all duration-200 
+                  shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]
+                  ${isActive
+                    ? 'bg-neo-accent text-white rotate-2 -translate-y-2 shadow-[8px_8px_0px_0px_#000]'
+                    : 'bg-white text-black hover:bg-neo-secondary'
+                  }
+                `}
+              >
+                <div className={`p-2 border-2 border-black ${isActive ? 'bg-black text-white' : 'bg-neo-bg'}`}>
+                  <Icon className="w-6 h-6 stroke-[3px]" />
+                </div>
+                <div className="text-left">
+                  <div className="font-black uppercase tracking-tighter text-lg leading-none">{tab.label}</div>
+                  <div className={`text-[10px] font-black uppercase tracking-widest opacity-60 mt-1`}>{tab.description}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="max-w-6xl mx-auto">
-        <div className="glass-card border border-white/10 p-1 rounded-3xl overflow-hidden min-h-[500px]">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] overflow-hidden min-h-[600px] relative">
+          <div className="absolute top-0 left-0 w-full h-2 bg-black opacity-5"></div>
           {activeTab === 'flashcards' && <FlashcardGenerator />}
           {activeTab === 'tests' && <PracticeTestEngine />}
           {activeTab === 'ai-questions' && <QuestionGenerator />}
           {activeTab === 'focus' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 divide-x divide-white/10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x-8 divide-black">
               <PomodoroTimer />
-              <TodoTracker />
+              <div className="border-t-8 lg:border-t-0 border-black">
+                <TodoTracker />
+              </div>
             </div>
           )}
         </div>

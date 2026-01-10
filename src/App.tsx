@@ -8,8 +8,6 @@ import { CreatePlan } from './pages/CreatePlan';
 import { StudyPlans } from './pages/StudyPlans';
 import { Progress } from './pages/Progress';
 import { StudyTools } from './pages/StudyTools';
-import { Analytics } from './pages/Analytics';
-import { CalendarSync } from './pages/CalendarSync';
 import { Social } from './pages/Social';
 import { Notifications } from './pages/Notifications';
 import Landing from './pages/Landing';
@@ -38,7 +36,7 @@ import CUETSyllabusDev from './pages/CUETSyllabusDev';
 import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
-import { Sparkles, Crown, X, Zap } from 'lucide-react';
+import { Crown, X } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
 import { RanjanSir } from './pages/RanjanSir';
 import { VideoLessons } from './pages/VideoLessons';
@@ -49,7 +47,6 @@ import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
 import GuidedPaperSolver from './pages/GuidedPaperSolver';
 
-
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
   const { isOnline } = useOfflineStorage();
@@ -57,7 +54,6 @@ function AppContent() {
   const { toasts, removeToast } = useToast();
   const location = useLocation();
 
-  // Fullscreen mode from notification deep links
   const isFullscreen = (() => {
     try {
       const params = new URLSearchParams(location.search);
@@ -67,33 +63,16 @@ function AppContent() {
     }
   })();
 
-  // Floating Live Notes modal state
-  // Removed unused showLiveNotes and showSuggest state
-
-  // Dismissible subscribe banner
   const [showSubscribeBanner, setShowSubscribeBanner] = useState(true);
 
-  // Register service worker for PWA
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered: ', registration);
-        })
-        .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
-        });
+        .then(() => console.log('SW registered'))
+        .catch((err) => console.log('SW registration failed', err));
     }
   }, []);
 
-  // Removed unused meeting URL detection effect
-
-  // Debug logs for loading and user
-  console.log('AppContent loading state:', loading);
-  console.log('AppContent user:', user);
-  console.log('AppContent isPremium:', isPremium);
-
-  // Calculate if trial expired
   let trialExpired = false;
   if (trialStart && !trialActive) {
     trialExpired = true;
@@ -105,7 +84,6 @@ function AppContent() {
     }
   }
 
-  // Handler for subscribe button
   const handleSubscribeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     await initiatePayment();
@@ -113,60 +91,39 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <div className="loading-spinner w-12 h-12" />
-        <div className="mt-4 text-center">
-          <div className="flex items-center justify-center space-x-2 text-gray-700">
-            <Sparkles className="w-5 h-5" />
-            <span className="text-lg font-semibold">ElevenFolks</span>
-          </div>
-          <p className="text-gray-500 text-sm mt-2">Loading your study experience...</p>
+      <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-6">
+        <div className="w-24 h-24 border-8 border-black border-t-neo-accent animate-spin" />
+        <div className="mt-12 text-center p-8 bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
+          <h2 className="text-4xl font-black uppercase tracking-tighter">ELEVENFOLKS</h2>
+          <p className="text-black/60 font-bold uppercase tracking-widest text-sm mt-2">Initializing Experience...</p>
         </div>
       </div>
     );
   }
 
-  // Show landing page if user is not authenticated
-  if (!user) {
-    return <Landing />;
-  }
+  if (!user) return <Landing />;
+  if (role === null) return <Onboarding />;
 
-  // If authenticated but no role yet, show onboarding flow
-  if (role === null) {
-    return <Onboarding />;
-  }
-
-  // Block access if trial expired and not premium
   if (trialExpired && isPremium === false) {
     return (
-      <div className="min-h-screen animated-gradient flex flex-col items-center justify-center p-4">
-        {/* Subscribe Banner */}
-        <div className="w-full flex justify-center sticky top-0 z-50 mb-8">
-          <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-2">
-            <button
-              onClick={async (e) => { e.preventDefault(); await initiatePayment(); }}
-              className="flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-warning-400 via-warning-500 to-warning-600 shadow-2xl hover:from-warning-500 hover:to-warning-700 transition-all duration-300 text-lg border-2 border-warning-300/60 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-warning-400/30 disabled:opacity-60 disabled:cursor-not-allowed glow-yellow"
-              style={{ textDecoration: 'none' }}
-              disabled={isLoadingPayment}
-            >
-              <Crown className="w-6 h-6 text-white drop-shadow" />
-              <span>{isLoadingPayment ? 'Redirecting to Payment...' : 'Subscribe to Continue'}</span>
-              <Zap className="w-5 h-5 text-white drop-shadow" />
-            </button>
+      <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }} />
+
+        <div className="neo-card bg-white max-w-lg w-full text-center relative z-10">
+          <div className="w-20 h-20 bg-neo-secondary border-4 border-black flex items-center justify-center mx-auto mb-8 shadow-[4px_4px_0px_0px_#000] sticky top-0">
+            <Crown className="w-10 h-10 text-black stroke-[2.5px]" />
           </div>
-        </div>
-        <div className="card-elevated max-w-lg w-full text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Crown className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold mb-4 text-white">Your Free Trial Has Ended</h2>
-          <p className="text-gray-300 mb-8 text-lg leading-relaxed">Your 7-day free access to all features has expired. Subscribe now to continue your learning journey with premium features.</p>
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black italic">TRIAL EXPIRED</h2>
+          <p className="text-black/70 mb-10 text-lg font-bold leading-snug">
+            Your 7-day free access has expired. Time to level up your study game with Premium access.
+          </p>
           <button
-            onClick={async (e) => { e.preventDefault(); await initiatePayment(); }}
-            className="w-full btn-primary text-lg py-4 disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleSubscribeClick}
             disabled={isLoadingPayment}
+            className="w-full neo-button bg-neo-accent py-5 text-xl"
           >
-            {isLoadingPayment ? 'Redirecting to Payment...' : 'Subscribe Now'}
+            {isLoadingPayment ? 'PROCESSING...' : 'GET PREMIUM ACCESS NOW'}
           </button>
         </div>
       </div>
@@ -174,44 +131,44 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-neo-bg selection:bg-neo-accent selection:text-black">
       <div className="relative z-10">
-        {/* Offline Indicator */}
         {!isFullscreen && !isOnline && (
-          <div className="bg-amber-100 text-amber-800 text-center py-3 text-sm font-medium border-b border-amber-200">
-            📱 You're offline. Some features may be limited.
+          <div className="bg-neo-muted text-black text-center py-4 text-sm font-black border-b-4 border-black uppercase tracking-widest">
+            📱 OFFLINE MODE ACTIVE
           </div>
         )}
 
-        {/* Improved Subscribe Button for Free Users */}
         {!isFullscreen && isPremium === false && showSubscribeBanner && (
-          <div className="w-full flex justify-center sticky top-0 z-50">
-            <div className="relative flex items-center justify-center w-full max-w-2xl mx-auto mt-4">
-              <button
-                onClick={handleSubscribeClick}
-                className="flex items-center gap-3 px-6 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-warning-400 via-warning-500 to-warning-600 shadow-xl hover:from-warning-500 hover:to-warning-700 transition-all duration-300 text-base border-2 border-warning-300/60 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-warning-400/30 disabled:opacity-60 disabled:cursor-not-allowed glow-yellow"
-                style={{ textDecoration: 'none' }}
-                disabled={isLoadingPayment}
-              >
-                <Crown className="w-5 h-5 text-white drop-shadow" />
-                <span>{isLoadingPayment ? 'Redirecting to Payment...' : 'Unlock Premium Features'}</span>
-                <Zap className="w-4 h-4 text-white drop-shadow" />
-              </button>
-              <button
-                onClick={() => setShowSubscribeBanner(false)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-warning-200/20 transition-colors text-warning-100 focus:outline-none focus:ring-2 focus:ring-warning-400/50"
-                aria-label="Close subscribe banner"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="w-full flex justify-center sticky top-4 z-50">
+            <div className="relative flex items-center justify-between w-full max-w-3xl mx-4 bg-neo-secondary border-4 border-black p-4 shadow-[8px_8px_0px_0px_#000]">
+              <div className="flex items-center gap-4">
+                <Crown className="w-6 h-6 text-black stroke-[2.5px]" />
+                <span className="font-black uppercase tracking-tighter text-lg">LEVEL UP TO PREMIUM</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleSubscribeClick}
+                  disabled={isLoadingPayment}
+                  className="bg-black text-white px-6 py-2 font-black uppercase text-sm hover:bg-neo-ink translate-y-[-2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-none transition-all"
+                >
+                  {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
+                </button>
+                <button
+                  onClick={() => setShowSubscribeBanner(false)}
+                  className="p-1 hover:bg-black/10"
+                >
+                  <X className="w-5 h-5 stroke-[3px]" />
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
-        <main className={isFullscreen ? "w-full h-screen p-0 m-0" : "w-full px-6 py-8 page-with-sidebar"}>
+
+        <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : `w-full max-w-7xl mx-auto px-6 py-10 transition-all ${!isFullscreen ? 'page-with-sidebar' : ''}`}>
           <Routes>
-            <Route path="/calendar" element={<CalendarSync />} />
             <Route path="/" element={<RanjanSir />} />
             <Route path="/create" element={<CreatePlan />} />
             <Route path="/plans" element={<StudyPlans />} />
@@ -220,7 +177,7 @@ function AppContent() {
             <Route path="/ai-buddy" element={<AIStudyBuddyPage />} />
             <Route path="/tools" element={<StudyTools />} />
             <Route path="/progress" element={<Progress />} />
-            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/analytics" element={<Dashboard />} />
             <Route path="/social" element={<Social />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/live-notes" element={<LiveMeetingNotes />} />
@@ -252,12 +209,10 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Global Components */}
       <GlobalTourManager />
       <PersonalTipsManager />
       <GlobalGenerationStatus />
       <Toaster toasts={toasts} removeToast={removeToast} />
-
     </div>
   );
 }

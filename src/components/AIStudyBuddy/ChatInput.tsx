@@ -36,23 +36,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     };
 
     return (
-        <div className="p-4 border-t border-white/10 glass-card backdrop-blur-sm rounded-b-2xl">
+        <div className="p-6 border-t-4 border-black bg-neo-bg relative z-40">
             {selectedImage && (
-                <div className="mb-3 flex items-center gap-2 bg-white/5 p-2 rounded-lg w-fit border border-white/10">
-                    <div className="h-10 w-10 rounded bg-gray-800 flex items-center justify-center overflow-hidden relative">
+                <div className="mb-4 flex items-center gap-3 bg-white border-2 border-black p-2 shadow-[4px_4px_0px_0px_#000] w-fit -rotate-1">
+                    <div className="h-12 w-12 border-2 border-black bg-neo-muted flex items-center justify-center overflow-hidden">
                         <img src={URL.createObjectURL(selectedImage)} alt="Preview" className="h-full w-full object-cover" />
                     </div>
-                    <div className="text-xs text-gray-300 max-w-[150px] truncate">{selectedImage.name}</div>
+                    <div className="text-[10px] font-black uppercase tracking-tight max-w-[150px] truncate">{selectedImage.name}</div>
                     <button
                         type="button"
                         onClick={() => onImageSelect?.(null)}
-                        className="p-1 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"
+                        className="p-1 hover:bg-neo-accent hover:text-white border-2 border-transparent hover:border-black transition-all"
                     >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4 stroke-[3px]" />
                     </button>
                 </div>
             )}
-            <form onSubmit={onSubmit} className="flex gap-3 items-end">
+            <form onSubmit={onSubmit} className="flex gap-4 items-end">
                 <input
                     type="file"
                     accept="image/*"
@@ -63,49 +63,51 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-200 border border-white/5 hover:border-white/10 flex-shrink-0"
+                    className="p-4 bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:bg-neo-secondary active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all flex-shrink-0"
                     title="Attach Image"
                 >
-                    <Paperclip className="h-5 w-5" />
+                    <Paperclip className="h-6 w-6 stroke-[3px]" />
                 </button>
-                <div className="flex-1 relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition duration-300 blur-sm"></div>
-                    <div className="relative flex items-center bg-black/40 border border-white/10 rounded-xl focus-within:border-neon-blue/50 focus-within:ring-1 focus-within:ring-neon-blue/50 transition-all duration-200 backdrop-blur-sm">
+
+                <div className="flex-1 relative">
+                    <div className="relative flex items-center bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000] focus-within:translate-x-[-2px] focus-within:translate-y-[-2px] focus-within:shadow-[6px_6px_0px_0px_#000] transition-all">
                         <input
                             type="text"
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
-                            placeholder="Ask anything..."
-                            className="w-full bg-transparent text-white placeholder-white/30 px-4 py-3.5 focus:outline-none rounded-xl"
+                            placeholder="ASK ANYTHING..."
+                            className="w-full bg-transparent text-black placeholder-black/30 px-5 py-4 focus:outline-none font-black uppercase tracking-tight text-lg"
                             disabled={isLoading}
                         />
                         <button
                             type="button"
                             onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                             disabled={isLoading}
-                            className={`mr-2 p-2 rounded-lg transition-all duration-200 ${isRecording || isListening
-                                ? 'bg-red-500/20 text-red-400 animate-pulse'
-                                : 'hover:bg-white/10 text-gray-400 hover:text-white'
+                            className={`mr-3 p-2 border-2 border-transparent transition-all ${isRecording || isListening
+                                ? 'bg-neo-accent text-white border-black animate-pulse'
+                                : 'hover:bg-neo-muted text-black'
                                 }`}
                         >
                             {isListening ? (
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <Loader2 className="h-6 w-6 animate-spin stroke-[3px]" />
                             ) : isRecording ? (
-                                <MicOff className="h-5 w-5" />
+                                <MicOff className="h-6 w-6 stroke-[3px]" />
                             ) : (
-                                <Mic className="h-5 w-5" />
+                                <Mic className="h-6 w-6 stroke-[3px]" />
                             )}
                         </button>
                     </div>
                 </div>
+
                 <button
                     type="submit"
                     disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
-                    className="p-3.5 rounded-xl bg-gradient-to-r from-neon-blue to-neon-purple text-white shadow-lg shadow-neon-blue/20 hover:shadow-neon-blue/40 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 transition-all duration-200"
+                    className="p-4 bg-black text-white border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neo-accent hover:shadow-[4px_4px_0px_0px_#000] disabled:opacity-20 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 active:shadow-none active:translate-x-[2px] active:translate-y-[2px] flex-shrink-0 transition-all"
                 >
-                    <Send className="h-5 w-5" />
+                    <Send className="h-6 w-6 stroke-[3px]" />
                 </button>
             </form>
         </div>
     );
 };
+

@@ -469,17 +469,17 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-neon-green/10 rounded-full blur-3xl -z-10"></div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 text-center mb-8">
-            <div className="w-20 h-20 bg-neon-green/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(0,255,128,0.2)]">
-              <CheckCircle className="w-10 h-10 text-neon-green" />
+          <div className="glass-panel p-6 md:p-8 rounded-3xl border border-white/10 text-center mb-8">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-neon-green/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(0,255,128,0.2)]">
+              <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-neon-green" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-3">Exam Submitted!</h2>
-            <p className="text-gray-400 text-lg">Great job completing the exam. Now let's evaluate your performance.</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-black mb-3">Exam Submitted!</h2>
+            <p className="text-gray-400 text-sm md:text-lg">Great job completing the exam. Now let's evaluate your performance.</p>
           </div>
 
           {/* Answer Sheet Upload */}
           <div className="glass-panel p-8 rounded-2xl border border-white/10 mb-8">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-black mb-4 flex items-center gap-2">
               <Upload className="w-6 h-6 text-neon-blue" />
               Upload Answer Sheet
             </h3>
@@ -516,7 +516,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
                 <div className="mt-4 text-neon-green flex items-center justify-center gap-2">
                   <CheckCircle className="w-5 h-5" />
                   Uploaded successfully!
-                  <a href={uploadedFileUrl} target="_blank" rel="noopener noreferrer" className="text-white underline hover:text-neon-blue ml-2">View File</a>
+                  <a href={uploadedFileUrl} target="_blank" rel="noopener noreferrer" className="text-black underline hover:text-neon-blue ml-2">View File</a>
                 </div>
               )}
             </div>
@@ -525,7 +525,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           {/* OCR Extracted Text */}
           {uploadedFileUrl && (
             <div className="glass-panel p-8 rounded-2xl border border-white/10 mb-8">
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-black mb-4 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-neon-purple" />
                 Extracted Text
               </h3>
@@ -552,7 +552,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           {/* AI Evaluation Button */}
           {uploadedFileUrl && extractedText && (
             <div className="glass-panel p-8 rounded-2xl border border-white/10 mb-8 text-center">
-              <h3 className="text-xl font-bold text-white mb-6">Ready for Evaluation?</h3>
+              <h3 className="text-xl font-bold text-black mb-6">Ready for Evaluation?</h3>
               <button
                 className="bg-gradient-to-r from-neon-green to-emerald-600 hover:from-neon-green/80 hover:to-emerald-600/80 text-black font-bold py-4 px-8 rounded-xl shadow-lg shadow-neon-green/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mx-auto text-lg"
                 onClick={handleEvaluateWithAI}
@@ -577,36 +577,36 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           {/* Structured AI Feedback Report */}
           {aiFeedback && parsedFeedback.length > 0 && (
             <div className="glass-panel p-8 rounded-2xl border border-white/10 mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                <h3 className="text-xl font-bold text-black flex items-center gap-2">
                   <FileText className="w-6 h-6 text-neon-blue" />
                   Detailed Report Card
                 </h3>
-                <div className="bg-black/40 px-4 py-2 rounded-xl border border-white/10">
+                <div className="bg-black/40 px-4 py-2 rounded-xl border border-white/10 w-full md:w-auto flex justify-between md:block">
                   <span className="text-gray-400 text-sm mr-2">Total Score:</span>
-                  <span className="text-2xl font-bold text-neon-green">{totalScore} / {maxScore}</span>
+                  <span className="text-xl md:text-2xl font-bold text-neon-green">{totalScore} / {maxScore}</span>
                 </div>
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-white/10">
                 <table className="min-w-full text-left">
                   <thead className="bg-white/5 text-gray-300">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Q#</th>
-                      <th className="px-4 py-3 font-semibold">Marks</th>
-                      <th className="px-4 py-3 font-semibold">Feedback</th>
+                    <tr className="text-xs md:text-base">
+                      <th className="px-3 md:px-4 py-3 font-semibold">Q#</th>
+                      <th className="px-3 md:px-4 py-3 font-semibold">Marks</th>
+                      <th className="px-3 md:px-4 py-3 font-semibold">Feedback</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 bg-black/20">
                     {parsedFeedback.map((q, i) => (
-                      <tr key={i} className="hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3 font-bold text-white">{q.question_number || i + 1}</td>
-                        <td className="px-4 py-3">
+                      <tr key={i} className="hover:bg-white/5 transition-colors text-xs md:text-sm">
+                        <td className="px-3 md:px-4 py-3 font-bold text-black">{q.question_number || i + 1}</td>
+                        <td className="px-3 md:px-4 py-3">
                           <span className={`font-mono font-bold ${q.marks_awarded === q.max_marks ? 'text-neon-green' : 'text-neon-yellow'}`}>
                             {q.marks_awarded} / {q.max_marks}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-300 text-sm whitespace-pre-line">{q.feedback || '-'}</td>
+                        <td className="px-3 md:px-4 py-3 text-gray-300 whitespace-pre-line">{q.feedback || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -644,7 +644,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
           {/* Personalized Improvement Plan */}
           {aiFeedback && (
             <div className="glass-panel p-8 rounded-2xl border border-white/10 mb-8">
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-black mb-6 flex items-center gap-2">
                 <AlertTriangle className="w-6 h-6 text-neon-yellow" />
                 Personalized Improvement Plan
               </h3>
@@ -653,7 +653,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
                 <div className="text-center py-8">
                   <p className="text-gray-400 mb-6">Get a detailed analysis of your weaknesses and a custom study plan.</p>
                   <button
-                    className="bg-gradient-to-r from-neon-purple to-pink-600 hover:from-neon-purple/80 hover:to-pink-600/80 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-neon-purple/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
+                    className="bg-gradient-to-r from-neon-purple to-pink-600 hover:from-neon-purple/80 hover:to-pink-600/80 text-black font-bold py-3 px-8 rounded-xl shadow-lg shadow-neon-purple/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
                     onClick={handleGenerateImprovementPlan}
                     disabled={planLoading}
                   >
@@ -681,7 +681,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
           <div className="text-center">
             <button
-              className="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mx-auto"
+              className="text-gray-400 hover:text-black transition-colors flex items-center gap-2 mx-auto"
               onClick={() => setShowSummary(false)}
             >
               <ArrowLeft className="w-4 h-4" />
@@ -699,7 +699,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         <div className="absolute top-0 right-0 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl -z-10"></div>
         <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center max-w-md">
           <AlertTriangle className="w-12 h-12 text-neon-yellow mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">No Questions Found</h2>
+          <h2 className="text-2xl font-bold text-black mb-2">No Questions Found</h2>
           <p className="text-gray-400 mb-6">No questions were provided for this exam session. Please generate a paper in the CBSE Exam Simulator first.</p>
           <button
             onClick={() => navigate('/cbse-simulator')}
@@ -724,18 +724,18 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
       <div className="w-full max-w-3xl glass-panel rounded-3xl shadow-2xl p-8 border border-white/10 relative">
         {/* Exam Header */}
-        <div className="mb-8 text-center border-b border-white/10 pb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">CBSE Exam Session</h2>
-          <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
-            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/5">Subject: <span className="text-neon-blue">{selectedSubject}</span></span>
-            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/5">Total Marks: <span className="text-neon-green">{maxScore}</span></span>
-            {useCustomMarks && <span className="text-neon-yellow text-xs bg-neon-yellow/10 px-2 py-1 rounded border border-neon-yellow/20">Custom</span>}
+        <div className="mb-12 md:mb-8 text-center border-b border-white/10 pb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-black mb-2">Exam Session</h2>
+          <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 text-xs md:text-sm text-gray-400">
+            <span className="bg-white/5 px-2 md:px-3 py-1 rounded-lg border border-white/5">Subject: <span className="text-neon-blue">{selectedSubject}</span></span>
+            <span className="bg-white/5 px-2 md:px-3 py-1 rounded-lg border border-white/5">Total Marks: <span className="text-neon-green">{maxScore}</span></span>
+            {useCustomMarks && <span className="text-neon-yellow text-[10px] md:text-xs bg-neon-yellow/10 px-2 py-1 rounded border border-neon-yellow/20 uppercase font-black">Custom</span>}
           </div>
         </div>
 
         {/* Timer */}
-        <div className="absolute top-8 right-8 flex items-center gap-2 text-neon-yellow font-mono text-xl font-bold bg-black/40 px-4 py-2 rounded-xl border border-white/10 shadow-lg">
-          <Clock className="w-5 h-5" /> {formatTime(timeLeft)}
+        <div className="absolute top-4 right-4 md:top-8 md:right-8 flex items-center gap-2 text-neon-yellow font-mono text-sm md:text-xl font-bold bg-black/40 px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-white/10 shadow-lg">
+          <Clock className="w-4 h-4 md:w-5 md:h-5 text-neon-yellow" /> {formatTime(timeLeft)}
         </div>
 
         {/* Progress */}
@@ -759,7 +759,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
             <span className="ml-auto text-neon-yellow font-bold bg-neon-yellow/10 px-3 py-1 rounded-lg border border-neon-yellow/20">[{q.marks} Marks]</span>
           </div>
 
-          <div className="text-white text-xl font-medium leading-relaxed mb-8 flex-1">
+          <div className="text-black text-lg md:text-xl font-medium leading-relaxed mb-8 flex-1">
             {parseMathInline(q.question)}
           </div>
 
@@ -787,7 +787,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center">
           <button
-            className="text-gray-400 hover:text-white px-6 py-3 rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            className="text-gray-400 hover:text-black px-6 py-3 rounded-xl transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
             onClick={prev}
             disabled={current === 0}
           >
@@ -796,7 +796,7 @@ ${JSON.stringify(parsedFeedback, null, 2)}`;
 
           {current < questions.length - 1 ? (
             <button
-              className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl border border-white/10 transition-all hover:scale-105 flex items-center gap-2 font-bold"
+              className="bg-white/10 hover:bg-white/20 text-black px-8 py-3 rounded-xl border border-white/10 transition-all hover:scale-105 flex items-center gap-2 font-bold"
               onClick={next}
             >
               Next <ArrowRight className="w-5 h-5" />

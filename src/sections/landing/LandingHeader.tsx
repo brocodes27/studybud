@@ -1,42 +1,40 @@
-import { Sparkles, ArrowRight, Menu } from 'lucide-react';
+import { ArrowRight, Menu } from 'lucide-react';
 
 export function LandingHeader() {
   return (
-    <header className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
-      {/* Top promo bar */}
-      <div className="flex justify-center items-center py-3 bg-white/5 text-white/80 text-sm gap-3 backdrop-blur-md border-b border-white/5">
-        <button
-          className="inline-flex gap-1 items-center hover:opacity-90"
-          onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
-        >
-          <span className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent font-medium">New: AI Video Lessons</span>
-          <span className="text-white/40 mx-2">|</span>
-          <span>Get started for free</span>
-          <ArrowRight className="h-4 w-4" />
-        </button>
+    <header className="sticky top-0 z-50 bg-neo-bg border-b-4 border-black">
+      {/* Top marquee promo bar */}
+      <div className="marquee-container bg-black border-b-4 border-black font-black">
+        <div className="marquee-content py-1 text-sm bg-neo-secondary text-black">
+          NEW: AI VIDEO LESSONS AVAILABLE NOW • GET STARTED FOR FREE • NEW: AI VIDEO LESSONS AVAILABLE NOW • GET STARTED FOR FREE • NEW: AI VIDEO LESSONS AVAILABLE NOW • GET STARTED FOR FREE •
+        </div>
       </div>
 
       <div className="py-4">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue/20 to-purple-500/20 border border-white/10 flex items-center justify-center backdrop-blur-lg">
-                <Sparkles className="w-5 h-5 text-neon-blue" />
+            {/* Logo */}
+            <div className="flex items-center gap-4 group cursor-pointer">
+              <div className="w-12 h-12 bg-neo-secondary border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-none transition-all">
+                <span className="text-2xl font-black italic">EF</span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">ElevenFolks</span>
+              <span className="text-3xl font-black uppercase tracking-tighter text-black hidden sm:block">
+                ELEVENFOLKS
+              </span>
             </div>
 
-            <Menu className="h-6 w-6 md:hidden text-white" />
+            <Menu className="h-8 w-8 md:hidden text-black stroke-[3px]" />
 
-            <nav className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
-              <a href="#benefits" className="hover:text-white transition-colors">Benefits</a>
-              <a href="#features" className="hover:text-white transition-colors">Features</a>
-              <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
+            <nav className="hidden md:flex gap-4 text-sm font-black text-black items-center">
+              <a href="#benefits" className="px-3 py-2 hover:bg-neo-muted border-4 border-transparent hover:border-black uppercase transition-all">Benefits</a>
+              <a href="#features" className="px-3 py-2 hover:bg-neo-accent border-4 border-transparent hover:border-black uppercase transition-all">Features</a>
+              <a href="#testimonials" className="px-3 py-2 hover:bg-neo-secondary border-4 border-transparent hover:border-black uppercase transition-all text-black">Testimonials</a>
               <button
-                className="bg-white text-black px-5 py-2.5 rounded-full font-semibold hover:bg-gray-200 transition-colors"
+                className="neo-button bg-black text-white ml-4"
                 onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Get for free
+                GET STARTED
+                <ArrowRight className="h-4 w-4 stroke-[3px]" />
               </button>
             </nav>
           </div>
@@ -47,3 +45,4 @@ export function LandingHeader() {
 }
 
 export default LandingHeader;
+
