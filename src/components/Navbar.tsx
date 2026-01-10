@@ -67,7 +67,7 @@ const Navbar = () => {
     return (
       <NavLink
         to={link.href}
-        className={`relative group flex items-center px-4 py-3 my-2 border-2 transition-all duration-100
+        className={`relative group flex items-center px-4 py-2 my-1 border-2 transition-all duration-100
           ${isActive
             ? `${link.color} border-black shadow-[4px_4px_0px_0px_#000] translate-x-[-2px] translate-y-[-2px]`
             : 'border-transparent hover:border-black hover:bg-black/5'
@@ -146,7 +146,7 @@ const Navbar = () => {
                 <p className="text-sm font-black text-black truncate uppercase">
                   {user?.user_metadata?.full_name || 'STUDENT'}
                 </p>
-                <p className="text-[10px] font-bold text-black/50 truncate">{user?.email}</p>
+                <p className="text-[10px] font-bold text-black truncate opacity-70">{user?.email}</p>
               </div>
             ) : (
               <div className="absolute left-20 ml-2 pointer-events-none z-[100] opacity-0 group-hover:opacity-100 transition-opacity bg-neo-secondary border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
@@ -178,9 +178,9 @@ const Navbar = () => {
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-5 top-28 w-10 h-10 bg-white border-4 border-black flex items-center justify-center text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neo-secondary transition-all z-50"
+          className="absolute -right-12 top-24 w-10 h-10 bg-white border-4 border-black flex items-center justify-center text-black shadow-[4px_4px_0px_0px_#000] hover:bg-neo-secondary transition-all z-50 group active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
         >
-          {isCollapsed ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
+          {isCollapsed ? <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" /> : <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />}
         </button>
       </aside>
 
