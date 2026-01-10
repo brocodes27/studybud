@@ -109,7 +109,7 @@ const Navbar = () => {
             </div>
             {!isCollapsed && (
               <div>
-                <h1 className="text-xl font-black text-black leading-none">STUDYBUD</h1>
+                <h1 className="text-xl font-black text-black leading-none">ELEVENFOLKS</h1>
                 <p className="text-[10px] font-black tracking-[0.2em] text-black/60">NEO-LEARNING</p>
               </div>
             )}
