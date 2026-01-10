@@ -17,7 +17,7 @@ export function Social() {
             Social <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-blue-400">Learning</span>
           </h1>
         </div>
-        <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xl text-black max-w-3xl mx-auto leading-relaxed">
           Connect with fellow students, share knowledge, and learn together in a supportive community environment.
         </p>
       </div>

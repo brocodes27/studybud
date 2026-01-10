@@ -615,7 +615,7 @@ export function SocialFeatures() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="glass-card rounded-2xl p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
             <h2 className="text-2xl font-bold mb-4 text-black">Unlock All Features</h2>
-            <p className="mb-6 text-gray-400">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all features.</p>
+            <p className="mb-6 text-black">Subscribe for <span className="font-bold text-neon-blue">₹199</span> to access all features.</p>
             <button
               onClick={handleSubscribe}
               className="bg-gradient-to-r from-neon-purple to-pink-600 text-black px-6 py-3 rounded-xl font-semibold text-lg hover:from-neon-purple/80 hover:to-pink-600/80 transition-all duration-200 shadow-lg shadow-neon-purple/20"
@@ -630,7 +630,7 @@ export function SocialFeatures() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-black">Social Learning</h1>
-            <p className="text-gray-400 mt-2">Connect, compete, and learn together in private study groups</p>
+            <p className="text-black mt-2 font-medium">Connect, compete, and learn together in private study groups</p>
           </div>
 
           <div className="flex gap-2 bg-black/40 p-1 rounded-xl border border-white/10">
@@ -640,7 +640,7 @@ export function SocialFeatures() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-lg transition-all duration-200 ${activeTab === tab
                   ? 'bg-neon-blue text-black shadow-lg shadow-neon-blue/20'
-                  : 'text-gray-400 hover:text-black hover:bg-white/5'
+                  : 'text-black/60 hover:text-black hover:bg-white/5'
                   }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -682,7 +682,7 @@ export function SocialFeatures() {
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-black text-black mb-2">
                         Enter Join Code
                       </label>
                       <input
@@ -750,9 +750,9 @@ export function SocialFeatures() {
                     <div className="glass-card rounded-xl p-4 border border-neon-blue/30 bg-neon-blue/10">
                       <div className="flex items-center gap-2 mb-2">
                         <Key className="h-4 w-4 text-neon-blue" />
-                        <span className="text-neon-blue font-medium text-sm">Private Group</span>
+                        <span className="text-neon-blue font-black text-sm uppercase">Private Group</span>
                       </div>
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-black text-sm">
                         Your group will be private and only accessible with a unique join code that will be generated automatically.
                       </p>
                     </div>
@@ -779,10 +779,10 @@ export function SocialFeatures() {
             {studyGroups.length === 0 ? (
               <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
                 <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/10">
-                  <Users className="h-16 w-16 text-gray-500 mx-auto" />
+                  <Users className="h-16 w-16 text-black mx-auto" />
                 </div>
-                <h4 className="text-xl font-semibold text-black mb-2">No Study Groups Yet</h4>
-                <p className="text-gray-400 mb-6">Create your first private study group or join one with a code!</p>
+                <h4 className="text-xl font-black text-black mb-2">No Study Groups Yet</h4>
+                <p className="text-black mb-6">Create your first private study group or join one with a code!</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
                     onClick={() => setShowJoinGroup(true)}
@@ -848,17 +848,17 @@ export function SocialFeatures() {
                             )}
                           </div>
                         )}
-                        <p className="text-neon-blue text-sm">{group.subject}</p>
+                        <p className="text-neon-blue text-sm font-black uppercase tracking-wider">{group.subject}</p>
                       </div>
-                      <div className="flex items-center gap-1 text-gray-400 text-sm bg-white/5 px-2 py-1 rounded-lg">
+                      <div className="flex items-center gap-1 text-black font-black text-sm bg-white/5 px-2 py-1 rounded-lg">
                         <Users className="h-4 w-4" />
                         {group.member_count}
                       </div>
                     </div>
 
-                    <p className="text-gray-300 text-sm mb-3 line-clamp-2">{group.description}</p>
+                    <p className="text-black text-sm mb-3 line-clamp-2 font-medium">{group.description}</p>
 
-                    <div className="text-xs text-gray-500 mb-4">
+                    <div className="text-xs text-black/60 font-black uppercase tracking-widest mb-4">
                       Created by {group.creator_name} • {format(new Date(group.created_at), 'MMM d, yyyy')}
                     </div>
 
@@ -1005,8 +1005,8 @@ export function SocialFeatures() {
                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                     {groupLeaderboard.length === 0 ? (
                       <div className="text-center py-8">
-                        <Trophy className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-400">No activity data yet. Start studying to appear on the leaderboard!</p>
+                        <Trophy className="h-12 w-12 text-black/40 mx-auto mb-3" />
+                        <p className="text-black font-medium">No activity data yet. Start studying to appear on the leaderboard!</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -1037,7 +1037,7 @@ export function SocialFeatures() {
                                       {entry.username}
                                       {entry.user_id === user?.id && ' (You)'}
                                     </span>
-                                    <div className="text-xs text-gray-400">
+                                    <div className="text-xs text-black/60 font-black uppercase tracking-wider">
                                       {entry.tasks_completed} tasks • {formatTime(entry.study_time_minutes)} studied
                                     </div>
                                   </div>
@@ -1049,7 +1049,7 @@ export function SocialFeatures() {
                                   <Star className="h-4 w-4 text-neon-yellow" />
                                   <span className="font-bold text-black">{entry.total_points.toLocaleString()}</span>
                                 </div>
-                                <div className="text-xs text-gray-500">points</div>
+                                <div className="text-xs text-black/60 font-black uppercase">points</div>
                               </div>
                             </div>
                           </div>
@@ -1060,7 +1060,7 @@ export function SocialFeatures() {
 
                   <div className="mt-6 pt-4 border-t border-white/10">
                     <div className="text-center">
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-black font-medium">
                         Points are calculated from completed tasks, study time, practice tests, and achievements
                       </p>
                     </div>
@@ -1078,15 +1078,15 @@ export function SocialFeatures() {
             {leaderboard.length === 0 ? (
               <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
                 <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/10">
-                  <Trophy className="h-16 w-16 text-gray-500 mx-auto" />
+                  <Trophy className="h-16 w-16 text-black/40 mx-auto" />
                 </div>
-                <h4 className="text-xl font-semibold text-black mb-2">No Rankings Yet</h4>
-                <p className="text-gray-400">Complete study tasks to appear on the leaderboard!</p>
+                <h4 className="text-xl font-black text-black mb-2">No Rankings Yet</h4>
+                <p className="text-black font-medium">Complete study tasks to appear on the leaderboard!</p>
               </div>
             ) : (
               <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
                 <div className="p-6 border-b border-white/10 bg-white/5">
-                  <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                  <div className="grid grid-cols-4 gap-4 text-sm font-black text-black uppercase tracking-wider">
                     <span>Rank</span>
                     <span>Student</span>
                     <span>Points</span>
@@ -1140,10 +1140,10 @@ export function SocialFeatures() {
             {achievements.length === 0 ? (
               <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
                 <div className="bg-white/5 p-6 rounded-2xl mb-6 inline-block border border-white/10">
-                  <Award className="h-16 w-16 text-gray-500 mx-auto" />
+                  <Award className="h-16 w-16 text-black/40 mx-auto" />
                 </div>
-                <h4 className="text-xl font-semibold text-black mb-2">No Achievements Yet</h4>
-                <p className="text-gray-400 mb-6">Start studying to unlock your first achievement!</p>
+                <h4 className="text-xl font-black text-black mb-2">No Achievements Yet</h4>
+                <p className="text-black font-medium">Start studying to unlock your first achievement!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1159,12 +1159,12 @@ export function SocialFeatures() {
                       <h3 className="font-bold text-neon-yellow mb-2 text-lg">
                         {achievement.achievement_name}
                       </h3>
-                      <p className="text-gray-300 text-sm mb-4">{achievement.description}</p>
+                      <p className="text-black text-sm mb-4 font-medium">{achievement.description}</p>
                       <div className="flex items-center justify-between pt-4 border-t border-neon-yellow/20">
-                        <div className="bg-neon-yellow/20 text-neon-yellow px-3 py-1 rounded-full text-xs font-bold">
+                        <div className="bg-neon-yellow/20 text-black px-3 py-1 rounded-full text-xs font-black">
                           +{achievement.points} points
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-black/60 font-black">
                           {format(new Date(achievement.unlocked_at), 'MMM d, yyyy')}
                         </div>
                       </div>
@@ -1181,16 +1181,16 @@ export function SocialFeatures() {
                 <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="h-5 w-5 text-neon-yellow" />
-                    <span className="font-semibold text-gray-300">Total Achievements</span>
+                    <span className="font-black text-black/60 uppercase text-xs tracking-widest">Total Achievements</span>
                   </div>
-                  <p className="text-2xl font-bold text-black">{achievements.length}</p>
+                  <p className="text-2xl font-black text-black">{achievements.length}</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                   <div className="flex items-center gap-2 mb-2">
                     <Star className="h-5 w-5 text-neon-blue" />
-                    <span className="font-semibold text-gray-300">Total Points</span>
+                    <span className="font-black text-black/60 uppercase text-xs tracking-widest">Total Points</span>
                   </div>
-                  <p className="text-2xl font-bold text-black">
+                  <p className="text-2xl font-black text-black">
                     {achievements.reduce((sum, a) => sum + a.points, 0).toLocaleString()}
                   </p>
                 </div>

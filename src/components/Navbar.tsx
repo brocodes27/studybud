@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
@@ -77,10 +78,16 @@ const Navbar = () => {
           <link.icon className="w-6 h-6 stroke-[2.5px] text-black" />
         </div>
 
-        {!isCollapsed && (
-          <span className="ml-3 font-black text-sm tracking-widest text-black">
+        {!isCollapsed ? (
+          <span className="ml-3 font-black text-sm tracking-widest text-black whitespace-nowrap">
             {link.label}
           </span>
+        ) : (
+          <div className="absolute left-20 ml-4 pointer-events-none z-[100] opacity-0 group-hover:opacity-100 transition-opacity bg-neo-secondary border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
+            <span className="font-black text-xs uppercase tracking-widest text-black whitespace-nowrap">
+              {link.label}
+            </span>
+          </div>
         )}
       </NavLink>
     );
@@ -109,21 +116,21 @@ const Navbar = () => {
             </div>
             {!isCollapsed && (
               <div>
-                <h1 className="text-xl font-black text-black leading-none">ELEVENFOLKS</h1>
-                <p className="text-[10px] font-black tracking-[0.2em] text-black/60">NEO-LEARNING</p>
+                <h1 className="text-xl font-black text-black leading-none">STUDYBUD</h1>
+                <p className="text-[10px] font-black tracking-[0.2em] text-black/60">BY ELEVENFOLKS</p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pt-6 px-4 space-y-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-visible pt-6 px-4 space-y-1">
           {navLinks.map((link) => (
             <NavItem key={link.href} link={link} />
           ))}
         </div>
 
         <div className="p-4 border-t-4 border-black bg-white">
-          <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} mb-4`}>
+          <div className={`relative group flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} mb-4`}>
             <div className="relative">
               <div className="w-12 h-12 border-4 border-black bg-neo-muted flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
                 <span className="text-black font-black text-lg">{user?.email?.[0].toUpperCase()}</span>
@@ -134,24 +141,38 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-            {!isCollapsed && (
+            {!isCollapsed ? (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-black truncate uppercase">
                   {user?.user_metadata?.full_name || 'STUDENT'}
                 </p>
                 <p className="text-[10px] font-bold text-black/50 truncate">{user?.email}</p>
               </div>
+            ) : (
+              <div className="absolute left-20 ml-2 pointer-events-none z-[100] opacity-0 group-hover:opacity-100 transition-opacity bg-neo-secondary border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
+                <span className="font-black text-xs uppercase tracking-widest text-black whitespace-nowrap">
+                  PROFILE
+                </span>
+              </div>
             )}
           </div>
 
           <button
             onClick={handleSignOut}
-            className={`flex items-center justify-center w-full p-3 border-4 border-black bg-neo-white hover:bg-red-400 font-bold uppercase tracking-widest transition-all
+            className={`relative group flex items-center justify-center w-full p-3 border-4 border-black bg-neo-white hover:bg-red-400 font-bold uppercase tracking-widest transition-all
               ${isCollapsed ? '' : 'gap-2'}
             `}
           >
             <LogOut className="w-5 h-5 stroke-[3px]" />
-            {!isCollapsed && <span className="text-xs">SIGN OUT</span>}
+            {!isCollapsed ? (
+              <span className="text-xs">SIGN OUT</span>
+            ) : (
+              <div className="absolute left-20 ml-2 pointer-events-none z-[100] opacity-0 group-hover:opacity-100 transition-opacity bg-red-400 border-4 border-black px-4 py-2 shadow-[4px_4px_0px_0px_#000]">
+                <span className="font-black text-xs uppercase tracking-widest text-black whitespace-nowrap">
+                  SIGN OUT
+                </span>
+              </div>
+            )}
           </button>
         </div>
 
