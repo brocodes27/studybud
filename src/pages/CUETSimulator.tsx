@@ -568,7 +568,7 @@ For MTF, format the question clearly with List I and List II and A/B/C/D combina
 For AR, provide two statements (Assertion A and Reason R) and standard 4 options (Both true and R is correct explanation, etc.).
 For Case-Study, ensure 'passage' field is populated for all 5 sub-questions and 'question' is individual.`;
 
-      const prompt = `You are an expert CUET-UG question setter. Create a mixed paper of exactly ${total} items across these domain subjects with the following per-domain counts: ${plan}.
+      const prompt = `You are an expert CUET-UG question setter known for creating high-difficulty papers. Create a mixed paper of exactly ${total} items across these domain subjects with the following per-domain counts: ${plan}.
 
 ${blueprint}
 
@@ -580,13 +580,15 @@ Output STRICT JSON array only (no extra text). Each item format:
   "topic": "<syllabus topic>",
   "type": "mcq | mtf | ar | statement | case_study",
   "passage": "<text of passage, only for case_study>",
-  "question": "<clear question text>",
+  "question": "<clear BY CONCEPTUALLY TOUGH question text>",
   "options": ["A","B","C","D"],
   "answer_index": <0..3>
 }
 
 Constraints:
-- Align with CUET-UG 2025 syllabus (NCERT Class 12 level).
+- **DIFFICULTY LEVEL: HARD / COMPETITIVE**. Questions must test deep conceptual understanding, not just rote memory.
+- **OPTIONS MUST BE CONFUSING**: The distractors should be very close to the correct answer to trap students who have superficial knowledge. Avoid obvious wrong answers.
+- Align with CUET-UG 2025 syllabus (NCERT Class 12 level) but push the difficulty to the upper limit.
 - Options must be plausible and unique; exactly 4.
 - answer_index must be correct.
 - Balance counts exactly per domain plan.`;
