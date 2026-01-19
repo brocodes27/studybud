@@ -21,7 +21,7 @@ const navLinks = [
 
 const TeacherNavbar = () => {
   const { user, signOut, loading, fullName } = useAuth() as any;
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
