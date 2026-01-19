@@ -66,10 +66,19 @@ function AppContent() {
   const [showSubscribeBanner, setShowSubscribeBanner] = useState(true);
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('SW registered'))
-        .catch((err) => console.log('SW registration failed', err));
+    // Never register a Service Worker in development. This prevents the
+    // "zombie localhost" behavior caused by SW-controlled pages after the dev
+    // server stops.
+    if (!('serviceWorker' in navigator)) return;
+
+    if (import.meta.env.DEV) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+        .catch(() => {
+          // Ignore failures; dev should still load normally.
+        });
+      return;
     }
   }, []);
 
@@ -209,7 +218,6 @@ function AppContent() {
         </main>
       </div>
 
-      <GlobalTourManager />
       <PersonalTipsManager />
       <GlobalGenerationStatus />
       <Toaster toasts={toasts} removeToast={removeToast} />
