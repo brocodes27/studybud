@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Brain, FileText, Zap, Target, Timer } from 'lucide-react';
+import { Brain, FileText, Zap, Target, Timer, Layers } from 'lucide-react';
 
 import { FlashcardGenerator } from '../components/FlashcardGenerator';
 import { PracticeTestEngine } from '../components/PracticeTestEngine';
 import { QuestionGenerator } from '../components/QuestionGenerator';
 import { PomodoroTimer } from '../components/PomodoroTimer';
 import { TodoTracker } from '../components/TodoTracker';
+import { Progresser } from '../components/Progresser';
 
 export function StudyTools() {
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions' | 'focus'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'tests' | 'ai-questions' | 'focus' | 'progresser'>('flashcards');
 
   const tabs = [
     {
@@ -42,6 +43,14 @@ export function StudyTools() {
       description: 'Timer + Task List',
       color: 'from-orange-500 to-rose-600',
       iconColor: 'text-orange-500'
+    },
+    {
+      id: 'progresser' as const,
+      label: 'Progresser',
+      icon: Layers,
+      description: 'Adaptive Level Training',
+      color: 'from-pink-500 to-rose-600',
+      iconColor: 'text-pink-500'
     }
   ];
 
@@ -103,6 +112,7 @@ export function StudyTools() {
           {activeTab === 'flashcards' && <FlashcardGenerator />}
           {activeTab === 'tests' && <PracticeTestEngine />}
           {activeTab === 'ai-questions' && <QuestionGenerator />}
+          {activeTab === 'progresser' && <Progresser />}
           {activeTab === 'focus' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x-8 divide-black">
               <PomodoroTimer />

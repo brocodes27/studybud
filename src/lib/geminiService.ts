@@ -26,7 +26,7 @@ export class GeminiService {
 
   constructor() {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-    this.sttModel = import.meta.env.VITE_GEMINI_STT_MODEL || 'gemini-1.5-flash';
+    this.sttModel = import.meta.env.VITE_GEMINI_STT_MODEL || 'gemini-3-flash-preview';
   }
 
   static getInstance(): GeminiService {
@@ -38,7 +38,7 @@ export class GeminiService {
 
   async analyzeConversation(transcript: string, topic: string): Promise<ConversationAnalysis> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -91,14 +91,14 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      
+
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         throw new Error('Invalid response from Gemini');
       }
 
       const responseText = data.candidates[0].content.parts[0].text;
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
+
       if (!jsonMatch) {
         throw new Error('No JSON found in Gemini response');
       }
@@ -122,7 +122,7 @@ export class GeminiService {
 
   async generatePersonalizedFeedback(analysis: ConversationAnalysis, topic: string): Promise<string> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -165,7 +165,7 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      
+
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         throw new Error('Invalid response from Gemini');
       }
@@ -179,7 +179,7 @@ export class GeminiService {
 
   async generateLearningInsights(_userId: string, conversationHistory: any[]): Promise<LearningInsights> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -227,14 +227,14 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      
+
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         throw new Error('Invalid response from Gemini');
       }
 
       const responseText = data.candidates[0].content.parts[0].text;
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
+
       if (!jsonMatch) {
         throw new Error('No JSON found in Gemini response');
       }
@@ -255,7 +255,7 @@ export class GeminiService {
 
   async generateAdaptiveQuestions(topic: string, difficulty: string, learningStyle: string): Promise<string[]> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -297,14 +297,14 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      
+
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         throw new Error('Invalid response from Gemini');
       }
 
       const responseText = data.candidates[0].content.parts[0].text;
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      
+
       if (!jsonMatch) {
         throw new Error('No JSON array found in Gemini response');
       }
@@ -324,7 +324,7 @@ export class GeminiService {
 
   async detectEmotionalState(transcript: string): Promise<string> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -363,13 +363,13 @@ export class GeminiService {
       }
 
       const data = await response.json();
-      
+
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         throw new Error('Invalid response from Gemini');
       }
 
       const emotionalState = data.candidates[0].content.parts[0].text.trim().toLowerCase();
-      
+
       // Validate the response
       const validStates = ['confident', 'uncertain', 'engaged', 'confused'];
       return validStates.includes(emotionalState) ? emotionalState : 'engaged';

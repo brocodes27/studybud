@@ -1,6 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, X, Volume2, Maximize, Sparkles, AlertCircle, Monitor as TerminalIcon } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Maximize, Sparkles, AlertCircle, Monitor as TerminalIcon, Brain, CheckCircle, Zap, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+
+export interface InteractionPoint {
+    timestamp: number; // percentage 0-100
+    question: string;
+    options: { id: string; text: string; isCorrect: boolean }[];
+}
 
 interface ManimVideoPlayerProps {
     videoUrl?: string;
@@ -8,16 +14,16 @@ interface ManimVideoPlayerProps {
     generationId?: string;
     isPreparing?: boolean;
     error?: string | null;
+    interactionPoints?: InteractionPoint[];
     onClose: () => void;
 }
 
-export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, error: externalError, onClose }: ManimVideoPlayerProps) {
+export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, error: externalError, interactionPoints, onClose }: ManimVideoPlayerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [_isMuted, _setIsMuted] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [isGenerating, setIsGenerating] = useState(!!generationId || !!isPreparing);
@@ -25,11 +31,30 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
     const [logs, setLogs] = useState<{ time: string, msg: string }[]>([]);
     const [actualSrc, setActualSrc] = useState<string | null>(videoUrl || null);
 
+    const [activeInteraction, setActiveInteraction] = useState<InteractionPoint | null>(null);
+    const [interactionCompleted, setInteractionCompleted] = useState<string[]>([]); // IDs of completed timestamps (stringified)
+    const [selectedOption, setSelectedOption] = useState<string | null>(null);
+    const [showFeedback, setShowFeedback] = useState(false);
+
+    // Default interactions if none provided (Fallback/Demo Mode)
+    const finalInteractionPoints = interactionPoints || [
+        {
+            timestamp: 50,
+            question: "Predict the next step in the visualization:",
+            options: [
+                { id: "a", text: "The curve will approach infinity", isCorrect: true },
+                { id: "b", text: "The slope becomes zero", isCorrect: false }
+            ]
+        }
+    ];
+
     useEffect(() => {
         setIsGenerating(!!generationId || !!isPreparing);
         setError(externalError || null);
         setActualSrc(videoUrl || null);
         setLogs([]);
+        setInteractionCompleted([]);
+        setActiveInteraction(null);
     }, [topic, videoUrl, externalError, generationId, isPreparing]);
 
     const toggleFullscreen = () => {
@@ -119,6 +144,34 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
         if (videoRef.current) {
             const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
             setProgress(p);
+
+            // Check for interactions
+            const hit = finalInteractionPoints.find(pt => Math.abs(pt.timestamp - p) < 1);
+            const hitId = hit ? hit.timestamp.toString() : null;
+
+            if (hit && hitId && !interactionCompleted.includes(hitId)) {
+                videoRef.current.pause();
+                setIsPlaying(false);
+                setActiveInteraction(hit);
+                setSelectedOption(null);
+                setShowFeedback(false);
+            }
+        }
+    };
+
+    const handleOptionSelect = (optionId: string) => {
+        setSelectedOption(optionId);
+        setShowFeedback(true);
+    };
+
+    const resumePlayback = () => {
+        if (activeInteraction) {
+            setInteractionCompleted(prev => [...prev, activeInteraction.timestamp.toString()]);
+            setActiveInteraction(null);
+            if (videoRef.current) {
+                videoRef.current.play();
+                setIsPlaying(true);
+            }
         }
     };
 
@@ -243,6 +296,73 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                             onError={handleError}
                             crossOrigin="anonymous"
                         />
+                    )}
+
+                    {activeInteraction && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-8 animate-in fade-in zoom-in duration-300">
+                             <div className="bg-white border-8 border-black p-8 shadow-[20px_20px_0px_0px_#000] max-w-2xl w-full rotate-1 relative">
+                                <div className="absolute -top-6 -right-6 bg-neo-accent border-4 border-black p-2 rotate-12 shadow-[4px_4px_0px_0px_#000]">
+                                    <Sparkles className="w-8 h-8 text-white stroke-[3px]" />
+                                </div>
+                                <div className="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
+                                    <div className="bg-black p-3 border-2 border-black">
+                                        <Brain className="w-8 h-8 text-white stroke-[3px]" />
+                                    </div>
+                                    <div>
+                                        <div className="text-xs font-black uppercase tracking-widest text-black/40">INTERACTIVE CHECKPOINT</div>
+                                        <h3 className="text-3xl font-black uppercase italic leading-none">PREDICT THE NEXT STEP</h3>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-xl font-bold text-black mb-8 leading-relaxed">
+                                    {activeInteraction.question}
+                                </p>
+
+                                <div className="space-y-4">
+                                    {activeInteraction.options.map((opt) => {
+                                        const isSelected = selectedOption === opt.id;
+                                        const isCorrect = opt.isCorrect;
+                                        let statusColor = "bg-neo-bg hover:bg-neo-secondary border-black"; // Default
+                                        let Icon = Zap;
+
+                                        if (showFeedback) {
+                                            if (isCorrect) {
+                                                statusColor = "bg-green-500 text-white border-black";
+                                                Icon = CheckCircle;
+                                            } else if (isSelected && !isCorrect) {
+                                                statusColor = "bg-red-500 text-white border-black";
+                                                Icon = XCircle;
+                                            } else {
+                                                statusColor = "bg-gray-100 text-gray-400 border-gray-300";
+                                            }
+                                        }
+
+                                        return (
+                                            <button
+                                                key={opt.id}
+                                                onClick={() => !showFeedback && handleOptionSelect(opt.id)}
+                                                disabled={showFeedback}
+                                                className={`w-full text-left p-6 border-4 ${statusColor} hover:shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 transition-all font-black text-lg group flex items-center justify-between uppercase italic ${showFeedback ? 'cursor-default' : ''}`}
+                                            >
+                                                <span>{opt.text}</span>
+                                                <Icon className={`w-8 h-8 stroke-[3px] ${!showFeedback ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'} transition-opacity`} />
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {showFeedback && (
+                                    <div className="mt-8 text-center animate-fade-in">
+                                        <button 
+                                            onClick={resumePlayback}
+                                            className="px-8 py-3 bg-black text-white font-black uppercase tracking-widest border-4 border-black hover:bg-neo-accent hover:text-black transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none"
+                                        >
+                                            CONTINUE SIMULATION »
+                                        </button>
+                                    </div>
+                                )}
+                             </div>
+                        </div>
                     )}
 
                     {/* Controls */}

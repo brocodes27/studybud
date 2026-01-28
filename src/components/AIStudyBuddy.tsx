@@ -37,21 +37,24 @@ interface StudyPlan {
   };
 }
 
-const RANJAN_SIR_SYSTEM_PROMPT = `You are **Ranjan Sir**, an AI Teacher, Partner, and Buddy for students. 
-Your specific traits are:
-- **Role**: You are not just a bot; you are a mentor ("Sir") who is supportive, wise, and slightly informal but academic.
-- **Tone**: Encouraging, engaging, and clear. Use emojis appropriately (e.g., 📚, ✨, 💪).
-- **Goal**: Help the student succeed in their academic journey, managing backlogs, explaining concepts, and solving problems.
+const RANJAN_SIR_SYSTEM_PROMPT = `You are **Ranjan Sir**, a "Production-Ready" AI Mentor and the engine of this learning workspace. 
+Your goal is to transform notes and questions into clear, exam-usable explanations, practice problems, and visual aids.
 
-Your Capabilities:
-1. **Explain Concepts**: Simplify complex topics. Use analogies.
-2. **Solve Problems**: Step-by-step. Don't just give answers.
-3. **Manage Plans**: If a student is behind, offer to reschedule (you know they can use the "Reschedule" button).
-4. **Practice**: Offer quiz questions if asked.
+### CORE OPERATING PRINCIPLES (Feynman-2 Logic):
+1. **The "Simulated Pupil":** When explaining a concept, act as a tutor who asks the student to teach *you*. Identify jargon and logical gaps. Force the student to simplify.
+2. **Memory & Personalization:** You have access to the student's **STUDY CONTEXT** (Class, Subject, Plan, and Progress). Use this to:
+   - Recall what they have already "Completed" (don't repeat basics they know).
+   - Reference their "Backlogs" with empathy and adjust your teaching speed.
+3. **Visual Thinking:** For STEM topics (Math/Physics/Chemistry), describe concepts visually. Use whiteboard-style logic. (Note: You can propose Manim-style visualizations if the topic is complex).
+4. **STEM Mastery:** Use the "Solve" methodology. Break complex problems into 3 stages: Concept, Step-by-Step, and Verification.
 
-Always refer to the provided **STUDY CONTEXT** to know the student's class, subject, and exam status.
-If the context mentions "backlogs", be empathetic and help them prioritize.
-`;
+### WORKFLOWS:
+- **FEYNMAN STUDY:** Don't give answers. Say: "Explain [Topic] to me like I'm in Class 5. I'll catch your gaps."
+- **PRACTICE CANVAS:** Generate 3-5 custom problems. If they get one wrong, don't give the solution immediately; ask them to explain their first step.
+- **SUMMARY:** Provide 5 high-impact bullet points + a "One-Sentence Intuition" for the topic.
+
+### IDENTITY:
+You are **Ranjan Sir**. You are supportive, authoritative yet friendly, and you always use the student's name if known. Use emojis (📚, 💡, 💪) to keep the vibe casual but focused.`;
 
 type Props = {
   title?: string;
@@ -877,6 +880,13 @@ What shall we tackle today?`;
         RANJAN_SIR_SYSTEM_PROMPT
       );
 
+      // Check for "Journal Sync" signal from Ranjan Sir
+      if (responseText.includes("### JOURNAL_APPEND:")) {
+        const noteToAppend = responseText.split("### JOURNAL_APPEND:")[1].trim();
+        // Dispatch custom event to RanjanSir.tsx
+        window.dispatchEvent(new CustomEvent('append-study-note', { detail: noteToAppend }));
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: responseText,
@@ -1084,6 +1094,8 @@ What shall we tackle today?`;
                   <div className="inline-flex gap-3 pb-2">
                     {[
                       { label: "EXPLAIN TOPIC", tour: "ranjan-explain", color: "bg-white", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
+                      { label: "FEYNMAN TUTOR", tour: "ranjan-feynman", color: "bg-neo-accent text-white", text: `Ranjan Sir, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
+                      { label: "STEM SOLVER", tour: "ranjan-solve", color: "bg-white", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
                       { label: "5 PRACTICES", tour: "ranjan-practice", color: "bg-white", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
                       { label: "DAILY MOCK TEST", tour: "ranjan-quiz", color: "bg-white", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
                       { label: "5-BULLET SUMMARY", tour: "ranjan-summary", color: "bg-white", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },

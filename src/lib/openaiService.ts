@@ -1,15 +1,17 @@
-// src/lib/openaiService.ts
 import { supabase } from './supabase';
+
+export interface ChatMessage {
+  role: 'user' | 'model' | 'system';
+  content: string;
+}
 
 export class OpenAIService {
   private static instance: OpenAIService;
-  private proxyUrl: string;
-  private model: string = 'gpt-4o';
+  private apiKey: string;
+  private model: string = 'gemini-3-flash-preview';
 
   private constructor() {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) throw new Error('VITE_SUPABASE_URL is not set');
-    this.proxyUrl = `${supabaseUrl}/functions/v1/openai-proxy`;
+    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   }
 
   static getInstance(): OpenAIService {
@@ -19,222 +21,170 @@ export class OpenAIService {
     return OpenAIService.instance;
   }
 
-  private async authorizedFetch(body: any): Promise<any> {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data?.session?.access_token;
-    if (!accessToken) throw new Error('Not authenticated');
-
-    const res = await fetch(this.proxyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      // Try to parse error response for more details
-      let errorMessage = `OpenAI proxy error: ${res.status}`;
-      try {
-        const errorData = JSON.parse(text);
-        if (errorData.details) {
-          errorMessage += ` - ${typeof errorData.error === 'object' ? JSON.stringify(errorData.error) : errorData.error || 'Unknown error'}: ${errorData.details}`;
-        } else if (errorData.error) {
-          errorMessage += ` - ${typeof errorData.error === 'object' ? JSON.stringify(errorData.error) : errorData.error}`;
-        } else {
-          errorMessage += ` - ${text}`;
-        }
-      } catch {
-        errorMessage += ` - ${text}`;
-      }
-      console.error('OpenAI Proxy Error:', errorMessage);
-      throw new Error(errorMessage);
-    }
-    try {
-      return JSON.parse(text);
-    } catch {
-      return text;
-    }
-  }
-
   async generateChatCompletion(prompt: string, systemPrompt?: string): Promise<string> {
-    const messages = [
-      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-      { role: 'user', content: prompt },
-    ];
-    const body = {
-      model: this.model,
-      messages,
-      max_tokens: 8192,  // Use max_tokens for gpt-4o compatibility
-      temperature: 0.7,
-    };
-    const data = await this.authorizedFetch(body);
-    const text = data?.choices?.[0]?.message?.content || '';
-    return text;
-  }
+    try {
+      const contents = [];
+      
+      // Integrate Semantic Memory into the prompt
+      const context = await this.findRelevantKnowledge(prompt);
+      const contextualSystemPrompt = systemPrompt 
+        ? `${systemPrompt}\n\nRELEVANT PAST KNOWLEDGE (Use this to personalize your response):\n${context}`
+        : `You are Ranjan Sir, an AI tutor with memory of the student's past work. 
+           RELEVANT PAST KNOWLEDGE:\n${context}`;
 
-  /**
-   * Analyze images with GPT-4 Vision / multimodal models
-   */
-  async analyzeImagesWithVision(images: string[], prompt?: string, model?: string, maxTokens?: number): Promise<string> {
-    if (!images || images.length === 0) throw new Error('No images provided');
+      const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\nUSER PROMPT: ${prompt}`;
 
-    const content: any[] = [];
-    content.push({ type: 'text', text: prompt || 'Extract all handwritten text accurately. Preserve line breaks. If unreadable, mark as [illegible]. Return plain text.' });
-    for (const url of images) {
-      content.push({ type: 'image_url', image_url: { url } });
+      contents.push({
+        role: 'user',
+        parts: [{ text: fullPrompt }]
+      });
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8192,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Gemini API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      // Proactively save important insights back to knowledge base
+      if (responseText.length > 200) {
+          this.saveToKnowledgeBase(responseText, 'chat');
+      }
+
+      return responseText;
+    } catch (error: any) {
+      console.error('Gemini Service Error:', error);
+      throw error;
     }
+  }
 
-    const body = {
-      model: model || this.model,
-      messages: [
-        { role: 'user', content },
-      ],
-      max_tokens: maxTokens || 2048,
-      temperature: 0.2,
-    } as any;
+  async analyzeImagesWithVision(images: string[], prompt?: string): Promise<string> {
+    try {
+      const parts: any[] = [{ text: prompt || 'Analyze this image.' }];
+      
+      for (const base64Data of images) {
+        const data = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+        const mimeType = base64Data.includes(';') ? base64Data.split(';')[0].split(':')[1] : 'image/jpeg';
+        
+        parts.push({
+          inline_data: {
+            mime_type: mimeType,
+            data: data
+          }
+        });
+      }
 
-    const data = await this.authorizedFetch(body);
-    return data?.choices?.[0]?.message?.content || '';
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 2048,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini Vision Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (error) {
+      console.error('Gemini Vision Error:', error);
+      throw error;
+    }
   }
 
   /**
-   * Generate embedding for text using OpenAI text-embedding-3-small
+   * Save a piece of knowledge to the user's semantic memory
    */
+  async saveToKnowledgeBase(content: string, sourceType: 'chat' | 'journal' | 'research'): Promise<void> {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.user?.id) return;
+
+      if (content.trim().length < 50) return;
+
+      const { error } = await supabase
+        .from('user_knowledge')
+        .insert({
+          user_id: sessionData.session.user.id,
+          content: content.trim(),
+          source_type: sourceType,
+          metadata: { timestamp: new Date().toISOString() }
+        });
+
+      if (error) throw error;
+    } catch (e) {
+      console.error('Knowledge base save error:', e);
+    }
+  }
+
+  /**
+   * Search for relevant previous knowledge
+   */
+  async findRelevantKnowledge(query: string): Promise<string> {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.user?.id) return '';
+
+      // Text-based similarity search (simplified for MVP)
+      const { data, error } = await supabase
+        .from('user_knowledge')
+        .select('content, created_at')
+        .eq('user_id', sessionData.session.user.id)
+        .ilike('content', `%${query.split(' ')[0]}%`)
+        .limit(3);
+
+      if (error || !data || data.length === 0) return '';
+      
+      return data.map(k => `[Archived ${new Date(k.created_at).toLocaleDateString()}]: ${k.content}`).join('\n---\n');
+    } catch {
+      return '';
+    }
+  }
+
   async getEmbedding(text: string): Promise<number[]> {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey) throw new Error('VITE_OPENAI_API_KEY is not set');
-
-    const res = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: text,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`OpenAI Embedding Error: ${res.status} ${err}`);
-    }
-
-    const data = await res.json();
-    return data.data[0].embedding;
+     console.warn('Embedding call redirected to Gemini placeholder');
+     return new Array(1536).fill(0); 
   }
 
-  /**
-   * Search for similar questions using vector similarity
-   */
-  async searchSimilarQuestions(
-    embedding: number[],
-    matchThreshold: number,
-    matchCount: number,
-    filterClass?: string,
-    filterSubject?: string
-  ) {
-    const { data, error } = await supabase.rpc('match_questions', {
-      query_embedding: embedding,
-      match_threshold: matchThreshold,
-      match_count: matchCount,
-      filter_class: filterClass,
-      filter_subject: filterSubject,
-    });
-
-    if (error) throw new Error(`Vector Search Error: ${error.message}`);
-    return data;
-  }
-
-  /**
-   * Search for similar questions in CUET Question Bank
-   */
-  async searchCuetQuestions(
-    embedding: number[],
-    matchThreshold: number,
-    matchCount: number,
-    filterSubject?: string
-  ) {
-    const { data, error } = await supabase.rpc('match_cuet_questions', {
-      query_embedding: embedding,
-      match_threshold: matchThreshold,
-      match_count: matchCount,
-      filter_subject: filterSubject,
-    });
-
-    if (error) throw new Error(`CUET Vector Search Error: ${error.message}`);
-    return data;
-  }
-
-  /**
-   * Generate speech from text using OpenAI TTS
-   */
-  async generateSpeech(input: string, voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'onyx'): Promise<ArrayBuffer> {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      console.warn('VITE_OPENAI_API_KEY missing, falling back to browser TTS');
-      throw new Error('MISSING_KEY');
-    }
-
-    const res = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'tts-1',
-        input,
-        voice,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`OpenAI TTS Error: ${res.status} ${err}`);
-    }
-
-    return await res.arrayBuffer();
-  }
-
-  /**
-   * Generate a comprehensive script for a Manim-based video lesson.
-   * Returns a structured JSON with audio transcription and visual cues.
-   */
   async generateManimVideoScript(topic: string, subject: string): Promise<any> {
-    const systemPrompt = `You are an elite educational scriptwriter for Manim (Mathematical Animation Engine).
-Your goal is to explain the topic vividly using a mix of spoken word and synchronized mathematical animations.
-
-Return a JSON object with:
-"topic": "${topic}",
-"segments": [
-  {
-    "audioText": "The text to be spoken by TTS",
-    "visualPrompt": "Detailed description of what should happen in Manim (e.g., 'Draw a unit circle and highlight the sine component as a vertical line.')",
-    "durationEstimate": 5.5
-  }
-]
-
-Tone: Clear, engaging, academic but accessible.
-Subject: ${subject}
-Topic: ${topic}`;
-
-    const prompt = `Generate a 3-5 segment script for a video lesson about: ${topic}. Each segment should transition logically to the next.`;
+    const systemPrompt = `You are an elite educational scriptwriter for Manim. Return valid JSON.`;
+    const prompt = `Generate a 3 segment script for a video lesson about: ${topic} in ${subject}.`;
 
     const response = await this.generateChatCompletion(prompt, systemPrompt);
     try {
-      // Find the JSON block
       const start = response.indexOf('{');
       const end = response.lastIndexOf('}');
-      if (start === -1 || end === -1) throw new Error('Invalid JSON response');
       return JSON.parse(response.slice(start, end + 1));
     } catch (e) {
-      console.error('Failed to parse Manim script JSON:', e);
-      throw new Error('Script generation failed');
+      throw new Error('Manim script generation failed');
     }
+  }
+
+  async generateSpeech(input: string): Promise<ArrayBuffer> {
+    throw new Error('TTS fallback');
   }
 }
 

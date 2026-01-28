@@ -19,7 +19,8 @@ import {
   Brain,
   Video,
   HelpCircle,
-  FileText
+  FileText,
+  Mic
 } from 'lucide-react';
 
 const navLinks = [
@@ -30,6 +31,7 @@ const navLinks = [
   { href: '/create', label: 'CREATE PLAN', icon: CalendarPlus, color: 'bg-neo-secondary' },
   { href: '/plans', label: 'STUDY PLANS', icon: BookOpen, color: 'bg-neo-muted' },
   { href: '/guided-paper', label: 'PAPER SOLVER', icon: HelpCircle, color: 'bg-neo-accent' },
+  { href: '/feynman', label: 'FEYNMAN BOARD', icon: Mic, color: 'bg-neo-muted' },
   { href: '/curriculum', label: 'CURRICULUM', icon: ListChecks, color: 'bg-neo-secondary' },
   { href: '/tools', label: 'STUDY TOOLS', icon: Wrench, color: 'bg-neo-muted' },
   { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'bg-neo-accent' },

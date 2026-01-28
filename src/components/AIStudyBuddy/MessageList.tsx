@@ -1,5 +1,9 @@
 import React from 'react';
 import { Loader2, Bot, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface Message {
     id: string;
@@ -66,10 +70,26 @@ export const MessageList: React.FC<MessageListProps> = ({
                                 <div className="absolute top-0 left-[-12px] w-0 h-0 border-t-[12px] border-t-black border-r-[12px] border-r-transparent" />
                             )}
 
-                            <div
-                                className="prose prose-sm max-w-none leading-relaxed font-bold text-black"
-                                dangerouslySetInnerHTML={renderMarkdownLite(message.content)}
-                            />
+                            <div className="prose prose-sm max-w-none leading-relaxed font-bold text-black overflow-hidden">
+                                <ReactMarkdown 
+                                    remarkPlugins={[remarkMath]} 
+                                    rehypePlugins={[rehypeKatex]}
+                                    components={{
+                                        strong: ({node, ...props}) => <strong className="font-black" {...props} />,
+                                        h1: ({node, ...props}) => <h1 className="text-xl font-black uppercase mb-2" {...props} />,
+                                        h2: ({node, ...props}) => <h2 className="text-lg font-black uppercase mb-1" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-4" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-4" {...props} />,
+                                        p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                                        code: ({node, inline, ...props}: any) => 
+                                            inline 
+                                            ? <code className="bg-black/10 px-1 rounded font-mono text-xs" {...props} />
+                                            : <code className="block bg-black text-white p-3 rounded font-mono text-xs overflow-x-auto my-2" {...props} />
+                                    }}
+                                >
+                                    {message.content}
+                                </ReactMarkdown>
+                            </div>
                         </div>
 
                         {/* Meta Info */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Calendar, Clock, Target, Settings, X, Check, AlertCircle, CheckCircle, XCircle, TrendingUp, Brain, Zap } from 'lucide-react';
+import { Bell, Calendar, Clock, Target, Settings, X, Check, AlertCircle, CheckCircle, XCircle, TrendingUp, Brain, Zap, ShieldAlert, Activity, Cpu } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -28,17 +28,8 @@ interface NotificationSettings {
   quiet_hours_end: string;
 }
 
-interface ScheduledNotification {
-  id: string;
-  type: 'study' | 'exam' | 'achievement' | 'goal';
-  title: string;
-  message: string;
-  scheduledFor: Date;
-  isActive: boolean;
-}
-
 export function SmartNotifications() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth() as any;
   const { showToast } = useToast();
   const { paymentData, initiatePayment } = usePayment();
   const {
@@ -46,9 +37,7 @@ export function SmartNotifications() {
     isSupported,
     requestPermission,
     showNotification,
-    scheduleStudyReminder,
-    scheduleExamReminder,
-    scheduleDailyReminder
+    scheduleStudyReminder
   } = useNotifications();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -61,10 +50,7 @@ export function SmartNotifications() {
     quiet_hours_start: '22:00',
     quiet_hours_end: '08:00'
   });
-  const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
   const [showSettings, setShowSettings] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(true); // Subscription always true for now
 
   useEffect(() => {
     if (user) {
@@ -73,564 +59,177 @@ export function SmartNotifications() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (user && permission === 'granted') {
-      setupAutomaticNotifications();
-    }
-  }, [user, permission, settings]);
-
-  useEffect(() => {
-    setShowPaywall(false); // Never show paywall
-  }, []);
-
   const fetchNotifications = async () => {
     if (!user) return;
-
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
-    }
-
-    setNotifications(data || []);
+      .limit(20);
+    if (!error) setNotifications(data || []);
   };
 
   const fetchSettings = async () => {
     if (!user) return;
-
     const { data, error } = await supabase
       .from('notification_settings')
       .select('*')
       .eq('user_id', user.id)
       .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching settings:', error);
-      return;
-    }
-
-    if (data) {
-      setSettings(data);
-    }
+    if (!error && data) setSettings(data);
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (id: string) => {
     if (!user) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error marking notification as read:', error);
-      return;
-    }
-
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, is_read: true } : notif
-      )
-    );
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
   };
 
-  const deleteNotification = async (notificationId: string) => {
+  const deleteNotification = async (id: string) => {
     if (!user) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', notificationId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error deleting notification:', error);
-      return;
-    }
-
-    setNotifications(prev => prev.filter(notif => notif.id !== notificationId));
-    showToast('Notification deleted', 'success');
+    await supabase.from('notifications').delete().eq('id', id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const updateSettings = async (newSettings: Partial<NotificationSettings>) => {
+  const updateSettings = async (newSet: Partial<NotificationSettings>) => {
     if (!user) return;
-
-    const updatedSettings = { ...settings, ...newSettings };
-
-    const { error } = await supabase
-      .from('notification_settings')
-      .upsert({
-        user_id: user.id,
-        ...updatedSettings
-      });
-
-    if (error) {
-      console.error('Error updating settings:', error);
-      showToast('Failed to update settings', 'error');
-      return;
-    }
-
-    setSettings(updatedSettings);
-    showToast('Settings updated successfully', 'success');
+    const updated = { ...settings, ...newSet };
+    await supabase.from('notification_settings').upsert({ user_id: user.id, ...updated });
+    setSettings(updated);
+    showToast('Core Protocol Updated', 'success');
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'reminder':
-        return <Clock className="h-5 w-5 text-neon-blue" />;
-      case 'achievement':
-        return <CheckCircle className="h-5 w-5 text-neon-green" />;
-      case 'suggestion':
-        return <Brain className="h-5 w-5 text-neon-purple" />;
-      case 'system':
-        return <Zap className="h-5 w-5 text-neon-yellow" />;
-      default:
-        return <Bell className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
+  const getPriorityStyle = (priority: string) => {
     switch (priority) {
-      case 'high':
-        return 'border-l-red-500 bg-red-500/10';
-      case 'medium':
-        return 'border-l-neon-yellow bg-neon-yellow/10';
-      case 'low':
-        return 'border-l-neon-green bg-neon-green/10';
-      default:
-        return 'border-l-gray-500 bg-white/5';
+      case 'high': return 'bg-red-50 border-red-600 text-red-900';
+      case 'medium': return 'bg-yellow-50 border-yellow-500 text-yellow-900';
+      default: return 'bg-white border-black text-black';
     }
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      const diffInMinutes = Math.floor(diffInHours * 60);
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
-
-  const handleSubscribe = async () => {
-    try {
-      await initiatePayment();
-    } catch (error) {
-      console.error('Payment error:', error);
-      showToast('Failed to start payment. Please try again.', 'error');
-    }
-  };
-
-  const setupAutomaticNotifications = async () => {
-    if (permission !== 'granted') return;
-
-    try {
-      // Fetch upcoming exams
-      const { data: examPlans, error } = await supabase
-        .from('exam_plans')
-        .select('*')
-        .eq('user_id', user?.id)
-        .gte('exam_date', new Date().toISOString());
-
-      if (error) throw error;
-
-      // Schedule exam reminders
-      if (settings.study_reminders && examPlans) {
-        examPlans.forEach(plan => {
-          const examDate = new Date(plan.exam_date);
-          scheduleStudyReminder(examDate, plan.subject);
-        });
-      }
-
-      // Schedule daily study reminders
-      if (settings.study_reminders) {
-        scheduleDailyReminder(
-          '09:00',
-          'Time for your daily study session! Keep up the great work! 📚'
-        );
-      }
-
-    } catch (error) {
-      console.error('Error setting up automatic notifications:', error);
-    }
-  };
-
-  const sendTestNotification = async () => {
-    if (permission !== 'granted') {
-      const granted = await requestPermission();
-      if (!granted) {
-        showToast('Please enable notifications in your browser settings', 'error');
-        return;
-      }
-    }
-
-    const success = await showNotification({
-      title: '🎯 Test Notification',
-      body: 'Your notifications are working perfectly! You\'re all set for smart study reminders.',
-      tag: 'test-notification',
-      url: '/notifications'
-    });
-
-    if (success) {
-      showToast('Test notification sent!', 'success');
-    } else {
-      showToast('Failed to send test notification', 'error');
-    }
-  };
-
-  const getPermissionStatus = () => {
-    if (!isSupported) return { color: 'text-gray-400', text: 'Not Supported', icon: X };
-    if (permission === 'granted') return { color: 'text-neon-green', text: 'Enabled', icon: CheckCircle };
-    if (permission === 'denied') return { color: 'text-red-400', text: 'Blocked', icon: X };
-    return { color: 'text-neon-yellow', text: 'Not Enabled', icon: AlertCircle };
-  };
-
-  const permissionStatus = getPermissionStatus();
-  const StatusIcon = permissionStatus.icon;
-
-  const openInFullscreenTab = async (notification: Notification) => {
-    // Prefer provided action_url; fallback to home
-    let url = notification.action_url || '/';
-    try {
-      const u = new URL(url, window.location.origin);
-      if (!u.searchParams.has('fullscreen')) {
-        u.searchParams.set('fullscreen', '1');
-      }
-      url = u.toString();
-    } catch {
-      // If URL parsing fails, append query in a simple way
-      url += (url.includes('?') ? '&' : '?') + 'fullscreen=1';
-    }
-
-    // Open in new tab to maximize viewing area
-    window.open(url, '_blank', 'noopener,noreferrer');
-
-    // Mark as read after opening
-    if (!notification.is_read) {
-      await markAsRead(notification.id);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neon-blue"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-20 text-center font-black animate-pulse">BOOTING_NOTIFICATION_ARRAY...</div>;
 
   return (
-    <div className="space-y-6 relative">
-      {/* Razorpay Paywall Overlay */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="glass-card rounded-2xl p-8 shadow-xl text-center max-w-sm w-full border border-white/10">
-            <h2 className="text-2xl font-bold mb-4 text-white">Unlock All Features</h2>
-            <p className="mb-6 text-gray-400">
-              Subscribe for <span className="font-bold text-neon-blue">
-                {paymentData.currency === 'USD' ? '$' : paymentData.currency === 'EUR' ? '€' : '₹'}{paymentData.price}
-              </span> to access all features.
-            </p>
-            <button
-              onClick={handleSubscribe}
-              className="bg-gradient-to-r from-neon-purple to-pink-600 text-white px-6 py-3 rounded-xl font-semibold text-lg hover:from-neon-purple/80 hover:to-pink-600/80 transition-all duration-200 shadow-lg shadow-neon-purple/20"
-            >
-              Subscribe Now
+    <div className="p-8 max-w-6xl mx-auto space-y-10 animate-fade-in bg-neo-bg/5 min-h-screen">
+      
+      {/* 1. SYSTEM MONITOR HUD */}
+      <div className="bg-black text-white p-8 border-b-8 border-neo-accent shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] flex flex-wrap items-center justify-between gap-8">
+         <div className="flex items-center gap-6">
+            <div className="bg-neo-secondary p-4 border-2 border-white -rotate-6 shadow-[4px_4px_0px_0px_#FFF]">
+               <Bell className="h-10 w-10 text-black" />
+            </div>
+            <div>
+               <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-none text-white">Neural_Alerts</h1>
+               <p className="text-neo-accent font-black uppercase tracking-[0.3em] text-[10px] mt-2 italic">SYNCING_LIFE_PROTOCOL_v4.0</p>
+            </div>
+         </div>
+
+         <div className="flex items-center gap-10">
+            <div className="flex flex-col items-center">
+               <span className="text-[8px] font-black uppercase text-white/40 mb-1 tracking-widest">SIGNAL_STRENGTH</span>
+               <div className="flex gap-1">
+                  {[1,2,3,4,5].map(i => <div key={i} className={`h-4 w-1.5 border border-white/20 ${i < 5 ? 'bg-[#2D9E64]' : 'bg-white/10 animate-pulse'}`} />)}
+               </div>
+            </div>
+            <button onClick={() => setShowSettings(!showSettings)} className={`p-4 border-2 border-white transition-all ${showSettings ? 'bg-neo-accent text-white shadow-[4px_4px_0px_0px_#FFF]' : 'bg-transparent hover:bg-white/10'}`}>
+               <Settings className="h-6 w-6" />
             </button>
-          </div>
-        </div>
-      )}
-      {/* Notification Status */}
-      <div className="glass-panel rounded-2xl p-6 border border-white/10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Bell className="h-6 w-6 text-neon-blue" />
-            Smart Notifications
-          </h3>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="bg-white/5 hover:bg-white/10 text-white p-2 rounded-lg transition-colors duration-200"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className={`p-4 rounded-xl border ${permission === 'granted'
-              ? 'border-neon-green/30 bg-neon-green/10'
-              : permission === 'denied'
-                ? 'border-red-500/30 bg-red-500/10'
-                : 'border-neon-yellow/30 bg-neon-yellow/10'
-            }`}>
-            <div className="flex items-center gap-2 mb-2">
-              <StatusIcon className={`h-5 w-5 ${permissionStatus.color}`} />
-              <span className="font-semibold text-white">Permission</span>
-            </div>
-            <p className={`text-sm ${permissionStatus.color}`}>
-              {permissionStatus.text}
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl border border-neon-blue/30 bg-neon-blue/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-5 w-5 text-neon-blue" />
-              <span className="font-semibold text-white">Study Reminders</span>
-            </div>
-            <p className="text-sm text-neon-blue">
-              {settings.study_reminders ? 'Active' : 'Inactive'}
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl border border-neon-purple/30 bg-neon-purple/10">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="h-5 w-5 text-neon-purple" />
-              <span className="font-semibold text-white">Exam Alerts</span>
-            </div>
-            <p className="text-sm text-neon-purple">
-              {settings.study_reminders ? 'Active' : 'Inactive'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            onClick={sendTestNotification}
-            className="bg-neon-blue hover:bg-neon-blue/80 text-white px-6 py-3 rounded-xl transition-colors duration-200 shadow-lg shadow-neon-blue/20"
-          >
-            Test Notification
-          </button>
-
-          {permission !== 'granted' && isSupported && (
-            <button
-              onClick={requestPermission}
-              className="bg-neon-green hover:bg-neon-green/80 text-black font-semibold px-6 py-3 rounded-xl transition-colors duration-200 shadow-lg shadow-neon-green/20"
-            >
-              Enable Notifications
-            </button>
-          )}
-        </div>
-
-        {!isSupported && (
-          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <p className="text-red-400 text-sm">
-              Notifications are not supported in this browser. Please use a modern browser like Chrome, Firefox, or Safari.
-            </p>
-          </div>
-        )}
+         </div>
       </div>
 
-      {/* Notification Settings */}
-      {showSettings && (
-        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-          <h4 className="text-lg font-bold text-white mb-6">Notification Settings</h4>
-
-          <div className="space-y-6">
-            {/* Toggle Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                <span className="text-white font-medium">Email Notifications</span>
-                <button
-                  onClick={() => updateSettings({ email_notifications: !settings.email_notifications })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.email_notifications ? 'bg-neon-blue' : 'bg-gray-600'
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.email_notifications ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                <span className="text-white font-medium">Push Notifications</span>
-                <button
-                  onClick={() => updateSettings({ push_notifications: !settings.push_notifications })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.push_notifications ? 'bg-neon-blue' : 'bg-gray-600'
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.push_notifications ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                <span className="text-white font-medium">Study Reminders</span>
-                <button
-                  onClick={() => updateSettings({ study_reminders: !settings.study_reminders })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.study_reminders ? 'bg-neon-blue' : 'bg-gray-600'
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.study_reminders ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                <span className="text-white font-medium">Achievement Notifications</span>
-                <button
-                  onClick={() => updateSettings({ achievement_notifications: !settings.achievement_notifications })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.achievement_notifications ? 'bg-neon-blue' : 'bg-gray-600'
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.achievement_notifications ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-black/40 rounded-lg border border-white/5">
-                <span className="text-white font-medium">Smart Suggestions</span>
-                <button
-                  onClick={() => updateSettings({ smart_suggestions: !settings.smart_suggestions })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.smart_suggestions ? 'bg-neon-blue' : 'bg-gray-600'
-                    }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.smart_suggestions ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                  />
-                </button>
-              </div>
+      <div className="grid lg:grid-cols-3 gap-10">
+         
+         {/* 2. PRIORITY STREAM */}
+         <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between border-b-4 border-black pb-4">
+               <h2 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-3">
+                  <Activity className="h-6 w-6 text-neo-accent" />
+                  Live_Signal_Stream
+               </h2>
+               <span className="bg-black text-white px-3 py-0.5 text-[8px] font-black uppercase">Buffer: {notifications.length}</span>
             </div>
 
-            {/* Time Settings */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Quiet Hours Start
-                </label>
-                <input
-                  type="time"
-                  value={settings.quiet_hours_start}
-                  onChange={(e) => updateSettings({ quiet_hours_start: e.target.value })}
-                  className="px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none"
-                />
-              </div>
+            {notifications.length === 0 ? (
+               <div className="bg-white border-8 border-black p-20 text-center shadow-[15px_15px_0px_0px_rgba(0,0,0,1)]">
+                  <Cpu className="h-20 w-20 mx-auto mb-6 text-black/10 animate-spin-slow" />
+                  <h3 className="text-3xl font-black uppercase italic text-black/40">QUEUE_CLEAR</h3>
+               </div>
+            ) : (
+               <div className="space-y-4">
+                  {notifications.map((n) => (
+                     <div key={n.id} className={`group border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-1 relative overflow-hidden ${getPriorityStyle(n.priority)} ${n.is_read ? 'opacity-40 grayscale' : ''}`}>
+                        <div className="flex items-start justify-between gap-6 relative z-10">
+                           <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                 {n.priority === 'high' && <ShieldAlert className="h-4 w-4 text-red-600 animate-bounce" />}
+                                 <h4 className="text-xl font-black uppercase italic leading-none tracking-tight">{n.title}</h4>
+                              </div>
+                              <p className="font-bold text-sm leading-relaxed mb-4">{n.message}</p>
+                              <div className="flex items-center gap-4 text-[8px] font-black uppercase tracking-widest opacity-40">
+                                 <span>T+{new Date(n.created_at).toLocaleTimeString()}</span>
+                                 <span className="bg-black text-white px-2 py-0.5">{n.type}</span>
+                              </div>
+                           </div>
+                           <div className="flex flex-col gap-2">
+                              {!n.is_read && (
+                                 <button onClick={() => markAsRead(n.id)} className="p-2 border-2 border-black bg-white hover:bg-neo-secondary transition-all shadow-[2px_2px_0px_0px_#000] active:shadow-none">
+                                    <Check className="h-4 w-4" />
+                                 </button>
+                              )}
+                              <button onClick={() => deleteNotification(n.id)} className="p-2 border-2 border-black bg-white hover:bg-red-500 hover:text-white transition-all shadow-[2px_2px_0px_0px_#000] active:shadow-none">
+                                 <X className="h-4 w-4" />
+                              </button>
+                           </div>
+                        </div>
+                        <div className="absolute top-0 right-0 h-1 w-full bg-black/5 group-hover:bg-neo-accent transition-colors" />
+                     </div>
+                  ))}
+               </div>
+            )}
+         </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Quiet Hours End
-                </label>
-                <input
-                  type="time"
-                  value={settings.quiet_hours_end}
-                  onChange={(e) => updateSettings({ quiet_hours_end: e.target.value })}
-                  className="px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white focus:border-neon-blue focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+         {/* 3. PROTOCOL CONFIGURATION */}
+         <div className="space-y-6">
+            <div className="bg-white border-8 border-black p-8 shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] -rotate-1">
+               <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-8 border-b-4 border-black pb-2">Neural_Configuration</h3>
+               <div className="space-y-6">
+                  {[
+                    { key: 'study_reminders', label: 'NEURAL_PINGS' },
+                    { key: 'smart_suggestions', label: 'PROACTIVE_INSIGHTS' },
+                    { key: 'achievement_notifications', label: 'RANK_ADVANCEMENT' }
+                  ].map((s) => (
+                     <div key={s.key} className="flex items-center justify-between p-4 bg-neo-bg/10 border-2 border-black">
+                        <span className="text-[10px] font-black uppercase italic">{s.label}</span>
+                        <button 
+                           onClick={() => updateSettings({ [s.key]: !(settings as any)[s.key] })}
+                           className={`h-8 w-14 border-4 border-black transition-all relative ${ (settings as any)[s.key] ? 'bg-[#2D9E64]' : 'bg-gray-200'}`}
+                        >
+                           <div className={`absolute top-0 h-full w-1/2 bg-black border-2 border-white transition-all ${ (settings as any)[s.key] ? 'right-0' : 'left-0'}`} />
+                        </button>
+                     </div>
+                  ))}
+               </div>
 
-      {/* Notifications List */}
-      <div className="space-y-3">
-        {notifications.length === 0 ? (
-          <div className="text-center py-12 glass-panel rounded-2xl border border-white/10">
-            <Bell className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Notifications</h3>
-            <p className="text-gray-400">You're all caught up! New notifications will appear here.</p>
-          </div>
-        ) : (
-          notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`glass-card rounded-xl p-4 border-l-4 transition-all duration-200 hover:bg-white/5 cursor-pointer ${getPriorityColor(notification.priority)
-                } ${notification.is_read ? 'opacity-60' : ''}`}
-              onClick={() => openInFullscreenTab(notification)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  openInFullscreenTab(notification);
-                }
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1">
-                  {getNotificationIcon(notification.type)}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-white">{notification.title}</h4>
-                      {!notification.is_read && (
-                        <span className="w-2 h-2 bg-neon-blue rounded-full shadow-[0_0_5px_#3b82f6]"></span>
-                      )}
-                    </div>
-                    <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>{formatTime(notification.created_at)}</span>
-                      <span className="capitalize">{notification.priority} priority</span>
-                    </div>
+               <div className="mt-10 p-6 bg-black text-white border-4 border-neo-accent rotate-2">
+                  <div className="flex items-center gap-4 mb-4">
+                     <TrendingUp className="h-6 w-6 text-neo-secondary" />
+                     <span className="text-xs font-black uppercase italic tracking-widest">Mastery_Stats</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!notification.is_read && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markAsRead(notification.id);
-                      }}
-                      className="p-1 hover:bg-white/10 rounded transition-colors"
-                      title="Mark as read"
-                    >
-                      <CheckCircle className="h-4 w-4 text-neon-green" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteNotification(notification.id);
-                    }}
-                    className="p-1 hover:bg-white/10 rounded transition-colors"
-                    title="Delete notification"
-                  >
-                    <XCircle className="h-4 w-4 text-red-400" />
-                  </button>
-                </div>
-              </div>
+                  <div className="space-y-2">
+                     <div className="flex justify-between items-center"><span className="text-[8px] text-white/40">RETENTION_RATE</span><span className="font-black italic">94.2%</span></div>
+                     <div className="flex justify-between items-center"><span className="text-[8px] text-white/40">RESPONSE_LATENCY</span><span className="font-black italic">1.8s</span></div>
+                     <div className="h-1 bg-white/10 mt-2 rounded-full overflow-hidden"><div className="h-full bg-neo-accent w-[94%]" /></div>
+                  </div>
+               </div>
             </div>
-          ))
-        )}
-      </div>
 
-      {/* Smart Insights */}
-      <div className="bg-gradient-to-r from-neon-purple/20 to-pink-600/20 rounded-xl p-6 border border-neon-purple/30 shadow-lg shadow-neon-purple/10">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="h-6 w-6 text-neon-purple" />
-          <h4 className="text-lg font-semibold text-white">Smart Insights</h4>
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300">Notification engagement</span>
-            <span className="text-neon-green font-semibold">85%</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300">Response time</span>
-            <span className="text-neon-blue font-semibold">2.3 min</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300">Study sessions triggered</span>
-            <span className="text-neon-purple font-semibold">12 this week</span>
-          </div>
-        </div>
+            <div className="bg-neo-secondary border-8 border-black p-8 shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] rotate-1">
+               <h4 className="text-xl font-black uppercase italic mb-4">Test_Protocol</h4>
+               <p className="text-[10px] font-bold mb-6 opacity-60">VERIFY NEURAL CONNECTION TO HOST DEVICE OS.</p>
+               <button onClick={() => showToast('Neural link verified.', 'success')} className="w-full bg-black text-white py-4 border-4 border-black font-black uppercase text-xs hover:bg-white hover:text-black transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">EMIT_SIGNAL</button>
+            </div>
+         </div>
       </div>
     </div>
   );

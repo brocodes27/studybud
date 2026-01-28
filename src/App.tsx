@@ -46,6 +46,7 @@ import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
 import GuidedPaperSolver from './pages/GuidedPaperSolver';
+import FeynmanBoard from './pages/FeynmanBoard';
 
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -197,6 +198,7 @@ function AppContent() {
             <Route path="/voice-selector" element={<VoiceSelector />} />
             <Route path="/elliot-test" element={<ElliotVoiceTest />} />
             <Route path="/voice-lesson" element={<VoiceLesson />} />
+            <Route path="/feynman" element={<FeynmanBoard />} />
             <Route path="/guided-paper" element={<GuidedPaperSolver />} />
             <Route path="/teacher" element={<TeacherPortal />}>
               <Route index element={<TeacherPanel />} />

@@ -117,6 +117,12 @@ export function Progress() {
         .select('*')
         .eq('user_id', user.id);
 
+      // Fetch exam plans to calculate total tasks
+      const { data: plans } = await supabase
+        .from('exam_plans')
+        .select('*')
+        .eq('user_id', user.id);
+
       // Calculate total study time
       const totalStudyTime = sessions?.reduce((total, session) => {
         if (session.duration_minutes) {
@@ -127,6 +133,43 @@ export function Progress() {
 
       // Calculate completed tasks
       const completedTasks = completions?.length || 0;
+
+      // Calculate total tasks from plans
+      let totalTasks = 0;
+      const subjectStats: Record<string, { total: number; completed: number }> = {};
+
+      plans?.forEach(plan => {
+        const subject = plan.subject || 'General';
+        if (!subjectStats[subject]) {
+          subjectStats[subject] = { total: 0, completed: 0 };
+        }
+
+        const dailySchedule = plan.plan?.daily_schedule || [];
+        // Each day in the schedule counts as a task
+        const tasksCount = dailySchedule.length;
+        
+        totalTasks += tasksCount;
+        subjectStats[subject].total += tasksCount;
+      });
+
+      // Map completions to subjects
+      // Note: task_completions references plan_id, so we can link it back
+      completions?.forEach(completion => {
+        const plan = plans?.find(p => p.id === completion.plan_id);
+        if (plan) {
+          const subject = plan.subject || 'General';
+          if (subjectStats[subject]) {
+            subjectStats[subject].completed += 1;
+          }
+        }
+      });
+
+      // Convert subjectStats to array
+      const subjectProgress = Object.entries(subjectStats).map(([subject, stats]) => ({
+        subject,
+        total: stats.total,
+        completed: stats.completed
+      }));
 
       // Calculate streak
       const streakDays = calculateStudyStreak(sessions || [], completions || []);
@@ -156,18 +199,10 @@ export function Progress() {
         });
       }
 
-      // Generate subject progress data
-      const subjectProgress = [
-        { subject: 'Mathematics', completed: 45, total: 60 },
-        { subject: 'Physics', completed: 32, total: 50 },
-        { subject: 'Chemistry', completed: 28, total: 45 },
-        { subject: 'Biology', completed: 38, total: 55 }
-      ];
-
       setProgressData({
         totalStudyTime,
         completedTasks,
-        totalTasks: completedTasks + 20, // Mock total tasks
+        totalTasks,
         streakDays,
         weeklyProgress,
         subjectProgress
@@ -372,5 +407,4 @@ export function Progress() {
       </div>
     </div>
   );
-
 }
