@@ -99,30 +99,54 @@ function useElementRect(selector: string | null) {
   return rect;
 }
 
-function computeBubblePlacement(rect: DOMRect | null, viewport: { w: number; h: number }) {
-  if (!rect) return { x: viewport.w / 2 - 160, y: viewport.h / 2 - 80, placement: 'center' as const };
+type BubblePlacement = {
+  x: number;
+  y: number;
+  placement: 'right' | 'left' | 'top' | 'bottom' | 'center';
+  w: number;
+  h: number;
+};
+
+function computeBubblePlacement(rect: DOMRect | null, viewport: { w: number; h: number }): BubblePlacement {
   const margin = 12;
-  const bubbleW = 320;
-  const bubbleH = 160;
+  const bubbleW = Math.min(320, Math.max(240, viewport.w - margin * 2));
+  const bubbleH = Math.min(220, Math.max(160, Math.floor(viewport.h * 0.28)));
+  const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+  // Small screens: avoid edge overflow and keep controls reachable.
+  if (viewport.w < 520) {
+    return {
+      x: clamp(Math.round((viewport.w - bubbleW) / 2), margin, Math.max(margin, viewport.w - bubbleW - margin)),
+      y: clamp(Math.round(viewport.h - bubbleH - margin), margin, Math.max(margin, viewport.h - bubbleH - margin)),
+      placement: 'center' as const,
+      w: bubbleW,
+      h: bubbleH,
+    };
+  }
+
+  if (!rect) {
+    return { x: viewport.w / 2 - bubbleW / 2, y: Math.max(40, viewport.h / 2 - bubbleH / 2), placement: 'center' as const, w: bubbleW, h: bubbleH };
+  }
 
   // Prefer below
   if (rect.bottom + margin + bubbleH <= viewport.h) {
-    return { x: Math.min(Math.max(rect.left + rect.width / 2 - bubbleW / 2, margin), viewport.w - bubbleW - margin), y: rect.bottom + margin, placement: 'bottom' as const };
+    return { x: clamp(rect.left + rect.width / 2 - bubbleW / 2, margin, viewport.w - bubbleW - margin), y: rect.bottom + margin, placement: 'bottom' as const, w: bubbleW, h: bubbleH };
   }
   // Then above
   if (rect.top - margin - bubbleH >= 0) {
-    return { x: Math.min(Math.max(rect.left + rect.width / 2 - bubbleW / 2, margin), viewport.w - bubbleW - margin), y: rect.top - margin - bubbleH, placement: 'top' as const };
+    return { x: clamp(rect.left + rect.width / 2 - bubbleW / 2, margin, viewport.w - bubbleW - margin), y: rect.top - margin - bubbleH, placement: 'top' as const, w: bubbleW, h: bubbleH };
   }
   // Then right
   if (rect.right + margin + bubbleW <= viewport.w) {
-    return { x: rect.right + margin, y: Math.min(Math.max(rect.top + rect.height / 2 - bubbleH / 2, margin), viewport.h - bubbleH - margin), placement: 'right' as const };
+    return { x: rect.right + margin, y: clamp(rect.top + rect.height / 2 - bubbleH / 2, margin, viewport.h - bubbleH - margin), placement: 'right' as const, w: bubbleW, h: bubbleH };
   }
   // Then left
   if (rect.left - margin - bubbleW >= 0) {
-    return { x: rect.left - margin - bubbleW, y: Math.min(Math.max(rect.top + rect.height / 2 - bubbleH / 2, margin), viewport.h - bubbleH - margin), placement: 'left' as const };
+    return { x: rect.left - margin - bubbleW, y: clamp(rect.top + rect.height / 2 - bubbleH / 2, margin, viewport.h - bubbleH - margin), placement: 'left' as const, w: bubbleW, h: bubbleH };
   }
+
   // Fallback center
-  return { x: viewport.w / 2 - bubbleW / 2, y: Math.max(40, viewport.h / 2 - bubbleH / 2), placement: 'center' as const };
+  return { x: viewport.w / 2 - bubbleW / 2, y: Math.max(40, viewport.h / 2 - bubbleH / 2), placement: 'center' as const, w: bubbleW, h: bubbleH };
 }
 
 const CurriculumTour: React.FC<CurriculumTourProps> = ({ hasMonthlyPlan, hasTasks, ready = false }) => {
@@ -357,7 +381,7 @@ const CurriculumTour: React.FC<CurriculumTourProps> = ({ hasMonthlyPlan, hasTask
       {/* Coachmark bubble */}
       <div
         className="tour-bubble"
-        style={{ left: bubble.x, top: bubble.y, position: 'fixed', width: 320, zIndex: 1000001 }}
+        style={{ left: bubble.x, top: bubble.y, position: 'fixed', width: bubble.w, zIndex: 1000001 }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-live="polite"
@@ -380,10 +404,10 @@ const CurriculumTour: React.FC<CurriculumTourProps> = ({ hasMonthlyPlan, hasTask
             style={{
               position: 'absolute',
               // Center the arrow relative to the bubble for better alignment
-              ...(bubble.placement === 'bottom' ? { top: -8, left: 152 } : {}),
-              ...(bubble.placement === 'top' ? { bottom: -8, left: 152 } : {}),
-              ...(bubble.placement === 'left' ? { right: -8, top: 72 } : {}),
-              ...(bubble.placement === 'right' ? { left: -8, top: 72 } : {}),
+              ...(bubble.placement === 'bottom' ? { top: -8, left: Math.round(bubble.w / 2 - 7) } : {}),
+              ...(bubble.placement === 'top' ? { bottom: -8, left: Math.round(bubble.w / 2 - 7) } : {}),
+              ...(bubble.placement === 'left' ? { right: -8, top: Math.round(bubble.h / 2 - 7) } : {}),
+              ...(bubble.placement === 'right' ? { left: -8, top: Math.round(bubble.h / 2 - 7) } : {}),
             }}
           />
         )}

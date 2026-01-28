@@ -51,9 +51,11 @@ export function useNotifications() {
     }
 
     try {
-      // Prefer using the ServiceWorkerRegistration API in production builds
+      // Prefer using the ServiceWorkerRegistration API when available.
+      // Note: navigator.serviceWorker.ready can hang indefinitely if no SW is
+      // registered (common in dev where we intentionally unregister).
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await navigator.serviceWorker.getRegistration();
         if (registration) {
           await registration.showNotification(options.title, {
             body: options.body,
