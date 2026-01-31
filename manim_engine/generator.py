@@ -9,9 +9,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 try:
-    from openai import OpenAI
+    import google.generativeai as genai
+    from dotenv import load_dotenv
+    load_dotenv()
 except ImportError:
-    print("❌ OpenAI library not installed. Install with: pip install openai")
+    print("❌ Google Generative AI library not installed. Install with: pip install google-generativeai python-dotenv")
     sys.exit(1)
 
 try:
@@ -25,18 +27,19 @@ except ImportError as e:
 BASE_DIR = Path(__file__).parent / "jobs"
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
-# Default model (can be changed by user)
-MODEL = "gpt-4o-mini"  # More reliable than gpt-5.1
+# Default model
+MODEL = "gemini-3-flash-preview"  # Fast and reliable for code generation
 
-# Initialize OpenAI client with error handling
+# Initialize Gemini with error handling
 try:
-    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("VITE_OPENAI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("No OpenAI API key found in environment")
-    client = OpenAI(api_key=api_key)
+        raise ValueError("No Gemini API key found in environment")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(MODEL)
 except Exception as e:
-    print(f"❌ OpenAI initialization failed: {e}")
-    client = None
+    print(f"❌ Gemini initialization failed: {e}")
+    model = None
 
 # ============================================================================
 # LOGGING & ERROR HANDLING
@@ -164,14 +167,11 @@ def normalize_segments(raw: List) -> List[Dict]:
     return cleaned
 
 def get_segments_from_ai(topic: str, script_text: str) -> List[Dict]:
-    """Call AI to generate segments with multiple fallbacks."""
+    """Call AI to generate segments with Gemini."""
     
-    if not client:
-        log.error("OpenAI client not initialized. Using fallback.")
+    if not model:
+        log.error("Gemini model not initialized. Using fallback.")
         return fallback_segments(topic, script_text)
-    
-    # Try models in order of reliability
-    models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
     
     prompt = f"""You are a Manim animation expert. Generate educational animation segments.
 
@@ -193,55 +193,55 @@ Topic: {topic}
 Script (first 500 chars): {script_text[:500]}
 """
     
-    for model_name in models_to_try:
-        log.info(f"Trying {model_name}...")
-        
-        for attempt in range(2):
-            try:
-                api_args = {
-                    "model": model_name,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_completion_tokens": 8000,
-                    "temperature": 0.3,
-                }
-                
-                response = client.chat.completions.create(**api_args)
-                raw = response.choices[0].message.content.strip()
-                
-                if not raw:
-                    log.warn(f"{model_name}: Empty response")
-                    continue
-                
-                # Try to parse JSON
-                try:
-                    data = extract_json(raw)
-                except ValueError as e:
-                    log.debug(f"{model_name}: JSON parse failed - {e}")
-                    continue
-                
-                # Extract segments
-                raw_segs = None
-                if isinstance(data, list):
-                    raw_segs = data
-                elif isinstance(data, dict):
-                    raw_segs = data.get("segments") or data.get("data") or []
-                    if not raw_segs and any(k in data for k in ["voiceover", "code"]):
-                        raw_segs = [data]
-                
-                # Normalize and validate
-                if raw_segs and isinstance(raw_segs, list):
-                    segs = normalize_segments(raw_segs)
-                    if segs:
-                        log.success(f"Got {len(segs)} segments from {model_name}")
-                        return segs
-                
-                log.debug(f"{model_name}: No valid segments extracted")
-                
-            except Exception as e:
-                log.debug(f"{model_name} attempt {attempt+1}: {type(e).__name__}: {str(e)[:100]}")
-                continue
+    log.info(f"Using {MODEL}...")
     
-    log.error("All AI models failed. Using fallback segmentation.")
+    for attempt in range(2):
+        try:
+            # Gemini generation
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.3,
+                    max_output_tokens=8192,
+                )
+            )
+            
+            raw = response.text.strip()
+            
+            if not raw:
+                log.warn(f"Attempt {attempt+1}: Empty response")
+                continue
+            
+            # Try to parse JSON
+            try:
+                data = extract_json(raw)
+            except ValueError as e:
+                log.debug(f"Attempt {attempt+1}: JSON parse failed - {e}")
+                continue
+            
+            # Extract segments
+            raw_segs = None
+            if isinstance(data, list):
+                raw_segs = data
+            elif isinstance(data, dict):
+                raw_segs = data.get("segments") or data.get("data") or []
+                if not raw_segs and any(k in data for k in ["voiceover", "code"]):
+                    raw_segs = [data]
+            
+            # Normalize and validate
+            if raw_segs and isinstance(raw_segs, list):
+                segs = normalize_segments(raw_segs)
+                if segs:
+                    log.success(f"Got {len(segs)} segments from {MODEL}")
+                    return segs
+            
+            log.debug(f"Attempt {attempt+1}: No valid segments extracted")
+            
+        except Exception as e:
+            log.debug(f"Attempt {attempt+1}: {type(e).__name__}: {str(e)[:100]}")
+            continue
+    
+    log.error("Gemini failed after retries. Using fallback segmentation.")
     return fallback_segments(topic, script_text)
 
 # ============================================================================
