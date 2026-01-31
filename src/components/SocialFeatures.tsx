@@ -173,14 +173,14 @@ export function SocialFeatures() {
       <div className="bg-neo-bg/5 flex flex-col font-sans text-black p-4 space-y-6 pb-20">
 
          {/* 1. SYSTEM HUD */}
-         <div className="bg-black text-white p-6 border-b-4 border-neo-accent shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-               <div className="bg-neo-secondary p-2 border-2 border-white rotate-2 shadow-[2px_2px_0px_0px_#FFF]">
-                  <Users className="h-6 w-6 text-black" />
+         <div className="bg-black text-white p-4 border-b-2 border-neo-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+               <div className="bg-neo-secondary p-1.5 border-2 border-white rotate-2 shadow-[1px_1px_0px_0px_#FFF]">
+                  <Users className="h-5 w-5 text-black" />
                </div>
                <div>
-                  <h1 className="text-3xl font-black italic tracking-tight uppercase leading-none text-white">Social_Sync</h1>
-                  <p className="text-neo-accent font-black uppercase tracking-[0.2em] text-[8px] mt-1 italic">PEER_TO_PEER_LEARNING_v4.0</p>
+                  <h1 className="text-2xl font-black italic tracking-tight uppercase leading-none text-white">Social_Sync</h1>
+                  <p className="text-neo-accent font-black uppercase tracking-[0.2em] text-[7px] mt-0.5 italic">PEER_TO_PEER_LEARNING_v4.0</p>
                </div>
             </div>
 
@@ -244,22 +244,22 @@ export function SocialFeatures() {
             )}
 
             {activeTab === 'leaderboard' && (
-               <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="bg-black text-white p-6 border-4 border-black shadow-[10px_10px_0px_0px_rgba(45,158,100,0.5)] rotate-1 flex items-center justify-between">
+               <div className="max-w-2xl mx-auto space-y-4">
+                  <div className="bg-black text-white p-4 border-2 border-black shadow-[4px_4px_0px_0px_rgba(45,158,100,0.5)] rotate-1 flex items-center justify-between">
                      <div>
-                        <h2 className="text-4xl font-black italic tracking-tight uppercase leading-none mb-2">Apex_Trainees</h2>
-                        <p className="text-neo-accent font-black uppercase tracking-[0.3em] text-[8px]">GLOBAL_RANK_SYNCHRONIZATION</p>
+                        <h2 className="text-2xl font-black italic tracking-tight uppercase leading-none mb-1.5">Apex_Trainees</h2>
+                        <p className="text-neo-accent font-black uppercase tracking-[0.3em] text-[7px]">GLOBAL_RANK_SYNCHRONIZATION</p>
                      </div>
-                     <Trophy className="h-12 w-12 text-neo-accent animate-bounce" />
+                     <Trophy className="h-8 w-8 text-neo-accent animate-bounce" />
                   </div>
 
                   <div className="bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
                      <table className="w-full border-collapse text-left">
                         <thead>
-                           <tr className="bg-neo-bg/20 border-b-4 border-black text-[10px]">
-                              <th className="p-4 font-black uppercase tracking-widest">RANK</th>
-                              <th className="p-4 font-black uppercase tracking-widest">NEURAL_ID</th>
-                              <th className="p-4 font-black uppercase tracking-widest text-right">SCORE</th>
+                           <tr className="bg-neo-bg/20 border-b-2 border-black text-[9px]">
+                              <th className="p-3 px-4 font-black uppercase tracking-widest">RANK</th>
+                              <th className="p-3 px-4 font-black uppercase tracking-widest">NEURAL_ID</th>
+                              <th className="p-3 px-4 font-black uppercase tracking-widest text-right">SCORE</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-black">
@@ -281,13 +281,13 @@ export function SocialFeatures() {
             )}
 
             {activeTab === 'achievements' && (
-               <div className="space-y-8">
+               <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                      {achievements.length === 0 ? (
-                        <div className="col-span-full bg-white border-4 border-dashed border-black p-12 text-center">
-                           <Medal className="h-10 w-10 mx-auto mb-3 text-black/10" />
-                           <h3 className="text-xl font-black uppercase italic text-black/40 tracking-tight">ACHIEVEMENTS_LOCKED</h3>
-                           <p className="font-bold text-[9px] mt-2 opacity-60">INITIATE STUDY PROTOCOLS TO UNLOCK MILESTONES.</p>
+                        <div className="col-span-full bg-white border-2 border-dashed border-black p-8 text-center">
+                           <Medal className="h-8 w-8 mx-auto mb-2 text-black/10" />
+                           <h3 className="text-lg font-black uppercase italic text-black/40 tracking-tight">ACHIEVEMENTS_LOCKED</h3>
+                           <p className="font-bold text-[8px] mt-1.5 opacity-60">INITIATE STUDY PROTOCOLS TO UNLOCK MILESTONES.</p>
                         </div>
                      ) : achievements.map((a, i) => (
                         <div key={i} className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_#2D9E64] hover:-translate-y-1 transition-all relative overflow-hidden flex flex-col items-center text-center group">

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Target, Calendar, Clock, Brain,
   ChevronRight, ChevronLeft, Check,
-  User, GraduationCap, School,
+  User, GraduationCap,
   Sparkles, Shield, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,7 +22,7 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
 
   // Data State
-  const [role, setRole] = useState<'student' | 'teacher' | null>(null);
+  const [role] = useState<'student' | 'teacher'>('student');
   const [fullName, setFullName] = useState<string>(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
   const [targetExam, setTargetExam] = useState<string>('sat');
   const [targetScore, setTargetScore] = useState<number>(1400);
@@ -151,30 +151,10 @@ export default function Onboarding() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40">I AM A...</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setRole('student')}
-                      className={`
-                        p-8 border-4 border-black flex flex-col items-center gap-4 transition-all
-                        ${role === 'student' ? 'bg-neo-accent shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:bg-neo-bg'}
-                      `}
-                    >
-                      <GraduationCap className="w-12 h-12" />
-                      <span className="font-black text-xl italic uppercase">STUDENT</span>
-                      <p className="text-[10px] font-bold text-center opacity-40 leading-tight">I'm here to learn and conquer exams</p>
-                    </button>
-                    <button
-                      onClick={() => setRole('teacher')}
-                      className={`
-                        p-8 border-4 border-black flex flex-col items-center gap-4 transition-all
-                        ${role === 'teacher' ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:bg-neo-bg'}
-                      `}
-                    >
-                      <School className="w-12 h-12" />
-                      <span className="font-black text-xl italic uppercase">TEACHER</span>
-                      <p className="text-[10px] font-bold text-center opacity-40 leading-tight">I'm here to manage and guide my classes</p>
-                    </button>
+                  <div className="p-8 border-4 border-black bg-neo-accent flex flex-col items-center gap-4 transition-all">
+                    <GraduationCap className="w-12 h-12" />
+                    <span className="font-black text-xl italic uppercase">STUDENT IDENTITY</span>
+                    <p className="text-[10px] font-bold text-center opacity-40 leading-tight">Your profile is being configured for peak learning performance</p>
                   </div>
                 </div>
 
@@ -198,49 +178,41 @@ export default function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="bg-white border-8 border-black p-8 md:p-12 shadow-[20px_20px_0px_0px_#000] -rotate-1"
             >
-              {role === 'teacher' ? (
-                <div className="text-center py-20">
-                  <h2 className="text-4xl font-black mb-8 italic">READY TO START YOUR PORTAL?</h2>
-                  <button onClick={saveOnboarding} className="bg-neo-accent border-4 border-black px-12 py-6 text-3xl font-black italic shadow-[8px_8px_0px_0px_#000]">YES, DEPLOY PORTAL</button>
-                  <button onClick={prevStep} className="mt-8 block mx-auto text-black/40 font-black uppercase text-xs">BACK</button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="bg-neo-accent border-4 border-black p-3 rotate-6">
-                      <Target className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">TARGET EXAM</h1>
-                      <p className="text-xs font-black text-black/40 uppercase tracking-widest mt-2">WHAT ARE WE CONQUERING?</p>
-                    </div>
+              <>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-neo-accent border-4 border-black p-3 rotate-6">
+                    <Target className="w-8 h-8 text-white" />
                   </div>
+                  <div>
+                    <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">TARGET EXAM</h1>
+                    <p className="text-xs font-black text-black/40 uppercase tracking-widest mt-2">WHAT ARE WE CONQUERING?</p>
+                  </div>
+                </div>
 
-                  <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar mb-8">
-                    {examTypes.map((exam) => (
-                      <button
-                        key={exam.code}
-                        onClick={() => setTargetExam(exam.code)}
-                        className={`
+                <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar mb-8">
+                  {examTypes.map((exam) => (
+                    <button
+                      key={exam.code}
+                      onClick={() => setTargetExam(exam.code)}
+                      className={`
                           p-6 border-4 border-black text-left flex items-center justify-between transition-all
                           ${targetExam === exam.code ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1' : 'bg-neo-bg/10 hover:bg-neo-bg shadow-[6px_6px_0px_0px_#000]'}
                         `}
-                      >
-                        <div>
-                          <span className="font-black text-2xl italic uppercase">{exam.name}</span>
-                          <p className="text-[10px] font-bold opacity-40 uppercase max-w-[80%]">{exam.description || 'CONCENTRATE YOUR FOCUS'}</p>
-                        </div>
-                        {targetExam === exam.code && <div className="bg-black text-white p-2 rotate-12"><Check className="w-6 h-6" /></div>}
-                      </button>
-                    ))}
-                  </div>
+                    >
+                      <div>
+                        <span className="font-black text-2xl italic uppercase">{exam.name}</span>
+                        <p className="text-[10px] font-bold opacity-40 uppercase max-w-[80%]">{exam.description || 'CONCENTRATE YOUR FOCUS'}</p>
+                      </div>
+                      {targetExam === exam.code && <div className="bg-black text-white p-2 rotate-12"><Check className="w-6 h-6" /></div>}
+                    </button>
+                  ))}
+                </div>
 
-                  <div className="flex gap-4">
-                    <button onClick={prevStep} className="bg-white border-4 border-black p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
-                    <button onClick={nextStep} className="flex-1 bg-black text-white p-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent shadow-[8px_8px_0px_0px_#000] transition-all flex items-center justify-center gap-4">CONTINUE</button>
-                  </div>
-                </>
-              )}
+                <div className="flex gap-4">
+                  <button onClick={prevStep} className="bg-white border-4 border-black p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
+                  <button onClick={nextStep} className="flex-1 bg-black text-white p-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent shadow-[8px_8px_0px_0px_#000] transition-all flex items-center justify-center gap-4">CONTINUE</button>
+                </div>
+              </>
             </motion.div>
           )}
 

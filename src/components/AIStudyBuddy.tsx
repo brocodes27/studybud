@@ -606,34 +606,7 @@ export function AIStudyBuddy({
   };
 
   // Minimal Markdown -> HTML: bold + plain text only, escape HTML
-  const renderMarkdownLite = (raw: string) => {
-    if (typeof raw !== 'string') return { __html: '' };
-    let s = raw;
-    // Escape HTML
-    s = s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-    // Strip code fences and inline code to plain text
-    s = s.replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, ''));
-    s = s.replace(/`([^`]+)`/g, '$1');
-    // Convert bold (**text** or __text__)
-    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
-    // Links/images -> plain text label
-    s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1');
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
-    // Strip headings/blockquote/list markers to plain
-    s = s.replace(/^>\s?/gm, '');
-    s = s.replace(/^#{1,6}\s*/gm, '');
-    s = s.replace(/^\s*[-*+]\s+/gm, '');
-    s = s.replace(/^\s*\d+[.)]\s+/gm, '');
-    // Preserve line breaks
-    s = s.replace(/\r\n|\r|\n/g, '<br/>');
-    return { __html: s };
-  };
+
 
   const getWelcomeText = () => {
     const defaultText = `👋 Hello! I am **ATLAS**, your AI Neural Mentor and Learning Partner.
@@ -1248,7 +1221,7 @@ What shall we tackle today?`;
                     <button
                       onClick={toggleTodayCompletion}
                       disabled={isTogglingCompletion}
-                      className={`text-[10px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-black' : 'bg-neo-muted text-black'} border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
+                      className={`text-[9px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-black' : 'bg-neo-muted text-black'} border-2 border-black px-3 py-1.5 shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all whitespace-nowrap`}
                       data-tour="ranjan-mark-done"
                     >
                       {isTodayCompleted ? '✓ COMPLETED' : 'MARK DONE'}
@@ -1272,16 +1245,16 @@ What shall we tackle today?`;
         }
         const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
         return (
-          <div className="px-6 pt-6 pb-2">
-            <div className="flex flex-wrap items-center gap-4 bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
-              <div className="text-xs font-black uppercase tracking-tight">
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex flex-wrap items-center gap-3 bg-white border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
+              <div className="text-[10px] font-black uppercase tracking-tight">
                 <span className="text-black/40">TODAY:</span> {today?.topic || 'GENERAL'}
               </div>
-              <div className="ml-auto flex items-center gap-3">
+              <div className="ml-auto flex items-center gap-2">
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="text-[10px] font-black uppercase bg-neo-bg border-4 border-black px-3 py-1.5 focus:outline-none"
+                  className="text-[9px] font-black uppercase bg-neo-bg border-2 border-black px-2 py-1 focus:outline-none"
                   data-tour="ranjan-plan-select"
                 >
                   {studyPlans.map((p) => (
@@ -1291,7 +1264,7 @@ What shall we tackle today?`;
                   ))}
                 </select>
                 <button
-                  className="px-4 py-1.5 bg-neo-accent text-white border-4 border-black shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] text-[10px] font-black uppercase"
+                  className="px-3 py-1 bg-neo-accent text-white border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] text-[9px] font-black uppercase"
                   onClick={() => {
                     const plan = studyPlans.find(p => p.id === selectedPlan);
                     if (plan) {
@@ -1316,7 +1289,6 @@ What shall we tackle today?`;
         isMentor={isMentor}
         title={title}
         messagesEndRef={messagesEndRef}
-        renderMarkdownLite={renderMarkdownLite}
         formatTime={formatTime}
       />
 

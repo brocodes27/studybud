@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { Input } from '../../components/Input';
-import { User, Shield, ArrowRight } from 'lucide-react';
+import { User, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function LandingAuth() {
@@ -19,7 +19,7 @@ export function LandingAuth() {
     grade: '',
     school: ''
   });
-  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
+  const [selectedRole] = useState<'student' | 'teacher'>('student');
 
   const handleGoogleSignIn = async () => {
     try {
@@ -115,26 +115,9 @@ export function LandingAuth() {
                   className="neo-input"
                 />
 
-                <div className="space-y-4">
-                  <label className="block text-sm font-black uppercase tracking-widest text-black">IDENTIFY AS:</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('student')}
-                      className={`p-6 border-4 border-black transition-all flex flex-col items-center justify-center gap-3 shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${selectedRole === 'student' ? 'bg-neo-accent' : 'bg-white hover:bg-black/5'}`}
-                    >
-                      <User className="w-8 h-8 text-black stroke-[2.5px]" />
-                      <span className="text-sm font-black uppercase tracking-tighter italic">Student</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('teacher')}
-                      className={`p-6 border-4 border-black transition-all flex flex-col items-center justify-center gap-3 shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${selectedRole === 'teacher' ? 'bg-neo-secondary' : 'bg-white hover:bg-black/5'}`}
-                    >
-                      <Shield className="w-8 h-8 text-black stroke-[2.5px]" />
-                      <span className="text-sm font-black uppercase tracking-tighter italic">Teacher</span>
-                    </button>
-                  </div>
+                <div className="flex items-center gap-3 p-4 bg-neo-accent border-4 border-black mb-6">
+                  <User className="h-6 w-6 text-black stroke-[3px]" />
+                  <span className="text-sm font-black uppercase tracking-widest text-black">Student Account Security</span>
                 </div>
 
                 {selectedRole === 'student' && (

@@ -13,9 +13,9 @@ export function Auth() {
     grade: '',
     school: ''
   });
-  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
+  const [selectedRole] = useState<'student' | 'teacher'>('student');
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp } = useAuth() as any;
   const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,30 +78,10 @@ export function Auth() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {isSignUp && (
               <>
-                {/* Role Selection */}
-                <div className="grid grid-cols-2 gap-4 p-1 bg-black/40 rounded-xl border border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('student')}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedRole === 'student'
-                        ? 'bg-neon-blue text-black shadow-lg shadow-neon-blue/20'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                      }`}
-                  >
-                    <GraduationCap className="h-4 w-4" />
-                    Student
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRole('teacher')}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${selectedRole === 'teacher'
-                        ? 'bg-neon-purple text-white shadow-lg shadow-neon-purple/20'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                      }`}
-                  >
-                    <User className="h-4 w-4" />
-                    Teacher
-                  </button>
+                {/* Student Identity Badge */}
+                <div className="flex items-center gap-2 p-3 bg-neon-blue/10 rounded-xl border border-neon-blue/20 mb-4">
+                  <GraduationCap className="h-5 w-5 text-neon-blue" />
+                  <span className="text-sm font-bold text-neon-blue uppercase tracking-widest">Student Account</span>
                 </div>
 
                 <div className="space-y-4 animate-fade-in">
