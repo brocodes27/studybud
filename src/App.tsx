@@ -28,25 +28,24 @@ import TeacherPanel from './pages/TeacherPanel';
 import MyClasses from './pages/MyClasses';
 import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
-import CBSEExamSimulator from './pages/CBSEExamSimulator';
-import CUETSimulator from './pages/CUETSimulator';
-import CBSEExamSession from './pages/CBSEExamSession';
+import SATSimulator from './pages/SATSimulator';
+import CollegeRoadmaps from './pages/CollegeRoadmaps';
 import VAPITestComponent from './components/VAPITestComponent';
-import CUETSyllabusDev from './pages/CUETSyllabusDev';
 import VAPISetupTest from './components/VAPISetupTest';
 import VoiceSelector from './components/VoiceSelector';
 import ElliotVoiceTest from './components/ElliotVoiceTest';
 import { Crown, X } from 'lucide-react';
 import VoiceLesson from './pages/VoiceLesson';
-import { RanjanSir } from './pages/RanjanSir';
+import { AtlasWorkspace } from './pages/AtlasWorkspace';
 import { VideoLessons } from './pages/VideoLessons';
 import { Curriculum } from './pages/Curriculum';
 import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
-import GlobalTourManager from './components/GlobalTourManager';
+// import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
 import GuidedPaperSolver from './pages/GuidedPaperSolver';
 import FeynmanBoard from './pages/FeynmanBoard';
+import { DailyCheckin } from './components/DailyCheckin';
 
 function AppContent() {
   const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
@@ -143,81 +142,106 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-neo-bg selection:bg-neo-accent selection:text-black">
       <div className="relative z-10">
-        {!isFullscreen && !isOnline && (
-          <div className="bg-neo-muted text-black text-center py-4 text-sm font-black border-b-4 border-black uppercase tracking-widest">
-            📱 OFFLINE MODE ACTIVE
-          </div>
-        )}
-
-        {!isFullscreen && isPremium === false && showSubscribeBanner && (
-          <div className="w-full flex justify-center sticky top-4 z-50">
-            <div className="relative flex items-center justify-between w-full max-w-3xl mx-4 bg-neo-secondary border-4 border-black p-4 shadow-[8px_8px_0px_0px_#000]">
-              <div className="flex items-center gap-4">
-                <Crown className="w-6 h-6 text-black stroke-[2.5px]" />
-                <span className="font-black uppercase tracking-tighter text-lg">LEVEL UP TO PREMIUM</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleSubscribeClick}
-                  disabled={isLoadingPayment}
-                  className="bg-black text-white px-6 py-2 font-black uppercase text-sm hover:bg-neo-ink translate-y-[-2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-none transition-all"
-                >
-                  {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
-                </button>
-                <button
-                  onClick={() => setShowSubscribeBanner(false)}
-                  className="p-1 hover:bg-black/10"
-                >
-                  <X className="w-5 h-5 stroke-[3px]" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
 
-        <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : `w-full max-w-7xl mx-auto px-6 py-10 transition-all ${!isFullscreen ? 'page-with-sidebar' : ''}`}>
-          <Routes>
-            <Route path="/" element={<RanjanSir />} />
-            <Route path="/create" element={<CreatePlan />} />
-            <Route path="/plans" element={<StudyPlans />} />
-            <Route path="/videos" element={<VideoLessons />} />
-            <Route path="/curriculum" element={<Curriculum />} />
-            <Route path="/ai-buddy" element={<AIStudyBuddyPage />} />
-            <Route path="/tools" element={<StudyTools />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/analytics" element={<Dashboard />} />
-            <Route path="/social" element={<Social />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/live-notes" element={<LiveMeetingNotes />} />
-            <Route path="/my-notes" element={<MyMeetingNotes />} />
-            <Route path="/my-notes/:id" element={<NoteDetailPage />} />
-            <Route path="/study/:planId" element={<StudySession />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/pricing" element={<FeatureComparison />} />
-            <Route path="/cbse-simulator" element={<CBSEExamSimulator />} />
-            <Route path="/cbse-exam-session" element={<CBSEExamSession />} />
-            <Route path="/cuet-simulator" element={<CUETSimulator />} />
-            <Route path="/dev/cuet-syllabus" element={<CUETSyllabusDev />} />
-            <Route path="/vapi-test" element={<VAPITestComponent />} />
-            <Route path="/vapi-setup" element={<VAPISetupTest />} />
-            <Route path="/voice-selector" element={<VoiceSelector />} />
-            <Route path="/elliot-test" element={<ElliotVoiceTest />} />
-            <Route path="/voice-lesson" element={<VoiceLesson />} />
-            <Route path="/feynman" element={<FeynmanBoard />} />
-            <Route path="/guided-paper" element={<GuidedPaperSolver />} />
-            <Route path="/teacher" element={<TeacherPortal />}>
-              <Route index element={<TeacherPanel />} />
-              <Route path="class/:id" element={<TeacherClassDashboard />} />
-            </Route>
-            <Route path="/my-classes" element={<MyClasses />} />
-            <Route path="/class/:id" element={<ClassPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
+        <div className={!isFullscreen ? "md:pl-[var(--sidebar-width,16rem)] transition-all duration-300" : ""}>
+          {!isFullscreen && !isOnline && (
+            <div className="bg-neo-muted text-black text-center py-4 text-sm font-black border-b-4 border-black uppercase tracking-widest">
+              📱 OFFLINE MODE ACTIVE
+            </div>
+          )}
+
+          {!isFullscreen && isPremium === false && showSubscribeBanner && (
+            <div className="w-full flex justify-center sticky top-4 z-50">
+              <div className="relative flex items-center justify-between w-full max-w-3xl mx-4 bg-neo-secondary border-4 border-black p-4 shadow-[8px_8px_0px_0px_#000]">
+                <div className="flex items-center gap-4">
+                  <Crown className="w-6 h-6 text-black stroke-[2.5px]" />
+                  <span className="font-black uppercase tracking-tighter text-lg">LEVEL UP TO PREMIUM</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handleSubscribeClick}
+                    disabled={isLoadingPayment}
+                    className="bg-black text-white px-6 py-2 font-black uppercase text-sm hover:bg-neo-ink translate-y-[-2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-none transition-all"
+                  >
+                    {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
+                  </button>
+                  <button
+                    onClick={() => setShowSubscribeBanner(false)}
+                    className="p-1 hover:bg-black/10"
+                  >
+                    <X className="w-5 h-5 stroke-[3px]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full max-w-7xl mx-auto px-6 py-10 transition-all"}>
+            <Routes>
+              {/* Daily Experience - New Primary Flow */}
+              <Route path="/" element={<DailyCheckin />} />
+              <Route path="/daily" element={<DailyCheckin />} />
+              <Route path="/atlas" element={<AtlasWorkspace />} />
+
+              {/* Study Planning */}
+              <Route path="/create" element={<CreatePlan />} />
+              <Route path="/plans" element={<StudyPlans />} />
+              <Route path="/curriculum" element={<Curriculum />} />
+
+              {/* Practice & Testing - US Exams */}
+              <Route path="/sat-simulator" element={<SATSimulator />} />
+              <Route path="/feynman" element={<FeynmanBoard />} />
+              <Route path="/guided-paper" element={<GuidedPaperSolver />} />
+
+              {/* Learning Content */}
+              <Route path="/videos" element={<VideoLessons />} />
+              <Route path="/tools" element={<StudyTools />} />
+              <Route path="/ai-buddy" element={<AIStudyBuddyPage />} />
+              <Route path="/voice-lesson" element={<VoiceLesson />} />
+
+              {/* Progress & Analytics */}
+              <Route path="/progress" element={<Progress />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/analytics" element={<Dashboard />} />
+
+              {/* College Prep */}
+              <Route path="/roadmaps" element={<CollegeRoadmaps />} />
+
+              {/* Social & Community */}
+              <Route path="/social" element={<Social />} />
+              <Route path="/notifications" element={<Notifications />} />
+
+              {/* Notes */}
+              <Route path="/live-notes" element={<LiveMeetingNotes />} />
+              <Route path="/my-notes" element={<MyMeetingNotes />} />
+              <Route path="/my-notes/:id" element={<NoteDetailPage />} />
+
+              {/* Study Sessions */}
+              <Route path="/study/:planId" element={<StudySession />} />
+
+              {/* Account */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/pricing" element={<FeatureComparison />} />
+
+              {/* Voice/VAPI Testing */}
+              <Route path="/vapi-test" element={<VAPITestComponent />} />
+              <Route path="/vapi-setup" element={<VAPISetupTest />} />
+              <Route path="/voice-selector" element={<VoiceSelector />} />
+              <Route path="/elliot-test" element={<ElliotVoiceTest />} />
+
+              {/* Teacher Portal */}
+              <Route path="/teacher" element={<TeacherPortal />}>
+                <Route index element={<TeacherPanel />} />
+                <Route path="class/:id" element={<TeacherClassDashboard />} />
+              </Route>
+              <Route path="/my-classes" element={<MyClasses />} />
+              <Route path="/class/:id" element={<ClassPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
       </div>
 
       <PersonalTipsManager />

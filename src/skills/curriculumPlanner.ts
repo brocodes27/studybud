@@ -25,7 +25,7 @@ async function getActiveCurriculumId(userId: string): Promise<string | null> {
 }
 
 function saveActiveCurriculumId(id: string) {
-  try { localStorage.setItem('active_curriculum_id', id); } catch {}
+  try { localStorage.setItem('active_curriculum_id', id); } catch { }
 }
 
 export const curriculumPlanner: Skill = {
@@ -33,8 +33,9 @@ export const curriculumPlanner: Skill = {
   canStart: (message) => {
     const t = message.toLowerCase();
     return (
-      t.includes('cbse') ||
-      t.includes('jee') ||
+      t.includes('sat') ||
+      t.includes('ap') ||
+      t.includes('act') ||
       t.includes('curriculum') ||
       t.includes('monthly plan') ||
       t.includes('generate monthly') ||
@@ -43,20 +44,20 @@ export const curriculumPlanner: Skill = {
     );
   },
   onStart: async (ctx) => {
-    ctx.addAssistant('Let’s set up your curriculum. Are you preparing for CBSE or JEE?');
+    ctx.addAssistant('Let’s set up your curriculum. Are you preparing for SAT, AP, or ACT?');
   },
   onMessage: async (message, ctx, state, setState, end) => {
     const step = state.step || 0;
 
     if (step === 0) {
       const t = message.toLowerCase();
-      const aim = t.includes('jee') ? 'jee' : t.includes('cbse') ? 'cbse' : undefined;
+      const aim = t.includes('sat') ? 'sat' : t.includes('ap') ? 'ap' : t.includes('act') ? 'act' : undefined;
       if (!aim) {
-        ctx.addAssistant('Please reply with "CBSE" or "JEE".');
+        ctx.addAssistant('Please reply with "SAT", "AP", or "ACT".');
         return;
       }
       setState({ step: 1, data: { aim } });
-      ctx.addAssistant(aim === 'cbse' ? 'Which class? (9–12)' : 'Which class level? (11 or 12)');
+      ctx.addAssistant('Which grade/level? (e.g. 11, 12, High School)');
       return;
     }
 
@@ -95,7 +96,7 @@ export const curriculumPlanner: Skill = {
       }
 
       const data = { ...(state.data || {}), month } as {
-        aim: 'cbse' | 'jee';
+        aim: 'sat' | 'ap' | 'act';
         class_level: string;
         subjects: string[];
         month: string;

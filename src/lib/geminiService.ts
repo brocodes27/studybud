@@ -26,7 +26,7 @@ export class GeminiService {
 
   constructor() {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-    this.sttModel = import.meta.env.VITE_GEMINI_STT_MODEL || 'gemini-3-flash-preview';
+    this.sttModel = import.meta.env.VITE_GEMINI_STT_MODEL || 'gemini-3-flash';
   }
 
   static getInstance(): GeminiService {
@@ -38,7 +38,7 @@ export class GeminiService {
 
   async analyzeConversation(transcript: string, topic: string): Promise<ConversationAnalysis> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -122,7 +122,7 @@ export class GeminiService {
 
   async generatePersonalizedFeedback(analysis: ConversationAnalysis, topic: string): Promise<string> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -179,7 +179,7 @@ export class GeminiService {
 
   async generateLearningInsights(_userId: string, conversationHistory: any[]): Promise<LearningInsights> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -255,7 +255,7 @@ export class GeminiService {
 
   async generateAdaptiveQuestions(topic: string, difficulty: string, learningStyle: string): Promise<string[]> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -324,7 +324,7 @@ export class GeminiService {
 
   async detectEmotionalState(transcript: string): Promise<string> {
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -422,6 +422,35 @@ export class GeminiService {
     } catch (error) {
       console.error('Error transcribing audio with Gemini:', error);
       return 'Transcription failed';
+    }
+  }
+
+  async generateResponse(prompt: string, context: string = "Educational Assistant"): Promise<string> {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: `${context}\n\nUser: ${prompt}` }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to generate response');
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't process that.";
+    } catch (error) {
+      console.error('Gemini generateResponse Error:', error);
+      return "My cognitive circuits are experiencing high latency. Please try again.";
     }
   }
 }

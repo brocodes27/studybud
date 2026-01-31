@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 import { StudyPlanForm, FormData } from '../components/StudyPlanForm';
 import { StudyPlanDisplay } from '../components/StudyPlanDisplay';
-import { Brain, AlertCircle } from 'lucide-react';
+import { Brain, AlertCircle, Sparkles, Target, Zap } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -56,14 +56,12 @@ export function CreatePlan() {
         let errorMessage = 'Failed to generate study plan';
         try {
           const errorData = await response.json();
-          // Include detailed error information if available
           if (errorData.details) {
             errorMessage = `${errorData.error || errorMessage}: ${errorData.details}`;
           } else if (errorData.error) {
             errorMessage = errorData.error;
           }
         } catch (parseError) {
-          // If response isn't JSON, use status text
           errorMessage = `${errorMessage} (Status: ${response.status})`;
         }
         throw new Error(errorMessage);
@@ -73,7 +71,6 @@ export function CreatePlan() {
       setStudyPlan(plan);
       setFormData(data);
 
-      // Persist the custom plan name if it exists and wasn't stored by the edge function
       if (data.plan_name) {
         let updateErr = null;
         if (plan && (plan as any).id) {
@@ -83,7 +80,6 @@ export function CreatePlan() {
             .eq('id', (plan as any).id);
           updateErr = nameErr;
         } else {
-          // Fallback: find the most recently created matching plan for this user/subject/date
           const { data: latestPlan, error: fetchErr } = await supabase
             .from('exam_plans')
             .select('id')
@@ -123,45 +119,57 @@ export function CreatePlan() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-neon-purple rounded-2xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
-            <Brain className="w-8 h-8 text-white" />
+    <div className="max-w-6xl mx-auto py-12 px-6 space-y-12 text-black">
+      {/* Neo-Brutalist Header */}
+      <div className="relative">
+        <div className="sticker bg-neo-secondary mb-4 text-sm inline-block px-3 py-1 border-2 border-black rotate-1">AI_GENERATOR_v5.0</div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none">
+              NEW <span className="text-stroke-neo text-black">PLAN</span>
+            </h1>
+            <p className="text-xl font-bold text-black/60 mt-4 max-w-xl">
+              Map your path to the 1600. Expert scaling, adaptive timeline, and rigor-first scheduling.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Study Plan</span>
-          </h1>
+          <div className="flex gap-4">
+             <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] rotate-2">
+                <Target className="h-6 w-6 text-neo-accent" />
+             </div>
+             <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] -rotate-2">
+                <Zap className="h-6 w-6 text-neo-secondary" />
+             </div>
+          </div>
         </div>
-        <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-          Generate a personalized AI-powered study schedule with practice questions tailored to your learning style and exam dates.
-        </p>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="max-w-4xl mx-auto">
-          <div className="glass-card bg-red-500/10 border-red-500/20 p-4 rounded-xl">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-red-300">Error</h3>
-                <p className="text-red-200">{error}</p>
-              </div>
-            </div>
+        <div className="neo-card bg-red-500/10 border-red-500 p-6 flex items-center gap-4">
+          <AlertCircle className="h-8 w-8 text-red-500 flex-shrink-0" />
+          <div>
+            <h3 className="font-black uppercase text-sm italic">Generation Error</h3>
+            <p className="font-bold text-red-900/70">{error}</p>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto">
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
         {!studyPlan ? (
-          <div className="glass-card border border-white/10 rounded-2xl overflow-hidden">
+          <div className="neo-card bg-white border-8 border-black p-8 md:p-12 shadow-[20px_20px_0px_0px_#000]">
+            <div className="flex items-center gap-3 mb-10 border-b-4 border-black pb-4">
+               <Sparkles className="h-6 w-6 text-neo-accent" />
+               <span className="font-black uppercase tracking-widest text-sm italic">Input_Parameters</span>
+            </div>
             <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-12">
+            <div className="neo-card bg-neo-secondary/10 border-4 border-black p-6 flex justify-between items-center">
+               <div className="font-black italic text-2xl uppercase tracking-tighter">Plan Generated Successfully</div>
+               <button onClick={handleCreateNew} className="neo-button-white px-6 py-2 text-xs">CREATE ANOTHER</button>
+            </div>
             <StudyPlanDisplay
               plan={studyPlan}
               formData={formData!}

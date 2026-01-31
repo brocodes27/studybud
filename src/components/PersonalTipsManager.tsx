@@ -72,14 +72,14 @@ function useElementRect(selector: string | null) {
       try {
         resizeObserverRef.current = new ResizeObserver(() => onLayoutChange());
         resizeObserverRef.current.observe(elRef.current);
-      } catch {}
+      } catch { }
     }
     if ((window as any).MutationObserver) {
       try {
         mutationObserverRef.current = new MutationObserver(() => onLayoutChange());
         mutationObserverRef.current.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
         mutationObserverRef.current.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
-      } catch {}
+      } catch { }
     }
     return () => {
       window.removeEventListener('scroll', onLayoutChange, true);
@@ -87,11 +87,11 @@ function useElementRect(selector: string | null) {
       window.removeEventListener('orientationchange', onLayoutChange);
       document.removeEventListener('transitionend', onLayoutChange, true);
       if (resizeObserverRef.current) {
-        try { resizeObserverRef.current.disconnect(); } catch {}
+        try { resizeObserverRef.current.disconnect(); } catch { }
         resizeObserverRef.current = null;
       }
       if (mutationObserverRef.current) {
-        try { mutationObserverRef.current.disconnect(); } catch {}
+        try { mutationObserverRef.current.disconnect(); } catch { }
         mutationObserverRef.current = null;
       }
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -150,11 +150,9 @@ function usePathKey(pathname: string) {
   if (pathname.startsWith('/teacher')) return 'teacher';
   if (pathname.startsWith('/class/')) return 'teacher-class';
   if (pathname.startsWith('/my-notes')) return 'my-notes';
-  if (pathname.startsWith('/cbse-simulator')) return 'cbse';
-  if (pathname.startsWith('/cuet-simulator')) return 'cuet';
   switch (pathname) {
     case '/':
-      return 'ranjan-sir';
+      return 'atlas';
     case '/dashboard':
       return 'dashboard';
     case '/create':
@@ -201,75 +199,75 @@ const PersonalTipsManager: React.FC = () => {
     const make = (key: string, steps: TipStep[]): TipConfig => ({ key, steps });
 
     switch (pathKey) {
-      case 'ranjan-sir':
-        return make('ranjan-sir', [
+      case 'atlas':
+        return make('atlas', [
           {
-            id: 'ranjan-today-panel',
+            id: 'atlas-today-panel',
             title: "Today's Plan",
             content: 'See your subject, topic, and focus for today. Use the quick actions to get an explanation, practices, a short quiz, or a 5-bullet summary.'
           },
           {
-            id: 'ranjan-explain',
+            id: 'atlas-explain',
             title: 'Explain Topic',
             content: 'Get a simple step-by-step explanation with a tiny example for fast understanding.'
           },
           {
-            id: 'ranjan-practice',
+            id: 'atlas-practice',
             title: '5 Practices',
             content: 'Ask for 5 practice questions with brief hints. Solutions can be revealed on demand.'
           },
           {
-            id: 'ranjan-quiz',
+            id: 'atlas-quiz',
             title: '3-Question Quiz',
             content: 'Test yourself with a quick 3Q quiz and get step-by-step checking.'
           },
           {
-            id: 'ranjan-summary',
+            id: 'atlas-summary',
             title: '5-Bullet Summary',
             content: 'Request a concise 5-bullet summary perfect for quick revision.'
           },
           {
-            id: 'ranjan-reshuffle-7',
+            id: 'atlas-reshuffle-7',
             title: 'Reshuffle 7 Days (AI)',
             content: 'Let the mentor suggest a simple day-wise reshuffle for the next week based on your context.'
           },
           {
-            id: 'ranjan-start-study',
+            id: 'atlas-start-study',
             title: "Start Today's Study",
             content: 'Begin a guided session for today’s topic. I will keep you focused and track your progress.'
           },
           {
-            id: 'ranjan-rescheduler',
+            id: 'atlas-rescheduler',
             title: 'Reschedule Missed Days',
             content: 'If you missed sessions, use this to rebalance the next days (powered by the rescheduler skill).'
           },
           {
-            id: 'ranjan-mark-done',
+            id: 'atlas-mark-done',
             title: 'Mark Done',
             content: 'When you finish today’s study, mark it completed to maintain streaks and momentum.'
           },
           {
-            id: 'ranjan-plan-select',
+            id: 'atlas-plan-select',
             title: 'Select Study Plan',
             content: 'Switch between your study plans. The selected plan drives today’s topic and actions.'
           },
           {
-            id: 'ranjan-quick-reschedule',
+            id: 'atlas-quick-reschedule',
             title: 'Quick Reschedule',
             content: 'A handy reschedule shortcut near the plan selector.'
           },
           {
-            id: 'ranjan-input',
-            title: 'Ask Ranjan Sir',
+            id: 'atlas-input',
+            title: 'Ask ATLAS',
             content: 'Type your questions here. I respond with clear, concise answers following your formatting preferences.'
           },
           {
-            id: 'ranjan-mic',
+            id: 'atlas-mic',
             title: 'Voice Input',
             content: 'Use the mic to speak your question. I’ll transcribe it and reply. Supported where web speech is available.'
           },
           {
-            id: 'ranjan-send',
+            id: 'atlas-send',
             title: 'Send Message',
             content: 'Click Send to submit your question. You can also press Enter.'
           },
@@ -351,20 +349,6 @@ const PersonalTipsManager: React.FC = () => {
             content: 'Browse and manage your saved notes. Tap any note to view details.'
           },
         ]);
-      case 'cbse':
-        return make('cbse', [
-          {
-            title: 'CBSE Simulator',
-            content: 'Run simulations to practice under exam-like conditions.'
-          },
-        ]);
-      case 'cuet':
-        return make('cuet', [
-          {
-            title: 'CUET Simulator',
-            content: 'Practice CUET-style questions and evaluate performance.'
-          },
-        ]);
       case 'my-classes':
         return make('my-classes', [
           {
@@ -439,8 +423,8 @@ const PersonalTipsManager: React.FC = () => {
       setIndex(0);
       setOpen(true);
       // Mark as completed on first run so it won't re-open next time
-      try { localStorage.setItem(completedKey, '1'); } catch {}
-      try { localStorage.setItem(PERSONAL_ACTIVE_KEY, '1'); } catch {}
+      try { localStorage.setItem(completedKey, '1'); } catch { }
+      try { localStorage.setItem(PERSONAL_ACTIVE_KEY, '1'); } catch { }
     } else {
       setOpen(false);
     }
@@ -452,10 +436,10 @@ const PersonalTipsManager: React.FC = () => {
     (window as any).__resetPersonalTips = () => {
       try {
         const keys = [
-          'ranjan-sir','dashboard','create','plans','tools','progress','analytics','calendar','social','notifications','live-notes','my-notes','profile','pricing','cbse','cuet','my-classes','teacher','teacher-class','admin','other'
+          'ranjan-sir', 'dashboard', 'create', 'plans', 'tools', 'progress', 'analytics', 'calendar', 'social', 'notifications', 'live-notes', 'my-notes', 'profile', 'pricing', 'my-classes', 'teacher', 'teacher-class', 'admin', 'other'
         ];
         for (const k of keys) localStorage.removeItem(`tips:${k}:v1:completed`);
-      } catch {}
+      } catch { }
     };
     (window as any).__startPersonalTips = (k?: string) => {
       try {
@@ -464,7 +448,7 @@ const PersonalTipsManager: React.FC = () => {
         setIndex(0);
         setOpen(true);
         localStorage.setItem(PERSONAL_ACTIVE_KEY, '1');
-      } catch {}
+      } catch { }
     };
     return () => {
       delete (window as any).__resetPersonalTips;
@@ -479,7 +463,7 @@ const PersonalTipsManager: React.FC = () => {
       document.body.classList.add('tour-no-scroll');
     } else {
       document.body.classList.remove('tour-no-scroll');
-      try { localStorage.removeItem(PERSONAL_ACTIVE_KEY); } catch {}
+      try { localStorage.removeItem(PERSONAL_ACTIVE_KEY); } catch { }
     }
     return () => {
       document.body.classList.remove('tour-no-scroll');
@@ -489,9 +473,9 @@ const PersonalTipsManager: React.FC = () => {
   function finishForCurrent() {
     try {
       if (openedForKeyRef.current) localStorage.setItem(openedForKeyRef.current, '1');
-    } catch {}
+    } catch { }
     setOpen(false);
-    try { localStorage.removeItem(PERSONAL_ACTIVE_KEY); } catch {}
+    try { localStorage.removeItem(PERSONAL_ACTIVE_KEY); } catch { }
   }
 
   function next() {
@@ -512,12 +496,12 @@ const PersonalTipsManager: React.FC = () => {
   const bubble = step?.id
     ? computeBubblePlacement(rect, viewport)
     : ({
-        x: Math.max(12, Math.round(viewport.w / 2 - 160)),
-        y: Math.max(40, Math.round(viewport.h / 2 - 80)),
-        placement: 'center' as const,
-        w: Math.min(320, Math.max(240, viewport.w - 24)),
-        h: Math.min(220, Math.max(160, Math.floor(viewport.h * 0.28))),
-      } satisfies BubblePlacement);
+      x: Math.max(12, Math.round(viewport.w / 2 - 160)),
+      y: Math.max(40, Math.round(viewport.h / 2 - 80)),
+      placement: 'center' as const,
+      w: Math.min(320, Math.max(240, viewport.w - 24)),
+      h: Math.min(220, Math.max(160, Math.floor(viewport.h * 0.28))),
+    } satisfies BubblePlacement);
   const radius = rect ? Math.ceil(Math.max(rect.width, rect.height) / 2) + 16 : 0;
   const cx = rect ? Math.round(rect.left + rect.width / 2) : viewport.w / 2;
   const cy = rect ? Math.round(rect.top + rect.height / 2) : viewport.h / 2;
@@ -530,7 +514,7 @@ const PersonalTipsManager: React.FC = () => {
     if (!el) return;
     const hadLock = document.body.classList.contains('tour-no-scroll');
     if (hadLock) document.body.classList.remove('tour-no-scroll');
-    try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } catch {}
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); } catch { }
     requestAnimationFrame(() => { if (hadLock) document.body.classList.add('tour-no-scroll'); });
   }, [open, step?.id, index]);
 

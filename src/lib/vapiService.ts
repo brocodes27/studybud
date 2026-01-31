@@ -68,7 +68,7 @@ export class VAPIService {
       const assistantId = await this.getOrCreateDefaultAssistant();
       const voiceId = await this.getOrCreateDefaultVoice();
 
-             const response = await fetch(`${this.baseUrl}/call`, {
+      const response = await fetch(`${this.baseUrl}/call`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
@@ -80,7 +80,7 @@ export class VAPIService {
           metadata: {
             topic: topic,
             personality: personality,
-            model: 'gemini-2.5-flash'
+            model: 'gemini-3-flash'
           }
         }),
       });
@@ -132,7 +132,7 @@ export class VAPIService {
     }
 
     try {
-      // Try to create a new assistant optimized for Gemini 2.5 Flash
+      // Try to create a new assistant optimized for Gemini 3 Flash
       const response = await fetch(`${this.baseUrl}/assistant`, {
         method: 'POST',
         headers: {
@@ -143,14 +143,14 @@ export class VAPIService {
           name: 'elevenfolks AI Tutor',
           model: {
             provider: 'openai',
-            model: 'gpt-4o-mini', // VAPI will route to Gemini 2.5 Flash
+            model: 'gpt-4o-mini', // VAPI will route to Gemini 3 Flash
             temperature: 0.7
           },
           voice: {
             provider: '11labs',
             voiceId: 'elliot'
           },
-          instructions: `You are an AI tutor helping students learn various subjects. You are using Gemini 2.5 Flash for enhanced reasoning and conversation capabilities.
+          instructions: `You are an AI tutor helping students learn various subjects. You are using Gemini 3 Flash for enhanced reasoning and conversation capabilities.
 
 Key Responsibilities:
 - Be encouraging, patient, and adapt your teaching style to the student's needs
@@ -389,9 +389,9 @@ Remember to:
     try {
       const wsUrl = `wss://api.vapi.ai/call/${callId}/stream`;
       console.log('Connecting to VAPI WebSocket:', wsUrl);
-      
+
       const ws = new WebSocket(wsUrl);
-      
+
       ws.onopen = () => {
         console.log('✅ Connected to VAPI call stream');
         // Send authentication
@@ -437,7 +437,7 @@ Remember to:
   }> {
     const geminiService = GeminiService.getInstance();
     const analysis = await geminiService.analyzeConversation(transcript, topic);
-    
+
     return {
       accuracy: analysis.accuracy,
       keywords: analysis.keywords,

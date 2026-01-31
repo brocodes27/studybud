@@ -3,7 +3,6 @@ import { Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
-
 import { OpenAIService } from '../lib/openaiService';
 import { useChatSkills } from '../skills/useChatSkills';
 import { Header } from './AIStudyBuddy/Header';
@@ -11,6 +10,10 @@ import { ContextPanel } from './AIStudyBuddy/ContextPanel';
 import { MessageList } from './AIStudyBuddy/MessageList';
 import { SuggestedQuestions } from './AIStudyBuddy/SuggestedQuestions';
 import { ChatInput } from './AIStudyBuddy/ChatInput';
+import { VoiceVisualizer } from './AIStudyBuddy/VoiceVisualizer';
+import Vapi from '@vapi-ai/web';
+
+const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY || '');
 
 interface Message {
   id: string;
@@ -37,7 +40,7 @@ interface StudyPlan {
   };
 }
 
-const RANJAN_SIR_SYSTEM_PROMPT = `You are **Ranjan Sir**, a "Production-Ready" AI Mentor and the engine of this learning workspace. 
+const ATLAS_SYSTEM_PROMPT = `You are **ATLAS**, a "Production-Ready" AI Mentor and the engine of this learning workspace. 
 Your goal is to transform notes and questions into clear, exam-usable explanations, practice problems, and visual aids.
 
 ### CORE OPERATING PRINCIPLES (Feynman-2 Logic):
@@ -54,26 +57,26 @@ Your goal is to transform notes and questions into clear, exam-usable explanatio
 - **SUMMARY:** Provide 5 high-impact bullet points + a "One-Sentence Intuition" for the topic.
 
 ### IDENTITY:
-You are **Ranjan Sir**. You are supportive, authoritative yet friendly, and you always use the student's name if known. Use emojis (📚, 💡, 💪) to keep the vibe casual but focused.`;
+You are **ATLAS**. You are supportive, authoritative yet friendly, and you always use the student's name if known. Use emojis (📚, 💡, 💪) to keep the vibe casual but focused.`;
 
 type Props = {
   title?: string;
   subtitle?: string;
   welcomeContent?: string;
-  functionPath?: string; // supabase function name
   extraContext?: string; // appended to studyContext
   variant?: 'default' | 'mentor';
   storageNamespace?: string;
+  hideMissionControl?: boolean;
 };
 
 export function AIStudyBuddy({
-  title = 'Ranjan Sir',
-  subtitle = 'Your AI Teacher, Partner, and Buddy',
+  title = 'ATLAS',
+  subtitle = 'NEURAL_OS_PRO_v5.0',
   welcomeContent,
-  functionPath = 'ai-study-buddy',
   extraContext = '',
   variant = 'default',
   storageNamespace = 'ai_buddy',
+  hideMissionControl = false,
 }: Props) {
   const { session } = useAuth() as any;
   const { showToast } = useToast();
@@ -91,9 +94,13 @@ export function AIStudyBuddy({
   const [isListening, setIsListening] = useState(false);
   const [showContext, setShowContext] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [wasVoiceInput, setWasVoiceInput] = useState(false);
+
   const [showTodayMission, setShowTodayMission] = useState(true);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Vapi State
+  const [voiceConversationActive, setVoiceConversationActive] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<'listening' | 'speaking' | 'idle' | 'connecting'>('idle');
+  const [voiceVolume, setVoiceVolume] = useState(0);
 
   // Conversational flow state
   const [flow, setFlow] = useState<{ name: 'idle' | 'create_plan' | 'flashcards' | 'reschedule'; step: number; data: any; options?: any[] }>({ name: 'idle', step: 0, data: {} });
@@ -111,6 +118,135 @@ export function AIStudyBuddy({
     };
     setMessages(prev => [...prev, assistantMessage]);
   };
+
+  // Vapi Setup
+  // Vapi Setup
+  useEffect(() => {
+    vapi.on('call-start', () => {
+      console.log('Atlas Vapi call started');
+      setVoiceConversationActive(true);
+      setVoiceStatus('idle');
+    });
+
+    vapi.on('call-end', () => {
+      console.log('Atlas Vapi call ended');
+      setVoiceConversationActive(false);
+      setVoiceStatus('idle');
+    });
+
+    vapi.on('speech-start', () => {
+      setVoiceStatus('listening');
+    });
+
+    vapi.on('speech-end', () => {
+      setVoiceStatus('idle');
+    });
+
+    vapi.on('volume-level', (volume) => {
+      setVoiceVolume(volume);
+    });
+
+    vapi.on('message', (message) => {
+      if (message.type === 'transcript' && message.role === 'assistant') {
+        setVoiceStatus('speaking');
+        setTimeout(() => setVoiceStatus(prev => prev === 'speaking' ? 'idle' : prev), 3000);
+      }
+
+      if (message.type === 'transcript' && message.transcriptType === 'final') {
+        const msgRole = message.role === 'assistant' ? 'assistant' : 'user';
+        const newMessage: Message = {
+          id: Date.now().toString() + Math.random(),
+          content: message.transcript,
+          role: msgRole,
+          timestamp: new Date(),
+        };
+        // Avoid duplicate messages if Vapi sends them rapidly? Vapi transcripts are usually stable.
+        setMessages(prev => [...prev, newMessage]);
+      }
+    });
+
+    vapi.on('error', (e) => {
+      console.error('Atlas Vapi Error:', e);
+      showToast('Voice connection error', 'error');
+      setVoiceConversationActive(false);
+      setVoiceStatus('idle');
+    });
+
+    return () => {
+      // Clean up handled by Vapi SDK or on toggle
+    };
+  }, []);
+
+  const getCurrentStudyContext = () => {
+    if (!selectedPlan) return '';
+
+    const plan = studyPlans.find(p => p.id === selectedPlan);
+    if (!plan) return '';
+
+    // Determine current study day based on plan created_at; fallback to first day
+    const today = new Date();
+    let dayNumber = 1;
+    if (plan && (plan as any).created_at) {
+      const created = new Date((plan as any).created_at);
+      dayNumber = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (dayNumber < 1) dayNumber = 1;
+    }
+    const currentDay = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
+
+    return `
+ SYSTEM PERSONA: You are "ATLAS", the student's AI neural mentor and partner. You are supportive, friendly, and authoritative when needed. You manage the student's one-year academic plan, daily study schedule, homework, and test preparation. You check for backlogs and offer to reschedule if the student missed days. You evaluate their mock tests and give feedback.
+
+ Current Study Context:
+ - Student Class: ${plan.class}
+ - Subject: ${plan.subject}
+ - Today's Topic: ${currentDay?.topic || 'General'}
+ - Study Description: ${currentDay?.description || 'No specific description'}
+ - Chapters in Syllabus: ${plan.chapters}
+ - Exam Date: ${plan.exam_date || 'Not set'}
+ ${notes ? `- Personal Notes & School Context: ${notes}` : ''}
+ ${homework ? `- Today's Homework context: ${homework}` : ''}
+ `;
+  };
+
+  const toggleVapiSession = async () => {
+    if (voiceConversationActive) {
+      vapi.stop();
+      setVoiceConversationActive(false);
+    } else {
+      setVoiceStatus('connecting');
+      setVoiceConversationActive(true);
+      const context = getCurrentStudyContext();
+      const currentContextPrompt = context ? `${ATLAS_SYSTEM_PROMPT}\n\n${context}` : ATLAS_SYSTEM_PROMPT;
+
+      try {
+        await vapi.start({
+          model: {
+            provider: "openai",
+            model: "gpt-3.5-turbo",
+            messages: [
+              {
+                role: "system",
+                content: currentContextPrompt
+              }
+            ]
+          },
+          voice: {
+            provider: "11labs",
+            voiceId: "burt" // Using same premium voice as board
+          }
+        });
+      } catch (err) {
+        console.error("Vapi Start Error", err);
+        showToast("Failed to start voice session.", "error");
+        setVoiceConversationActive(false);
+        setVoiceStatus('idle');
+      }
+    }
+  };
+
+  // Replace Header's toggleVoice to use Vapi
+  // ... rest of component ...
+
 
   // Refresh user's study plans (reusable)
   const refreshStudyPlans = async () => {
@@ -500,9 +636,9 @@ export function AIStudyBuddy({
   };
 
   const getWelcomeText = () => {
-    const defaultText = `👋 Hello! I am **Ranjan Sir**, your AI Teacher, Partner, and Buddy.
+    const defaultText = `👋 Hello! I am **ATLAS**, your AI Neural Mentor and Learning Partner.
     
-**How was your day today? What happened in school today?**
+**How was your day? What are we mastering today?**
 
 I am here to support you in your entire academic journey, from daily planning to board exams.
 
@@ -618,41 +754,32 @@ What shall we tackle today?`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlan]);
 
+  // Listen for external reschedule triggers (from externalized Mission Control)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const planId = e.detail;
+      const plan = studyPlans.find(p => p.id === (planId || selectedPlan));
+      if (plan) {
+        if (planId) setSelectedPlan(planId);
+        setFlow({ name: 'reschedule', step: 0, data: { planId: plan.id } });
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          content: `I see you want to reschedule your plan for **${plan.subject}**. \n\nHow many days have you missed? (e.g., "2 days")`,
+          role: 'assistant',
+          timestamp: new Date(),
+        }]);
+      }
+    };
+    window.addEventListener('trigger-atlas-reschedule', handler);
+    return () => window.removeEventListener('trigger-atlas-reschedule', handler);
+  }, [studyPlans, selectedPlan]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getCurrentStudyContext = () => {
-    if (!selectedPlan) return '';
 
-    const plan = studyPlans.find(p => p.id === selectedPlan);
-    if (!plan) return '';
-
-    // Determine current study day based on plan created_at; fallback to first day
-    const today = new Date();
-    let dayNumber = 1;
-    if (plan && (plan as any).created_at) {
-      const created = new Date((plan as any).created_at);
-      dayNumber = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      if (dayNumber < 1) dayNumber = 1;
-    }
-    const currentDay = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
-
-    return `
- SYSTEM PERSONA: You are "Ranjan Sir", the student's AI teacher, partner, and buddy. You are supportive, friendly, and authoritative when needed. You manage the student's one-year academic plan, daily study schedule, homework, and test preparation. You check for backlogs and offer to reschedule if the student missed days. You evaluate their mock tests and give feedback.
-
- Current Study Context:
- - Student Class: ${plan.class}
- - Subject: ${plan.subject}
- - Today's Topic: ${currentDay?.topic || 'General'}
- - Study Description: ${currentDay?.description || 'No specific description'}
- - Chapters in Syllabus: ${plan.chapters}
- - Exam Date: ${plan.exam_date || 'Not set'}
- ${notes ? `- Personal Notes & School Context: ${notes}` : ''}
- ${homework ? `- Today's Homework context: ${homework}` : ''}
- `;
-  };
 
   // Build a compact conversation history context to keep continuity without overloading tokens
   const buildConversationContext = (msgs: Message[], maxMessages: number = 8, charLimit: number = 1500) => {
@@ -721,11 +848,6 @@ What shall we tackle today?`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlan, studyPlans, userKey, session?.user?.id]);
 
-  // -------------------------
-  // === SECOND (kept) VERSIONS ===
-  // These are the versions you asked to keep (the "second" set).
-  // -------------------------
-
   const toggleTodayCompletion = async () => {
     const plan = studyPlans.find(p => p.id === selectedPlan);
     if (!plan || !session?.user?.id) return;
@@ -777,23 +899,6 @@ What shall we tackle today?`;
     saveHistory(arr);
   };
 
-  const speakResponse = (text: string) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    // Strip markdown for speech
-    const cleanText = text
-      .replace(/[*#`_\[\]]/g, '')
-      .replace(/https?:\/\/\S+/g, 'link')
-      .replace(/<[^>]*>/g, '');
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'en-US'; // Or en-IN for Ranjan Sir flavor?
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    speechRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  };
-
   const sendMessage = async (content: string) => {
     if ((!content.trim() && !selectedImage) || isLoading) return;
 
@@ -810,8 +915,7 @@ What shall we tackle today?`;
     const newMessageList = [...messages, userMessage];
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
-    const isVoice = wasVoiceInput;
-    setWasVoiceInput(false); // Reset
+
 
     setIsLoading(true);
 
@@ -832,11 +936,6 @@ What shall we tackle today?`;
             "Analyze this academic image. If it's a question, solve it step-by-step. If it's a topic, explain it. Provide the output in plain text suited for a student.");
 
           finalContent = `[User Uploaded an Image] \nAnalysis: ${imageDescription} \n\n User Question: ${finalContent}`;
-          // Remove the "Analyzing..." placeholder if we want, or just append the real answer next. 
-          // Actually, let's keep it simple: the main AI response will cover it.
-          // Note: We are NOT removing the 'Analyzing' message from UI, so it might stay. 
-          // For a cleaner UI, we should probably not use addAssistant for status updates, or use a specific status state.
-          // For this MVP, we'll just proceed and let the final answer come.
         } catch (err) {
           console.error("Vision Error", err);
           showToast('Failed to analyze image.', 'error');
@@ -868,7 +967,6 @@ What shall we tackle today?`;
         context = 'General study context.';
       }
       const convHistory = buildConversationContext(newMessageList);
-      const selectedPlanObj = studyPlans.find(p => p.id === selectedPlan);
       // Removed unused subject/class bindings
       const finalContext = [context, extraContext, convHistory].filter(Boolean).join('\n\n');
 
@@ -877,13 +975,13 @@ What shall we tackle today?`;
       // Use OpenAIService directly to avoid 500 errors from unconfigured edge function
       const responseText = await OpenAIService.getInstance().generateChatCompletion(
         fullPrompt,
-        RANJAN_SIR_SYSTEM_PROMPT
+        ATLAS_SYSTEM_PROMPT
       );
 
-      // Check for "Journal Sync" signal from Ranjan Sir
+      // Check for "Journal Sync" signal from ATLAS
       if (responseText.includes("### JOURNAL_APPEND:")) {
         const noteToAppend = responseText.split("### JOURNAL_APPEND:")[1].trim();
-        // Dispatch custom event to RanjanSir.tsx
+        // Dispatch custom event to Atlas workspace
         window.dispatchEvent(new CustomEvent('append-study-note', { detail: noteToAppend }));
       }
 
@@ -908,11 +1006,6 @@ What shall we tackle today?`;
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Speak if voice was used
-      if (isVoice) {
-        speakResponse(responseText);
-      }
-
     } catch (error) {
 
       console.error('Error sending message:', error);
@@ -930,6 +1023,18 @@ What shall we tackle today?`;
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      const { message, voice } = e.detail;
+      if (voice) {
+        setVoiceConversationActive(true);
+      }
+      if (message) sendMessage(message);
+    };
+    window.addEventListener('trigger-atlas-chat', handler);
+    return () => window.removeEventListener('trigger-atlas-chat', handler);
+  }, [sendMessage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -959,7 +1064,7 @@ What shall we tackle today?`;
       setInputMessage(transcript);
       setIsListening(false);
       setIsRecording(false);
-      setWasVoiceInput(true); // Mark as voice interaction for TTS
+
       sendMessage(transcript);
     };
 
@@ -1019,13 +1124,27 @@ What shall we tackle today?`;
   };
 
   return (
-    <div className="flex flex-col h-full bg-neo-bg overflow-hidden border-r-4 border-black">
+    <div className="flex flex-col h-full bg-neo-bg overflow-hidden border-r-4 border-black relative">
+
+      {/* Voice HUD Overlay */}
+      <VoiceVisualizer
+        isActive={voiceConversationActive}
+        volume={voiceVolume}
+        status={voiceStatus}
+        onClose={() => {
+          vapi.stop();
+          setVoiceConversationActive(false);
+        }}
+      />
+
       {/* Header */}
       <Header
         title={title}
         subtitle={subtitle}
         onClear={clearChat}
         variant={variant}
+        isVoiceActive={voiceConversationActive}
+        onToggleVoice={toggleVapiSession}
       />
 
       {/* Memory: Notes + Study Plan Selector */}
@@ -1045,7 +1164,7 @@ What shall we tackle today?`;
       )}
 
       {/* Today's Plan Summary and Quick Actions */}
-      {selectedPlan && (() => {
+      {!hideMissionControl && selectedPlan && (() => {
         const plan = studyPlans.find(p => p.id === selectedPlan);
         let dayNumber = 1;
         if (plan?.created_at) {
@@ -1093,12 +1212,12 @@ What shall we tackle today?`;
                 <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
                   <div className="inline-flex gap-3 pb-2">
                     {[
-                      { label: "EXPLAIN TOPIC", tour: "ranjan-explain", color: "bg-white", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
-                      { label: "FEYNMAN TUTOR", tour: "ranjan-feynman", color: "bg-neo-accent text-white", text: `Ranjan Sir, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
-                      { label: "STEM SOLVER", tour: "ranjan-solve", color: "bg-white", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
-                      { label: "5 PRACTICES", tour: "ranjan-practice", color: "bg-white", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
-                      { label: "DAILY MOCK TEST", tour: "ranjan-quiz", color: "bg-white", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
-                      { label: "5-BULLET SUMMARY", tour: "ranjan-summary", color: "bg-white", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
+                      { label: "EXPLAIN TOPIC", tour: "atlas-explain", color: "bg-white", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
+                      { label: "FEYNMAN TUTOR", tour: "atlas-feynman", color: "bg-neo-accent text-white", text: `ATLAS, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
+                      { label: "STEM SOLVER", tour: "atlas-solve", color: "bg-white", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
+                      { label: "5 PRACTICES", tour: "atlas-practice", color: "bg-white", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
+                      { label: "DAILY MOCK TEST", tour: "atlas-quiz", color: "bg-white", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
+                      { label: "5-BULLET SUMMARY", tour: "atlas-summary", color: "bg-white", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
                     ].map((btn) => (
                       <button
                         key={btn.label}
@@ -1143,7 +1262,7 @@ What shall we tackle today?`;
       })()}
 
       {/* Mentor: lightweight quick chip for Reschedule */}
-      {isMentor && selectedPlan !== '' && (() => {
+      {!hideMissionControl && isMentor && selectedPlan !== '' && (() => {
         const plan = studyPlans.find(p => p.id === selectedPlan);
         let dayNumber = 1;
         if (plan?.created_at) {

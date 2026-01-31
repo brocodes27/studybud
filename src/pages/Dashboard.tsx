@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { 
-  Calendar, Clock, BookOpen, TrendingUp, Plus, Target, CheckCircle, 
-  AlertCircle, Sparkles, Crown, ArrowRight, Flame, Activity, Trophy,
-  Zap, Brain, Battery, BatteryCharging, BatteryLow, Ghost, ListChecks, Mic
+import {
+  BookOpen, Target, CheckCircle,
+  AlertCircle, ArrowRight, Flame, Trophy,
+  Zap, Brain, BatteryLow, Ghost, ListChecks, Mic,
+  Calendar
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-
 interface StudyPlan {
   id: string;
   subject: string;
@@ -26,13 +26,6 @@ interface StudyPlan {
   created_at: string;
 }
 
-interface StudyStats {
-  totalPlans: number;
-  activePlans: number;
-  completedTasks: number;
-  upcomingExams: number;
-}
-
 // Vibe Check Component
 const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
   const vibes = [
@@ -43,7 +36,7 @@ const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] mb-10"
@@ -52,7 +45,7 @@ const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
         STATUS REPORT, AGENT.
       </h2>
       <p className="text-black/60 font-bold mb-8 text-lg">HOW ARE YOUR ENERGY LEVELS?</p>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {vibes.map((v) => (
           <button
@@ -73,15 +66,18 @@ const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
 };
 
 export function Dashboard() {
-  const { user, role, loading, isPremium, fullName } = useAuth() as any;
+  const { user, role, loading, fullName } = useAuth() as any;
 
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
-  const [stats, setStats] = useState<StudyStats>({
+  const [stats, setStats] = useState<any>({
     totalPlans: 0,
     activePlans: 0,
     completedTasks: 0,
-    upcomingExams: 0
+    upcomingExams: 0,
+    streak: 0,
+    xp: 0
   });
+  const [userGoals, setUserGoals] = useState<any>(null);
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [vibe, setVibe] = useState<string | null>(null);
@@ -90,8 +86,18 @@ export function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      fetchUserGoals();
     }
   }, [user]);
+
+  const fetchUserGoals = async () => {
+    try {
+      const { data } = await supabase.from('user_study_goals').select('*').eq('user_id', user.id).single();
+      if (data) setUserGoals(data);
+    } catch (e) {
+      console.log('No goals found yet');
+    }
+  };
 
   useEffect(() => {
     // Set greeting based on time
@@ -125,7 +131,7 @@ export function Dashboard() {
   const calculateStats = async (plans: StudyPlan[]) => {
     const today = new Date();
     const activePlans = plans.filter(plan => new Date(plan.exam_date) > today);
-    const upcomingExams = plans.filter(plan => {
+    const upcomingExamsList = plans.filter(plan => {
       const examDate = new Date(plan.exam_date);
       const daysUntil = differenceInDays(examDate, today);
       return daysUntil <= 7 && daysUntil >= 0;
@@ -139,18 +145,25 @@ export function Dashboard() {
 
       if (error) throw error;
 
+      // Also get streak/xp info
+      const { data: gamification } = await supabase.from('user_gamification').select('current_streak, total_xp').eq('user_id', user.id).single();
+
       setStats({
         totalPlans: plans.length,
         activePlans: activePlans.length,
         completedTasks: completions?.length || 0,
-        upcomingExams: upcomingExams.length
+        upcomingExams: upcomingExamsList.length,
+        streak: gamification?.current_streak || 0,
+        xp: gamification?.total_xp || 0
       });
     } catch (error) {
       setStats({
         totalPlans: plans.length,
         activePlans: activePlans.length,
         completedTasks: 0,
-        upcomingExams: upcomingExams.length
+        upcomingExams: upcomingExamsList.length,
+        streak: 0,
+        xp: 0
       });
     }
   };
@@ -229,7 +242,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-20 max-w-7xl mx-auto">
-      
+
       {/* Vibe Check Section - Shows first if no vibe selected */}
       <AnimatePresence>
         {!vibe && (
@@ -248,7 +261,7 @@ export function Dashboard() {
           <div className="relative bg-white border-4 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_#000] mb-12 overflow-hidden group">
             {/* Background Decorations */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-neo-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-            
+
             <div className="relative z-10">
               <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-8">
                 <div>
@@ -257,9 +270,9 @@ export function Dashboard() {
                       {greeting}
                     </span>
                     {vibe === 'tired' || vibe === 'dead' ? (
-                       <span className="bg-neo-muted text-black border-2 border-black px-3 py-1 font-black text-xs uppercase tracking-widest">
-                         MODE: RECOVERY
-                       </span>
+                      <span className="bg-neo-muted text-black border-2 border-black px-3 py-1 font-black text-xs uppercase tracking-widest">
+                        MODE: RECOVERY
+                      </span>
                     ) : (
                       <span className="bg-neo-accent text-white border-2 border-black px-3 py-1 font-black text-xs uppercase tracking-widest">
                         MODE: ATTACK
@@ -270,23 +283,45 @@ export function Dashboard() {
                     {displayName}
                   </h1>
                   <p className="text-xl font-bold text-black/60 max-w-2xl">
-                    {remainingTasksCount > 0 
-                      ? `YOU HAVE ${remainingTasksCount} MISSION OBJECTIVES PENDING.` 
+                    {remainingTasksCount > 0
+                      ? `YOU HAVE ${remainingTasksCount} MISSION OBJECTIVES PENDING.`
                       : "ALL SYSTEMS CLEAR. GREAT WORK TODAY."}
                   </p>
                 </div>
-                
+
                 {/* Streak Counter */}
                 <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] rotate-2">
                   <div className="flex items-center gap-3">
                     <Flame className="w-8 h-8 text-orange-500 fill-orange-500" />
                     <div>
-                      <div className="text-4xl font-black leading-none">03</div>
+                      <div className="text-4xl font-black leading-none">{stats.streak.toString().padStart(2, '0')}</div>
                       <div className="text-[10px] font-black uppercase tracking-widest">DAY STREAK</div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Goal Tracker */}
+              {userGoals && (
+                <div className="flex flex-wrap gap-3 mb-8">
+                  <div className="bg-black text-white px-4 py-2 border-2 border-black flex items-center gap-2 -rotate-1">
+                    <Target className="w-4 h-4 text-neo-accent" />
+                    <span className="font-black text-xs uppercase italic">{userGoals.target_exam} MISSION</span>
+                  </div>
+                  <div className="bg-white text-black px-4 py-2 border-2 border-black flex items-center gap-2 rotate-1">
+                    <Trophy className="w-4 h-4 text-neo-secondary" />
+                    <span className="font-black text-xs uppercase italic">TARGET: {userGoals.target_score}</span>
+                  </div>
+                  {userGoals.exam_date && (
+                    <div className="bg-neo-muted text-black px-4 py-2 border-2 border-black flex items-center gap-2 -rotate-1">
+                      <Calendar className="w-4 h-4" />
+                      <span className="font-black text-xs uppercase italic">
+                        {differenceInDays(new Date(userGoals.exam_date), new Date())} DAYS LEFT
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Primary Action Card */}
               {primaryTask ? (
@@ -304,8 +339,8 @@ export function Dashboard() {
                       {primaryTask.topic}
                     </h3>
                     <p className="font-bold text-black/60 text-sm">
-                      {vibe === 'tired' 
-                        ? "Take it slow. Just 15 minutes of focus." 
+                      {vibe === 'tired'
+                        ? "Take it slow. Just 15 minutes of focus."
                         : "Let's crush this topic and move on."}
                     </p>
                   </div>
@@ -348,28 +383,28 @@ export function Dashboard() {
 
           {/* Secondary Sections Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+
             {/* Left Col: Task List */}
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-black uppercase italic flex items-center gap-3">
-                  <ListChecks className="w-6 h-6" /> 
+                  <ListChecks className="w-6 h-6" />
                   MISSION LOG
                 </h3>
               </div>
-              
+
               <div className="space-y-4">
                 {todaysTasks.length > 0 ? (
                   todaysTasks.filter(t => t !== primaryTask).map((task, i) => (
                     <div key={i} className={`border-4 border-black p-4 flex items-center justify-between shadow-[4px_4px_0px_0px_#000] ${task.completed ? 'bg-gray-100 opacity-60' : 'bg-white'}`}>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                           <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">{task.subject}</span>
+                          <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">{task.subject}</span>
                         </div>
                         <div className="font-bold uppercase">{task.topic}</div>
                       </div>
                       {task.completed ? (
-                         <CheckCircle className="w-6 h-6 text-green-500" />
+                        <CheckCircle className="w-6 h-6 text-green-500" />
                       ) : (
                         <Link to={`/study/${task.planId}`}>
                           <button className="text-xs font-black uppercase tracking-widest border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors">
@@ -380,57 +415,57 @@ export function Dashboard() {
                     </div>
                   ))
                 ) : (
-                   <div className="text-center p-8 border-2 border-dashed border-black/20 font-bold text-black/40">
-                     NO OTHER TASKS ASSIGNED
-                   </div>
+                  <div className="text-center p-8 border-2 border-dashed border-black/20 font-bold text-black/40">
+                    NO OTHER TASKS ASSIGNED
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Right Col: Tools & Extras */}
             <div className="space-y-6">
-              
+
               {/* Tools Quick Access */}
               <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000]">
                 <h3 className="text-xl font-black uppercase italic mb-4 border-b-4 border-black pb-2">ARMORY</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <Link to="/cbse-simulator" className="flex flex-col items-center justify-center p-4 border-2 border-black hover:bg-neo-accent hover:text-white transition-colors group">
+                  <Link to="/sat-simulator" className="flex flex-col items-center justify-center p-4 border-2 border-black hover:bg-neo-accent hover:text-white transition-all group">
                     <Brain className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-center">CBSE SIM</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-center">SAT SIM</span>
                   </Link>
                   <Link to="/guided-paper" className="flex flex-col items-center justify-center p-4 border-2 border-black hover:bg-neo-secondary hover:text-black transition-colors group">
-                     <BookOpen className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
+                    <BookOpen className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-center">SOLVER</span>
                   </Link>
                   <Link to="/videos" className="flex flex-col items-center justify-center p-4 border-2 border-black hover:bg-neo-muted hover:text-black transition-colors group">
-                     <Zap className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
+                    <Zap className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-center">VIDEOS</span>
                   </Link>
                   <Link to="/feynman" className="flex flex-col items-center justify-center p-4 border-2 border-black hover:bg-black hover:text-white transition-colors group">
-                     <Mic className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
+                    <Mic className="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-center">FEYNMAN</span>
                   </Link>
                 </div>
               </div>
 
-               {/* Exam Countdown (Mini) */}
-               {upcomingExam && (
+              {/* Exam Countdown (Mini) */}
+              {upcomingExam && (
                 <div className="bg-black text-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#C4B5FD]">
-                   <div className="flex items-center justify-between mb-2">
-                     <span className="text-xs font-black uppercase tracking-widest text-white/60">INCOMING EVENT</span>
-                     <AlertCircle className="w-4 h-4 text-white" />
-                   </div>
-                   <div className="text-2xl font-black uppercase italic mb-1">{upcomingExam.subject}</div>
-                   <div className="text-sm font-bold text-white/80 mb-4">
-                     {differenceInDays(new Date(upcomingExam.exam_date), new Date())} DAYS REMAINING
-                   </div>
-                   <Link to={`/study/${upcomingExam.id}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-widest text-white/60">INCOMING EVENT</span>
+                    <AlertCircle className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-2xl font-black uppercase italic mb-1">{upcomingExam.subject}</div>
+                  <div className="text-sm font-bold text-white/80 mb-4">
+                    {differenceInDays(new Date(upcomingExam.exam_date), new Date())} DAYS REMAINING
+                  </div>
+                  <Link to={`/study/${upcomingExam.id}`}>
                     <button className="w-full bg-white text-black font-black uppercase text-xs py-2 hover:bg-neo-accent hover:text-white transition-colors">
                       PREPARE DEFENSE
                     </button>
-                   </Link>
+                  </Link>
                 </div>
-               )}
+              )}
 
             </div>
           </div>

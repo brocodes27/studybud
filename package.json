@@ -18,6 +18,7 @@
     "@tiptap/pm": "^3.17.1",
     "@tiptap/react": "^3.17.1",
     "@tiptap/starter-kit": "^3.17.1",
+    "@vapi-ai/web": "^2.5.2",
     "date-fns": "^3.2.0",
     "docx": "^8.5.0",
     "dotenv": "^17.2.3",

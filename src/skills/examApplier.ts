@@ -69,13 +69,13 @@ export const examApplier: Skill = {
       const mode = message.toLowerCase().includes('reschedule') ? 'reschedule' : message.toLowerCase().includes('mark') ? 'mark' : '';
       if (!mode) { ctx.addAssistant('Please reply with "mark" or "reschedule".'); return; }
       setState((prev) => ({ step: 5, data: { ...(prev as any).data, update_mode: mode } } as any));
-      ctx.addAssistant('Are you preparing for CBSE or JEE? (optional, type CBSE/JEE or say "skip")');
+      ctx.addAssistant('Are you preparing for SAT, AP, or ACT? (optional, type aim or say "skip")');
       return;
     }
 
     if (step === 5) {
-      const aim = message.toLowerCase().includes('jee') ? 'jee' : message.toLowerCase().includes('cbse') ? 'cbse' : undefined;
-      const data = { ...(state.data || {}), aim } as { subject: string; class: string; exam_date: string; chapters: string; update_mode: 'mark' | 'reschedule'; aim?: 'cbse' | 'jee' };
+      const aim = message.toLowerCase().includes('sat') ? 'sat' : message.toLowerCase().includes('ap') ? 'ap' : message.toLowerCase().includes('act') ? 'act' : undefined;
+      const data = { ...(state.data || {}), aim } as { subject: string; class: string; exam_date: string; chapters: string; update_mode: 'mark' | 'reschedule'; aim?: 'sat' | 'ap' | 'act' };
       ctx.addAssistant('Applying exam to your curriculum...');
       try {
         let curriculum_id: string | undefined = undefined;

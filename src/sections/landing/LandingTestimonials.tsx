@@ -2,33 +2,33 @@ import { motion } from 'framer-motion';
 
 const testimonials = [
   {
-    name: 'Priya Sharma',
-    grade: 'Class 12',
-    text: 'ElevenFolks helped me improve my JEE preparation by 40%. The personalized study plans are incredible!',
+    name: 'Sarah Jenkins',
+    grade: 'Senior Year',
+    text: 'Atlas helped me improve my SAT score by 200 points. The personalized study plans are incredible!',
     color: 'bg-neo-accent'
   },
   {
-    name: 'Arjun Patel',
-    grade: 'Class 10',
-    text: 'The AI flashcards and practice tests made studying so much more effective. Highly recommend!',
+    name: 'Michael Chen',
+    grade: 'Grade 11',
+    text: 'The AI flashcards and practice tests made AP Bio so much more manageable. Highly recommend!',
     color: 'bg-neo-secondary'
   },
   {
-    name: 'Sneha Reddy',
-    grade: 'Class 11',
+    name: 'Emily Davis',
+    grade: 'Junior Year',
     text: 'Study groups feature helped me connect with other students. We motivate each other every day!',
     color: 'bg-neo-muted'
   },
   {
-    name: 'Vikram Singh',
-    grade: 'Class 12',
+    name: 'James Wilson',
+    grade: 'Sophomore Year',
     text: 'The AI Study Buddy is like having a private tutor 24/7. It explains complex concepts so simply.',
     color: 'bg-neo-accent'
   },
   {
-    name: 'Ananya Iyer',
-    grade: 'Class 9',
-    text: 'I used to struggle with organization, but ElevenFolks automated everything for me. Game changer!',
+    name: 'Olivia Martinez',
+    grade: 'Grade 9',
+    text: 'I used to struggle with organization, but Atlas automated everything for me. Game changer!',
     color: 'bg-neo-secondary'
   }
 ];

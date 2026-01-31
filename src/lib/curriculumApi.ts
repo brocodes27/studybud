@@ -10,7 +10,7 @@ async function getAuthHeader() {
 }
 
 export type GenerateMonthlyCurriculumPayload = {
-  aim?: 'cbse' | 'jee';
+  aim?: 'sat' | 'ap' | 'act';
   class_level?: string;
   subjects?: string[];
   month?: string; // YYYY-MM
@@ -54,7 +54,7 @@ export type ApplyExamPayload = {
   chapters: string;
   exam_date: string; // YYYY-MM-DD
   curriculum_id?: string;
-  aim?: 'cbse' | 'jee';
+  aim?: 'sat' | 'ap' | 'act';
   update_mode?: 'mark' | 'reschedule';
 };
 

@@ -14,9 +14,9 @@
     --neo-muted: #C4B5FD;
     --neo-white: #FFFFFF;
 
-    --shadow-neo-sm: 4px 4px 0px 0px #000;
-    --shadow-neo: 8px 8px 0px 0px #000;
-    --shadow-neo-lg: 12px 12px 0px 0px #000;
+    --shadow-neo-sm: 2px 2px 0px 0px #000;
+    --shadow-neo: 4px 4px 0px 0px #000;
+    --shadow-neo-lg: 6px 6px 0px 0px #000;
 
     --background: var(--neo-bg);
     --foreground: var(--neo-ink);
@@ -31,10 +31,10 @@
   body {
     background-color: var(--neo-bg);
     color: var(--neo-ink);
-    @apply font-sans antialiased;
+    @apply font-sans antialiased text-[15px];
     background-image:
-      radial-gradient(circle, #000 1.5px, transparent 1.5px);
-    background-size: 30px 30px;
+      radial-gradient(circle, #000 1px, transparent 1px);
+    background-size: 24px 24px;
     background-attachment: fixed;
   }
 
@@ -49,7 +49,7 @@
   h4,
   h5,
   h6 {
-    @apply font-black uppercase tracking-tighter leading-none;
+    @apply font-black uppercase tracking-tight leading-none;
   }
 }
 
@@ -72,7 +72,7 @@
 
 /* Interactive Components */
 .neo-button {
-  @apply neo-border px-6 py-3 font-bold uppercase tracking-wide transition-all duration-100 flex items-center justify-center gap-2 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:brightness-110;
+  @apply border-2 border-black px-4 py-2 font-bold uppercase tracking-wide transition-all duration-100 flex items-center justify-center gap-2 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none hover:brightness-110;
   background-color: var(--neo-accent);
   box-shadow: var(--shadow-neo-sm);
 }
@@ -93,18 +93,18 @@
 }
 
 .neo-card {
-  @apply neo-border p-6 transition-all duration-200;
+  @apply border-2 border-black p-4 transition-all duration-200;
   background-color: var(--neo-white);
   box-shadow: var(--shadow-neo);
 }
 
 .neo-card:hover {
-  @apply -translate-y-1;
+  @apply -translate-y-0.5;
   box-shadow: var(--shadow-neo-lg);
 }
 
 .neo-input {
-  @apply neo-border px-4 py-3 font-bold text-lg focus:outline-none placeholder:text-black/40 transition-colors;
+  @apply border-2 border-black px-3 py-2 font-bold text-base focus:outline-none placeholder:text-black/40 transition-colors;
   background-color: var(--neo-white);
 }
 
@@ -299,6 +299,7 @@
     transform: scale(1);
     opacity: 0.9;
   }
+
   100% {
     transform: scale(1.05);
     opacity: 0.25;

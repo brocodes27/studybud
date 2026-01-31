@@ -21,16 +21,24 @@ export class OpenAIService {
     return OpenAIService.instance;
   }
 
-  async generateChatCompletion(prompt: string, systemPrompt?: string): Promise<string> {
+  async generateChatCompletion(prompt: string, systemPrompt?: string, useRAG: boolean = true): Promise<string> {
     try {
       const contents = [];
-      
-      // Integrate Semantic Memory into the prompt
-      const context = await this.findRelevantKnowledge(prompt);
-      const contextualSystemPrompt = systemPrompt 
-        ? `${systemPrompt}\n\nRELEVANT PAST KNOWLEDGE (Use this to personalize your response):\n${context}`
-        : `You are Ranjan Sir, an AI tutor with memory of the student's past work. 
-           RELEVANT PAST KNOWLEDGE:\n${context}`;
+
+      let contextualSystemPrompt = systemPrompt;
+
+      // Integrate Semantic Memory into the prompt ONLY if useRAG is true
+      if (useRAG) {
+        const context = await this.findRelevantKnowledge(prompt);
+        contextualSystemPrompt = systemPrompt
+          ? `${systemPrompt}\n\nRELEVANT PAST KNOWLEDGE (Use this to personalize your response):\n${context}`
+          : `You are ATLAS, an advanced AI study architect with memory of the student's past work. 
+             Your mission is to provide high-performance coaching, specializing in international competitive exams like the SAT.
+             RELEVANT PAST KNOWLEDGE:\n${context}`;
+      } else if (!contextualSystemPrompt) {
+        // Default system prompt if none provided and RAG is off
+        contextualSystemPrompt = `You are ATLAS, an advanced AI study architect. Your mission is to provide high-performance coaching.`;
+      }
 
       const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\nUSER PROMPT: ${prompt}`;
 
@@ -39,6 +47,7 @@ export class OpenAIService {
         parts: [{ text: fullPrompt }]
       });
 
+      console.log('Calling Gemini API with model:', this.model);
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
@@ -55,15 +64,18 @@ export class OpenAIService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Gemini API specific error:', errorData);
         throw new Error(`Gemini API Error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const data = await response.json();
+      console.log('Gemini API raw response data:', data);
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
+      console.log('Extracted response text:', responseText);
+
       // Proactively save important insights back to knowledge base
-      if (responseText.length > 200) {
-          this.saveToKnowledgeBase(responseText, 'chat');
+      if (useRAG && responseText.length > 200) {
+        this.saveToKnowledgeBase(responseText, 'chat');
       }
 
       return responseText;
@@ -76,11 +88,11 @@ export class OpenAIService {
   async analyzeImagesWithVision(images: string[], prompt?: string): Promise<string> {
     try {
       const parts: any[] = [{ text: prompt || 'Analyze this image.' }];
-      
+
       for (const base64Data of images) {
         const data = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
         const mimeType = base64Data.includes(';') ? base64Data.split(';')[0].split(':')[1] : 'image/jpeg';
-        
+
         parts.push({
           inline_data: {
             mime_type: mimeType,
@@ -111,6 +123,65 @@ export class OpenAIService {
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch (error) {
       console.error('Gemini Vision Error:', error);
+      throw error;
+    }
+  }
+
+  async transcribeAndAnalyzeAudio(base64Audio: string, prompt: string): Promise<{ transcript: string, feedback: string }> {
+    try {
+      console.log('Gemini Audio Processing Started...');
+      const data = base64Audio.includes(',') ? base64Audio.split(',')[1] : base64Audio;
+      const mimeType = base64Audio.includes(';') ? base64Audio.split(';')[0].split(':')[1] : 'audio/webm';
+
+      const parts: any[] = [
+        { text: prompt },
+        {
+          inline_data: {
+            mime_type: mimeType,
+            data: data
+          }
+        }
+      ];
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 4096,
+          }
+        })
+      });
+
+      console.log('Sending audio prompt:', JSON.stringify(parts, null, 2));
+
+      if (!response.ok) {
+        const err = await response.json();
+        console.error('Gemini Audio Error details:', err);
+        throw new Error(`Gemini Audio Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      console.log('Gemini Audio Raw Response:', textResponse);
+
+      // We expect the AI to return a specific format like:
+      // TRANSCRIPT: [...]
+      // FEEDBACK: [...]
+      const transcriptMatch = textResponse.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\s*ANALYSIS:|$)/i);
+      const feedbackMatch = textResponse.match(/ANALYSIS:\s*([\s\S]*)/i);
+
+      return {
+        transcript: transcriptMatch ? transcriptMatch[1].trim() : 'Transcript unavailable',
+        feedback: feedbackMatch ? feedbackMatch[1].trim() : textResponse
+      };
+    } catch (error) {
+      console.error('Gemini Audio Processing Failed:', error);
       throw error;
     }
   }
@@ -157,7 +228,7 @@ export class OpenAIService {
         .limit(3);
 
       if (error || !data || data.length === 0) return '';
-      
+
       return data.map(k => `[Archived ${new Date(k.created_at).toLocaleDateString()}]: ${k.content}`).join('\n---\n');
     } catch {
       return '';
@@ -165,8 +236,64 @@ export class OpenAIService {
   }
 
   async getEmbedding(text: string): Promise<number[]> {
-     console.warn('Embedding call redirected to Gemini placeholder');
-     return new Array(1536).fill(0); 
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: {
+              parts: [{ text: text.replace(/\n/g, " ") }],
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Gemini Embedding Error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.embedding.values;
+    } catch (error) {
+      console.error("Failed to get embedding:", error);
+      // Fallback to zero vector (768 dim) if API fails
+      return new Array(768).fill(0);
+    }
+  }
+
+  async searchSimilarQuestions(
+    embedding: number[],
+    threshold: number,
+    count: number,
+    classLevel: string,
+    subject: string
+  ): Promise<any[]> {
+    try {
+      const isZeroVector = embedding.every(n => n === 0);
+      if (isZeroVector) {
+        console.warn('searchSimilarQuestions: Zero-vector embedding detected (placeholder). Skipping RAG.');
+        return [];
+      }
+
+      const { data, error } = await supabase.rpc('match_questions', {
+        query_embedding: embedding,
+        match_threshold: threshold,
+        match_count: count,
+        filter_class: classLevel,
+        filter_subject: subject
+      });
+
+      if (error) {
+        console.warn('Supabase RAG search failed:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e) {
+      console.warn('searchSimilarQuestions error:', e);
+      return [];
+    }
   }
 
   async generateManimVideoScript(topic: string, subject: string): Promise<any> {
@@ -183,7 +310,7 @@ export class OpenAIService {
     }
   }
 
-  async generateSpeech(input: string): Promise<ArrayBuffer> {
+  async generateSpeech(_input: string): Promise<ArrayBuffer> {
     throw new Error('TTS fallback');
   }
 }

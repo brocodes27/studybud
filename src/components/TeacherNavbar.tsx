@@ -8,15 +8,12 @@ import {
   Menu,
   X,
   BookUser,
-  FileText,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 
 const navLinks = [
   { href: '/teacher', label: 'TEACHER PANEL', icon: BookUser },
-  { href: '/cbse-simulator', label: 'CBSE SIMULATOR', icon: FileText },
-  { href: '/cuet-simulator', label: 'CUET SIMULATOR', icon: FileText },
 ];
 
 const TeacherNavbar = () => {

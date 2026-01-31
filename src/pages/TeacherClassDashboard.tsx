@@ -92,7 +92,7 @@ const TeacherClassDashboard: React.FC = () => {
     }
   };
 
-  // Generate a CBSE-style mock test based on today's taught topics and notify students
+  // Generate an Atlas-style mock test based on today's taught topics and notify students
   const handleGenerateDailyMockTest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !id) return;

@@ -63,7 +63,7 @@ export function LandingFeatures() {
               <BarChart3 className="w-16 h-16 text-black stroke-[2.5px]" />
             </div>
             <h3 className="font-black text-2xl text-black mb-4 uppercase tracking-tight">Exam Simulators</h3>
-            <p className="text-black/60 font-bold leading-snug">Practice with CBSE and CUET simulators with robust section resume. Feel the heat of the exam room.</p>
+            <p className="text-black/60 font-bold leading-snug">Practice with adaptive SAT and AP simulators with robust section resume. Feel the heat of the exam room.</p>
           </motion.div>
         </div>
       </div>

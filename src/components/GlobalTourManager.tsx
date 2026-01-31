@@ -68,7 +68,7 @@ function useElementRect(selector: string | null) {
       }
       const r = el.getBoundingClientRect();
       setRect(r);
-      try { if ((window as any).__tourDebug) console.debug('[GlobalTour] rect', selector, r); } catch {}
+      try { if ((window as any).__tourDebug) console.debug('[GlobalTour] rect', selector, r); } catch { }
     }
 
     update();
@@ -90,7 +90,7 @@ function useElementRect(selector: string | null) {
       try {
         resizeObserverRef.current = new ResizeObserver(() => scheduleUpdate());
         resizeObserverRef.current.observe(elRef.current);
-      } catch {}
+      } catch { }
     }
 
     // Observe class/style mutations that may impact layout (e.g., sidebar collapse)
@@ -99,7 +99,7 @@ function useElementRect(selector: string | null) {
         mutationObserverRef.current = new MutationObserver(() => scheduleUpdate());
         mutationObserverRef.current.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
         mutationObserverRef.current.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
-      } catch {}
+      } catch { }
     }
 
     return () => {
@@ -111,11 +111,11 @@ function useElementRect(selector: string | null) {
         p.removeEventListener('scroll', scheduleUpdate as any);
       }
       if (resizeObserverRef.current) {
-        try { resizeObserverRef.current.disconnect(); } catch {}
+        try { resizeObserverRef.current.disconnect(); } catch { }
         resizeObserverRef.current = null;
       }
       if (mutationObserverRef.current) {
-        try { mutationObserverRef.current.disconnect(); } catch {}
+        try { mutationObserverRef.current.disconnect(); } catch { }
         mutationObserverRef.current = null;
       }
       scrollParentsRef.current = [];
@@ -197,8 +197,6 @@ const studentSteps: GlobalStep[] = [
 
 const teacherSteps: GlobalStep[] = [
   { path: '/teacher', title: 'Teacher Panel', content: 'Manage classes and teaching resources.' },
-  { path: '/cbse-simulator', title: 'CBSE Simulator', content: 'Run CBSE exam simulations.' },
-  { path: '/cuet-simulator', title: 'CUET Simulator', content: 'Run CUET exam simulations.' },
 ];
 
 const GlobalTourManager: React.FC = () => {
@@ -257,7 +255,7 @@ const GlobalTourManager: React.FC = () => {
     if (hadLock) document.body.classList.remove('tour-no-scroll');
     try {
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    } catch {}
+    } catch { }
     requestAnimationFrame(() => {
       if (hadLock) document.body.classList.add('tour-no-scroll');
     });
@@ -355,7 +353,7 @@ const GlobalTourManager: React.FC = () => {
     (window as any).__forceGlobalTourReposition = () => {
       try {
         window.dispatchEvent(new Event('resize'));
-      } catch {}
+      } catch { }
     };
     return () => {
       delete (window as any).__startGlobalTour;
