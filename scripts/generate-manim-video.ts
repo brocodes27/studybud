@@ -318,9 +318,10 @@ async function generateVideo(topic: string, scriptText: string) {
         fs.copyFileSync(finalVideoPath, path.join(destDir, localVideoName));
         fs.copyFileSync(srtPath.replace('.srt', '.vtt'), path.join(destDir, `${slug}.vtt`));
 
+        const serverBaseUrl = process.env.VITE_VIDEO_SERVER_URL || '';
         await logToDB("Process Complete", 100, 'completed', {
-            video: videoUrl || `/videos/${localVideoName}`,
-            sub: subUrl || `/videos/${slug}.vtt`
+            video: videoUrl || `${serverBaseUrl}/videos/${localVideoName}`,
+            sub: subUrl || `${serverBaseUrl}/videos/${slug}.vtt`
         });
 
         if (supabase && generationId) {

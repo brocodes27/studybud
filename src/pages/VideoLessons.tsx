@@ -245,7 +245,7 @@ export const VideoLessons = () => {
         }
 
         try {
-            const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vikunja.stubud.xyz/api/generate';
+            const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'http://13.211.215.182:3001/api/generate';
 
             const response = await fetch(API_URL, {
                 method: 'POST',
@@ -291,7 +291,7 @@ export const VideoLessons = () => {
 
             {playingLesson && renderMode === 'premium' && (
                 <ManimVideoPlayer
-                    videoUrl={`/videos/${playingLesson.topic.toLowerCase().replace(/[^a-z0-9]/g, '-')}.mp4`}
+                    videoUrl={`${import.meta.env.VITE_VIDEO_SERVER_URL || 'http://13.211.215.182:3001'}/videos/${playingLesson.topic.toLowerCase().replace(/[^a-z0-9]/g, '-')}.mp4`}
                     topic={playingLesson.topic}
                     generationId={currentGenerationId}
                     isPreparing={isPreparing}
