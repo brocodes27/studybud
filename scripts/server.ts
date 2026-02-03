@@ -28,57 +28,89 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const PORT = 3001;
 
 const server = http.createServer(async (req, res) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    // 1. Core CORS Setup - Always applied to every response
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Range');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Vary', 'Origin');
 
-    // CORS Helper
-    const setCors = (status = 0) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With');
-        res.setHeader('Access-Control-Max-Age', '86400');
-        if (status) res.writeHead(status);
-    };
-
-    // Static File Serving
-    if (req.method === 'GET' && req.url?.startsWith('/videos/')) {
-        const filePath = path.join(__dirname, '..', 'public', req.url);
-        if (fs.existsSync(filePath)) {
-            const ext = path.extname(filePath).toLowerCase();
-            const contentType = ext === '.mp4' ? 'video/mp4' : ext === '.vtt' ? 'text/vtt' : 'application/octet-stream';
-
-            setCors();
-            res.setHeader('Content-Type', contentType);
-            const stream = fs.createReadStream(filePath);
-            stream.pipe(res);
-            return;
-        } else {
-            res.statusCode = 404;
-            res.end('Video not found');
-            return;
-        }
-    }
-
-    // Response Helper
-    const sendJson = (status: number, data: any) => {
-        setCors();
-        res.statusCode = status;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(data));
-    };
-
+    // 2. Immediate Preflight Handling
     if (req.method === 'OPTIONS') {
-        setCors(204);
+        res.writeHead(204);
         res.end();
         return;
     }
 
-    // Ping check for Cloudflare/Uptime
-    if (req.method === 'GET' && req.url === '/api/generate') {
-        sendJson(200, { status: 'online' });
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+
+    // 3. URL Normalization
+    // Handle cases where the app might send /api/generate/videos/... or /videos/...
+    let urlPath = req.url || '';
+    if (urlPath.startsWith('/api/generate/')) {
+        urlPath = urlPath.replace('/api/generate', '');
+    }
+    // Remove query params for path matching
+    const cleanPath = urlPath.split('?')[0];
+
+    // 4. Response Helpers
+    const sendJson = (status: number, data: any) => {
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(data));
+    };
+
+    // 5. Static Video Serving
+    if (req.method === 'GET' && cleanPath.startsWith('/videos/')) {
+        const filePath = path.join(__dirname, '..', 'public', cleanPath);
+
+        if (fs.existsSync(filePath)) {
+            const stat = fs.statSync(filePath);
+            const ext = path.extname(filePath).toLowerCase();
+            const contentType = ext === '.mp4' ? 'video/mp4' : ext === '.vtt' ? 'text/vtt' : 'application/octet-stream';
+
+            // Support Range requests for video seeking
+            const range = req.headers.range;
+            if (range) {
+                const parts = range.replace(/bytes=/, "").split("-");
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+                const chunksize = (end - start) + 1;
+                const file = fs.createReadStream(filePath, { start, end });
+
+                res.writeHead(206, {
+                    'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': chunksize,
+                    'Content-Type': contentType,
+                });
+                file.pipe(res);
+            } else {
+                res.writeHead(200, {
+                    'Content-Length': stat.size,
+                    'Content-Type': contentType,
+                    'Accept-Ranges': 'bytes'
+                });
+                fs.createReadStream(filePath).pipe(res);
+            }
+            return;
+        } else {
+            console.warn(`File not found: ${filePath}`);
+            sendJson(404, { error: 'Video file not found' });
+            return;
+        }
+    }
+
+    // 6. API Endpoints
+    // Ping check
+    if (req.method === 'GET' && cleanPath === '/api/generate') {
+        sendJson(200, { status: 'online', message: 'ElevenFolks Video Engine is ready' });
         return;
     }
 
-    if (req.method === 'POST' && req.url === '/api/generate') {
+    // Generation Request
+    if (req.method === 'POST' && cleanPath === '/api/generate') {
         let body = '';
         req.on('data', chunk => body += chunk.toString());
         req.on('end', async () => {
@@ -117,7 +149,6 @@ const server = http.createServer(async (req, res) => {
 
                 // 2. Spawn Worker
                 const scriptPath = path.join(__dirname, 'generate-manim-video.ts');
-                // Use absolute path for node and avoid shell: true to prevent quoting issues
                 const child = spawn('node', [
                     '--import', 'tsx',
                     scriptPath,
@@ -132,16 +163,16 @@ const server = http.createServer(async (req, res) => {
                 });
 
                 child.unref();
-
                 sendJson(200, { success: true, generationId });
 
             } catch (e) {
                 console.error('Server Error:', e);
-                sendJson(500, { error: 'Internal Server Error' });
+                sendJson(500, { error: 'Invalid JSON or Internal Server Error' });
             }
         });
     } else {
-        sendJson(404, { error: 'Not Found' });
+        // Fallback for unmatched routes
+        sendJson(404, { error: 'Endpoint not found', path: cleanPath });
     }
 });
 
