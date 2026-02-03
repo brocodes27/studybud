@@ -17,6 +17,9 @@ import {
 import { format } from 'date-fns';
 import { BlackboardPlayer } from '../components/BlackboardPlayer';
 import { ManimVideoPlayer } from '../components/ManimVideoPlayer';
+import { RemotionPlayer } from '../components/RemotionLecture/RemotionPlayer';
+import { LectureService } from '../lib/lectureService';
+import { LectureConfig } from '../components/RemotionLecture/LectureComposition';
 
 interface Lesson {
     day: number;
@@ -104,7 +107,8 @@ export const VideoLessons = () => {
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
     const [selectedPlan, setSelectedPlan] = useState<PlanFolder | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-    const [renderMode, setRenderMode] = useState<'classic' | 'premium' | null>(null);
+    const [renderMode, setRenderMode] = useState<'classic' | 'premium' | 'remotion' | null>(null);
+    const [remotionConfig, setRemotionConfig] = useState<LectureConfig | null>(null);
     const [generations, setGenerations] = useState<Record<string, any>>({});
 
     useEffect(() => {
@@ -228,52 +232,47 @@ export const VideoLessons = () => {
         const cleanTopic = getCleanTopic(lesson.topic);
         const topicKey = cleanTopic.toLowerCase();
         const existingGen = generations[topicKey];
+        const lectureService = LectureService.getInstance();
 
         setCurrentGenerationId(undefined);
+        setRemotionConfig(null);
         setIsPreparing(true);
         setGenerationError(null);
 
         setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
-        setRenderMode('premium');
 
-        if (existingGen) {
-            if (existingGen.status !== 'failed') {
-                setCurrentGenerationId(existingGen.id);
+        // If we already have a Remotion version, play it instantly
+        if (existingGen && existingGen.video_url === 'remotion:live') {
+            try {
+                const config = JSON.parse(existingGen.script);
+                setRemotionConfig(config);
+                setRenderMode('remotion');
                 setIsPreparing(false);
                 return;
+            } catch (e) {
+                console.error("Failed to parse existing remotion config", e);
             }
         }
 
+        // Always use Remotion for new premium lessons now (No server needed)
+        setRenderMode('remotion');
+
         try {
-            const API_URL = import.meta.env.VITE_VIDEO_GEN_URL || 'https://vidgen.kaminariclothing.shop/api/generate';
+            // 1. Generate the lecture script using AI (Client side)
+            const config = await lectureService.generateLectureConfig(
+                lesson.topic,
+                lesson.subject,
+                lesson.description || ""
+            );
 
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    topic: cleanTopic,
-                    userId: user?.id,
-                    script: lesson.description || ""
-                })
-            });
+            // 2. Save it to Supabase so it's "stored"
+            await lectureService.saveLecture(user.id, lesson.topic, config);
 
-            if (response.ok) {
-                const resData = await response.json();
-                if (resData.generationId) {
-                    setCurrentGenerationId(resData.generationId);
-                } else if (resData.error) {
-                    setGenerationError(`Engine Error: ${resData.error}`);
-                }
-            } else {
-                const errText = await response.text();
-                setGenerationError(`Server error (${response.status}): ${errText.substring(0, 100)}`);
-            }
+            // 3. Play it
+            setRemotionConfig(config);
         } catch (e: any) {
-            console.error("Error starting generation:", e);
-            setGenerationError(`Network error: ${e.message || "Failed to reach generation server"}`);
+            console.error("Error starting Remotion generation:", e);
+            setGenerationError(`Generation failed: ${e.message || "Unknown Error"}`);
         } finally {
             setIsPreparing(false);
         }
@@ -298,6 +297,34 @@ export const VideoLessons = () => {
                     error={generationError}
                     onClose={() => { setPlayingLesson(null); setRenderMode(null); setCurrentGenerationId(undefined); setIsPreparing(false); setGenerationError(null); }}
                 />
+            )}
+
+            {playingLesson && renderMode === 'remotion' && (
+                <>
+                    {isPreparing ? (
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
+                            <div className="relative mb-12">
+                                <div className="w-40 h-40 border-8 border-white/5 border-t-[#4D96FF] animate-spin rounded-full" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Sparkles className="text-white w-12 h-12 stroke-[2px] animate-pulse" />
+                                </div>
+                            </div>
+                            <h3 className="text-4xl font-black text-white uppercase tracking-tighter italic mb-4">ENGINEERING_LECTURE</h3>
+                            <p className="text-white/40 font-black uppercase tracking-widest text-sm mb-12 italic">CORE: REMOTION_REACT_V4</p>
+                        </div>
+                    ) : remotionConfig ? (
+                        <RemotionPlayer
+                            config={remotionConfig}
+                            onClose={() => { setPlayingLesson(null); setRenderMode(null); setRemotionConfig(null); }}
+                        />
+                    ) : generationError && (
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-8 text-center">
+                            <h3 className="text-4xl font-black text-red-500 uppercase tracking-tighter italic mb-4">GENERATION_FAILED</h3>
+                            <p className="text-white/60 mb-8 max-w-md">{generationError}</p>
+                            <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">Abort Process</button>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Header Section */}
