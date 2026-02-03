@@ -26,9 +26,9 @@ export function LandingHeader() {
             <Menu className="h-8 w-8 md:hidden text-black stroke-[3px]" />
 
             <nav className="hidden md:flex gap-4 text-sm font-black text-black items-center">
-              <a href="#benefits" className="px-3 py-2 hover:bg-neo-muted border-4 border-transparent hover:border-black uppercase transition-all">Benefits</a>
-              <a href="#features" className="px-3 py-2 hover:bg-neo-accent border-4 border-transparent hover:border-black uppercase transition-all">Features</a>
-              <a href="#testimonials" className="px-3 py-2 hover:bg-neo-secondary border-4 border-transparent hover:border-black uppercase transition-all text-black">Testimonials</a>
+              <a href="https://elevenfolks.com#benefits" className="px-3 py-2 hover:bg-neo-muted border-4 border-transparent hover:border-black uppercase transition-all">Benefits</a>
+              <a href="https://elevenfolks.com#features" className="px-3 py-2 hover:bg-neo-accent border-4 border-transparent hover:border-black uppercase transition-all">Features</a>
+              <a href="https://elevenfolks.com#testimonials" className="px-3 py-2 hover:bg-neo-secondary border-4 border-transparent hover:border-black uppercase transition-all text-black">Testimonials</a>
               <button
                 className="neo-button bg-black text-white ml-4"
                 onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}

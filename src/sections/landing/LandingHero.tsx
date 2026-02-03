@@ -20,14 +20,14 @@ export function LandingHero() {
             </motion.div>
 
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.85] tracking-tighter mb-8">
-              THE ALL-IN-ONE <br />
-              <span className="text-neo-accent" style={{ WebkitTextStroke: '3px black' }}>STUDY</span> <br />
-              WORKSPACE
+              STOP STUDYING.<br />
+              <span className="text-neo-accent" style={{ WebkitTextStroke: '3px black' }}>START</span> <br />
+              ARCHITECTING.
             </h1>
 
             <p className="text-xl md:text-2xl font-bold max-w-2xl mx-auto lg:mx-0 mb-10 leading-snug">
-              Centralize your plans, progress, and practice. Learn smarter with your AI mentor,
-              personalized plans, and exam simulators. No fluff, just structure.
+              The first Operating System for STEM mastery. Centralize your logic, automate the grind, 
+              and out-engineer your exams. Built for the students who lead.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 items-center lg:items-start justify-center lg:justify-start">

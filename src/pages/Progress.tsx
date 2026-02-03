@@ -49,7 +49,7 @@ export function Progress() {
         supabase.from('study_sessions').select('*').eq('user_id', user.id),
         supabase.from('task_completions').select('*').eq('user_id', user.id),
         supabase.from('exam_plans').select('*').eq('user_id', user.id),
-        supabase.from('user_gamification').select('*').eq('user_id', user.id).single()
+        supabase.from('user_gamification').select('*').eq('user_id', user.id).maybeSingle()
       ]);
 
       const sessions = sessionsRes.data || [];

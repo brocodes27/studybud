@@ -137,9 +137,9 @@ export async function getUserGamification(userId: string): Promise<UserGamificat
         .from('user_gamification')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
         console.error('Error fetching gamification:', error);
     }
 
@@ -334,17 +334,25 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
 
     const totalQuestions = mastery.data?.reduce((sum, m) => sum + (m.questions_attempted || 0), 0) || 0;
 
-    // Get all achievements not yet unlocked
-    const { data: achievements } = await supabase
+    // Get all achievements already unlocked by the user
+    const { data: unlockedIdsData } = await supabase
+        .from('user_achievements')
+        .select('achievement_id')
+        .eq('user_id', userId);
+
+    const unlockedIds = unlockedIdsData?.map(ua => ua.achievement_id) || [];
+
+    // Get all active achievements not yet unlocked
+    let query = supabase
         .from('achievements')
         .select('*')
-        .eq('is_active', true)
-        .not('id', 'in', (
-            supabase
-                .from('user_achievements')
-                .select('achievement_id')
-                .eq('user_id', userId)
-        ));
+        .eq('is_active', true);
+
+    if (unlockedIds.length > 0) {
+        query = query.not('id', 'in', unlockedIds);
+    }
+
+    const { data: achievements } = await query;
 
     if (!achievements) return [];
 
@@ -408,7 +416,7 @@ export async function recordDailyCheckin(
         .select('id')
         .eq('user_id', userId)
         .eq('checkin_date', today)
-        .single();
+        .maybeSingle();
 
     if (existing) {
         throw new Error('Already checked in today');

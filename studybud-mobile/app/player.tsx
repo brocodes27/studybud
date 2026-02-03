@@ -36,7 +36,7 @@ export default function PlayerScreen() {
         if (!path) return null;
         if (path.startsWith('http') || path.startsWith('https')) return path;
 
-        const serverUrl = process.env.EXPO_PUBLIC_VIDEO_SERVER_URL || 'http://localhost:3001';
+        const serverUrl = process.env.EXPO_PUBLIC_VIDEO_SERVER_URL || 'https://vidgen.kaminariclothing.shop';
         // Remove trailing slash from serverUrl if present, and leading slash from path if present
         const cleanServer = serverUrl.replace(/\/$/, '');
         const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -127,7 +127,7 @@ export default function PlayerScreen() {
 
             // Call the video generation server
             // Note: This URL should be configured in your environment
-            const serverUrl = process.env.EXPO_PUBLIC_VIDEO_SERVER_URL || 'http://localhost:3001';
+            const serverUrl = process.env.EXPO_PUBLIC_VIDEO_SERVER_URL || 'https://vidgen.kaminariclothing.shop';
 
             const response = await fetch(`${serverUrl}/api/generate`, {
                 method: 'POST',

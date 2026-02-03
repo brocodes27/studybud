@@ -92,7 +92,7 @@ export function Dashboard() {
 
   const fetchUserGoals = async () => {
     try {
-      const { data } = await supabase.from('user_study_goals').select('*').eq('user_id', user.id).single();
+      const { data } = await supabase.from('user_study_goals').select('*').eq('user_id', user.id).maybeSingle();
       if (data) setUserGoals(data);
     } catch (e) {
       console.log('No goals found yet');
@@ -146,7 +146,7 @@ export function Dashboard() {
       if (error) throw error;
 
       // Also get streak/xp info
-      const { data: gamification } = await supabase.from('user_gamification').select('current_streak, total_xp').eq('user_id', user.id).single();
+      const { data: gamification } = await supabase.from('user_gamification').select('current_streak, total_xp').eq('user_id', user.id).maybeSingle();
 
       setStats({
         totalPlans: plans.length,

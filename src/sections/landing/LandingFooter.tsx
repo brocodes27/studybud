@@ -19,23 +19,11 @@ export function LandingFooter() {
           </h3>
 
           <nav className="flex flex-wrap justify-center gap-x-12 gap-y-6 mb-12 font-black uppercase tracking-widest text-lg">
-            <a className="hover:text-neo-secondary transition-colors underline decoration-transparent hover:decoration-neo-secondary decoration-4 underline-offset-8" href="#benefits">Benefits</a>
-            <a className="hover:text-neo-accent transition-colors underline decoration-transparent hover:decoration-neo-accent decoration-4 underline-offset-8" href="#features">Features</a>
-            <a className="hover:text-neo-muted transition-colors underline decoration-transparent hover:decoration-neo-muted decoration-4 underline-offset-8" href="#testimonials">Testimonials</a>
-            <a className="hover:text-neo-secondary transition-colors underline decoration-transparent hover:decoration-neo-secondary decoration-4 underline-offset-8" href="#auth">Contact</a>
+            <a className="hover:text-neo-secondary transition-colors underline decoration-transparent hover:decoration-neo-secondary decoration-4 underline-offset-8" href="https://elevenfolks.com#benefits">Benefits</a>
+            <a className="hover:text-neo-accent transition-colors underline decoration-transparent hover:decoration-neo-accent decoration-4 underline-offset-8" href="https://elevenfolks.com#features">Features</a>
+            <a className="hover:text-neo-muted transition-colors underline decoration-transparent hover:decoration-neo-muted decoration-4 underline-offset-8" href="https://elevenfolks.com#testimonials">Testimonials</a>
+            <a className="hover:text-neo-secondary transition-colors underline decoration-transparent hover:decoration-neo-secondary decoration-4 underline-offset-8" href="https://elevenfolks.com#auth">Contact</a>
           </nav>
-
-          <div className="flex justify-center gap-6 mb-12">
-            {[Twitter, Instagram, Linkedin, Facebook, Youtube].map((Icon, i) => (
-              <a
-                key={i}
-                href="#"
-                className={`w-12 h-12 bg-white border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#fff] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:bg-neo-secondary group`}
-              >
-                <Icon className="h-6 w-6 text-black stroke-[2.5px] group-hover:scale-110 transition-transform" />
-              </a>
-            ))}
-          </div>
 
           <div className="w-full border-t-4 border-white/20 pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <p className="font-bold text-white/40 uppercase tracking-widest italic">&copy; {new Date().getFullYear()} ElevenFolks. All rights reserved.</p>

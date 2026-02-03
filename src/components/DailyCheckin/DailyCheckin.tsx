@@ -72,7 +72,7 @@ export function DailyCheckin() {
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('checkin_date', today)
-                .single();
+                .maybeSingle();
 
             // Get gamification state
             const gamification = await getUserGamification(user.id);
