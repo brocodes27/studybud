@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Zap, Crown, Check, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../hooks/usePayment';
@@ -6,7 +5,6 @@ import { usePayment } from '../hooks/usePayment';
 export function SubscriptionPage() {
     const { isPremium } = useAuth();
     const { initiatePayment, isLoadingPayment } = usePayment();
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     const features = [
         { name: "AI Study Plans", free: "Basic (1/mo)", pro: "Unlimited + Detailed" },
@@ -37,24 +35,6 @@ export function SubscriptionPage() {
                         BYPASS_CORE_LIMITATIONS. ACCESS_ALL_NEURAL_MODULES_WITHOUT_RESTRICTION.
                     </p>
                 </header>
-
-                {/* Pricing Toggle */}
-                <div className="flex justify-center mb-16">
-                    <div className="bg-white p-2 border-4 border-black shadow-[8px_8px_0px_0px_#000] flex items-center gap-2 rotate-1">
-                        <button
-                            onClick={() => setBillingCycle('monthly')}
-                            className={`px-8 py-3 font-black text-sm tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-black text-white' : 'text-black hover:bg-neo-bg'}`}
-                        >
-                            MONTHLY_CYCLE
-                        </button>
-                        <button
-                            onClick={() => setBillingCycle('yearly')}
-                            className={`px-8 py-3 font-black text-sm tracking-widest transition-all flex items-center gap-3 ${billingCycle === 'yearly' ? 'bg-black text-white' : 'text-black hover:bg-neo-bg'}`}
-                        >
-                            YEARLY_CYCLE <span className="text-[10px] bg-neo-secondary text-black px-2 py-0.5 border-2 border-black rotate-3 font-black">SAVE_20%</span>
-                        </button>
-                    </div>
-                </div>
 
                 <div className="grid md:grid-cols-2 gap-12 items-start mb-20">
                     {/* Free Plan */}
@@ -94,8 +74,8 @@ export function SubscriptionPage() {
                         </h3>
 
                         <div className="text-6xl font-black mb-2 text-black italic">
-                            ${billingCycle === 'monthly' ? '5' : '50'}
-                            <span className="text-lg text-black/40 font-black uppercase tracking-widest not-italic ml-2">/{billingCycle === 'monthly' ? 'MO' : 'YR'}</span>
+                            $9.99
+                            <span className="text-lg text-black/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span>
                         </div>
 
                         <p className="font-black text-neo-accent uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-neo-accent/20 pb-4">

@@ -22,14 +22,14 @@ async function getPayPalAccessToken() {
     },
     body: 'grant_type=client_credentials',
   });
-  
+
   const data = await response.json();
-  
+
   if (!data.access_token) {
     console.error('❌ No access token received from PayPal');
     throw new Error('Failed to get PayPal access token');
   }
-  
+
   return data.access_token;
 }
 
@@ -51,7 +51,7 @@ async function createPayPalSubscription(accessToken: string, userData: any, curr
         custom_id: userData.user_id,
         amount: {
           currency_code: currency,
-          value: currency === 'USD' ? '5.00' : currency === 'EUR' ? '2.50' : '5.00'
+          value: currency === 'USD' ? '9.99' : currency === 'EUR' ? '9.99' : '9.99'
         }
       }
     ]
@@ -109,7 +109,7 @@ serve(async (req) => {
 
   try {
     const { user_id, email, currency = 'USD', name, surname } = await req.json();
-    
+
     if (!user_id || !email) {
       return new Response(JSON.stringify({ error: 'Missing user_id or email' }), {
         status: 400,
@@ -130,9 +130,9 @@ serve(async (req) => {
 
     // Return the approval link
     const approvalLink = payment.links?.find((link: any) => link.rel === 'approve')?.href;
-    
+
     if (approvalLink) {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         approval_url: approvalLink,
         order_id: payment.id,
         status: payment.status
@@ -142,7 +142,7 @@ serve(async (req) => {
       });
     } else {
       console.error('❌ No approval link found in PayPal response');
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'No approval link available in payment response',
         debug: {
           status: payment.status,

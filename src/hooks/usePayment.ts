@@ -12,7 +12,7 @@ export function usePayment() {
   const { user, session } = useAuth();
   const [paymentData, setPaymentData] = useState<PaymentData>({
     currency: 'USD',
-    price: 5, // Updated to $5
+    price: 9.99,
     paymentProvider: 'dodo',
     isIndia: false
   });
@@ -27,7 +27,7 @@ export function usePayment() {
       // Set simple defaults for overrides
       setPaymentData({
         currency: manualOverride === 'razorpay' ? 'INR' : 'USD',
-        price: manualOverride === 'razorpay' ? 199 : 5,
+        price: manualOverride === 'razorpay' ? 199 : 9.99,
         paymentProvider: manualOverride,
         isIndia: manualOverride === 'razorpay'
       });
@@ -37,7 +37,7 @@ export function usePayment() {
     // Default to Dodo Payments as requested
     setPaymentData({
       currency: 'USD',
-      price: 5,
+      price: 9.99,
       paymentProvider: 'dodo',
       isIndia: false
     });
