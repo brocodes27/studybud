@@ -75,19 +75,8 @@ export class TTSService {
         } catch (error: any) {
             console.error('[TTS] Inworld TTS failed, switching to fallback:', error);
 
-            // Fallback: Puter.js (if loaded) or Google Translate
+            // Fallback: Google Translate
             try {
-                if (window.puter) {
-                    console.log('[TTS] Falling back to Puter.js...');
-                    const audio = await window.puter.ai.txt2speech(text, {
-                        engine: 'neural',
-                        language: 'en-US',
-                        voice: 'Joey'
-                    });
-                    if (audio?.src) return audio.src;
-                }
-
-                // Final fallback
                 const encodedText = encodeURIComponent(text.slice(0, 200));
                 return `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en&dt=t&q=${encodedText}`;
             } catch (e) {
