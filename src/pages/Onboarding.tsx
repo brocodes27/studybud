@@ -5,7 +5,7 @@ import {
   Target, Calendar, Clock, Brain,
   ChevronRight, ChevronLeft, Check,
   User, GraduationCap,
-  Sparkles, Shield, Zap
+  Sparkles, Shield, Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,7 +29,7 @@ export default function Onboarding() {
   const [examDate, setExamDate] = useState<string>('');
   const [hoursPerWeek, setHoursPerWeek] = useState<number>(10);
   const [weakAreas, setWeakAreas] = useState<string[]>([]);
-  const [studyStyle, setStudyStyle] = useState<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'balanced'>('balanced');
+  const [studyStyle] = useState<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'balanced'>('balanced');
 
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
 
@@ -83,7 +83,7 @@ export default function Onboarding() {
         current_streak: 0,
       }, { onConflict: 'user_id' });
 
-      window.location.replace('/');
+      window.location.replace('/pricing');
     } catch (e: any) {
       alert(e.message || 'Failed to complete onboarding');
     } finally {
@@ -343,14 +343,68 @@ export default function Onboarding() {
                 <div className="flex gap-4">
                   <button onClick={prevStep} className="bg-white border-4 border-black p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
                   <button
-                    onClick={saveOnboarding}
-                    disabled={loading}
+                    onClick={nextStep}
                     className="flex-1 bg-neo-accent text-black p-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-ink hover:text-white shadow-[8px_8px_0px_0px_#000] transition-all flex items-center justify-center gap-4 group"
                   >
-                    {loading ? 'INITIALIZING...' : 'START MY JOURNEY'}
-                    <Zap className="w-8 h-8 group-hover:scale-125 transition-transform" />
+                    CONTINUE
+                    <ChevronRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 5: TRIAL & PAYMENT */}
+          {step === 5 && (
+            <motion.div
+              key="step5"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="bg-white border-8 border-black p-8 md:p-12 shadow-[20px_20px_0px_0px_#000] rotate-1"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="bg-neo-secondary border-4 border-black p-3 -rotate-12">
+                  <Crown className="w-8 h-8 text-black" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">START YOUR TRIAL</h1>
+                  <p className="text-xs font-black text-black/40 uppercase tracking-widest mt-2">7 DAYS FREE ACCESS</p>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                <div className="bg-neo-bg border-4 border-black p-8 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-black text-white px-4 py-1 font-black text-[10px] uppercase rotate-45 translate-x-4 translate-y-2">LIMITED</div>
+                  <h3 className="text-2xl font-black uppercase italic mb-2 tracking-tighter">7-DAY FREE NEURO TRIAL</h3>
+                  <p className="text-sm font-bold opacity-60 leading-tight mb-6">Experience full neural augmentation, smart plans, and college roadmaps free for 7 days. Then just $5/mo.</p>
+
+                  <ul className="space-y-3">
+                    {['Full AI Strategy', 'US College Roadmaps', 'Unlimited Mock Exams'].map(f => (
+                      <li key={f} className="flex items-center gap-3 text-xs font-black uppercase tracking-tight">
+                        <div className="w-4 h-4 bg-neo-accent border-2 border-black flex items-center justify-center">
+                          <Check className="w-3 h-3" />
+                        </div>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-4">
+                  <button
+                    onClick={saveOnboarding}
+                    disabled={loading}
+                    className="w-full bg-neo-accent text-black p-6 border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-black hover:text-white shadow-[8px_8px_0px_0px_#000] transition-all flex items-center justify-center gap-4 group"
+                  >
+                    {loading ? 'INITIALIZING...' : 'COMPLETE ONBOARDING'}
+                    <ChevronRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
+                  </button>
+
+                  <p className="text-center text-[10px] font-bold opacity-30 uppercase tracking-widest">YOU WON'T BE CHARGED FOR 7 DAYS</p>
+                </div>
+
+                <button onClick={prevStep} className="w-full text-black/40 font-black uppercase text-[10px] tracking-widest hover:text-black transition-colors">BACK TO MISSION</button>
               </div>
             </motion.div>
           )}

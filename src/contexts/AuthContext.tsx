@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch role from user_profiles
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
-            .select('role, is_admin, full_name')
+            .select('role, is_admin, full_name, created_at, trial_active')
             .eq('id', data.session.user.id);
 
           if (profileError) {
@@ -102,11 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           if (isMounted) {
             const hasProfile = Array.isArray(profile) && profile.length > 0;
-            setRole(hasProfile ? (profile?.[0]?.role ?? null) : null);
-            setIsAdmin(hasProfile ? (profile?.[0]?.is_admin ?? false) : false);
-            setFullName(hasProfile ? (profile?.[0]?.full_name ?? null) : null);
-            setTrialStart(null);
-            setTrialActive(true);
+            const p = profile?.[0];
+            setRole(hasProfile ? (p?.role ?? null) : null);
+            setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
+            setFullName(hasProfile ? (p?.full_name ?? null) : null);
+            setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
+            setTrialActive(hasProfile ? (p?.trial_active ?? true) : true);
           }
         } else {
           if (isMounted) {
@@ -115,6 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsPremium(false);
             setIsAdmin(false);
             setFullName(null);
+            setTrialStart(null);
+            setTrialActive(true);
           }
         }
       } catch (err) {
@@ -124,6 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsPremium(false);
           setIsAdmin(false);
           setFullName(null);
+          setTrialStart(null);
+          setTrialActive(true);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -140,16 +145,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Optionally re-fetch role here if needed
         supabase
           .from('user_profiles')
-          .select('role, is_admin, full_name')
+          .select('role, is_admin, full_name, created_at, trial_active')
           .eq('id', session.user.id)
           .then(({ data: profile, error }) => {
             if (error) {
               console.error('Error re-fetching profile:', error);
             }
             const hasProfile = Array.isArray(profile) && profile.length > 0;
-            setRole(hasProfile ? (profile?.[0]?.role ?? null) : null);
-            setIsAdmin(hasProfile ? (profile?.[0]?.is_admin ?? false) : false);
-            setFullName(hasProfile ? (profile?.[0]?.full_name ?? null) : null);
+            const p = profile?.[0];
+            setRole(hasProfile ? (p?.role ?? null) : null);
+            setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
+            setFullName(hasProfile ? (p?.full_name ?? null) : null);
+            setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
+            setTrialActive(hasProfile ? (p?.trial_active ?? true) : true);
           });
       } else {
         setUser(null);

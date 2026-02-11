@@ -99,7 +99,7 @@ export function SubscriptionPage() {
                         </div>
 
                         <p className="font-black text-neo-accent uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-neo-accent/20 pb-4">
-                            FULL_PROTOCOL_ACCESS. OPTIMIZED_FOR_MAXIMUM_KNOWLEDGE_RETENTION.
+                            FULL_PROTOCOL_ACCESS. 7-DAY FREE TRIAL INCLUDED. OPTIMIZED_FOR_MAXIMUM_KNOWLEDGE.
                         </p>
 
                         <ul className="space-y-6 mb-12">
@@ -119,11 +119,11 @@ export function SubscriptionPage() {
                             disabled={isLoadingPayment || isPremium}
                             className={`w-full py-6 border-4 border-black text-white font-black uppercase italic text-2xl shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-4 ${isPremium ? 'bg-neo-accent' : 'bg-black'}`}
                         >
-                            {isLoadingPayment ? 'PROCESSING_UPGRADE...' : isPremium ? 'LICENSE_VERIFIED' : 'UPGRADE_NOW'}
+                            {isLoadingPayment ? 'PROCESSING...' : isPremium ? 'LICENSE_VERIFIED' : 'START_FREE_TRIAL'}
                             {!isLoadingPayment && !isPremium && <Zap className="w-8 h-8 text-neon-yellow animate-bounce" />}
                             {isPremium && <Star className="w-8 h-8 text-yellow-500 fill-yellow-500 animate-pulse" />}
                         </button>
-                        <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-black/30 mt-6 italic">SECURE_DODO_GATEWAY_ENCRYPTED. ONE_CLICK_AUTH.</p>
+                        <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-black/30 mt-6 italic">NO CHARGE FOR 7 DAYS. CANCEL ANYTIME.</p>
                     </div>
                 </div>
 
@@ -137,12 +137,12 @@ export function SubscriptionPage() {
 
                     <div className="grid md:grid-cols-2 gap-8">
                         <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] -rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-black/10 pb-2">REFUND_PROTOCOL?</h4>
-                            <p className="font-bold text-sm text-black/50 uppercase tracking-tight leading-tight">SYSTEM_SYNC_CAN_BE_TERMINATED_ANYTIME. ACCESS_REMAINS_ACTIVE_UNTIL_CYCLE_EXPIRATION.</p>
+                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-black/10 pb-2">TRIAL_PROTOCOL?</h4>
+                            <p className="font-bold text-sm text-black/50 uppercase tracking-tight leading-tight">7 DAYS OF FULL NEURO ACCESS. NO CHARGE UNTIL TRIAL ENDS. CANCEL ANYTIME IN SETTINGS.</p>
                         </div>
                         <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-black/10 pb-2">UNLIMITED_MODES?</h4>
-                            <p className="font-bold text-sm text-black/50 uppercase tracking-tight leading-tight">NODE_GENERATION_IS_ABSOLUTE. FAIR_USE_ENFORCED_ONLY_VS_BOT_INTRUSION.</p>
+                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-black/10 pb-2">REFUND_POLICY?</h4>
+                            <p className="font-bold text-sm text-black/50 uppercase tracking-tight leading-tight">ACCESS_REMAINS_ACTIVE_UNTIL_CYCLE_EXPIRATION. SUBSCRIPTIONS_CAN_BE_TERMINATED_ANYTIME.</p>
                         </div>
                         <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] rotate-1">
                             <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-black/10 pb-2">DATA_PERSISTENCE?</h4>

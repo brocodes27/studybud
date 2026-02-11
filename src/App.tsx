@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import TeacherNavbar from './components/TeacherNavbar';
@@ -49,7 +49,7 @@ import { SubscriptionPage } from './components/SubscriptionPage';
 import SYOW from './pages/SYOW';
 
 function AppContent() {
-  const { user, role, loading, trialStart, trialActive, isPremium } = useAuth();
+  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
@@ -67,9 +67,6 @@ function AppContent() {
   const [showSubscribeBanner, setShowSubscribeBanner] = useState(true);
 
   useEffect(() => {
-    // Never register a Service Worker in development. This prevents the
-    // "zombie localhost" behavior caused by SW-controlled pages after the dev
-    // server stops.
     if (!('serviceWorker' in navigator)) return;
 
     if (import.meta.env.DEV) {
@@ -77,14 +74,13 @@ function AppContent() {
         .getRegistrations()
         .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
         .catch(() => {
-          // Ignore failures; dev should still load normally.
         });
       return;
     }
   }, []);
 
   let trialExpired = false;
-  if (trialStart && !trialActive) {
+  if (trialStart && trialActive === false) {
     trialExpired = true;
   } else if (trialStart) {
     const now = new Date();
@@ -93,6 +89,7 @@ function AppContent() {
       trialExpired = true;
     }
   }
+
 
   const handleSubscribeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -114,7 +111,10 @@ function AppContent() {
   if (!user) return <Landing />;
   if (role === null) return <Onboarding />;
 
-  if (trialExpired && isPremium === false) {
+  const navigate = useNavigate();
+  const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
+
+  if (trialExpired && !isPremium && !isAdmin && !isSubscriptionRoute) {
     return (
       <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none"
@@ -126,15 +126,22 @@ function AppContent() {
           </div>
           <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black italic">TRIAL EXPIRED</h2>
           <p className="text-black/70 mb-10 text-lg font-bold leading-snug">
-            Your 7-day free access has expired. Time to level up your study game with Premium access.
+            Your 7-day free access has ended. Level up to a Pro subscription to keep your neural edge.
           </p>
-          <button
-            onClick={handleSubscribeClick}
-            disabled={isLoadingPayment}
-            className="w-full neo-button bg-neo-accent py-5 text-xl"
-          >
-            {isLoadingPayment ? 'PROCESSING...' : 'GET PREMIUM ACCESS NOW'}
-          </button>
+          <div className="space-y-4">
+            <button
+              onClick={() => navigate('/pricing')}
+              className="w-full neo-button bg-neo-accent py-5 text-xl"
+            >
+              VIEW SUBSCRIPTION PLANS
+            </button>
+            <button
+              onClick={() => useAuth().signOut()}
+              className="w-full text-black/40 font-black uppercase text-xs tracking-widest hover:text-red-500 transition-colors"
+            >
+              LOGOUT / CHANGE ACCOUNT
+            </button>
+          </div>
         </div>
       </div>
     );
