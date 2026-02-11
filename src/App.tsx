@@ -20,7 +20,6 @@ import { MyMeetingNotes } from './pages/MyMeetingNotes';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { Profile } from './pages/Profile';
 import Onboarding from './pages/Onboarding';
-import { FeatureComparison } from './components/FeatureComparison';
 import { usePayment } from './hooks/usePayment';
 import { AdminPanel } from './pages/AdminPanel';
 import TeacherPortal from './pages/TeacherPortal';
@@ -46,9 +45,11 @@ import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
 import GuidedPaperSolver from './pages/GuidedPaperSolver';
 import FeynmanBoard from './pages/FeynmanBoard';
 import { DailyCheckin } from './components/DailyCheckin';
+import { SubscriptionPage } from './components/SubscriptionPage';
+import SYOW from './pages/SYOW';
 
 function AppContent() {
-  const { user, role, loading, trialStart, trialActive, isPremium } = useAuth() as any;
+  const { user, role, loading, trialStart, trialActive, isPremium } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
@@ -183,6 +184,7 @@ function AppContent() {
               <Route path="/" element={<DailyCheckin />} />
               <Route path="/daily" element={<DailyCheckin />} />
               <Route path="/atlas" element={<AtlasWorkspace />} />
+              <Route path="/syow" element={<SYOW />} />
 
               {/* Study Planning */}
               <Route path="/create" element={<CreatePlan />} />
@@ -223,7 +225,8 @@ function AppContent() {
               {/* Account */}
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/pricing" element={<FeatureComparison />} />
+              <Route path="/pricing" element={<SubscriptionPage />} />
+              <Route path="/subscription" element={<SubscriptionPage />} />
 
               {/* Voice/VAPI Testing */}
               <Route path="/vapi-test" element={<VAPITestComponent />} />

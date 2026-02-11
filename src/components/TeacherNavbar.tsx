@@ -8,12 +8,14 @@ import {
   Menu,
   X,
   BookUser,
+  Crown
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 
 const navLinks = [
   { href: '/teacher', label: 'TEACHER PANEL', icon: BookUser },
+  { href: '/subscription', label: 'PREMIUM', icon: Crown },
 ];
 
 const TeacherNavbar = () => {

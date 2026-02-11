@@ -25,6 +25,7 @@ import { getUserGamification, calculateLevel } from '../lib/gamification';
 const navLinks = [
   { href: '/', label: 'HOME', icon: Brain, color: 'bg-neo-accent' },
   { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'bg-neo-secondary' },
+  { href: '/syow', label: 'SYOW', icon: Zap, color: 'bg-neo-accent' },
   { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'bg-neo-accent' },
   { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'bg-neo-secondary' },
   { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'bg-neo-muted' },
@@ -34,6 +35,7 @@ const navLinks = [
   { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'bg-neo-accent' },
   { href: '/social', label: 'SOCIAL HUB', icon: Users, color: 'bg-neo-secondary' },
   { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'bg-neo-secondary' },
+  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'bg-neo-accent' },
 ];
 
 const Navbar = () => {

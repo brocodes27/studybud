@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import VAPIService from '../lib/vapiService';
 import { useAuth } from '../contexts/AuthContext';
 import { X, Mic, Send, Brain, Target, MessageSquare } from 'lucide-react';
+import { FeatureGate } from './FeatureGate';
 
 interface VoiceLectureInterfaceProps {
   lessonId: string;
@@ -34,15 +35,21 @@ export function VoiceLectureInterface({
   const [isCallActive, setIsCallActive] = useState(false);
   const [callId, setCallId] = useState<string | null>(null);
   const [selectedPersonality, setSelectedPersonality] = useState('friendly');
-  const [status, setStatus] = useState<string>('NITIALIZING_CORES...');
+  const [status, setStatus] = useState<string>('INITIALIZING_CORES...');
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const vapiService = VAPIService.getInstance();
-  const { user } = useAuth() as any;
+  const { user, isPremium } = useAuth() as any;
 
   useEffect(() => {
-    initializeVAPICall();
+    // Only initialize call if premium
+    if (isPremium) {
+      initializeVAPICall();
+    } else {
+      setStatus('ACCESS_DENIED: PREMIUM_REQUIRED');
+      addMessage('ai', 'ACCESS_RESTRICTION: NEURAL_VOICE_CIRCUITS_REQUIRE_PREMIUM_AUTHORIZATION.');
+    }
 
     return () => {
       if (wsConnection) {
@@ -52,7 +59,7 @@ export function VoiceLectureInterface({
         vapiService.endCall(callId);
       }
     };
-  }, []);
+  }, [isPremium]);
 
   const initializeVAPICall = async () => {
     try {
@@ -210,11 +217,13 @@ export function VoiceLectureInterface({
               <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic leading-none">{lessonTitle}</h2>
               <div className="flex items-center gap-3 mt-2">
                 <span className={`px-3 py-0.5 font-black uppercase text-[10px] tracking-widest border-2 border-black ${isCallActive ? 'bg-neo-accent text-white' : 'bg-neo-bg text-black'}`}>
-                  {isCallActive ? 'VOICE_SYNC_ON' : 'TEXT_MODE_ONLY'}
+                  {isPremium ? (isCallActive ? 'VOICE_SYNC_ON' : 'TEXT_MODE_ONLY') : 'PREMIUM_LOCKED'}
                 </span>
-                <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic truncate max-w-[200px]">
-                  [{status}]
-                </span>
+                {isPremium && (
+                  <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic truncate max-w-[200px]">
+                    [{status}]
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -223,8 +232,8 @@ export function VoiceLectureInterface({
             <select
               value={selectedPersonality}
               onChange={(e) => setSelectedPersonality(e.target.value)}
-              disabled={isCallActive}
-              className="bg-white border-4 border-black px-4 py-2 font-black uppercase text-xs tracking-widest italic outline-none focus:bg-neo-bg transition-all"
+              disabled={isCallActive || !isPremium}
+              className="bg-white border-4 border-black px-4 py-2 font-black uppercase text-xs tracking-widest italic outline-none focus:bg-neo-bg transition-all disabled:opacity-50"
             >
               <option value="friendly">NEUTRAL_FRIENDLY</option>
               <option value="encouraging">HIGH_ENCOURAGE</option>
@@ -241,81 +250,83 @@ export function VoiceLectureInterface({
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-neo-bg/5 custom-scrollbar">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+        <FeatureGate fallback="lock" featureName="Neural Voice Lecture">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-neo-bg/5 custom-scrollbar">
+            {messages.map((message) => (
               <div
-                className={`max-w-[80%] p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] relative ${message.type === 'user'
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] relative ${message.type === 'user'
                     ? 'bg-neo-secondary -rotate-1'
                     : 'bg-white rotate-1'
-                  }`}
-              >
-                <div className={`absolute -top-4 ${message.type === 'user' ? '-right-4' : '-left-4'} bg-black text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest`}>
-                  {message.type.toUpperCase()}_ID
+                    }`}
+                >
+                  <div className={`absolute -top-4 ${message.type === 'user' ? '-right-4' : '-left-4'} bg-black text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest`}>
+                    {message.type.toUpperCase()}_ID
+                  </div>
+                  <p className="font-black text-xl italic uppercase tracking-tight leading-tight">{message.content}</p>
+                  <span className="text-[10px] font-black opacity-30 mt-4 block uppercase tracking-widest">
+                    SYNC_TIME: {message.timestamp.toLocaleTimeString()}
+                  </span>
                 </div>
-                <p className="font-black text-xl italic uppercase tracking-tight leading-tight">{message.content}</p>
-                <span className="text-[10px] font-black opacity-30 mt-4 block uppercase tracking-widest">
-                  SYNC_TIME: {message.timestamp.toLocaleTimeString()}
-                </span>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Controls */}
-        <div className="p-8 border-t-8 border-black bg-white space-y-8">
-          <div className="flex items-center gap-6">
-            <button
-              onClick={handleVoiceInput}
-              className={`flex-1 flex items-center justify-center gap-4 px-10 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none ${isListening
-                  ? 'bg-neo-accent text-white animate-pulse'
-                  : 'bg-neo-secondary text-black'
-                }`}
-            >
-              {isListening ? (
-                <>
-                  <Target className="h-8 w-8 animate-spin" />
-                  <span>STOP_SCANNING_VOICE</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="h-8 w-8 stroke-[4px]" />
-                  <span>INITIALIZE_VOICE_SYNC</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={completeLesson}
-              className="px-10 py-6 border-4 border-black bg-black text-white font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000]"
-            >
-              FINISH_CONV
-            </button>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleTextInput} className="flex gap-6">
-            <div className="relative flex-grow">
-              <input
-                type="text"
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
-                placeholder="TYPE_SYSTEM_INPUT_HERE..."
-                className="w-full bg-white border-4 border-black px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-neo-bg outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
-              />
-              <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 text-black/20 h-8 w-8" />
+          {/* Controls */}
+          <div className="p-8 border-t-8 border-black bg-white space-y-8">
+            <div className="flex items-center gap-6">
+              <button
+                onClick={handleVoiceInput}
+                className={`flex-1 flex items-center justify-center gap-4 px-10 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none ${isListening
+                  ? 'bg-neo-accent text-white animate-pulse'
+                  : 'bg-neo-secondary text-black'
+                  }`}
+              >
+                {isListening ? (
+                  <>
+                    <Target className="h-8 w-8 animate-spin" />
+                    <span>STOP_SCANNING_VOICE</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-8 w-8 stroke-[4px]" />
+                    <span>INITIALIZE_VOICE_SYNC</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={completeLesson}
+                className="px-10 py-6 border-4 border-black bg-black text-white font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000]"
+              >
+                FINISH_CONV
+              </button>
             </div>
-            <button
-              type="submit"
-              className="bg-black text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000] active:translate-y-1 active:shadow-none"
-            >
-              <Send className="h-8 w-8 stroke-[4px]" />
-            </button>
-          </form>
-        </div>
+
+            <form onSubmit={handleTextInput} className="flex gap-6">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  value={currentInput}
+                  onChange={(e) => setCurrentInput(e.target.value)}
+                  placeholder="TYPE_SYSTEM_INPUT_HERE..."
+                  className="w-full bg-white border-4 border-black px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-neo-bg outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
+                />
+                <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 text-black/20 h-8 w-8" />
+              </div>
+              <button
+                type="submit"
+                className="bg-black text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000] active:translate-y-1 active:shadow-none"
+              >
+                <Send className="h-8 w-8 stroke-[4px]" />
+              </button>
+            </form>
+          </div>
+        </FeatureGate>
 
         <audio ref={audioRef} style={{ display: 'none' }} />
       </div>

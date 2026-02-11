@@ -4,122 +4,47 @@ import { useAuth } from '../contexts/AuthContext';
 interface PaymentData {
   currency: string;
   price: number;
-  paymentProvider: 'razorpay' | 'paypal';
+  paymentProvider: 'razorpay' | 'paypal' | 'dodo';
   isIndia: boolean;
 }
 
 export function usePayment() {
   const { user, session } = useAuth();
   const [paymentData, setPaymentData] = useState<PaymentData>({
-    currency: 'INR',
-    price: 199,
-    paymentProvider: 'razorpay',
-    isIndia: true
+    currency: 'USD',
+    price: 5, // Updated to $5
+    paymentProvider: 'dodo',
+    isIndia: false
   });
   const [isLoadingPayment, setIsLoadingPayment] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [manualOverride, setManualOverride] = useState<'razorpay' | 'paypal' | null>(null);
+  const [manualOverride, setManualOverride] = useState<'razorpay' | 'paypal' | 'dodo' | null>(null);
 
   // Detect user location and set payment method
   useEffect(() => {
     if (manualOverride) {
       console.log(`🔧 Manual override active: ${manualOverride}`);
-      if (manualOverride === 'razorpay') {
-        setPaymentData({
-          currency: 'INR',
-          price: 199,
-          paymentProvider: 'razorpay',
-          isIndia: true
-        });
-      } else {
-        setPaymentData({
-          currency: 'USD',
-          price: 5,
-          paymentProvider: 'paypal',
-          isIndia: false
-        });
-      }
+      // Set simple defaults for overrides
+      setPaymentData({
+        currency: manualOverride === 'razorpay' ? 'INR' : 'USD',
+        price: manualOverride === 'razorpay' ? 199 : 5,
+        paymentProvider: manualOverride,
+        isIndia: manualOverride === 'razorpay'
+      });
       return;
     }
 
-    const detectLocation = async () => {
-      try {
-        console.log('🔍 Detecting user location...');
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        
-        console.log('📍 Location data received:', data);
-        
-        // Check if we have valid country data
-        if (data && data.country_code) {
-          console.log('🌍 Country code:', data.country_code);
-          
-          if (data.country_code === 'IN') {
-            // User is in India - use Razorpay
-            console.log('🇮🇳 User detected in India - using Razorpay');
-            setPaymentData({
-              currency: 'INR',
-              price: 199,
-              paymentProvider: 'razorpay',
-              isIndia: true
-            });
-          } else {
-            // User is outside India - use PayPal
-            console.log('🌎 User detected outside India - using PayPal');
-            const currency = data?.currency || 'USD';
-            const price = currency === 'USD' ? 5 : currency === 'EUR' ? 2.5 : 5;
-            
-            console.log(`💱 Currency: ${currency}, Price: ${price}`);
-            
-            setPaymentData({
-              currency,
-              price,
-              paymentProvider: 'paypal',
-              isIndia: false
-            });
-          }
-        } else {
-          // No country data - try to detect from other fields
-          console.log('⚠️ No country_code found, trying alternative detection...');
-          
-          if (data?.country_name === 'India' || data?.country === 'India') {
-            console.log('🇮🇳 India detected from country name - using Razorpay');
-            setPaymentData({
-              currency: 'INR',
-              price: 199,
-              paymentProvider: 'razorpay',
-              isIndia: true
-            });
-          } else {
-            console.log('🌎 Non-India location detected - using PayPal');
-            const currency = data?.currency || 'USD';
-            const price = currency === 'USD' ? 5 : currency === 'EUR' ? 2.5 : 5;
-            
-            setPaymentData({
-              currency,
-              price,
-              paymentProvider: 'paypal',
-              isIndia: false
-            });
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error detecting location:', error);
-        // Default to PayPal for international users if detection fails
-        console.log('🔄 Falling back to PayPal for international users');
-        setPaymentData({
-          currency: 'USD',
-          price: 5,
-          paymentProvider: 'paypal',
-          isIndia: false
-        });
-      }
-    };
+    // Default to Dodo Payments as requested
+    setPaymentData({
+      currency: 'USD',
+      price: 5,
+      paymentProvider: 'dodo',
+      isIndia: false
+    });
 
-    detectLocation();
   }, [manualOverride]);
 
-  const setPaymentOverride = (override: 'razorpay' | 'paypal' | null) => {
+  const setPaymentOverride = (override: 'razorpay' | 'paypal' | 'dodo' | null) => {
     console.log(`🔧 Setting payment override: ${override}`);
     setManualOverride(override);
   };
@@ -130,85 +55,96 @@ export function usePayment() {
     }
 
     console.log('💳 Creating payment with provider:', paymentData.paymentProvider);
-    console.log('💰 Payment details:', paymentData);
-    console.log('🔧 Manual override:', manualOverride);
-
     setIsLoadingPayment(true);
+
     try {
-      if (paymentData.paymentProvider === 'razorpay') {
+      if (paymentData.paymentProvider === 'dodo') {
+        console.log('🦤 Initiating Dodo Payment...');
+
+        // 1. Check for Static Payment Link (Easiest Integration)
+        const staticLink = import.meta.env.VITE_DODO_PAYMENT_LINK;
+        if (staticLink) {
+          console.log('🔗 Using static Dodo Payment link');
+          // Append user email for tracking if Dodo supports it via query params (often ?prefilled_email=...)
+          // Checking common patterns, or just returning pure link
+          const finalLink = `${staticLink}?prefilled_email=${encodeURIComponent(user.email)}`;
+          setPaymentUrl(finalLink);
+          return finalLink;
+        }
+
+        // 2. Fallback to API/Edge Function (Dynamic Integration)
+        console.log('🔄 Creating Dodo Checkout Session via Backend...');
+        const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-dodo-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            email: user.email,
+            // Add product_id here if dynamic
+          }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.url) {
+          setPaymentUrl(data.url);
+          return data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create Dodo payment session. Please check if VITE_DODO_PAYMENT_LINK is set or backend function exists.');
+        }
+
+      } else if (paymentData.paymentProvider === 'razorpay') {
+        // ... (Existing Razorpay logic)
         console.log('🔄 Creating Razorpay subscription...');
-        // Create Razorpay subscription
         const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-razorpay-subscription', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ 
-            user_id: user.id, 
+          body: JSON.stringify({
+            user_id: user.id,
             email: user.email,
-            plan_id: 'plan_QlYEtRWPX0ddUj' // Default Razorpay plan ID
+            plan_id: 'plan_QlYEtRWPX0ddUj'
           }),
         });
-
         const data = await response.json();
-        console.log('📋 Razorpay response:', data);
-        
         if (data.short_url) {
           setPaymentUrl(data.short_url);
           return data.short_url;
         } else {
           throw new Error(data.error || 'Failed to create Razorpay subscription');
         }
+
       } else {
+        // ... (Existing PayPal Logic)
         console.log('🔄 Creating PayPal subscription...');
-        console.log('📡 PayPal endpoint: https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-paypal-subscription');
-        
-        // Create PayPal subscription
         const response = await fetch('https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/create-paypal-subscription', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ 
-            user_id: user.id, 
+          body: JSON.stringify({
+            user_id: user.id,
             email: user.email,
             currency: paymentData.currency,
             name: user.user_metadata?.full_name?.split(' ')[0] || 'User',
             surname: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || 'Name'
           }),
         });
-
-        console.log('📋 PayPal response status:', response.status);
-        console.log('📋 PayPal response headers:', Object.fromEntries(response.headers.entries()));
-
         const data = await response.json();
-        console.log('📋 PayPal response data:', data);
-        
         if (response.ok && data.approval_url) {
-          console.log('✅ PayPal approval URL received:', data.approval_url);
           setPaymentUrl(data.approval_url);
           return data.approval_url;
         } else {
-          console.error('❌ PayPal response error:', data);
-          throw new Error(data.error || `PayPal request failed with status ${response.status}`);
+          throw new Error(data.error || `PayPal request failed`);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Payment creation error:', error);
-      
-      // If PayPal fails and we're trying to use PayPal, show a specific error
-      if (paymentData.paymentProvider === 'paypal') {
-        console.error('🚨 PayPal payment failed, this might be because:');
-        console.error('1. PayPal Edge Function is not deployed');
-        console.error('2. PayPal environment variables are not set');
-        console.error('3. PayPal function has an error');
-        
-        // Don't fall back to Razorpay automatically - let the user know PayPal failed
-        throw new Error(`PayPal payment failed: ${(error as Error).message}. Please check if PayPal functions are deployed.`);
-      }
-      
       throw error;
     } finally {
       setIsLoadingPayment(false);
@@ -224,7 +160,7 @@ export function usePayment() {
       }
     } catch (error) {
       console.error('❌ Payment initiation error:', error);
-      alert('Failed to start payment. Please try again or contact support.');
+      alert('Failed to start payment. If you are the admin, please set VITE_DODO_PAYMENT_LINK in .env');
     }
   };
 

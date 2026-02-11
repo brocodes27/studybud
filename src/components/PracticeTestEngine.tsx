@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { usePayment } from '../hooks/usePayment';
+import { FeatureGate } from './FeatureGate';
 
 interface Question {
   id: string;
@@ -97,7 +98,6 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
       if (error) throw error;
       setAvailablePlans(data || []);
 
-      // Auto-select the first plan if no planId is provided
       if (!planId && data && data.length > 0) {
         setSelectedPlan(data[0].id);
       } else if (planId) {
@@ -155,7 +155,6 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
       return;
     }
 
-    // Get the selected plan details
     const selectedPlanData = availablePlans.find(plan => plan.id === activePlanId);
     if (!selectedPlanData) {
       showToast('Selected study plan not found', 'error');
@@ -183,7 +182,6 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
       });
 
       if (!response.ok) {
-        // Parse the error response to get detailed error message
         let errorMessage = 'Failed to generate practice test';
         try {
           const errorData = await response.json();
@@ -245,7 +243,6 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
 
     setIsActive(false);
 
-    // Calculate score
     let correct = 0;
     currentTest.questions.forEach((question, index) => {
       if (answers[index] === question.correct_answer) {
@@ -257,7 +254,6 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     const timeTaken = Math.ceil((currentTest.duration_minutes * 60 - timeLeft) / 60);
 
     try {
-      // Save attempt to database
       const { error } = await supabase
         .from('practice_test_attempts')
         .insert({
@@ -301,22 +297,11 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     return 'text-neo-accent';
   };
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  const _handleSubscribe = async () => {
-    try {
-      await initiatePayment();
-    } catch (error) {
-      console.error('Payment error:', error);
-      showToast('SESSION_PAYMENT_INTERRUPT', 'error');
-    }
-  };
-  /* eslint-enable @typescript-eslint/no-unused-vars */
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-8">
+      <div className="flex flex-col items-center justify-center p-20 space-y-8 text-black">
         <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
-        <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic">LOADING_CHAMBERS...</h3>
+        <h3 className="text-2xl font-black uppercase tracking-tighter italic">LOADING_CHAMBERS...</h3>
       </div>
     );
   }
@@ -376,6 +361,18 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
                             {String.fromCharCode(65 + optionIndex)}. {option}
                           </div>
                         ))}
+                      </div>
+
+                      {/* AI Explanation Gate */}
+                      <div className="mt-8 pt-8 border-t-4 border-black/10">
+                        <FeatureGate fallback="blur" featureName="AI Logic Breakdown">
+                          <div className="bg-white border-4 border-black p-6 relative">
+                            <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">AI_LOGIC_CORE</div>
+                            <p className="font-bold text-sm leading-relaxed text-black/80">
+                              {question.explanation || "Detailed neural analysis reveals the logical pathway to the correct answer involves identifying key constraints in the problem statement..."}
+                            </p>
+                          </div>
+                        </FeatureGate>
                       </div>
                     </div>
                   </div>

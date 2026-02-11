@@ -1,16 +1,35 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
 
-const AuthContext = createContext({});
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  role: string | null;
+  isPremium: boolean;
+  isAdmin: boolean;
+  fullName: string | null;
+  trialStart: Date | null;
+  trialActive: boolean;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, meta: any) => Promise<any>;
+  signOut: () => Promise<any>;
+  signInWithGoogle: () => Promise<any>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [role, setRole] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [fullName, setFullName] = useState<string | null>(null);
+  const [trialStart, setTrialStart] = useState<Date | null>(null);
+  const [trialActive, setTrialActive] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -34,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isMounted) setIsPremium(false);
         return;
       }
-      
+
       const { data: extData } = await supabase.from('premium_email_extensions').select('extension');
       if (!extData) {
         if (isMounted) setIsPremium(false);
@@ -86,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setRole(hasProfile ? (profile?.[0]?.role ?? null) : null);
             setIsAdmin(hasProfile ? (profile?.[0]?.is_admin ?? false) : false);
             setFullName(hasProfile ? (profile?.[0]?.full_name ?? null) : null);
+            setTrialStart(null);
+            setTrialActive(true);
           }
         } else {
           if (isMounted) {
@@ -139,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => { 
+    return () => {
       isMounted = false;
       listener?.subscription.unsubscribe();
     };
@@ -177,12 +198,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, role, isPremium, isAdmin, fullName, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, session, loading, role, isPremium, isAdmin, fullName, trialStart, trialActive, signIn, signUp, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

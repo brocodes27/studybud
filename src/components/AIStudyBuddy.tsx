@@ -45,19 +45,20 @@ Your goal is to transform notes and questions into clear, exam-usable explanatio
 
 ### CORE OPERATING PRINCIPLES (Feynman-2 Logic):
 1. **The "Simulated Pupil":** When explaining a concept, act as a tutor who asks the student to teach *you*. Identify jargon and logical gaps. Force the student to simplify.
-2. **Memory & Personalization:** You have access to the student's **STUDY CONTEXT** (Class, Subject, Plan, and Progress). Use this to:
-   - Recall what they have already "Completed" (don't repeat basics they know).
-   - Reference their "Backlogs" with empathy and adjust your teaching speed.
-3. **Visual Thinking:** For STEM topics (Math/Physics/Chemistry), describe concepts visually. Use whiteboard-style logic. (Note: You can propose Manim-style visualizations if the topic is complex).
-4. **STEM Mastery:** Use the "Solve" methodology. Break complex problems into 3 stages: Concept, Step-by-Step, and Verification.
+2. **Memory & Personalization:** You have access to the student's **STUDY CONTEXT** (Class, Subject, Plan, and Progress). Use this to recall what they know and reference backlogs.
+3. **Visual Thinking:** For STEM topics, describe concepts visually. Use whiteboard-style logic.
+4. **STEM Mastery:** Use the "Solve" methodology: Concept, Step-by-Step, Verification.
 
 ### WORKFLOWS:
 - **FEYNMAN STUDY:** Don't give answers. Say: "Explain [Topic] to me like I'm in Class 5. I'll catch your gaps."
-- **PRACTICE CANVAS:** Generate 3-5 custom problems. If they get one wrong, don't give the solution immediately; ask them to explain their first step.
-- **SUMMARY:** Provide 5 high-impact bullet points + a "One-Sentence Intuition" for the topic.
+- **PRACTICE CANVAS:** Generate 3-5 custom problems. Solutions on demand.
+- **SUMMARY:** Provide 5 high-impact bullet points + a "One-Sentence Intuition".
+
+### TOOLS:
+- **addToJournal**: **MANDATORY EXECUTION**. When the student asks to "save", "remember", "add to notes", or "journal this", you MUST call this tool. Do NOT just say you will do it; you MUST trigger the function. Always use LaTeX for math/formulas (e.g. $E=mc^2$).
 
 ### IDENTITY:
-You are **ATLAS**. You are supportive, authoritative yet friendly, and you always use the student's name if known. Use emojis (📚, 💡, 💪) to keep the vibe casual but focused.`;
+You are **ATLAS**. You are supportive, authoritative yet friendly. Use emojis (📚, 💡, 💪) to keep the vibe focused.`;
 
 type Props = {
   title?: string;
@@ -67,6 +68,9 @@ type Props = {
   variant?: 'default' | 'mentor';
   storageNamespace?: string;
   hideMissionControl?: boolean;
+  isolateContext?: boolean;
+  notes?: string;
+  onNotesChange?: (val: string) => void;
 };
 
 export function AIStudyBuddy({
@@ -77,6 +81,9 @@ export function AIStudyBuddy({
   variant = 'default',
   storageNamespace = 'ai_buddy',
   hideMissionControl = false,
+  isolateContext = false,
+  notes: externalNotes,
+  onNotesChange,
 }: Props) {
   const { session } = useAuth() as any;
   const { showToast } = useToast();
@@ -87,6 +94,20 @@ export function AIStudyBuddy({
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  // Sync internal notes with external props if provided
+  useEffect(() => {
+    if (externalNotes !== undefined) {
+      setNotes(externalNotes);
+    }
+  }, [externalNotes]);
+
+  useEffect(() => {
+    if (onNotesChange && notes !== externalNotes) {
+      onNotesChange(notes);
+    }
+  }, [notes, onNotesChange, externalNotes]);
+
   const [homework, setHomework] = useState<string>('');
   const [isTodayCompleted, setIsTodayCompleted] = useState<boolean>(false);
   const [isTogglingCompletion, setIsTogglingCompletion] = useState<boolean>(false);
@@ -119,66 +140,76 @@ export function AIStudyBuddy({
     setMessages(prev => [...prev, assistantMessage]);
   };
 
-  // Vapi Setup
-  // Vapi Setup
-  useEffect(() => {
-    vapi.on('call-start', () => {
-      console.log('Atlas Vapi call started');
-      setVoiceConversationActive(true);
-      setVoiceStatus('idle');
-    });
+  // Storage keys per user
+  const userKey = (session?.user?.id as string) || 'guest';
+  const defaultNamespace = 'ai_buddy';
+  const historyKey = `${storageNamespace}_history_${userKey}`;
+  const notesKey = `${storageNamespace}_notes_${userKey}`;
+  const selectedPlanKey = `${storageNamespace}_selected_plan_${userKey}`;
 
-    vapi.on('call-end', () => {
-      console.log('Atlas Vapi call ended');
-      setVoiceConversationActive(false);
-      setVoiceStatus('idle');
-    });
-
-    vapi.on('speech-start', () => {
-      setVoiceStatus('listening');
-    });
-
-    vapi.on('speech-end', () => {
-      setVoiceStatus('idle');
-    });
-
-    vapi.on('volume-level', (volume) => {
-      setVoiceVolume(volume);
-    });
-
-    vapi.on('message', (message) => {
-      if (message.type === 'transcript' && message.role === 'assistant') {
-        setVoiceStatus('speaking');
-        setTimeout(() => setVoiceStatus(prev => prev === 'speaking' ? 'idle' : prev), 3000);
+  const saveHistory = (msgs: Message[]) => {
+    try {
+      localStorage.setItem(historyKey, JSON.stringify(msgs));
+    } catch { }
+  };
+  const loadHistory = (): Message[] => {
+    try {
+      let raw = localStorage.getItem(historyKey);
+      // Migrate from default namespace if needed
+      if (!raw && storageNamespace !== defaultNamespace) {
+        const fallbackKey = `${defaultNamespace}_history_${userKey}`;
+        raw = localStorage.getItem(fallbackKey);
+        if (raw) {
+          try { localStorage.setItem(historyKey, raw); } catch { }
+        }
       }
-
-      if (message.type === 'transcript' && message.transcriptType === 'final') {
-        const msgRole = message.role === 'assistant' ? 'assistant' : 'user';
-        const newMessage: Message = {
-          id: Date.now().toString() + Math.random(),
-          content: message.transcript,
-          role: msgRole,
-          timestamp: new Date(),
-        };
-        // Avoid duplicate messages if Vapi sends them rapidly? Vapi transcripts are usually stable.
-        setMessages(prev => [...prev, newMessage]);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as Message[];
+      // revive dates
+      return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+    } catch {
+      return [];
+    }
+  };
+  const saveNotes = (val: string) => {
+    try { localStorage.setItem(notesKey, val); } catch { }
+  };
+  const loadNotes = (): string => {
+    try {
+      let val = localStorage.getItem(notesKey) || '';
+      if ((!val || val === '') && storageNamespace !== defaultNamespace) {
+        const fallbackKey = `${defaultNamespace}_notes_${userKey}`;
+        const legacy = localStorage.getItem(fallbackKey) || '';
+        if (legacy) {
+          val = legacy;
+          try { localStorage.setItem(notesKey, legacy); } catch { }
+        }
       }
-    });
+      return val || '';
+    } catch { return ''; }
+  };
 
-    vapi.on('error', (e) => {
-      console.error('Atlas Vapi Error:', e);
-      showToast('Voice connection error', 'error');
-      setVoiceConversationActive(false);
-      setVoiceStatus('idle');
-    });
+  // Save homework locally per user+plan+day
+  const saveHomeworkLocal = (val: string) => {
+    setHomework(val);
+    try {
+      if (!selectedPlan) return;
+      const plan = studyPlans.find(p => p.id === selectedPlan);
+      if (!plan) return;
+      let dayNumber = 1;
+      if (plan.created_at) {
+        const created = new Date(plan.created_at);
+        dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        if (dayNumber < 1) dayNumber = 1;
+      }
+      const hwKey = `${storageNamespace}_homework_${userKey}_${plan.id}_${dayNumber}`;
+      localStorage.setItem(hwKey, val);
+    } catch { }
+  };
 
-    return () => {
-      // Clean up handled by Vapi SDK or on toggle
-    };
-  }, []);
 
   const getCurrentStudyContext = () => {
-    if (!selectedPlan) return '';
+    if (isolateContext || !selectedPlan) return '';
 
     const plan = studyPlans.find(p => p.id === selectedPlan);
     if (!plan) return '';
@@ -208,7 +239,7 @@ export function AIStudyBuddy({
  `;
   };
 
-  const toggleVapiSession = async () => {
+  const toggleVapiSession = async (initialMessage?: string) => {
     if (voiceConversationActive) {
       vapi.stop();
       setVoiceConversationActive(false);
@@ -216,17 +247,45 @@ export function AIStudyBuddy({
       setVoiceStatus('connecting');
       setVoiceConversationActive(true);
       const context = getCurrentStudyContext();
-      const currentContextPrompt = context ? `${ATLAS_SYSTEM_PROMPT}\n\n${context}` : ATLAS_SYSTEM_PROMPT;
+      const currentContextPrompt = [ATLAS_SYSTEM_PROMPT, context, extraContext].filter(Boolean).join('\n\n');
+
+      const messages: any[] = [
+        {
+          role: "system",
+          content: currentContextPrompt
+        }
+      ];
+
+      if (initialMessage) {
+        messages.push({
+          role: "user",
+          content: initialMessage
+        });
+      }
 
       try {
         await vapi.start({
           model: {
             provider: "openai",
-            model: "gpt-3.5-turbo",
-            messages: [
+            model: "gpt-4o-mini",
+            messages,
+            tools: [
               {
-                role: "system",
-                content: currentContextPrompt
+                type: "function",
+                function: {
+                  name: "addToJournal",
+                  description: "Add a note, formula, or thought to the user's personal journal/notes. Always format math/formulas using LaTeX syntax (e.g. $E=mc^2$).",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      content: {
+                        type: "string",
+                        description: "The content to add to the journal. Can include markdown and LaTeX."
+                      }
+                    },
+                    required: ["content"]
+                  }
+                }
               }
             ]
           },
@@ -538,75 +597,141 @@ export function AIStudyBuddy({
     }
   };
 
-  // Storage keys per user
-  const userKey = (session?.user?.id as string) || 'guest';
-  const defaultNamespace = 'ai_buddy';
-  const historyKey = `${storageNamespace}_history_${userKey}`;
-  const notesKey = `${storageNamespace}_notes_${userKey}`;
-  const selectedPlanKey = `${storageNamespace}_selected_plan_${userKey}`;
 
-  const saveHistory = (msgs: Message[]) => {
-    try {
-      localStorage.setItem(historyKey, JSON.stringify(msgs));
-    } catch { }
-  };
-  const loadHistory = (): Message[] => {
-    try {
-      let raw = localStorage.getItem(historyKey);
-      // Migrate from default namespace if needed
-      if (!raw && storageNamespace !== defaultNamespace) {
-        const fallbackKey = `${defaultNamespace}_history_${userKey}`;
-        raw = localStorage.getItem(fallbackKey);
-        if (raw) {
-          try { localStorage.setItem(historyKey, raw); } catch { }
+
+  // Refs for stable access in Vapi listeners
+  const saveNotesRef = useRef(saveNotes);
+  const addAssistantRef = useRef(addAssistant);
+  const showToastRef = useRef(showToast);
+
+  useEffect(() => {
+    saveNotesRef.current = saveNotes;
+    addAssistantRef.current = addAssistant;
+    showToastRef.current = showToast;
+  }, [saveNotes, addAssistant, showToast]);
+
+  // Vapi Setup
+  useEffect(() => {
+    const onCallStart = () => {
+      console.log('Atlas Vapi call started');
+      setVoiceConversationActive(true);
+      setVoiceStatus('idle');
+    };
+
+    const onCallEnd = () => {
+      console.log('Atlas Vapi call ended');
+      setVoiceConversationActive(false);
+      setVoiceStatus('idle');
+    };
+
+    const onSpeechStart = () => {
+      setVoiceStatus('listening');
+    };
+
+    const onSpeechEnd = () => {
+      setVoiceStatus('idle');
+    };
+
+    const onVolumeLevel = (volume: any) => {
+      setVoiceVolume(volume);
+    };
+
+    const onMessage = (message: any) => {
+      console.log('Atlas Vapi Message:', message);
+
+      if (message.type === 'transcript' && message.role === 'assistant') {
+        setVoiceStatus('speaking');
+        setTimeout(() => setVoiceStatus(prev => prev === 'speaking' ? 'idle' : prev), 3000);
+      }
+
+      if (message.type === 'transcript' && message.transcriptType === 'final') {
+        const msgRole = message.role === 'assistant' ? 'assistant' : 'user';
+        const newMessage: Message = {
+          id: Date.now().toString() + Math.random(),
+          content: message.transcript,
+          role: msgRole,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+
+      // Handle Tool Calls (Standard)
+      if (message.type === 'tool-calls') {
+        console.log('Tool call detected:', message.toolCalls);
+        message.toolCalls.forEach((toolCall: any) => {
+          if (toolCall.function.name === 'addToJournal' || toolCall.function.name === 'addToNotes') {
+            try {
+              const args = typeof toolCall.function.arguments === 'string'
+                ? JSON.parse(toolCall.function.arguments)
+                : toolCall.function.arguments;
+
+              console.log('Parsed args for journal:', args);
+              const noteContent = args.content || args.note || args.text;
+
+              if (noteContent) {
+                setNotes(prev => {
+                  const newVal = prev && prev.trim() ? prev.trim() + '\n\n' + noteContent : noteContent;
+                  if (saveNotesRef.current) saveNotesRef.current(newVal);
+                  return newVal;
+                });
+                if (addAssistantRef.current) addAssistantRef.current(`📝 **Journal Updated:**\n${noteContent}`);
+                if (showToastRef.current) showToastRef.current('Added to Journal', 'success');
+              } else {
+                console.warn('Tool call received but no content found in args:', args);
+              }
+            } catch (e) {
+              console.error('Error processing journal tool call', e);
+            }
+          }
+        });
+      }
+
+      // Handle Function Calls (Legacy/Fallback)
+      if (message.type === 'function-call' && (message.functionCall.name === 'addToJournal' || message.functionCall.name === 'addToNotes')) {
+        try {
+          const args = typeof message.functionCall.parameters === 'string'
+            ? JSON.parse(message.functionCall.parameters)
+            : message.functionCall.parameters;
+          if (args.content) {
+            setNotes(prev => {
+              const newVal = prev ? prev + '\n\n' + args.content : args.content;
+              if (saveNotesRef.current) saveNotesRef.current(newVal);
+              return newVal;
+            });
+            if (addAssistantRef.current) addAssistantRef.current(`📝 **Journal Updated:**\n${args.content}`);
+            if (showToastRef.current) showToastRef.current('Added to Journal', 'success');
+          }
+        } catch (e) {
+          console.error('Error processing journal add', e);
         }
       }
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as Message[];
-      // revive dates
-      return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
-    } catch {
-      return [];
-    }
-  };
-  const saveNotes = (val: string) => {
-    try { localStorage.setItem(notesKey, val); } catch { }
-  };
-  const loadNotes = (): string => {
-    try {
-      let val = localStorage.getItem(notesKey) || '';
-      if ((!val || val === '') && storageNamespace !== defaultNamespace) {
-        const fallbackKey = `${defaultNamespace}_notes_${userKey}`;
-        const legacy = localStorage.getItem(fallbackKey) || '';
-        if (legacy) {
-          val = legacy;
-          try { localStorage.setItem(notesKey, legacy); } catch { }
-        }
-      }
-      return val || '';
-    } catch { return ''; }
-  };
+    };
 
-  // Save homework locally per user+plan+day
-  const saveHomeworkLocal = (val: string) => {
-    setHomework(val);
-    try {
-      if (!selectedPlan) return;
-      const plan = studyPlans.find(p => p.id === selectedPlan);
-      if (!plan) return;
-      let dayNumber = 1;
-      if (plan.created_at) {
-        const created = new Date(plan.created_at);
-        dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        if (dayNumber < 1) dayNumber = 1;
-      }
-      const hwKey = `${storageNamespace}_homework_${userKey}_${plan.id}_${dayNumber}`;
-      localStorage.setItem(hwKey, val);
-    } catch { }
-  };
+    const onError = (e: any) => {
+      console.error('Atlas Vapi Error:', e);
+      if (showToastRef.current) showToastRef.current('Voice connection error', 'error');
+      setVoiceConversationActive(false);
+      setVoiceStatus('idle');
+    };
 
-  // Minimal Markdown -> HTML: bold + plain text only, escape HTML
+    vapi.on('call-start', onCallStart);
+    vapi.on('call-end', onCallEnd);
+    vapi.on('speech-start', onSpeechStart);
+    vapi.on('speech-end', onSpeechEnd);
+    vapi.on('volume-level', onVolumeLevel);
+    vapi.on('message', onMessage);
+    vapi.on('error', onError);
 
+    return () => {
+      vapi.off('call-start', onCallStart);
+      vapi.off('call-end', onCallEnd);
+      vapi.off('speech-start', onSpeechStart);
+      vapi.off('speech-end', onSpeechEnd);
+      vapi.off('volume-level', onVolumeLevel);
+      vapi.off('message', onMessage);
+      vapi.off('error', onError);
+    };
+  }, []);
 
   const getWelcomeText = () => {
     const defaultText = `👋 Hello! I am **ATLAS**, your AI Neural Mentor and Learning Partner.
@@ -655,10 +780,14 @@ What shall we tackle today?`;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userKey]);
 
-  // Persist messages whenever they change
+  // Persist messages and notes whenever they change
   useEffect(() => {
     saveHistory(messages);
   }, [messages]);
+
+  useEffect(() => {
+    saveNotes(notes);
+  }, [notes]);
 
   // Handle namespace changes (e.g., HMR or persona switch) by attempting to reload
   useEffect(() => {
@@ -872,7 +1001,7 @@ What shall we tackle today?`;
     saveHistory(arr);
   };
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, skipAI: boolean = false) => {
     if ((!content.trim() && !selectedImage) || isLoading) return;
 
     let finalContent = content.trim();
@@ -914,6 +1043,12 @@ What shall we tackle today?`;
           showToast('Failed to analyze image.', 'error');
         }
         setSelectedImage(null);
+      }
+
+      // If skipAI is true, we just add the message to the list and stop
+      if (skipAI) {
+        setIsLoading(false);
+        return;
       }
 
       // If in a guided flow, handle it and return (no AI call)
@@ -997,17 +1132,29 @@ What shall we tackle today?`;
     }
   };
 
+  // Refs for stable access in window listeners
+  const sendMessageRef = useRef(sendMessage);
+  const toggleVapiSessionRef = useRef(toggleVapiSession);
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+    toggleVapiSessionRef.current = toggleVapiSession;
+  }, [sendMessage, toggleVapiSession]);
+
   useEffect(() => {
     const handler = (e: any) => {
       const { message, voice } = e.detail;
-      if (voice) {
-        setVoiceConversationActive(true);
+      if (voice && !voiceConversationActive) {
+        // Start voice session if not already active
+        if (toggleVapiSessionRef.current) toggleVapiSessionRef.current(message);
+        if (message && sendMessageRef.current) sendMessageRef.current(message, true); // add to history but skip AI (voice handles it)
+      } else {
+        if (message && sendMessageRef.current) sendMessageRef.current(message);
       }
-      if (message) sendMessage(message);
     };
     window.addEventListener('trigger-atlas-chat', handler);
     return () => window.removeEventListener('trigger-atlas-chat', handler);
-  }, [sendMessage]);
+  }, [voiceConversationActive]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

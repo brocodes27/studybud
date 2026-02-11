@@ -3,6 +3,7 @@ import { Users, Trophy, Hash, Medal, BarChart3, Copy, X, Activity, Terminal, Dat
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { usePayment } from '../hooks/usePayment';
 
 interface StudyGroup {
    id: string;
@@ -27,67 +28,107 @@ interface LeaderboardEntry {
 }
 
 export function SocialFeatures() {
-   const { user } = useAuth() as any;
+   const { user, isPremium } = useAuth() as any;
    const { showToast } = useToast();
+   const { initiatePayment } = usePayment();
    const [activeTab, setActiveTab] = useState<'groups' | 'leaderboard' | 'achievements'>('groups');
    const [studyGroups, setStudyGroups] = useState<StudyGroup[]>([]);
    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+   const [achievements, setAchievements] = useState<any[]>([]);
+   const [loading, setLoading] = useState(true);
    const [showCreateGroup, setShowCreateGroup] = useState(false);
    const [showJoinGroup, setShowJoinGroup] = useState(false);
    const [joinCodeInput, setJoinCodeInput] = useState('');
-   const [newGroupData, setNewGroupData] = useState({ name: '', description: '', subject: '' });
-   const [achievements, setAchievements] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
+   const [newGroupData, setNewGroupData] = useState({
+      name: '',
+      description: '',
+      subject: ''
+   });
 
    useEffect(() => {
-      if (user) fetchSocialData();
+      if (user) {
+         fetchStudyGroups();
+         fetchLeaderboard();
+         fetchAchievements();
+      }
    }, [user]);
 
-   const fetchSocialData = async () => {
-      setLoading(true);
-      try {
-         await Promise.all([fetchStudyGroups(), fetchLeaderboard(), fetchAchievements()]);
-      } finally { setLoading(false); }
-   };
-
    const fetchStudyGroups = async () => {
-      const { data: groups, error } = await supabase
-         .from('study_groups')
-         .select(`
-        *,
-        study_group_members(count)
-      `)
-         .order('created_at', { ascending: false });
+      try {
+         // First get groups user is a member of
+         const { data: membershipData, error: membershipError } = await supabase
+            .from('study_group_members')
+            .select('group_id')
+            .eq('user_id', user.id);
 
-      if (error) {
-         console.error('Error fetching groups:', error);
-         return;
-      }
+         if (membershipError) throw membershipError;
 
-      if (groups) {
-         const formattedGroups = groups.map(g => ({
-            ...g,
-            member_count: g.study_group_members?.[0]?.count || 0,
-            is_member: false // We would ideally check if current user is in members list
-         }));
-         setStudyGroups(formattedGroups);
+         if (!membershipData || membershipData.length === 0) {
+            setStudyGroups([]);
+            return;
+         }
+
+         const groupIds = membershipData.map(m => m.group_id);
+
+         const { data, error } = await supabase
+            .from('study_groups')
+            .select('*')
+            .in('id', groupIds);
+
+         if (error) throw error;
+         setStudyGroups(data || []);
+      } catch (e: any) {
+         console.error('Error fetching study groups:', e);
+      } finally {
+         setLoading(false);
       }
    };
 
    const fetchLeaderboard = async () => {
-      const { data: lead } = await supabase.from('leaderboard_view').select('*').limit(10);
-      if (lead) setLeaderboard(lead.map((l: any, i: number) => ({ ...l, rank: i + 1 })));
+      try {
+         const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username, total_points, study_streak, achievement_count')
+            .order('total_points', { ascending: false })
+            .limit(10);
+
+         if (error) throw error;
+         if (data) {
+            setLeaderboard(data.map((entry, index) => ({
+               ...entry,
+               rank: index + 1
+            })));
+         }
+      } catch (e: any) {
+         console.error('Error fetching leaderboard:', e);
+      }
    };
 
    const fetchAchievements = async () => {
-      const { data } = await supabase
-         .from('user_achievements')
-         .select('*, achievements(*)')
-         .eq('user_id', user?.id);
-      if (data) setAchievements(data);
+      try {
+         const { data, error } = await supabase
+            .from('user_achievements')
+            .select(`
+               *,
+               achievements:achievement_id (*)
+            `)
+            .eq('user_id', user.id);
+
+         if (error) throw error;
+         setAchievements(data || []);
+      } catch (e: any) {
+         console.error('Error fetching achievements:', e);
+      }
    };
 
    const handleCreateGroup = async () => {
+      if (!isPremium) {
+         if (confirm("Creating private nodes requires PRO access. Upgrade now?")) {
+            initiatePayment();
+         }
+         return;
+      }
+
       if (!newGroupData.name || !newGroupData.subject) {
          showToast('Name and Subject are required', 'error');
          return;

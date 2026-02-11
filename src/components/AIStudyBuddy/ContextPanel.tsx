@@ -1,5 +1,9 @@
-import React from 'react';
-import { BookOpen, ChevronDown, FileText, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, ChevronDown, FileText, Calendar, Eye, EyeOff } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface StudyPlan {
     id: string;
@@ -36,6 +40,8 @@ export const ContextPanel: React.FC<ContextPanelProps> = ({
     showContext,
     setShowContext,
 }) => {
+    const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+
     return (
         <div className="border-b-2 border-black bg-white relative z-20">
             <button
@@ -58,15 +64,43 @@ export const ContextPanel: React.FC<ContextPanelProps> = ({
             {showContext && (
                 <div className="p-4 pt-0 space-y-4 animate-fade-in">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-black uppercase tracking-widest flex items-center gap-1.5">
-                            <FileText className="h-3.5 w-3.5 stroke-[2.5px]" /> PERSONAL NOTES
-                        </label>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => { setNotes(e.target.value); saveNotes(e.target.value); }}
-                            placeholder="Add school updates, syllabus focus, weak topics..."
-                            className="w-full h-20 bg-neo-bg border-2 border-black p-3 text-xs font-bold placeholder-black/20 focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all"
-                        />
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black text-black uppercase tracking-widest flex items-center gap-1.5">
+                                <FileText className="h-3.5 w-3.5 stroke-[2.5px]" /> PERSONAL NOTES
+                            </label>
+                            <button
+                                onClick={() => setViewMode(prev => prev === 'edit' ? 'preview' : 'edit')}
+                                className="text-[10px] uppercase font-bold text-neo-accent flex items-center gap-1 hover:text-black transition-colors"
+                                title="Toggle Preview"
+                            >
+                                {viewMode === 'edit' ? (
+                                    <><Eye className="h-3 w-3" /> PREVIEW</>
+                                ) : (
+                                    <><EyeOff className="h-3 w-3" /> EDIT</>
+                                )}
+                            </button>
+                        </div>
+
+                        {viewMode === 'edit' ? (
+                            <textarea
+                                value={notes}
+                                onChange={(e) => { setNotes(e.target.value); saveNotes(e.target.value); }}
+                                placeholder="Add school updates, syllabus focus, weak topics... (Supports Markdown & LaTeX)"
+                                className="w-full h-24 bg-neo-bg border-2 border-black p-3 text-xs font-bold placeholder-black/20 focus:outline-none focus:shadow-[2px_2px_0px_0px_#000] focus:translate-x-[-1px] focus:translate-y-[-1px] transition-all resize-y"
+                            />
+                        ) : (
+                            <div className="w-full h-24 overflow-y-auto bg-white border-2 border-black p-3 text-xs prose prose-sm max-w-none">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                    components={{
+                                        p: ({ node, ...props }) => <p className="mb-1 last:mb-0" {...props} />
+                                    }}
+                                >
+                                    {notes || "*No notes yet.*"}
+                                </ReactMarkdown>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-2">

@@ -1,0 +1,141 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const DODO_WEBHOOK_SECRET = Deno.env.get("DODO_PAYMENTS_WEBHOOK_KEY");
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, webhook-id, webhook-signature, webhook-timestamp",
+};
+
+serve(async (req) => {
+    if (req.method === "OPTIONS") {
+        return new Response("ok", { headers: corsHeaders });
+    }
+
+    try {
+        if (req.method !== "POST") {
+            return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+        }
+
+        const payload = await req.json();
+        console.log("🔔 Dodo Webhook Received:", JSON.stringify(payload, null, 2));
+
+        // Handle various Dodo event types for successful payment
+        const eventType = payload.type || payload.event;
+        const data = payload.data || payload;
+
+        const isSuccess =
+            eventType === "payment.succeeded" ||
+            eventType === "payment_intent.succeeded" ||
+            eventType === "checkout.completed" ||
+            payload.status === "succeeded" ||
+            payload.payment_status === "paid" ||
+            data.status === "succeeded";
+
+        if (isSuccess) {
+            // Extract user email from various possible locations in payload
+            const userEmail =
+                data.customer?.email ||
+                data.customer_email ||
+                payload.customer_email ||
+                data.metadata?.email ||
+                payload.metadata?.email;
+
+            // Extract user_id from metadata (we set this during checkout creation)
+            let userId =
+                data.metadata?.user_id ||
+                payload.metadata?.user_id;
+
+            console.log(`✅ Payment success — Email: ${userEmail}, UserID from metadata: ${userId}`);
+
+            // If we don't have userId from metadata, look it up by email
+            if (!userId && userEmail) {
+                // Try user_profiles first (public table)
+                const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('id')
+                    .eq('email', userEmail)
+                    .single();
+
+                if (profile?.id) {
+                    userId = profile.id;
+                } else {
+                    // Fallback: use admin API to find user by email
+                    const { data: authData } = await supabase.auth.admin.listUsers();
+                    const matchedUser = authData?.users?.find(
+                        (u: any) => u.email?.toLowerCase() === userEmail.toLowerCase()
+                    );
+                    userId = matchedUser?.id;
+                }
+            }
+
+            if (userId) {
+                console.log(`🔄 Upgrading user ${userId} to Premium...`);
+
+                // Upsert into the subscriptions table
+                // This is what AuthContext.tsx checks: subscriptions.status === 'active'
+                const { error: subError } = await supabase
+                    .from('subscriptions')
+                    .upsert({
+                        user_id: userId,
+                        status: 'active',
+                        payment_provider: 'dodo',
+                        subscription_start: new Date().toISOString(),
+                        subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
+                        updated_at: new Date().toISOString(),
+                    }, {
+                        onConflict: 'user_id',
+                    });
+
+                if (subError) {
+                    console.error("❌ Subscription upsert failed:", subError);
+
+                    // Fallback: try insert if upsert fails
+                    const { error: insertError } = await supabase
+                        .from('subscriptions')
+                        .insert({
+                            user_id: userId,
+                            status: 'active',
+                            payment_provider: 'dodo',
+                            subscription_start: new Date().toISOString(),
+                            subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                        });
+
+                    if (insertError) {
+                        console.error("❌ Subscription insert also failed:", insertError);
+                        return new Response(JSON.stringify({ error: insertError.message }), {
+                            status: 500,
+                            headers: { ...corsHeaders, "Content-Type": "application/json" },
+                        });
+                    }
+                }
+
+                console.log("🎉 User upgraded to Premium successfully!");
+            } else {
+                console.warn("⚠️ Could not locate user. Email:", userEmail);
+            }
+        } else {
+            console.log(`ℹ️ Non-payment event received: ${eventType || payload.status || 'unknown'}`);
+        }
+
+        return new Response(JSON.stringify({ received: true }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+    } catch (err: any) {
+        console.error("❌ Webhook Error:", err.message);
+        return new Response(JSON.stringify({ error: err.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+});
