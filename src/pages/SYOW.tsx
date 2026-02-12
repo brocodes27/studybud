@@ -42,6 +42,15 @@ export default function SYOW() {
         return saved ? JSON.parse(saved) : [];
     });
 
+    // Check for preselected type from dashboard
+    React.useEffect(() => {
+        const preselect = localStorage.getItem('syow_preselect_type');
+        if (preselect) {
+            setContentType(preselect as any);
+            localStorage.removeItem('syow_preselect_type');
+        }
+    }, []);
+
     // Load active session on mount
     React.useEffect(() => {
         if (activeSessionId && mode === 'study') {
