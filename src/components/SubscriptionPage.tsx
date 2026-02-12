@@ -36,35 +36,9 @@ export function SubscriptionPage() {
                     </p>
                 </header>
 
-                <div className="grid md:grid-cols-2 gap-12 items-start mb-20">
-                    {/* Free Plan */}
-                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#000] group hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[20px_20px_0px_0px_#000] transition-all">
-                        <h3 className="text-3xl font-black uppercase italic mb-2 tracking-tighter">STARTER_NODE</h3>
-                        <div className="text-5xl font-black mb-8 italic">$0<span className="text-lg text-black/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span></div>
-
-                        <p className="font-bold text-black/60 uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-black/10 pb-4">
-                            INITIAL_PHASE_ACCESS. BASIC_FUNCTIONALITY_FOR_SOLO_OPERATIVES.
-                        </p>
-
-                        <ul className="space-y-6 mb-12">
-                            {features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
-                                    <div className="w-5 h-5 border-2 border-black bg-white flex items-center justify-center flex-shrink-0">
-                                        <div className="w-2 h-2 bg-black/20" />
-                                    </div>
-                                    <span className="text-black/40">{f.name}: </span>
-                                    <span className="text-black/60">{f.free}</span>
-                                </li>
-                            ))}
-                        </ul>
-
-                        <div className={`w-full py-5 border-4 border-black font-black uppercase italic text-xl text-center cursor-default ${!isPremium ? 'bg-neo-bg text-black' : 'bg-white text-black/20'}`}>
-                            {!isPremium ? 'CURRENT_ACTIVE_SYNC' : 'DEPRIORITIZED_NODE'}
-                        </div>
-                    </div>
-
+                <div className="flex justify-center mb-20">
                     {/* Pro Plan */}
-                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#4D96FF] rotate-1 group hover:rotate-0 transition-all transform md:-translate-y-6">
+                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#4D96FF] rotate-1 group hover:rotate-0 transition-all transform max-w-xl w-full">
                         <div className="absolute -top-6 -right-6 bg-neo-accent text-white px-6 py-3 border-4 border-black font-black text-xs uppercase tracking-[0.2em] -rotate-3 group-hover:rotate-0 transition-all shadow-[6px_6px_0px_0px_#000]">
                             SYSTEM_RECOMMENDED
                         </div>
