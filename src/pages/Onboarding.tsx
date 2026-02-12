@@ -57,7 +57,7 @@ export default function Onboarding() {
         role,
         full_name: fullName || null,
         onboarding_completed: true,
-        trial_active: true,
+        trial_active: false,
       };
       const { error: profileError } = await supabase.from('user_profiles').upsert(profilePayload);
       if (profileError) throw profileError;
@@ -87,7 +87,7 @@ export default function Onboarding() {
       }, { onConflict: 'user_id' });
 
       await refreshProfile();
-      navigate('/');
+      navigate('/pricing');
     } catch (e: any) {
       alert(e.message || 'Failed to complete onboarding');
     } finally {

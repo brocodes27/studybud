@@ -119,6 +119,8 @@ function AppContent() {
   const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
 
   if (trialExpired && !isPremium && !isAdmin && !isSubscriptionRoute) {
+    const isNewUser = !isPremium && !trialActive;
+
     return (
       <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none"
@@ -128,16 +130,20 @@ function AppContent() {
           <div className="w-20 h-20 bg-neo-secondary border-4 border-black flex items-center justify-center mx-auto mb-8 shadow-[4px_4px_0px_0px_#000] sticky top-0">
             <Crown className="w-10 h-10 text-black stroke-[2.5px]" />
           </div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black italic">TRIAL EXPIRED</h2>
+          <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black italic">
+            {isNewUser ? 'WELCOME TO THE NEURAL OS' : 'TRIAL EXPIRED'}
+          </h2>
           <p className="text-black/70 mb-10 text-lg font-bold leading-snug">
-            Your 7-day free access has ended. Level up to a Pro subscription to keep your neural edge.
+            {isNewUser
+              ? 'Complete your setup by activating your 7-day free trial. Select a plan to begin your neural augmentation.'
+              : 'Your 7-day free access has ended. Level up to a Pro subscription to keep your neural edge.'}
           </p>
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/subscription')}
+              onClick={() => navigate('/pricing')}
               className="w-full neo-button bg-neo-accent py-5 text-xl"
             >
-              VIEW SUBSCRIPTION PLANS
+              {isNewUser ? 'START FREE TRIAL' : 'VIEW SUBSCRIPTION PLANS'}
             </button>
             <button
               onClick={() => signOut()}
