@@ -166,16 +166,16 @@ export function DailyCheckin() {
 
             // Generate question using AI
             const prompt = `
-Generate a highly personalized Digital SAT practice question for \${userName}.
-Target Exam: \${goals?.target_exam || 'SAT'}
-Target Score: \${targetScore}
-Current Weak Domain: \${chosenDomain}
+Generate a highly personalized Digital SAT practice question for ${userName}.
+Target Exam: ${goals?.target_exam || 'SAT'}
+Target Score: ${targetScore}
+Current Weak Domain: ${chosenDomain}
 
-Context: The student is leveling up their skills. Make the question challenging but appropriate for a target score of \${targetScore}.
+Context: The student is leveling up their skills. Make the question challenging but appropriate for a target score of ${targetScore}.
 
 Return ONLY a valid JSON object (no markdown, no code blocks):
 {
-  "domain": "\${chosenDomain}",
+  "domain": "${chosenDomain}",
   "subdomain": "specific subtopic",
   "question": "The question text with any necessary context",
   "options": ["A) option1", "B) option2", "C) option3", "D) option4"],
@@ -191,7 +191,7 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
             );
 
             // Parse JSON
-            const jsonMatch = response.match(/\\{[\\s\\S]*\\}/);
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 const questionData = JSON.parse(jsonMatch[0]);
                 setQuestion({
@@ -254,7 +254,7 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
     const handlePlugGap = (gap: any) => {
         window.dispatchEvent(new CustomEvent('trigger-atlas-chat', {
             detail: {
-                message: \`ATLAS, I have a logic gap in **"\${gap.domain} : \${gap.subdomain}"**. My current mastery is only \${gap.mastery_score}%. \\n\\nLet's start a Feynman Session to plug this gap immediately.\`,
+                message: `ATLAS, I have a logic gap in **"${gap.domain} : ${gap.subdomain}"**. My current mastery is only ${gap.mastery_score}%. \n\nLet's start a Feynman Session to plug this gap immediately.`,
                 voice: true
             }
         }));
@@ -361,7 +361,7 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                                 key={index}
                                                 onClick={() => handleAnswerSelect(index)}
                                                 disabled={selectedAnswer !== null}
-                                                className={`w- full p - 6 border - 4 \${ borderClass } \${ bgClass } text - left font - black text - xl transition - all shadow - [8px_8px_0px_0px_#000] disabled: cursor - not - allowed flex items - center justify - between group`}
+                                                className={`w-full p-6 border-4 ${borderClass} ${bgClass} text-left font-black text-xl transition-all shadow-[8px_8px_0px_0px_#000] disabled:cursor-not-allowed flex items-center justify-between group`}
                                             >
                                                 <span>{option}</span>
                                                 {selectedAnswer !== null && index === question.correctIndex && (
@@ -404,9 +404,8 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: 'spring', delay: 0.2 }}
-                                className={`w - 32 h - 32 mx - auto mb - 8 border - 4 border - black flex items - center justify - center \${
-            isCorrect? 'bg-neo-secondary': 'bg-neo-muted'
-        } shadow - [8px_8px_0px_0px_#000] rotate - [-5deg]`}
+                                className={`w-32 h-32 mx-auto mb-8 border-4 border-black flex items-center justify-center ${isCorrect ? 'bg-neo-secondary' : 'bg-neo-muted'
+                                    } shadow-[8px_8px_0px_0px_#000] rotate-[-5deg]`}
                             >
                                 {isCorrect ? (
                                     <Trophy className="w-16 h-16 text-black" />
