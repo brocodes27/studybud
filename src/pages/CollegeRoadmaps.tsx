@@ -47,8 +47,8 @@ export function CollegeRoadmaps() {
   const navigate = useNavigate();
 
   const handleConsultAtlas = () => {
-    // Navigate to Home/Atlas and set a context or prompt for the AI
-    navigate('/', { state: { initialMessage: `Help me create a detailed personal roadmap for the ${selected.name} track.` } });
+    // Navigate to Atlas Workspace and set a context or prompt for the AI
+    navigate('/atlas', { state: { initialMessage: `Help me create a detailed personal roadmap for the ${selected.name} track.` } });
   };
 
   return (
@@ -75,9 +75,8 @@ export function CollegeRoadmaps() {
             <button
               key={r.id}
               onClick={() => setSelected(r)}
-              className={`w-full text-left p-6 border-4 border-black font-black transition-all ${
-                selected.id === r.id ? `${r.color} -translate-y-1 shadow-[8px_8px_0px_0px_#000]` : 'bg-white hover:bg-neo-bg opacity-70 hover:opacity-100'
-              }`}
+              className={`w-full text-left p-6 border-4 border-black font-black transition-all ${selected.id === r.id ? `${r.color} -translate-y-1 shadow-[8px_8px_0px_0px_#000]` : 'bg-white hover:bg-neo-bg opacity-70 hover:opacity-100'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xl uppercase">{r.name}</span>
@@ -86,11 +85,11 @@ export function CollegeRoadmaps() {
               <p className="text-[10px] mt-2 opacity-60 font-black uppercase tracking-widest">{r.focus}</p>
             </button>
           ))}
-          
+
           <div className="p-8 bg-black text-white border-4 border-black shadow-[12px_12px_0px_0px_#FF6B6B] mt-12 italic">
             <Sparkles className="h-8 w-8 mb-4 text-neo-accent" />
             <p className="font-bold text-lg leading-snug">Atlas can build a custom personal roadmap for your profile.</p>
-            <button 
+            <button
               onClick={handleConsultAtlas}
               className="mt-6 bg-neo-accent text-black px-6 py-3 font-black uppercase text-sm hover:translate-x-1 transition-all flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.3)]"
             >
@@ -127,20 +126,20 @@ export function CollegeRoadmaps() {
             </div>
 
             <div className="mt-6 pt-10 border-t-4 border-black grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="bg-neo-bg border-4 border-black p-6 flex items-center gap-5">
-                  <BookOpen className="h-8 w-8" />
-                  <div>
-                    <div className="text-[10px] font-black opacity-30 tracking-widest uppercase">Required_Tests</div>
-                    <div className="font-black text-sm uppercase">SAT / AP / IB / A-LEVELS</div>
-                  </div>
-               </div>
-               <div className="bg-neo-bg border-4 border-black p-6 flex items-center gap-5">
-                  <Target className="h-8 w-8" />
-                  <div>
-                    <div className="text-[10px] font-black opacity-30 tracking-widest uppercase">Target_Goal</div>
-                    <div className="font-black text-sm uppercase">Global Top 1% Ranking</div>
-                  </div>
-               </div>
+              <div className="bg-neo-bg border-4 border-black p-6 flex items-center gap-5">
+                <BookOpen className="h-8 w-8" />
+                <div>
+                  <div className="text-[10px] font-black opacity-30 tracking-widest uppercase">Required_Tests</div>
+                  <div className="font-black text-sm uppercase">SAT / AP / IB / A-LEVELS</div>
+                </div>
+              </div>
+              <div className="bg-neo-bg border-4 border-black p-6 flex items-center gap-5">
+                <Target className="h-8 w-8" />
+                <div>
+                  <div className="text-[10px] font-black opacity-30 tracking-widest uppercase">Target_Goal</div>
+                  <div className="font-black text-sm uppercase">Global Top 1% Ranking</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

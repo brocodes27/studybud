@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Target, Calendar, Clock, Brain,
@@ -17,7 +18,8 @@ interface ExamType {
 }
 
 export default function Onboarding() {
-  const { user } = useAuth() as any;
+  const { user, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -84,7 +86,8 @@ export default function Onboarding() {
         current_streak: 0,
       }, { onConflict: 'user_id' });
 
-      window.location.replace('/pricing');
+      await refreshProfile();
+      navigate('/');
     } catch (e: any) {
       alert(e.message || 'Failed to complete onboarding');
     } finally {

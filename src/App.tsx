@@ -130,7 +130,7 @@ function AppContent() {
           </p>
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/pricing')}
+              onClick={() => navigate('/subscription')}
               className="w-full neo-button bg-neo-accent py-5 text-xl"
             >
               VIEW SUBSCRIPTION PLANS

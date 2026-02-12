@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AIStudyBuddy } from '../components/AIStudyBuddy';
+import { useLocation } from 'react-router-dom';
 import {
   Power, Brain,
   Search, MessageSquare, Video,
@@ -139,6 +140,26 @@ export function AtlasWorkspace() {
     const today = schedule.find((d: any) => d.day === dayNumber) || schedule[0];
     return { plan, today, dayNumber };
   };
+
+  const location = useLocation();
+
+  // 6. HANDLE INITIAL MESSAGE (from navigation state)
+  useEffect(() => {
+    const state = location.state as { initialMessage?: string };
+    if (state?.initialMessage) {
+      // Small timeout to ensure listeners are ready
+      const timer = setTimeout(() => {
+        setSidebarWidth(700);
+        setIsSidebarExpanded(true);
+        window.dispatchEvent(new CustomEvent('trigger-atlas-chat', {
+          detail: { message: state.initialMessage }
+        }));
+        // Clear state so it doesn't re-trigger on re-mount
+        window.history.replaceState({}, document.title);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const missionData = getTodayMission();
 

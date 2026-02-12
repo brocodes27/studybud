@@ -13,6 +13,7 @@ interface AuthContextType {
   trialStart: Date | null;
   trialActive: boolean;
   onboardingCompleted: boolean;
+  refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, meta: any) => Promise<any>;
   signOut: () => Promise<any>;
@@ -32,6 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [trialStart, setTrialStart] = useState<Date | null>(null);
   const [trialActive, setTrialActive] = useState<boolean>(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(true); // Default true to avoid flash, will be set correctly below
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed')
+      .eq('id', user.id);
+
+    if (profile && profile.length > 0) {
+      const p = profile[0];
+      setRole(p.role ?? null);
+      setIsAdmin(p.is_admin ?? false);
+      setFullName(p.full_name ?? null);
+      setTrialStart(p.created_at ? new Date(p.created_at) : null);
+      setTrialActive(p.trial_active ?? false);
+      setOnboardingCompleted(p.onboarding_completed ?? false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -137,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (isMounted) setLoading(false);
       }
     };
+
+
     fetchUserAndRole();
 
     // Listen for auth state changes
@@ -212,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, session, loading, role, isPremium, isAdmin, fullName,
-      trialStart, trialActive, onboardingCompleted,
+      trialStart, trialActive, onboardingCompleted, refreshProfile,
       signIn, signUp, signOut, signInWithGoogle
     }}>
       {children}

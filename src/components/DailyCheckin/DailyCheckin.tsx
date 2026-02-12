@@ -252,13 +252,16 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
     };
 
     const handlePlugGap = (gap: any) => {
+        const message = `ATLAS, I have a logic gap in **"${gap.domain} : ${gap.subdomain}"**. My current mastery is only ${gap.mastery_score}%. \n\nLet's start a Feynman Session to plug this gap immediately.`;
+
         window.dispatchEvent(new CustomEvent('trigger-atlas-chat', {
             detail: {
-                message: `ATLAS, I have a logic gap in **"${gap.domain} : ${gap.subdomain}"**. My current mastery is only ${gap.mastery_score}%. \n\nLet's start a Feynman Session to plug this gap immediately.`,
+                message,
                 voice: true
             }
         }));
-        navigate('/atlas');
+
+        navigate('/atlas', { state: { initialMessage: message } });
     };
 
     const getGreeting = () => {
