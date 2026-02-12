@@ -55,6 +55,7 @@ export default function Onboarding() {
         role,
         full_name: fullName || null,
         onboarding_completed: true,
+        trial_active: true,
       };
       const { error: profileError } = await supabase.from('user_profiles').upsert(profilePayload);
       if (profileError) throw profileError;

@@ -49,7 +49,7 @@ import { SubscriptionPage } from './components/SubscriptionPage';
 import SYOW from './pages/SYOW';
 
 function AppContent() {
-  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive, signOut } = useAuth();
+  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive, onboardingCompleted, signOut } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
@@ -110,7 +110,7 @@ function AppContent() {
   }
 
   if (!user) return <Landing />;
-  if (role === null) return <Onboarding />;
+  if (!onboardingCompleted) return <Onboarding />;
 
   const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
 
