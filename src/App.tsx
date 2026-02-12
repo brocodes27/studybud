@@ -49,11 +49,12 @@ import { SubscriptionPage } from './components/SubscriptionPage';
 import SYOW from './pages/SYOW';
 
 function AppContent() {
-  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive } = useAuth();
+  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive, signOut } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isFullscreen = (() => {
     try {
@@ -111,7 +112,6 @@ function AppContent() {
   if (!user) return <Landing />;
   if (role === null) return <Onboarding />;
 
-  const navigate = useNavigate();
   const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
 
   if (trialExpired && !isPremium && !isAdmin && !isSubscriptionRoute) {
@@ -136,7 +136,7 @@ function AppContent() {
               VIEW SUBSCRIPTION PLANS
             </button>
             <button
-              onClick={() => useAuth().signOut()}
+              onClick={() => signOut()}
               className="w-full text-black/40 font-black uppercase text-xs tracking-widest hover:text-red-500 transition-colors"
             >
               LOGOUT / CHANGE ACCOUNT
