@@ -42,10 +42,10 @@ export function MasteryHeatmap() {
 
 
     const getHeatColor = (score: number) => {
-        if (score < 0.2) return 'bg-[#FFEDED]';
-        if (score < 0.4) return 'bg-[#FFD9D9]';
-        if (score < 0.6) return 'bg-[#FECACA]';
-        if (score < 0.8) return 'bg-[#93C5FD]';
+        if (score < 20) return 'bg-[#FFEDED]';
+        if (score < 40) return 'bg-[#FFD9D9]';
+        if (score < 60) return 'bg-[#FECACA]';
+        if (score < 80) return 'bg-[#93C5FD]';
         return 'bg-[#2D9E64]/30';
     };
 
@@ -61,25 +61,23 @@ export function MasteryHeatmap() {
     return (
         <div className="space-y-8">
             {/* 1. OVERVIEW HUD */}
-            <div className="bg-black text-white p-6 border-4 border-black shadow-[10px_10px_0px_0px_rgba(45,158,100,0.5)] rotate-1 flex flex-wrap items-center justify-between gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-neo-accent p-2 border-2 border-white shadow-[2px_2px_0px_0px_#FFF]">
-                            <BarChart3 className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-4xl font-black italic tracking-tight uppercase leading-none">Mastery_Grid</h2>
-                            <p className="text-neo-accent font-black uppercase tracking-[0.3em] text-[10px]">Knowledge_Topology_v2.1</p>
-                        </div>
+            <div className="bg-black text-white p-6 border-4 border-black shadow-[10px_10px_0px_0px_rgba(45,158,100,0.5)] flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden">
+                <div className="flex items-center gap-4">
+                    <div className="bg-neo-accent p-2 border-2 border-white shadow-[2px_2px_0px_0px_#FFF] shrink-0">
+                        <BarChart3 className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                        <h2 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none truncate">MASTERY_GRID</h2>
+                        <p className="text-neo-accent font-black uppercase tracking-[0.3em] text-[8px] md:text-[10px] mt-1">KNOWLEDGE_TOPOLOGY_v2.1</p>
                     </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                     {['SAT', 'ACT'].map(t => (
                         <button
                             key={t}
                             onClick={() => setExamType(t.toLowerCase())}
-                            className={`px-4 py-2 border-2 border-black font-black uppercase tracking-widest text-[11px] transition-all shadow-[3px_3px_0px_0px_#FFF] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${examType === t.toLowerCase() ? 'bg-neo-accent text-white' : 'bg-white text-black'}`}
+                            className={`px-4 py-2 border-2 border-black font-black uppercase tracking-widest text-[10px] transition-all shadow-[3px_3px_0px_0px_#FFF] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${examType === t.toLowerCase() ? 'bg-neo-accent text-white' : 'bg-white text-black'}`}
                         >
                             {t}
                         </button>
@@ -90,11 +88,30 @@ export function MasteryHeatmap() {
             {/* 2. THE HEATMAP GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {domains.length === 0 ? (
-                    <div className="md:col-span-2 py-20 bg-white border-4 border-dashed border-black flex flex-col items-center justify-center text-center space-y-4">
-                        <Sparkles className="h-12 w-12 text-black/10" />
-                        <h3 className="text-3xl font-black uppercase italic text-black/20">Zero_Data_Detected</h3>
-                        <p className="font-bold text-xs max-w-xs opacity-60">START A PRACTICE SESSION OR SAT SIMULATOR TO MAP YOUR LEARNING TOPOLOGY.</p>
-                        <button className="bg-black text-white px-6 py-2 font-black uppercase italic shadow-[4px_4px_0px_0px_#2D9E64] hover:bg-neo-secondary hover:text-black transition-all text-xs">INITIATE_PROBE</button>
+                    <div className="md:col-span-2 py-16 bg-white border-4 border-black flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, black 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
+                        <div className="relative">
+                            <Sparkles className="h-16 w-16 text-black/10 animate-pulse" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border border-black/5 rounded-full animate-ping" />
+                        </div>
+
+                        <div className="space-y-2 relative z-10">
+                            <h3 className="text-4xl font-black uppercase italic tracking-tighter text-black/20">Zero_Data_Detected</h3>
+                            <p className="font-bold text-[10px] max-w-xs uppercase tracking-widest leading-relaxed opacity-40">
+                                INITIALIZE NEURAL PROBE BY COMPLETING A STUDY UNIT OR REFRESHING YOUR SESSION DATA.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-8 gap-2 opacity-10">
+                            {Array.from({ length: 16 }).map((_, i) => (
+                                <div key={i} className="w-6 h-6 border-2 border-black bg-neo-muted" />
+                            ))}
+                        </div>
+
+                        <button className="bg-black text-white px-10 py-4 font-black uppercase italic shadow-[8px_8px_0px_0px_#2D9E64] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#2D9E64] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all text-sm z-10">
+                            INITIATE_PROBE_SESSION
+                        </button>
                     </div>
                 ) : domains.map((domain, idx) => {
                     const domainData = masteryData.filter(d => d.domain === domain);
@@ -106,15 +123,15 @@ export function MasteryHeatmap() {
 
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-xl font-black uppercase italic tracking-tight">{domain}</h3>
+                                    <h3 className="text-xl font-black uppercase italic tracking-tight truncate max-w-[150px]">{domain}</h3>
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <TrendingUp className="h-3.5 w-3.5 text-neo-secondary" />
-                                        <span className="text-[10px] font-black uppercase opacity-60">Status: {domainMastery > 0.7 ? 'OPTIMAL' : 'RECALIBRATING'}</span>
+                                        <span className="text-[10px] font-black uppercase opacity-60">Status: {domainMastery > 70 ? 'OPTIMAL' : 'RECALIBRATING'}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[9px] font-black uppercase opacity-40">MASTERY_INDEX</p>
-                                    <p className="text-2xl font-black italic">{(domainMastery * 100).toFixed(0)}%</p>
+                                    <p className="text-[9px] font-black uppercase opacity-40 leading-none">MASTERY_INDEX</p>
+                                    <p className="text-2xl font-black italic">{(domainMastery).toFixed(0)}%</p>
                                 </div>
                             </div>
 
@@ -130,10 +147,10 @@ export function MasteryHeatmap() {
                                             <p className="text-[9px] font-black uppercase text-neo-accent mb-0.5">{sub.subdomain || 'General'}</p>
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-[7px] font-black">ACCURACY:</span>
-                                                <span className="text-[10px] font-black">{(sub.mastery_score * 100).toFixed(1)}%</span>
+                                                <span className="text-[10px] font-black">{(sub.mastery_score).toFixed(1)}%</span>
                                             </div>
                                             <div className="w-full h-0.5 bg-white/20">
-                                                <div className="h-full bg-neo-accent" style={{ width: `${sub.mastery_score * 100}%` }} />
+                                                <div className="h-full bg-neo-accent" style={{ width: `${sub.mastery_score}%` }} />
                                             </div>
                                         </div>
                                     </div>

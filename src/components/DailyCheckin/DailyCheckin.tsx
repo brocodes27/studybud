@@ -547,12 +547,12 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                 </div>
 
                                 <div className="space-y-8">
-                                    <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000]">
+                                    <div className="bg-white border-4 border-black p-4 md:p-6 shadow-[8px_8px_0px_0px_#000]">
                                         <div className="flex items-center gap-3 mb-6">
                                             <Activity className="w-5 h-5 text-neo-accent" />
                                             <h4 className="font-black uppercase tracking-tighter italic">NEURAL_ACTIVITY_MAP</h4>
                                         </div>
-                                        <div className="scale-[0.85] origin-top-left">
+                                        <div className="w-full overflow-hidden">
                                             <MasteryHeatmap />
                                         </div>
                                     </div>
