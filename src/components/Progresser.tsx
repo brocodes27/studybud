@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
 import { InlineMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import OpenAIService from '../lib/openaiService';
+import AIService from '../lib/aiService';
 
 interface Question {
     id: string;
@@ -155,7 +155,7 @@ export function Progresser() {
 
         try {
             // Neural Context Bridge: Get relevant previous notes for this chapter
-            const context = await OpenAIService.getInstance().findRelevantKnowledge(selectedChapter);
+            const context = await AIService.getInstance().findRelevantKnowledge(selectedChapter);
 
             const { data: references, error } = await supabase
                 .from('question_bank')
@@ -179,10 +179,10 @@ export function Progresser() {
             
             Return JSON: {"question": "...", "qtype": "mcq", "options": ["A", "B", "C", "D"], "correct_index": 0, "explanation": "..."}`;
 
-            const response = await OpenAIService.getInstance().generateChatCompletion(prompt, "Adaptive Progressor Engine.");
+            const response = await AIService.getInstance().generateChatCompletion(prompt, "Adaptive Progressor Engine.");
             const match = response.match(/\{[\s\S]*\}/);
             if (!match) throw new Error("Invalid Engine Response");
-            
+
             const generated = JSON.parse(match[0]);
 
             setCurrentQuestion({
@@ -217,7 +217,7 @@ export function Progresser() {
                 Answer: ${userAnswer}
                 
                 Return JSON: {"is_correct": boolean, "feedback": "..."}`;
-                const evalRes = await OpenAIService.getInstance().generateChatCompletion(evalPrompt, "Evaluator Mode");
+                const evalRes = await AIService.getInstance().generateChatCompletion(evalPrompt, "Evaluator Mode");
                 const match = evalRes.match(/\{[\s\S]*\}/);
                 correct = JSON.parse(match ? match[0] : '{"is_correct": false}').is_correct;
             }
@@ -226,7 +226,7 @@ export function Progresser() {
                 const explPrompt = `Explain why the student is wrong and provide a step-by-step solution. Use LaTeX.
                 Question: ${currentQuestion.question}
                 Answer: ${userAnswer}`;
-                const expl = await OpenAIService.getInstance().generateChatCompletion(explPrompt, "Teacher Mode");
+                const expl = await AIService.getInstance().generateChatCompletion(explPrompt, "Teacher Mode");
                 setStepByStepExplanation(expl);
             }
 
@@ -238,10 +238,10 @@ export function Progresser() {
                 correct: prev.correct + (correct ? 1 : 0),
                 consecutiveCorrect: correct ? prev.consecutiveCorrect + 1 : 0
             }));
-            
+
             // Auto-archive the mistake to neural memory
             if (!correct) {
-                await OpenAIService.getInstance().saveToKnowledgeBase(`Struggled with ${selectedChapter} concept: ${currentQuestion.question}`, 'chat');
+                await AIService.getInstance().saveToKnowledgeBase(`Struggled with ${selectedChapter} concept: ${currentQuestion.question}`, 'chat');
             }
 
         } catch (e) {
@@ -271,7 +271,7 @@ export function Progresser() {
     const generateEasierVariant = async () => {
         setIsLoading(true);
         try {
-            const res = await OpenAIService.getInstance().generateChatCompletion(`Simplify this question for a struggling student: ${currentQuestion?.question}`, "Building Block Mode");
+            const res = await AIService.getInstance().generateChatCompletion(`Simplify this question for a struggling student: ${currentQuestion?.question}`, "Building Block Mode");
             setVariantQuestion(res);
             setIsVariant(true);
             setShowFeedback(false);
@@ -297,7 +297,7 @@ export function Progresser() {
                     <div className="absolute top-0 right-0 bg-neo-accent p-4 border-l-8 border-b-8 border-black">
                         <Zap className="h-10 w-10 text-white animate-pulse" />
                     </div>
-                    
+
                     <div className="flex items-center gap-6 mb-12">
                         <div className="bg-black p-5 rotate-2 shadow-[4px_4px_0px_0px_#2D9E64] border-4 border-[#2D9E64]">
                             <Brain className="h-12 w-12 text-white" />
@@ -417,8 +417,8 @@ export function Progresser() {
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-32 space-y-8 animate-pulse">
                         <div className="relative">
-                           <Database className="h-20 w-20 text-neo-accent" />
-                           <Zap className="h-10 w-10 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                            <Database className="h-20 w-20 text-neo-accent" />
+                            <Zap className="h-10 w-10 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                         </div>
                         <p className="font-black uppercase tracking-[0.4em] italic text-xl">REROUTING_NEURAL_PATHWAY...</p>
                     </div>

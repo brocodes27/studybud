@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Mic, Square, Volume2, Brain, Sparkles, ArrowLeft, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mic, Square, Brain, ArrowLeft, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 import Vapi from '@vapi-ai/web';
@@ -11,9 +11,7 @@ const FeynmanBoard = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [topic, setTopic] = useState('');
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -27,13 +25,10 @@ const FeynmanBoard = () => {
     vapi.on('call-end', () => {
       console.log('Vapi call ended');
       setIsListening(false);
-      setIsSpeaking(false);
-      setIsProcessing(false);
     });
 
     vapi.on('speech-start', () => {
       console.log('User started speaking');
-      setIsSpeaking(false); // AI stops speaking when user speaks
     });
 
     vapi.on('message', (message) => {
@@ -49,7 +44,6 @@ const FeynmanBoard = () => {
     vapi.on('message', (message) => {
       if (message.type === 'transcript' && message.transcriptType === 'final' && message.role === 'assistant') {
         setFeedback(message.transcript);
-        setIsSpeaking(true);
       }
     });
 
@@ -71,8 +65,8 @@ const FeynmanBoard = () => {
       try {
         await vapi.start({
           model: {
-            provider: "openai",
-            model: "gpt-3.5-turbo",
+            provider: "google",
+            model: "gemini-1.5-flash",
             messages: [
               {
                 role: "system",

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import OpenAIService from '../lib/openaiService';
+import AIService from '../lib/aiService';
 
 // Standard Markdown/KaTeX Components
 import ReactMarkdown from 'react-markdown';
@@ -61,7 +61,7 @@ export function AtlasWorkspace() {
         2. Provide a 1-sentence "Neural Insight" (intuition or shortcut) for each.
         Return as JSON array: [{"phrase": "concept", "insight": "insight text"}]`;
 
-        const response = await OpenAIService.getInstance().generateChatCompletion(prompt, "Neural Analysis Engine.");
+        const response = await AIService.getInstance().generateChatCompletion(prompt, "Neural Analysis Engine.");
         const start = response.indexOf('[');
         const end = response.lastIndexOf(']');
         if (start !== -1 && end !== -1) {
@@ -77,7 +77,7 @@ export function AtlasWorkspace() {
   useEffect(() => {
     const archiveTimer = setTimeout(async () => {
       if (!notes.trim() || notes.length < 100 || notes === lastArchivedContent) return;
-      await OpenAIService.getInstance().saveToKnowledgeBase(notes, 'journal');
+      await AIService.getInstance().saveToKnowledgeBase(notes, 'journal');
       setLastArchivedContent(notes);
     }, 45000);
     return () => clearTimeout(archiveTimer);
@@ -169,8 +169,8 @@ export function AtlasWorkspace() {
     if (!researchQuery.trim()) return;
     setIsResearching(true);
     try {
-      const result = await OpenAIService.getInstance().generateChatCompletion(`Synthesize research on: ${researchQuery}`, "Advanced Researcher.");
-      await OpenAIService.getInstance().saveToKnowledgeBase(result, 'research');
+      const result = await AIService.getInstance().generateChatCompletion(`Synthesize research on: ${researchQuery}`, "Advanced Researcher.");
+      await AIService.getInstance().saveToKnowledgeBase(result, 'research');
       setNotes(prev => prev + `\n\n## 🔍 RESEARCH_SYNTHESIS: ${researchQuery.toUpperCase()}\n${result}`);
       setResearchQuery('');
       setIsEditing(false);

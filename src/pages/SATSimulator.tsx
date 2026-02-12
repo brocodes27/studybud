@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import OpenAIService from '../lib/openaiService';
+import AIService from '../lib/aiService';
 import {
   Flag, Timer, ChevronRight, ChevronLeft, CheckCircle2,
   Target, ShieldCheck, PenTool, Sparkles, Trophy, ArrowRight, Gauge
@@ -101,7 +101,7 @@ export default function SATSimulator() {
     [{"domain": "string", "passage": "string", "question": "string", "options": ["string","string","string","string"], "answer_index": number}]`;
 
     try {
-      const response = await OpenAIService.getInstance().generateChatCompletion(prompt, `Official SAT Engine`, false);
+      const response = await AIService.getInstance().generateChatCompletion(prompt, `Official SAT Engine`, false);
       const firstBracket = response.indexOf('[');
       const lastBracket = response.lastIndexOf(']');
       if (firstBracket === -1 || lastBracket === -1) throw new Error("Invalid response format");

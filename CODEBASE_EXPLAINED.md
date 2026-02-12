@@ -57,7 +57,7 @@ A Vite + React web app (PWA) and an Expo/React‑Native mobile app that use a Su
 - `src/components/` — UI components and feature widgets.
 - `src/contexts/` — React contexts (notably auth state).
 - `src/hooks/` — React hooks (payments, offline storage, notifications, toast).
-- `src/lib/` — Integrations and service wrappers (Supabase client, OpenAI proxy wrapper, curriculum API, voice/video services).
+- `src/lib/` — Integrations and service wrappers (Supabase client, AI service wrapper (Gemini), curriculum API, voice/video services).
 
 ### `supabase/` (Backend)
 - `supabase/migrations/` — SQL migrations that create tables, RLS policies, triggers, RPCs.
@@ -189,11 +189,10 @@ This section lists user-visible features and their implementation wiring.
 - Behavior:
   - Implements a chat + skill flows (create plan, flashcards, reschedule, progress panel).
 - AI calls:
-  - Uses `src/lib/openaiService.ts`.
+  - Uses `src/lib/aiService.ts`.
 
-### 6.6 OpenAI proxy (server-side key protection)
 - Client wrapper:
-  - `src/lib/openaiService.ts` posts to `/functions/v1/openai-proxy`.
+  - `src/lib/aiService.ts` calls Gemini API directly.
 - Edge Function:
   - `supabase/functions/openai-proxy/index.ts`
   - Verifies Supabase JWT then forwards the request to OpenAI using server env `OPENAI_API_KEY`.
@@ -241,7 +240,7 @@ This section lists user-visible features and their implementation wiring.
 - How questions are sourced:
   1) Try DB (`cuet_questions` + `cuet_options`) for the current subject.
   2) If insufficient questions exist:
-     - Generate via GPT (`OpenAIService`, with a CUET blueprint and optional RAG context)
+     - Generate via Gemini (`AIService`, with a CUET blueprint and optional RAG context)
      - Fall back to web search via Edge Function `cuet-web-search`.
      - For English, a final local fallback generator ensures the section can reach 50 items.
 - Web-search Edge Function:

@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import { usePayment } from '../hooks/usePayment';
-import OpenAIService from '../lib/openaiService';
+import AIService from '../lib/aiService';
 
 interface Flashcard {
   id: string;
@@ -111,7 +111,7 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
     setIsGenerating(true);
     try {
       // PROACTIVE UPGRADE: Check neural memory for previous struggles to prioritize those cards
-      const neuralContext = await OpenAIService.getInstance().findRelevantKnowledge(selectedTopic);
+      const neuralContext = await AIService.getInstance().findRelevantKnowledge(selectedTopic);
 
       const payload = {
         subject: availablePlans.find(p => p.id === activePlanId)?.subject ?? '',
@@ -122,10 +122,10 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
         topic: selectedTopic,
         neural_context: neuralContext
       };
-      
+
       const { data, error } = await supabase.functions.invoke('generate-flashcards', { body: payload });
       if (error) throw error;
-      
+
       await fetchFlashcards();
       showToast("Neural Archive Updated.", "success");
       setStudyMode('topics');
@@ -178,7 +178,7 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
 
   return (
     <div className="min-h-screen bg-neo-bg/5 flex flex-col font-sans text-black overflow-hidden p-6 space-y-6">
-      
+
       {/* SYSTEM HUD */}
       <div className="bg-black text-white p-6 border-b-8 border-neo-accent shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between">
         <div className="flex items-center gap-6">
@@ -188,8 +188,8 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
           <div>
             <h1 className="text-3xl font-black tracking-tighter uppercase italic leading-none">NEURAL_RECALL</h1>
             <div className="flex items-center gap-2 mt-2">
-                <div className="h-1.5 w-1.5 bg-[#2D9E64] rounded-full animate-pulse" />
-                <span className="text-[8px] font-black tracking-widest text-white/40 uppercase">SPACED_REPETITION_ENGINE_v4.0</span>
+              <div className="h-1.5 w-1.5 bg-[#2D9E64] rounded-full animate-pulse" />
+              <span className="text-[8px] font-black tracking-widest text-white/40 uppercase">SPACED_REPETITION_ENGINE_v4.0</span>
             </div>
           </div>
         </div>
@@ -211,19 +211,19 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
         {studyMode === 'topics' ? (
           <div className="space-y-10">
             <div className="flex items-center justify-between">
-               <h2 className="text-4xl font-black uppercase tracking-tighter italic border-l-8 border-black pl-6">Neural Archive</h2>
-               <div className="flex border-4 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000]">
-                  <button onClick={() => setViewMode('grid')} className={`p-2 ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white'}`}><Grid className="h-4 w-4" /></button>
-                  <button onClick={() => setViewMode('list')} className={`p-2 ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white'}`}><List className="h-4 w-4" /></button>
-               </div>
+              <h2 className="text-4xl font-black uppercase tracking-tighter italic border-l-8 border-black pl-6">Neural Archive</h2>
+              <div className="flex border-4 border-black overflow-hidden shadow-[4px_4px_0px_0px_#000]">
+                <button onClick={() => setViewMode('grid')} className={`p-2 ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white'}`}><Grid className="h-4 w-4" /></button>
+                <button onClick={() => setViewMode('list')} className={`p-2 ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white'}`}><List className="h-4 w-4" /></button>
+              </div>
             </div>
 
             {topicGroups.length === 0 ? (
-               <div className="bg-white border-8 border-black p-24 text-center shadow-[20px_20px_0px_0px_#000]">
-                  <Activity className="h-24 w-24 mx-auto mb-8 text-black/10 animate-spin-slow" />
-                  <h3 className="text-4xl font-black uppercase italic mb-4 tracking-tighter text-black/40">MEMORY_CELLS_NULL</h3>
-                  <button onClick={() => setStudyMode('generate')} className="bg-neo-accent px-12 py-5 border-4 border-black font-black uppercase text-xl shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 active:shadow-none transition-all">INITIALIZE_GENESIS</button>
-               </div>
+              <div className="bg-white border-8 border-black p-24 text-center shadow-[20px_20px_0px_0px_#000]">
+                <Activity className="h-24 w-24 mx-auto mb-8 text-black/10 animate-spin-slow" />
+                <h3 className="text-4xl font-black uppercase italic mb-4 tracking-tighter text-black/40">MEMORY_CELLS_NULL</h3>
+                <button onClick={() => setStudyMode('generate')} className="bg-neo-accent px-12 py-5 border-4 border-black font-black uppercase text-xl shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 active:shadow-none transition-all">INITIALIZE_GENESIS</button>
+              </div>
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-4'}>
                 {topicGroups.map((group, idx) => (
@@ -231,17 +231,17 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
                     <div className="absolute top-0 right-0 bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-widest">v4.0_STABLE</div>
                     <h3 className="text-3xl font-black uppercase tracking-tighter italic mb-8">{group.topic}</h3>
                     <div className="flex items-center justify-between mb-8">
-                       <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-black/40 uppercase">DATA_NODES</span>
-                          <span className="text-2xl font-black">{group.totalCards}</span>
-                       </div>
-                       <div className="h-12 w-12 bg-neo-secondary border-2 border-black flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform">
-                          <BookOpen className="h-6 w-6" />
-                       </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-black/40 uppercase">DATA_NODES</span>
+                        <span className="text-2xl font-black">{group.totalCards}</span>
+                      </div>
+                      <div className="h-12 w-12 bg-neo-secondary border-2 border-black flex items-center justify-center rotate-12 group-hover:rotate-0 transition-transform">
+                        <BookOpen className="h-6 w-6" />
+                      </div>
                     </div>
                     <div className="flex gap-4">
-                       <button onClick={() => startTopicReview(group.topic)} className="flex-1 bg-black text-white font-black uppercase py-4 border-4 border-black shadow-[4px_4px_0px_0px_#2D9E64] hover:bg-[#2D9E64] hover:text-black transition-all italic text-sm">ACTIVATE_SYNC</button>
-                       <button onClick={() => handleDeleteTopic(group.topic)} className="bg-white border-4 border-black p-4 hover:bg-red-500 hover:text-white transition-all"><X className="h-5 w-5" /></button>
+                      <button onClick={() => startTopicReview(group.topic)} className="flex-1 bg-black text-white font-black uppercase py-4 border-4 border-black shadow-[4px_4px_0px_0px_#2D9E64] hover:bg-[#2D9E64] hover:text-black transition-all italic text-sm">ACTIVATE_SYNC</button>
+                      <button onClick={() => handleDeleteTopic(group.topic)} className="bg-white border-4 border-black p-4 hover:bg-red-500 hover:text-white transition-all"><X className="h-5 w-5" /></button>
                     </div>
                   </div>
                 ))}
@@ -250,74 +250,74 @@ export function FlashcardGenerator({ planId, topics = [] }: { planId?: string, t
           </div>
         ) : studyMode === 'generate' ? (
           <div className="max-w-4xl mx-auto py-12">
-             <div className="bg-white border-8 border-black p-12 shadow-[25px_25px_0px_0px_rgba(0,0,0,1)] -rotate-1 relative overflow-hidden">
-                <div className="absolute top-0 left-0 bg-neo-secondary h-2 w-full" />
-                <h2 className="text-5xl font-black uppercase tracking-tighter italic mb-12 border-b-8 border-black pb-4">GENERATION_SYNAPSE</h2>
-                <div className="space-y-10">
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">01_IDENTIFY_SOURCE_PLAN</label>
-                      <select value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)} className="w-full p-6 border-4 border-black font-black uppercase text-xl focus:bg-neo-bg outline-none shadow-[8px_8px_0px_0px_#000]">
-                         <option value="">SELECT_PLAN_ID</option>
-                         {availablePlans.map(p => <option key={p.id} value={p.id}>{p.subject} (CLASS_{p.class})</option>)}
-                      </select>
-                   </div>
-                   <div className="space-y-4">
-                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">02_TARGET_KNOWLEDGE_CELL</label>
-                      <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)} className="w-full p-6 border-4 border-black font-black uppercase text-xl focus:bg-neo-bg outline-none shadow-[8px_8px_0px_0px_#000]">
-                         <option value="">DEFINE_TARGET</option>
-                         {availableTopics.map((t, i) => <option key={i} value={t}>{t.toUpperCase()}</option>)}
-                      </select>
-                   </div>
-                   <button onClick={generateFlashcards} disabled={isGenerating || !selectedTopic} className="w-full group flex items-center justify-between bg-black text-white px-10 py-10 border-8 border-black font-black text-4xl uppercase tracking-tighter hover:bg-[#2D9E64] hover:text-black transition-all shadow-[15px_15px_0px_0px_rgba(0,0,0,0.3)] disabled:opacity-20">
-                      {isGenerating ? 'NEURAL_CONSTRUCTION_IN_PROGRESS...' : 'INITIATE_SYNC'}
-                      <ArrowRight className="h-12 w-12 group-hover:translate-x-4 transition-transform" />
-                   </button>
+            <div className="bg-white border-8 border-black p-12 shadow-[25px_25px_0px_0px_rgba(0,0,0,1)] -rotate-1 relative overflow-hidden">
+              <div className="absolute top-0 left-0 bg-neo-secondary h-2 w-full" />
+              <h2 className="text-5xl font-black uppercase tracking-tighter italic mb-12 border-b-8 border-black pb-4">GENERATION_SYNAPSE</h2>
+              <div className="space-y-10">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">01_IDENTIFY_SOURCE_PLAN</label>
+                  <select value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)} className="w-full p-6 border-4 border-black font-black uppercase text-xl focus:bg-neo-bg outline-none shadow-[8px_8px_0px_0px_#000]">
+                    <option value="">SELECT_PLAN_ID</option>
+                    {availablePlans.map(p => <option key={p.id} value={p.id}>{p.subject} (CLASS_{p.class})</option>)}
+                  </select>
                 </div>
-             </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-black/40">02_TARGET_KNOWLEDGE_CELL</label>
+                  <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)} className="w-full p-6 border-4 border-black font-black uppercase text-xl focus:bg-neo-bg outline-none shadow-[8px_8px_0px_0px_#000]">
+                    <option value="">DEFINE_TARGET</option>
+                    {availableTopics.map((t, i) => <option key={i} value={t}>{t.toUpperCase()}</option>)}
+                  </select>
+                </div>
+                <button onClick={generateFlashcards} disabled={isGenerating || !selectedTopic} className="w-full group flex items-center justify-between bg-black text-white px-10 py-10 border-8 border-black font-black text-4xl uppercase tracking-tighter hover:bg-[#2D9E64] hover:text-black transition-all shadow-[15px_15px_0px_0px_rgba(0,0,0,0.3)] disabled:opacity-20">
+                  {isGenerating ? 'NEURAL_CONSTRUCTION_IN_PROGRESS...' : 'INITIATE_SYNC'}
+                  <ArrowRight className="h-12 w-12 group-hover:translate-x-4 transition-transform" />
+                </button>
+              </div>
+            </div>
           </div>
         ) : studyMode === 'review' && flashcards.length > 0 && (
           <div className="max-w-5xl mx-auto py-12 space-y-12">
-             <div className="flex items-center justify-between border-b-8 border-black pb-8">
-                <div>
-                   <h2 className="text-6xl font-black uppercase tracking-tighter italic leading-none">{activeTopicFilter === 'all' ? 'NEURAL_OVERRIDE' : activeTopicFilter}</h2>
-                   <p className="text-xl font-black uppercase italic text-neo-accent mt-4">Node_Position: {currentCard + 1} // {flashcards.length}</p>
+            <div className="flex items-center justify-between border-b-8 border-black pb-8">
+              <div>
+                <h2 className="text-6xl font-black uppercase tracking-tighter italic leading-none">{activeTopicFilter === 'all' ? 'NEURAL_OVERRIDE' : activeTopicFilter}</h2>
+                <p className="text-xl font-black uppercase italic text-neo-accent mt-4">Node_Position: {currentCard + 1} // {flashcards.length}</p>
+              </div>
+              <div className="flex gap-6">
+                <div className="bg-black text-white p-6 border-4 border-black shadow-[6px_6px_0px_0px_#4D96FF]">
+                  <span className="block text-[8px] font-black uppercase tracking-widest text-white/40 mb-2">MASTERY_LVL</span>
+                  <span className="text-3xl font-black italic">{Math.round((currentCard / flashcards.length) * 100)}%</span>
                 </div>
-                <div className="flex gap-6">
-                    <div className="bg-black text-white p-6 border-4 border-black shadow-[6px_6px_0px_0px_#4D96FF]">
-                        <span className="block text-[8px] font-black uppercase tracking-widest text-white/40 mb-2">MASTERY_LVL</span>
-                        <span className="text-3xl font-black italic">{Math.round((currentCard / flashcards.length) * 100)}%</span>
-                    </div>
-                </div>
-             </div>
+              </div>
+            </div>
 
-             <div onClick={() => setIsFlipped(!isFlipped)} className={`w-full min-h-[500px] border-8 border-black p-20 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 relative ${isFlipped ? 'bg-neo-secondary shadow-none translate-x-3 translate-y-3' : 'bg-white shadow-[30px_30px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[35px_35px_0px_0px_#000]'}`}>
-                <div className="absolute top-0 left-0 bg-black text-white px-6 py-2 font-black uppercase text-xs tracking-[0.3em] -rotate-1">
-                   {isFlipped ? 'RESPONSE_DATA_FOUND' : 'NEURAL_QUERY_EMITTED'}
-                </div>
-                <h4 className="text-5xl md:text-7xl font-black tracking-tighter italic leading-tight">
-                   {isFlipped ? flashcards[currentCard].answer : flashcards[currentCard].question}
-                </h4>
-                <p className="mt-16 text-[10px] font-black uppercase tracking-[0.5em] text-black/20 animate-pulse">
-                   CLICK_TO_{isFlipped ? 'COLLAPSE' : 'EXPAND'}
-                </p>
-                <div className="absolute bottom-6 right-6 text-[8rem] font-black italic text-black/5 select-none pointer-events-none -rotate-12 uppercase">
-                    {isFlipped ? 'Recall' : 'Query'}
-                </div>
-             </div>
+            <div onClick={() => setIsFlipped(!isFlipped)} className={`w-full min-h-[500px] border-8 border-black p-20 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 relative ${isFlipped ? 'bg-neo-secondary shadow-none translate-x-3 translate-y-3' : 'bg-white shadow-[30px_30px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[35px_35px_0px_0px_#000]'}`}>
+              <div className="absolute top-0 left-0 bg-black text-white px-6 py-2 font-black uppercase text-xs tracking-[0.3em] -rotate-1">
+                {isFlipped ? 'RESPONSE_DATA_FOUND' : 'NEURAL_QUERY_EMITTED'}
+              </div>
+              <h4 className="text-5xl md:text-7xl font-black tracking-tighter italic leading-tight">
+                {isFlipped ? flashcards[currentCard].answer : flashcards[currentCard].question}
+              </h4>
+              <p className="mt-16 text-[10px] font-black uppercase tracking-[0.5em] text-black/20 animate-pulse">
+                CLICK_TO_{isFlipped ? 'COLLAPSE' : 'EXPAND'}
+              </p>
+              <div className="absolute bottom-6 right-6 text-[8rem] font-black italic text-black/5 select-none pointer-events-none -rotate-12 uppercase">
+                {isFlipped ? 'Recall' : 'Query'}
+              </div>
+            </div>
 
-             <div className="flex gap-10">
-                <button onClick={() => { setCurrentCard(c => Math.max(0, c - 1)); setIsFlipped(false); }} disabled={currentCard === 0} className="flex-1 bg-white border-8 border-black py-10 font-black text-4xl uppercase tracking-tighter shadow-[12px_12px_0px_0px_#000] hover:bg-gray-100 disabled:opacity-20 active:shadow-none transition-all">PREV_NODE</button>
-                <button onClick={() => { setCurrentCard(c => Math.min(flashcards.length - 1, c + 1)); setIsFlipped(false); }} disabled={currentCard === flashcards.length - 1} className="flex-1 bg-black text-white border-8 border-black py-10 font-black text-4xl uppercase tracking-tighter shadow-[12px_12px_0px_0px_#4D96FF] hover:bg-neo-accent active:shadow-none transition-all">NEXT_NODE</button>
-             </div>
+            <div className="flex gap-10">
+              <button onClick={() => { setCurrentCard(c => Math.max(0, c - 1)); setIsFlipped(false); }} disabled={currentCard === 0} className="flex-1 bg-white border-8 border-black py-10 font-black text-4xl uppercase tracking-tighter shadow-[12px_12px_0px_0px_#000] hover:bg-gray-100 disabled:opacity-20 active:shadow-none transition-all">PREV_NODE</button>
+              <button onClick={() => { setCurrentCard(c => Math.min(flashcards.length - 1, c + 1)); setIsFlipped(false); }} disabled={currentCard === flashcards.length - 1} className="flex-1 bg-black text-white border-8 border-black py-10 font-black text-4xl uppercase tracking-tighter shadow-[12px_12px_0px_0px_#4D96FF] hover:bg-neo-accent active:shadow-none transition-all">NEXT_NODE</button>
+            </div>
           </div>
         )}
       </main>
 
       {/* FOOTER STATS */}
       <footer className="h-10 bg-black text-white flex items-center px-10 gap-12 border-t-4 border-neo-accent">
-         <div className="flex items-center gap-2"><Database className="h-3 w-3 text-neo-secondary" /><span className="text-[8px] font-black uppercase tracking-widest">Archival_State: SYNCHRONIZED</span></div>
-         <div className="flex items-center gap-2"><Terminal className="h-3 w-3 text-neo-accent" /><span className="text-[8px] font-black uppercase tracking-widest">Protocol: Spaced_Repetition_v4.0</span></div>
-         <div className="ml-auto flex items-center gap-4"><Award className="h-3 w-3 text-yellow-400" /><span className="text-[8px] font-black uppercase tracking-widest">Nodes_Mastered: {allFlashcards.length}</span></div>
+        <div className="flex items-center gap-2"><Database className="h-3 w-3 text-neo-secondary" /><span className="text-[8px] font-black uppercase tracking-widest">Archival_State: SYNCHRONIZED</span></div>
+        <div className="flex items-center gap-2"><Terminal className="h-3 w-3 text-neo-accent" /><span className="text-[8px] font-black uppercase tracking-widest">Protocol: Spaced_Repetition_v4.0</span></div>
+        <div className="ml-auto flex items-center gap-4"><Award className="h-3 w-3 text-yellow-400" /><span className="text-[8px] font-black uppercase tracking-widest">Nodes_Mastered: {allFlashcards.length}</span></div>
       </footer>
     </div>
   );

@@ -239,9 +239,9 @@ done
 
 ## Troubleshooting
 
-**Error: "Cannot find module 'OpenAIService'"**
+**Error: "Cannot find module 'AIService'"**
 - Ensure the script is run from project root
-- Check that `src/lib/openaiService.ts` exists
+- Check that `src/lib/aiService.ts` exists
 
 **Error: "Vision AI timeout"**
 - PDFs with 20+ pages may timeout

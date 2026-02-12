@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import OpenAIService from '../../lib/openaiService';
+import AIService from '../../lib/aiService';
 import {
     getUserGamification,
     recordDailyCheckin,
@@ -185,7 +185,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
 
 Make it appropriate difficulty for SAT prep. Include any formulas in plain text.`;
 
-            const response = await OpenAIService.getInstance().generateChatCompletion(
+            const response = await AIService.getInstance().generateChatCompletion(
                 prompt,
                 "You are an elite SAT architect. Return ONLY valid JSON, no markdown."
             );

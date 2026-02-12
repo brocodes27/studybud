@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AIStudyBuddy } from '../components/AIStudyBuddy';
 import { FileUp, Youtube, ArrowLeft, Monitor, Globe, Sparkles, Brain, Play, List, Zap, Trash2, History, BookOpen, FileText, Eye, EyeOff } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { OpenAIService } from '../lib/openaiService';
+import AIService from '../lib/aiService';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -115,7 +115,7 @@ export default function SYOW() {
             CONTENT:
             ${content.slice(0, 5000)}`; // Slice to avoid context limits
 
-            const response = await OpenAIService.getInstance().generateChatCompletion(prompt, "Syllabus Architect.");
+            const response = await AIService.getInstance().generateChatCompletion(prompt, "Syllabus Architect.");
             const start = response.indexOf('[');
             const end = response.lastIndexOf(']');
             if (start !== -1 && end !== -1) {

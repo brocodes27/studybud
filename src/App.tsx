@@ -81,13 +81,17 @@ function AppContent() {
   }, []);
 
   let trialExpired = false;
-  if (trialStart && trialActive === false) {
-    trialExpired = true;
-  } else if (trialStart) {
-    const now = new Date();
-    const diff = now.getTime() - trialStart.getTime();
-    if (diff > 7 * 24 * 60 * 60 * 1000) {
+  if (!isPremium && !isAdmin) {
+    if (!trialStart) {
       trialExpired = true;
+    } else if (trialActive === false) {
+      trialExpired = true;
+    } else {
+      const now = new Date();
+      const diff = now.getTime() - trialStart.getTime();
+      if (diff > 7 * 24 * 60 * 60 * 1000) {
+        trialExpired = true;
+      }
     }
   }
 

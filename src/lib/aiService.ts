@@ -5,8 +5,8 @@ export interface ChatMessage {
   content: string;
 }
 
-export class OpenAIService {
-  private static instance: OpenAIService;
+export class AIService {
+  private static instance: AIService;
   private apiKey: string;
   private model: string = 'gemini-3-flash-preview';
 
@@ -14,11 +14,11 @@ export class OpenAIService {
     this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   }
 
-  static getInstance(): OpenAIService {
-    if (!OpenAIService.instance) {
-      OpenAIService.instance = new OpenAIService();
+  static getInstance(): AIService {
+    if (!AIService.instance) {
+      AIService.instance = new AIService();
     }
-    return OpenAIService.instance;
+    return AIService.instance;
   }
 
   async generateChatCompletion(prompt: string, systemPrompt?: string, useRAG: boolean = true): Promise<string> {
@@ -85,9 +85,12 @@ export class OpenAIService {
     }
   }
 
-  async analyzeImagesWithVision(images: string[], prompt?: string): Promise<string> {
+  async analyzeImagesWithVision(images: string[], prompt?: string, systemPrompt?: string, maxTokens: number = 2048): Promise<string> {
     try {
       const parts: any[] = [{ text: prompt || 'Analyze this image.' }];
+      if (systemPrompt) {
+        parts.unshift({ text: `SYSTEM_INSTRUCTION: ${systemPrompt}` });
+      }
 
       for (const base64Data of images) {
         const data = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
@@ -110,7 +113,7 @@ export class OpenAIService {
           contents: [{ role: 'user', parts }],
           generationConfig: {
             temperature: 0.4,
-            maxOutputTokens: 2048,
+            maxOutputTokens: maxTokens,
           }
         })
       });
@@ -315,4 +318,4 @@ export class OpenAIService {
   }
 }
 
-export default OpenAIService;
+export default AIService;

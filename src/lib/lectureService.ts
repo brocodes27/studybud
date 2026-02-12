@@ -1,10 +1,10 @@
 import { supabase } from './supabase';
-import { OpenAIService } from './openaiService';
+import AIService from './aiService';
 import { LectureConfig } from '../components/RemotionLecture/LectureComposition';
 
 export class LectureService {
     private static instance: LectureService;
-    private ai = OpenAIService.getInstance();
+    private ai = AIService.getInstance();
 
     static getInstance() {
         if (!LectureService.instance) {

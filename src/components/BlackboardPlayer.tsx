@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Play, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { OpenAIService } from '../lib/openaiService';
+import AIService from '../lib/aiService';
 
 declare global {
   interface Window { ChemDoodle?: any; }
@@ -829,7 +829,7 @@ Rules:
 
 
 
-      const response = await OpenAIService.getInstance().generateChatCompletion(prompt, 'Return ONLY a JSON object with a "segments" array. No preamble.');
+      const response = await AIService.getInstance().generateChatCompletion(prompt, 'Return ONLY a JSON object with a "segments" array. No preamble.');
       const jsonCandidate = extractJsonCandidate(response);
       if (!jsonCandidate) throw new Error('No JSON found');
       const parsed = JSON.parse(jsonCandidate);
@@ -897,7 +897,7 @@ Rules:
       const line = subtitlesToPlay[i];
 
       try {
-        const audioBuffer = await OpenAIService.getInstance().generateSpeech(line);
+        const audioBuffer = await AIService.getInstance().generateSpeech(line);
         if (!(audioBuffer instanceof ArrayBuffer) || audioBuffer.byteLength === 0) throw new Error('Empty audio');
         if (playbackSessionRef.current !== sessionId || !isPlayingRef.current) return;
         const url = URL.createObjectURL(new Blob([audioBuffer], { type: 'audio/mpeg' }));

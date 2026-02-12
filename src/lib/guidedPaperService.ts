@@ -1,6 +1,6 @@
 
 import { supabase } from './supabase';
-import { OpenAIService } from './openaiService';
+import AIService from './aiService';
 import { pdfFileToImageDataUrls } from './pdfToImages';
 
 export interface GuidedPaper {
@@ -123,7 +123,7 @@ export const guidedPaperService = {
 
     async getHint(questionId: string, hintLevel: number): Promise<string | null> {
         // First check if hint exists in DB
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('guided_ai_hints')
             .select('hint_content')
             .eq('question_id', questionId)
@@ -176,7 +176,7 @@ export const guidedPaperService = {
             throw e; // Propagate to stop execution
         }
 
-        // 2. Call OpenAI Vision to extract
+        // 2. Call Gemini Vision to extract
         const prompt = `
       You are an expert OCR and exam digitizer.
       Extract all questions from this exam paper image.
@@ -199,7 +199,7 @@ export const guidedPaperService = {
     `;
 
         try {
-            const response = await OpenAIService.getInstance().analyzeImagesWithVision(imagesForAnalysis, prompt, undefined, 4096);
+            const response = await AIService.getInstance().analyzeImagesWithVision(imagesForAnalysis, prompt, undefined, 4096);
 
             // Parse JSON
             let parsed;
@@ -235,7 +235,7 @@ export const guidedPaperService = {
                 parsed = JSON.parse(cleanResponse);
             } catch (parseError) {
                 console.error("AI Response Parsing Failed. Raw Response:", response);
-                
+
                 // Attempt recovery: manually extract what we can
                 const questionRegex = /"question_number":\s*(\d+),?\s*"question_text":\s*"([^"]*(?:\\.[^"]*)*)"/g;
                 const questions = [];
@@ -304,7 +304,7 @@ export const guidedPaperService = {
       Keep it short, encouraging, and clear.
     `;
 
-        const hintContent = await OpenAIService.getInstance().generateChatCompletion(prompt);
+        const hintContent = await AIService.getInstance().generateChatCompletion(prompt);
 
         // Save to DB
         await supabase.from('guided_ai_hints').insert({

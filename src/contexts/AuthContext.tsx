@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsAdmin(false);
             setFullName(null);
             setTrialStart(null);
-            setTrialActive(true);
+            setTrialActive(false);
           }
         }
       } catch (err) {
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(false);
           setFullName(null);
           setTrialStart(null);
-          setTrialActive(true);
+          setTrialActive(false);
         }
       } finally {
         if (isMounted) setLoading(false);

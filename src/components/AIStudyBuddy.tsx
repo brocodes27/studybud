@@ -3,7 +3,7 @@ import { Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
-import { OpenAIService } from '../lib/openaiService';
+import AIService from '../lib/aiService';
 import { useChatSkills } from '../skills/useChatSkills';
 import { Header } from './AIStudyBuddy/Header';
 import { ContextPanel } from './AIStudyBuddy/ContextPanel';
@@ -1033,8 +1033,8 @@ What shall we tackle today?`;
             reader.readAsDataURL(selectedImage);
           });
 
-          // Use OpenAIService (assuming it's set up)
-          imageDescription = await OpenAIService.getInstance().analyzeImagesWithVision([base64],
+          // Use AIService (assuming it's set up)
+          imageDescription = await AIService.getInstance().analyzeImagesWithVision([base64],
             "Analyze this academic image. If it's a question, solve it step-by-step. If it's a topic, explain it. Provide the output in plain text suited for a student.");
 
           finalContent = `[User Uploaded an Image] \nAnalysis: ${imageDescription} \n\n User Question: ${finalContent}`;
@@ -1080,8 +1080,8 @@ What shall we tackle today?`;
 
       const fullPrompt = `${finalContext}\n\nStudent Question: ${finalContent}`;
 
-      // Use OpenAIService directly to avoid 500 errors from unconfigured edge function
-      const responseText = await OpenAIService.getInstance().generateChatCompletion(
+      // Use AIService directly to avoid 500 errors from unconfigured edge function
+      const responseText = await AIService.getInstance().generateChatCompletion(
         fullPrompt,
         ATLAS_SYSTEM_PROMPT
       );
