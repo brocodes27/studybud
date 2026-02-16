@@ -95,13 +95,14 @@ const getCleanTopic = (topic: string) => {
 };
 
 export const VideoLessons = () => {
-    const { user } = useAuth() as any;
+    const { user, isPremium } = useAuth() as any;
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentGenerationId, setCurrentGenerationId] = useState<string | undefined>();
     const [playingLesson, setPlayingLesson] = useState<{ topic: string, subject: string } | null>(null);
     const [isPreparing, setIsPreparing] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
+    const [showLectureLock, setShowLectureLock] = useState(false);
 
     // Navigation State
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
@@ -229,6 +230,11 @@ export const VideoLessons = () => {
         : [];
 
     const handlePlayPremium = async (lesson: Lesson) => {
+        if (!isPremium) {
+            setShowLectureLock(true);
+            return;
+        }
+
         const cleanTopic = getCleanTopic(lesson.topic);
         const topicKey = cleanTopic.toLowerCase();
         const existingGen = generations[topicKey];
@@ -280,6 +286,17 @@ export const VideoLessons = () => {
 
     return (
         <div className="space-y-12 animate-fade-in relative min-h-screen pb-20">
+            {showLectureLock && !isPremium && (
+                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-8 text-center">
+                    <h3 className="text-4xl font-black text-neo-accent uppercase tracking-tighter italic mb-4">PRO_ONLY</h3>
+                    <p className="text-white/60 mb-8 max-w-md">Neural video lectures are Pro-only. Upgrade to unlock unlimited HD lectures.</p>
+                    <div className="flex gap-4">
+                        <button onClick={() => setShowLectureLock(false)} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">OK</button>
+                        <button onClick={() => window.location.href = '/subscription'} className="px-8 py-3 bg-neo-accent text-black font-black uppercase italic tracking-widest">UPGRADE</button>
+                    </div>
+                </div>
+            )}
+
             {playingLesson && renderMode === 'classic' && (
                 <BlackboardPlayer
                     topic={playingLesson.topic}

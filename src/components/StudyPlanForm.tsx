@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, BookOpen, GraduationCap, FileText, Loader2, Pencil, AlertCircle, X, Target, Zap, Sparkles, HelpCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface StudyPlanFormProps {
   onSubmit: (data: FormData) => void;
@@ -19,7 +20,7 @@ export interface FormData {
 }
 
 export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlanFormProps) {
-  const { user } = useAuth() as any;
+  const { user, isPremium } = useAuth() as any;
 
   const [formData, setFormData] = useState<FormData>({
     plan_name: initialData.plan_name ?? '',
@@ -33,6 +34,9 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [showLimitPopup, setShowLimitPopup] = useState(false);
+  const [showFreeLimitPopup, setShowFreeLimitPopup] = useState(false);
+  const [freeLimitMessage, setFreeLimitMessage] = useState<string>('');
+  const [checkingLimits, setCheckingLimits] = useState(false);
 
   useEffect(() => {
     setFormData(prev => ({ ...prev, user_id: user?.id, email: user?.email }));
@@ -68,11 +72,43 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
+    if (!validateForm()) return;
+
+    if (!isPremium && user?.id) {
+      setCheckingLimits(true);
+      try {
+        const today = new Date();
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
+
+        const { data: plans } = await supabase
+          .from('exam_plans')
+          .select('id, subject, created_at')
+          .eq('user_id', user.id)
+          .gte('created_at', firstDayOfMonth)
+          .lte('created_at', lastDayOfMonth);
+
+        if ((plans?.length || 0) >= 1) {
+          setFreeLimitMessage('Free tier limit: 1 study plan per month. Upgrade to Pro for unlimited.');
+          setShowFreeLimitPopup(true);
+          return;
+        }
+
+        const uniqueSubjects = new Set((plans || []).map(p => p.subject));
+        uniqueSubjects.add(formData.subject);
+        if (uniqueSubjects.size > 1) {
+          setFreeLimitMessage('Free tier limit: Only 1 subject allowed. Upgrade to Pro for multiple subjects.');
+          setShowFreeLimitPopup(true);
+          return;
+        }
+      } finally {
+        setCheckingLimits(false);
+      }
     }
+
+    onSubmit(formData);
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -93,6 +129,11 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
 
   return (
     <div className="space-y-8">
+      {!isPremium && (
+        <div className="bg-neo-bg border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] text-[10px] font-black uppercase tracking-widest">
+          FREE_LIMITS: 1_STUDY_PLAN/MO · 1_SUBJECT_ONLY · PLAN_LENGTH_MAX_30_DAYS
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Plan Name */}
@@ -173,12 +214,12 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || checkingLimits}
           className="w-full neo-button bg-neo-accent py-6 text-2xl group relative overflow-hidden"
         >
-          {loading ? (
+          {loading || checkingLimits ? (
             <div className="flex items-center justify-center gap-3 italic">
-              <Loader2 className="h-6 w-6 animate-spin" /> GENERATING_LOGIC...
+              <Loader2 className="h-6 w-6 animate-spin" /> VALIDATING_LIMITS...
             </div>
           ) : (
             <div className="flex items-center justify-center gap-3">
@@ -213,6 +254,26 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               >
                 FIX_TO_MAX
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFreeLimitPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in">
+          <div className="neo-card bg-white p-8 max-w-md w-full border-8 border-black shadow-[20px_20px_0px_0px_#000] space-y-6">
+            <div className="flex items-center gap-4 border-b-4 border-black pb-4">
+              <div className="bg-neo-accent p-2 border-2 border-black rotate-3">
+                <AlertCircle className="h-6 w-6 text-black" />
+              </div>
+              <h3 className="text-2xl font-black italic uppercase">Free_Tier_Limit</h3>
+            </div>
+            <p className="font-bold text-lg leading-snug">
+              {freeLimitMessage}
+            </p>
+            <div className="flex gap-4 pt-4">
+              <button onClick={() => setShowFreeLimitPopup(false)} className="neo-button-white flex-1 py-3 text-sm">OK</button>
+              <button onClick={() => window.location.href = '/subscription'} className="neo-button bg-neo-accent flex-1 py-3 text-sm">UPGRADE</button>
             </div>
           </div>
         </div>

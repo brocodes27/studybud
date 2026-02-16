@@ -43,13 +43,13 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
 
   const getQuestionTypeColor = (type: string) => {
     const colors = {
-      'MCQ': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'Short Answer': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Numerical': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      'Long Answer': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-      'Case Study': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-      'Practice Test': 'bg-red-500/20 text-red-300 border-red-500/30',
-      'Revision': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      'MCQ': 'bg-neo-secondary text-black',
+      'Short Answer': 'bg-neo-accent text-black',
+      'Numerical': 'bg-neo-bg text-black',
+      'Long Answer': 'bg-white text-black',
+      'Case Study': 'bg-neo-secondary text-black',
+      'Practice Test': 'bg-neo-accent text-black',
+      'Revision': 'bg-neo-bg text-black',
     };
 
     for (const [key, value] of Object.entries(colors)) {
