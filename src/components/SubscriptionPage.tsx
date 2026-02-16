@@ -7,11 +7,11 @@ export function SubscriptionPage() {
     const { initiatePayment, isLoadingPayment } = usePayment();
 
     const features = [
-        { name: "AI Study Plans", free: "Basic (1/mo)", pro: "Unlimited + Detailed" },
-        { name: "Flashcards", free: "20/deck", pro: "Unlimited + From PDF" },
-        { name: "Practice Tests", free: "Text only", pro: "Visual + AI Explanations" },
+        { name: "AI Study Plans", free: "1 / month", pro: "Unlimited + Detailed" },
+        { name: "Flashcards", free: "20 / deck", pro: "Unlimited + From PDF" },
+        { name: "Practice Tests", free: "1 / week (text)", pro: "Visual + AI Explanations" },
         { name: "Lectures", free: "Audio Summaries", pro: "HD Neural Video Lectures" },
-        { name: "Voices", free: "Standard Robotic", pro: "Ultra-Realistic Neural" },
+        { name: "Voices", free: "Standard", pro: "Ultra-Realistic Neural" },
         { name: "Social Groups", free: "Join Only", pro: "Create & Manage Private Groups" },
         { name: "Analytics", free: "Basic Stats", pro: "Deep Learning Insights" },
     ];
@@ -36,9 +36,41 @@ export function SubscriptionPage() {
                     </p>
                 </header>
 
-                <div className="flex justify-center mb-20">
+                <div className="grid md:grid-cols-2 gap-10 mb-20">
+                    {/* Free Plan */}
+                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#000] -rotate-1 group hover:rotate-0 transition-all transform w-full">
+                        <h3 className="text-3xl font-black uppercase italic mb-2 tracking-tighter flex items-center gap-4">
+                            NEURO_FREE
+                        </h3>
+
+                        <div className="text-6xl font-black mb-2 text-black italic">
+                            $0
+                            <span className="text-lg text-black/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span>
+                        </div>
+
+                        <p className="font-black text-black/40 uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-black/10 pb-4">
+                            FREE_CORE_ACCESS. BASIC_LIMITS_APPLY.
+                        </p>
+
+                        <ul className="space-y-6 mb-12">
+                            {features.map((f, i) => (
+                                <li key={i} className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
+                                    <div className="w-6 h-6 border-2 border-black bg-white flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_#000]">
+                                        <Check className="w-4 h-4 text-black stroke-[4px]" />
+                                    </div>
+                                    <span className="text-black/60">{f.name}: </span>
+                                    <span className="text-black">{f.free}</span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <div className="bg-neo-bg border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] text-[10px] font-black uppercase tracking-widest">
+                            FREE_LIMITS: 1_STUDY_PLAN/MO · 1_SUBJECT_ONLY · 20_FLASHCARDS/DECK · 1_PRACTICE_TEST/WEEK · PLAN_LENGTH_MAX_30_DAYS
+                        </div>
+                    </div>
+
                     {/* Pro Plan */}
-                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#4D96FF] rotate-1 group hover:rotate-0 transition-all transform max-w-xl w-full">
+                    <div className="bg-white border-8 border-black p-10 relative shadow-[16px_16px_0px_0px_#4D96FF] rotate-1 group hover:rotate-0 transition-all transform w-full">
                         <div className="absolute -top-6 -right-6 bg-neo-accent text-white px-6 py-3 border-4 border-black font-black text-xs uppercase tracking-[0.2em] -rotate-3 group-hover:rotate-0 transition-all shadow-[6px_6px_0px_0px_#000]">
                             SYSTEM_RECOMMENDED
                         </div>

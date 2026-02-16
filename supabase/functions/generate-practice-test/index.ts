@@ -1,3 +1,5 @@
+import { isUserPremium } from "../generate-study-plan/_utils_subscription.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -62,6 +64,28 @@ Deno.serve(async (req: Request) => {
 
     const userData = await userResponse.json();
     const userId = userData.id;
+
+    // Free tier limits
+    const { premium } = await isUserPremium(userId);
+    if (!premium) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const testsResponse = await fetch(`${supabaseUrl}/rest/v1/practice_tests?user_id=eq.${userId}&created_at=gte.${sevenDaysAgo}&select=id`, {
+        headers: {
+          'apikey': supabaseServiceKey,
+          'Authorization': `Bearer ${supabaseServiceKey}`
+        }
+      });
+      const tests = await testsResponse.json();
+      if (tests.length >= 1) {
+        return new Response(
+          JSON.stringify({ error: 'Free tier limit: 1 practice test per week. Upgrade for unlimited.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
 
     const { subject, class: studentClass, chapters, question_count, duration_minutes }: PracticeTestRequest = await req.json();
 

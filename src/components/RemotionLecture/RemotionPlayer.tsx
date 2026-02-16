@@ -33,8 +33,8 @@ export const RemotionPlayer: React.FC<RemotionPlayerProps> = ({ config, onClose 
                     inputProps={config as any}
                     durationInFrames={durationInFrames}
                     fps={30}
-                    compositionWidth={1920}
-                    compositionHeight={1080}
+                    compositionWidth={2560}
+                    compositionHeight={1440}
                     style={{
                         width: '100%',
                         height: '100%',

@@ -48,10 +48,11 @@ serve(async (req) => {
       );
     }
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    const geminiModel = Deno.env.get("GEMINI_MODEL") || "gemini-3-flash-preview";
+    if (!geminiApiKey) {
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured on server" }),
+        JSON.stringify({ error: "Gemini API key not configured on server" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -67,21 +68,38 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const messages = body.messages || [];
+    const systemParts = messages.filter((m: any) => m.role === 'system').map((m: any) => m.content).join('\n');
+    const convoParts = messages.filter((m: any) => m.role !== 'system').map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+    const fullPrompt = `${systemParts ? `SYSTEM INSTRUCTION: ${systemParts}\n\n` : ''}${convoParts}`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: {
+          temperature: body.temperature ?? 0.7,
+          maxOutputTokens: body.max_tokens ?? body.max_completion_tokens ?? 2048
+        }
+      }),
     });
 
-    const text = await response.text();
+    const data = await response.json();
     if (!response.ok) {
-      return new Response(text, { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(data), { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    return new Response(text, { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const openaiLike = {
+      id: 'gemini-proxy',
+      object: 'chat.completion',
+      choices: [{ message: { role: 'assistant', content: text } }]
+    };
+
+    return new Response(JSON.stringify(openaiLike), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err: any) {
     console.error('openai-proxy error', err);
     return new Response(JSON.stringify({ error: 'Proxy failed', details: err?.message || String(err) }), {

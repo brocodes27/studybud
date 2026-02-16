@@ -111,30 +111,26 @@ Deno.serve(async (req: Request) => {
     // Check free vs premium tier
     const { premium } = await isUserPremium(userId);
     if (!premium) {
-      // 1. Check if user already generated 7 days of plans this month
+      // 1. Free tier: 1 plan per month
       const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
       const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString();
-      const plansResponse = await fetch(`${supabaseUrl}/rest/v1/exam_plans?user_id=eq.${userId}&created_at=gte.${firstDayOfMonth}&created_at=lte.${lastDayOfMonth}`, {
+      const plansResponse = await fetch(`${supabaseUrl}/rest/v1/exam_plans?user_id=eq.${userId}&created_at=gte.${firstDayOfMonth}&created_at=lte.${lastDayOfMonth}&select=id,subject`, {
         headers: {
           'apikey': supabaseServiceKey,
           'Authorization': `Bearer ${supabaseServiceKey}`
         }
       });
       const plans = await plansResponse.json();
-      let totalDays = 0;
-      for (const plan of plans) {
-        totalDays += plan.plan?.days_until_exam || 0;
-      }
-      if (totalDays >= 7) {
+      if (plans.length >= 1) {
         return new Response(
-          JSON.stringify({ error: 'Free tier limit reached: Upgrade to premium for unlimited plans.' }),
+          JSON.stringify({ error: 'Free tier limit reached: 1 study plan per month. Upgrade to Pro for unlimited plans.' }),
           {
             status: 403,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
       }
-      // 2. Only 1 subject allowed (subject is a string, so just check if user has other plans with different subject)
+      // 2. Only 1 subject allowed
       const uniqueSubjects = new Set(plans.map(p => p.subject));
       uniqueSubjects.add(subject);
       if (uniqueSubjects.size > 1) {
@@ -152,8 +148,8 @@ Deno.serve(async (req: Request) => {
 
     // Function to generate study plan with different prompt strategies
     const generateStudyPlanWithPrompt = async (useShortPrompt = false) => {
-      // Determine number of questions based on study period length
-      const questionsPerDay = daysUntilExam <= 15 ? 10 : 3;
+      // Determine number of questions based on study period length (keep response small)
+      const questionsPerDay = daysUntilExam <= 10 ? 5 : (daysUntilExam <= 15 ? 8 : 3);
 
       console.log(`Generating study plan with ${questionsPerDay} questions per day for ${daysUntilExam} days study period`);
 
@@ -208,40 +204,73 @@ Return the response in this exact JSON format:
   ]
 }
 
-Make sure to include actual, specific practice questions that are appropriate for the subject and class level. Keep responses concise to avoid truncation.`;
+IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep responses concise to avoid truncation.`;
 
-      const openaiResponse = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${openaiApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: "You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested."
+      const fullPrompt = `SYSTEM INSTRUCTION: You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested.\n\nUSER PROMPT: ${prompt}`;
+
+      const callOpenAI = async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90000);
+        try {
+          const res = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${openaiApiKey}`,
               },
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-            temperature: 0.7,
-            max_completion_tokens: 8192,
-          }),
+              body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content: "You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested."
+                  },
+                  {
+                    role: "user",
+                    content: prompt,
+                  },
+                ],
+                temperature: 0.7,
+                max_completion_tokens: 4096,
+              }),
+              signal: controller.signal
+            }
+          );
+          return res;
+        } finally {
+          clearTimeout(timeout);
         }
-      );
+      };
+
+      let openaiResponse: Response;
+      try {
+        openaiResponse = await callOpenAI();
+      } catch (e: any) {
+        if (e?.name === 'AbortError' || String(e)?.includes('aborted')) {
+          await new Promise(r => setTimeout(r, 500));
+          openaiResponse = await callOpenAI();
+        } else {
+          throw e;
+        }
+      }
+      if (!openaiResponse.ok && (openaiResponse.status === 503 || openaiResponse.status === 429)) {
+        await new Promise(r => setTimeout(r, 500));
+        openaiResponse = await callOpenAI();
+      }
+      if (!openaiResponse.ok && (openaiResponse.status === 503 || openaiResponse.status === 429)) {
+        await new Promise(r => setTimeout(r, 1000));
+        openaiResponse = await callOpenAI();
+      }
 
       if (!openaiResponse.ok) {
         throw new Error(`OpenAI API error: ${openaiResponse.status}`);
       }
 
       const openaiData = await openaiResponse.json();
-      const generatedText = openaiData.choices[0].message.content;
+      const generatedText = openaiData.choices?.[0]?.message?.content || '';
+      console.log("OPENAI_LEN", generatedText?.length || 0);
 
       // Validate response size and content
       if (!generatedText || generatedText.length < 50) {
@@ -256,8 +285,9 @@ Make sure to include actual, specific practice questions that are appropriate fo
       // Parse the JSON response from OpenAI with improved error handling
       let studyPlan;
       try {
-        // First, try to extract JSON from the response
-        const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+        // First, try to extract JSON from the response (strip code fences if present)
+        const cleaned = generatedText.replace(/```json|```/gi, '').trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error("No JSON found in response");
         }
@@ -285,7 +315,8 @@ Make sure to include actual, specific practice questions that are appropriate fo
         }
 
         if (!studyPlan.days_until_exam || typeof studyPlan.days_until_exam !== 'number') {
-          throw new Error("Missing or invalid days_until_exam in response");
+          // Fallback to server-calculated value if missing
+          studyPlan.days_until_exam = daysUntilExam;
         }
 
         return studyPlan;
@@ -356,6 +387,7 @@ Make sure to include actual, specific practice questions that are appropriate fo
       throw new Error(`Supabase error: ${supabaseResponse.status}`);
     }
 
+    console.log("STUDY_PLAN_OK", { days: studyPlan.days_until_exam, items: studyPlan.daily_schedule?.length });
     return new Response(
       JSON.stringify(studyPlan),
       {

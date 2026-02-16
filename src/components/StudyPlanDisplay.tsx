@@ -72,17 +72,15 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
 
       <div className="space-y-6 relative animate-fade-in">
         {/* Header Summary */}
-        <div className="glass-panel p-8 rounded-3xl border border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-neon-blue/10 rounded-full blur-3xl"></div>
-
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
+        <div className="bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-neon-blue to-blue-600 p-4 rounded-2xl shadow-lg shadow-neon-blue/20">
+              <div className="bg-neo-accent p-4 border-4 border-black shadow-[4px_4px_0px_0px_#000]">
                 <Target className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h3 className="text-3xl font-bold text-white mb-1">{formData.plan_name || 'Your Study Plan'}</h3>
-                <p className="text-gray-400 text-lg">Personalized schedule for <span className="text-neon-blue font-medium">{formData.subject}</span></p>
+                <h3 className="text-3xl font-black text-black mb-1 uppercase italic">{formData.plan_name || 'Your Study Plan'}</h3>
+                <p className="text-black/60 text-lg">Personalized schedule for <span className="text-neo-accent font-black uppercase">{formData.subject}</span></p>
               </div>
             </div>
             {onReset && (
@@ -97,28 +95,28 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-card p-5 rounded-xl border border-white/5 bg-black/20">
+            <div className="bg-neo-bg border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
               <div className="flex items-center gap-3 mb-2">
-                <Clock className="h-5 w-5 text-neon-blue" />
-                <span className="font-medium text-gray-400">Days Left</span>
+                <Clock className="h-5 w-5 text-neo-accent" />
+                <span className="font-black uppercase text-black/60 text-xs tracking-widest">Days Left</span>
               </div>
-              <p className="text-3xl font-bold text-white">{plan.days_until_exam}</p>
+              <p className="text-3xl font-black text-black">{plan.days_until_exam}</p>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border border-white/5 bg-black/20">
+            <div className="bg-neo-bg border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
               <div className="flex items-center gap-3 mb-2">
-                <BookOpen className="h-5 w-5 text-neon-green" />
-                <span className="font-medium text-gray-400">Subject</span>
+                <BookOpen className="h-5 w-5 text-neo-secondary" />
+                <span className="font-black uppercase text-black/60 text-xs tracking-widest">Subject</span>
               </div>
-              <p className="text-xl font-bold text-white truncate">{formData.subject}</p>
+              <p className="text-xl font-black text-black truncate uppercase italic">{formData.subject}</p>
             </div>
 
-            <div className="glass-card p-5 rounded-xl border border-white/5 bg-black/20">
+            <div className="bg-neo-bg border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
               <div className="flex items-center gap-3 mb-2">
-                <Calendar className="h-5 w-5 text-neon-purple" />
-                <span className="font-medium text-gray-400">Exam Date</span>
+                <Calendar className="h-5 w-5 text-neo-bg" />
+                <span className="font-black uppercase text-black/60 text-xs tracking-widest">Exam Date</span>
               </div>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xl font-black text-black">
                 {formatDate(formData.exam_date)}
               </p>
             </div>
@@ -126,12 +124,12 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-4 border-b border-white/10 pb-1">
+        <div className="flex gap-4 border-b-4 border-black pb-1">
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-medium transition-all ${activeTab === 'schedule'
-                ? 'bg-neon-blue/10 text-neon-blue border-b-2 border-neon-blue'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            className={`flex items-center gap-2 px-6 py-3 font-black uppercase tracking-widest text-xs border-2 border-black ${activeTab === 'schedule'
+                ? 'bg-black text-white'
+                : 'bg-white text-black hover:bg-neo-bg'
               }`}
           >
             <List className="w-4 h-4" />
@@ -139,9 +137,9 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
           </button>
           <button
             onClick={() => setActiveTab('videos')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-medium transition-all ${activeTab === 'videos'
-                ? 'bg-neon-green/10 text-neon-green border-b-2 border-neon-green'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            className={`flex items-center gap-2 px-6 py-3 font-black uppercase tracking-widest text-xs border-2 border-black ${activeTab === 'videos'
+                ? 'bg-black text-white'
+                : 'bg-white text-black hover:bg-neo-bg'
               }`}
           >
             <Video className="w-4 h-4" />
@@ -151,9 +149,9 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
 
         {activeTab === 'schedule' ? (
           /* Daily Schedule */
-          <div className="glass-panel p-8 rounded-3xl border border-white/10">
-            <h4 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
-              <CheckCircle className="h-7 w-7 text-neon-green" />
+          <div className="bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
+            <h4 className="text-2xl font-black text-black mb-8 flex items-center gap-3 uppercase italic">
+              <CheckCircle className="h-7 w-7 text-neo-secondary" />
               Daily Study Schedule
             </h4>
 
@@ -161,47 +159,45 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
               {plan.daily_schedule.map((day, index) => (
                 <div
                   key={index}
-                  className="group hover:bg-white/5 transition-all duration-300 p-6 rounded-2xl border border-white/5 hover:border-neon-blue/30 relative overflow-hidden"
+                  className="group transition-all duration-300 p-6 border-4 border-black bg-neo-bg"
                 >
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-neon-blue to-neon-purple opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
                   <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                     <div className="flex-shrink-0">
-                      <div className="bg-gradient-to-br from-neon-blue/20 to-blue-600/20 border border-neon-blue/30 text-neon-blue rounded-xl px-5 py-4 text-center min-w-[100px]">
-                        <div className="font-bold text-xl">Day {day.day}</div>
-                        <div className="text-sm opacity-80 mt-1">{formatDate(day.date)}</div>
+                      <div className="bg-white border-4 border-black px-5 py-4 text-center min-w-[100px] shadow-[4px_4px_0px_0px_#000]">
+                        <div className="font-black text-xl">Day {day.day}</div>
+                        <div className="text-xs font-black uppercase text-black/60 mt-1">{formatDate(day.date)}</div>
                       </div>
                     </div>
 
                     <div className="flex-grow space-y-4">
                       <div>
                         <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <h5 className="font-bold text-xl text-white">{day.topic}</h5>
+                          <h5 className="font-black text-xl text-black uppercase italic">{day.topic}</h5>
                           <div className="flex items-center gap-2">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getQuestionTypeColor(day.question_type)}`}>
+                            <span className={`inline-block px-3 py-1 text-[10px] font-black uppercase tracking-widest border-2 border-black ${getQuestionTypeColor(day.question_type)}`}>
                               {day.question_type}
                             </span>
                           </div>
                         </div>
 
-                        <div className="bg-black/30 rounded-xl p-5 border border-white/5">
-                          <h6 className="font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                            <BookOpen className="h-4 w-4 text-neon-purple" />
+                        <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
+                          <h6 className="font-black text-black/70 mb-2 flex items-center gap-2 uppercase text-xs tracking-widest">
+                            <BookOpen className="h-4 w-4 text-neo-accent" />
                             Study Focus
                           </h6>
-                          <p className="text-gray-400 leading-relaxed">{day.description}</p>
+                          <p className="text-black/70 leading-relaxed font-bold">{day.description}</p>
                         </div>
 
                         {day.practice_questions && day.practice_questions.length > 0 && (
-                          <div className="bg-neon-blue/5 rounded-xl p-5 border border-neon-blue/10">
-                            <h6 className="font-semibold text-neon-blue mb-4 flex items-center gap-2">
+                          <div className="bg-white border-4 border-black p-5 shadow-[4px_4px_0px_0px_#000]">
+                            <h6 className="font-black text-black mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
                               <HelpCircle className="h-4 w-4" />
                               Practice Questions
                             </h6>
                             <div className="space-y-3">
                               {day.practice_questions.map((question, qIndex) => (
-                                <div key={qIndex} className="bg-black/40 rounded-lg p-4 border border-white/5 hover:border-neon-blue/20 transition-colors">
-                                  <p className="text-gray-300 text-sm leading-relaxed">{question}</p>
+                                <div key={qIndex} className="bg-neo-bg border-2 border-black p-4">
+                                  <p className="text-black/70 text-sm leading-relaxed font-bold">{question}</p>
                                 </div>
                               ))}
                             </div>
@@ -216,25 +212,25 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
           </div>
         ) : (
           /* Video/Blackboard Lessons Tab */
-          <div className="glass-panel p-8 rounded-3xl border border-white/10">
-            <h4 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
-              <Video className="h-7 w-7 text-neon-green" />
+          <div className="bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
+            <h4 className="text-2xl font-black text-black mb-8 flex items-center gap-3 uppercase italic">
+              <Video className="h-7 w-7 text-neo-secondary" />
               Blackboard Lessons
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {plan.daily_schedule.map((day, index) => (
-                <div key={index} className="glass-card p-6 rounded-2xl border border-white/10 hover:border-neon-green/40 transition-all flex flex-col justify-between h-full bg-black/20">
+                <div key={index} className="bg-neo-bg border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] flex flex-col justify-between h-full">
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-sm text-gray-400 font-mono">Day {day.day}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getQuestionTypeColor(day.question_type)}`}>{day.question_type}</span>
+                      <span className="text-xs font-black uppercase tracking-widest text-black/60">Day {day.day}</span>
+                      <span className={`text-[10px] px-2 py-0.5 border-2 border-black font-black uppercase ${getQuestionTypeColor(day.question_type)}`}>{day.question_type}</span>
                     </div>
-                    <h5 className="text-lg font-bold text-white mb-2 line-clamp-2 min-h-[3.5rem]">{day.topic}</h5>
-                    <p className="text-sm text-gray-400 line-clamp-3 mb-6 min-h-[4rem]">{day.description}</p>
+                    <h5 className="text-lg font-black text-black mb-2 line-clamp-2 min-h-[3.5rem] uppercase italic">{day.topic}</h5>
+                    <p className="text-sm text-black/60 line-clamp-3 mb-6 min-h-[4rem] font-bold">{day.description}</p>
                   </div>
                   <button
                     onClick={() => setPlayingTopic({ topic: day.topic, subject: formData.subject })}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-neon-green/20 to-emerald-500/20 text-neon-green font-bold border border-neon-green/30 hover:bg-neon-green/30 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all"
+                    className="w-full flex items-center justify-center gap-2 py-3 border-4 border-black bg-black text-white font-black uppercase text-xs tracking-widest"
                   >
                     <Play className="w-4 h-4 fill-current" />
                     Watch Lesson
@@ -246,13 +242,13 @@ export function StudyPlanDisplay({ plan, formData, onReset }: StudyPlanDisplayPr
         )}
 
         {/* Chapters Covered */}
-        <div className="glass-panel p-8 rounded-3xl border border-white/10">
-          <h4 className="text-xl font-bold text-white mb-6">Chapters Covered</h4>
+        <div className="bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
+          <h4 className="text-xl font-black text-black mb-6 uppercase italic">Chapters Covered</h4>
           <div className="flex flex-wrap gap-3">
             {formData.chapters.split(',').map((chapter, index) => (
               <span
                 key={index}
-                className="bg-white/5 text-gray-300 border border-white/10 px-4 py-2 rounded-full text-sm font-medium hover:bg-white/10 hover:text-white hover:border-neon-blue/30 transition-all cursor-default"
+                className="bg-neo-bg text-black border-2 border-black px-4 py-2 text-xs font-black uppercase tracking-widest"
               >
                 {chapter.trim()}
               </span>

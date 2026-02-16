@@ -321,7 +321,21 @@ export const VideoLessons = () => {
                         <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-8 text-center">
                             <h3 className="text-4xl font-black text-red-500 uppercase tracking-tighter italic mb-4">GENERATION_FAILED</h3>
                             <p className="text-white/60 mb-8 max-w-md">{generationError}</p>
-                            <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">Abort Process</button>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        if (playingLesson) {
+                                            const lesson = lessons.find(l => l.topic === playingLesson.topic && l.subject === playingLesson.subject);
+                                            if (lesson) return handlePlayPremium(lesson);
+                                        }
+                                        setGenerationError(null);
+                                    }}
+                                    className="px-8 py-3 bg-neo-accent text-black font-black uppercase italic tracking-widest"
+                                >
+                                    REGENERATE
+                                </button>
+                                <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">Abort Process</button>
+                            </div>
                         </div>
                     )}
                 </>

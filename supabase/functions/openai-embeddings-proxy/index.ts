@@ -29,39 +29,51 @@ serve(async (req) => {
       );
     }
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey) {
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured on server" }),
+        JSON.stringify({ error: "Gemini API key not configured on server" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const body = await req.json();
-    const model = body?.model || "text-embedding-3-small";
     const input = body?.input;
     if (!input) {
       return new Response(
-        JSON.stringify({ error: "Invalid request: { model, input } required" }),
+        JSON.stringify({ error: "Invalid request: { input } required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const res = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openaiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ model, input }),
-    });
+    const textToEmbed = Array.isArray(input) ? input[0] : input;
 
-    const text = await res.text();
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: {
+            parts: [{ text: String(textToEmbed) }]
+          }
+        })
+      }
+    );
+
+    const data = await res.json();
     if (!res.ok) {
-      return new Response(text, { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify(data), { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(text, { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const embedding = data?.embedding?.values || [];
+    const openaiLike = {
+      object: "list",
+      data: [{ object: "embedding", index: 0, embedding }],
+      model: "text-embedding-004"
+    };
+
+    return new Response(JSON.stringify(openaiLike), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: "Proxy failed", details: msg }), {

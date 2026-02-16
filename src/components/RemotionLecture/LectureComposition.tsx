@@ -4,6 +4,10 @@ import { GraduationCap, Sparkles, TrendingUp, Layout, Brain, Circle, Square, Fun
 import { TTSService } from '../../lib/ttsService';
 import 'katex/dist/katex.min.css';
 import { BlockMath } from 'react-katex';
+import { GraphRenderer } from './GraphRenderer';
+import { ChemStructure } from './ChemStructure';
+import { PhysicsDiagram } from './PhysicsDiagram';
+import { BioDiagram } from './BioDiagram';
 
 export interface LectureSegment {
     title: string;
@@ -11,7 +15,7 @@ export interface LectureSegment {
     duration: number; // in seconds
     tts?: string; // Text to be spoken by ElevenLabs
     media?: {
-        type: 'graph' | 'shape' | 'equation';
+        type: 'graph' | 'shape' | 'equation' | 'chemistry' | 'diagram' | 'biology';
         data: any;
     };
 }
@@ -56,7 +60,7 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
     let currentStartFrameOffset = 0;
 
     return (
-        <AbsoluteFill className="bg-white font-sans overflow-hidden">
+        <AbsoluteFill className="bg-white font-sans overflow-hidden" style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}>
             {/* Minimalist Background with Subtle Mesh */}
             <AbsoluteFill className="bg-slate-50">
                 <div
@@ -159,21 +163,7 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
                                         }}
                                     >
                                         {segment.media?.type === 'graph' && (
-                                            <div className="w-full aspect-square bg-white rounded-3xl shadow-xl p-8 flex items-end justify-between border border-slate-100">
-                                                {segment.media.data?.points?.map((p: any, i: number) => {
-                                                    const barH = typeof p === 'number' ? p : (p.y || 50);
-                                                    return (
-                                                        <div
-                                                            key={i}
-                                                            className="w-8 rounded-t-lg transition-all"
-                                                            style={{
-                                                                backgroundColor: primaryColor,
-                                                                height: `${interpolate(relativeFrame - 40 - (i * 5), [0, 20], [0, barH], { extrapolateRight: 'clamp' })}%`
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
+                                            <GraphRenderer media={segment.media as any} />
                                         )}
 
                                         {segment.media?.type === 'shape' && (
@@ -198,6 +188,18 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
                                                     <BlockMath math={segment.media.data} />
                                                 </div>
                                             </div>
+                                        )}
+
+                                        {segment.media?.type === 'chemistry' && (
+                                            <ChemStructure media={segment.media as any} />
+                                        )}
+
+                                        {segment.media?.type === 'diagram' && (
+                                            <PhysicsDiagram media={segment.media as any} />
+                                        )}
+
+                                        {segment.media?.type === 'biology' && (
+                                            <BioDiagram media={segment.media as any} />
                                         )}
                                     </div>
                                 </div>

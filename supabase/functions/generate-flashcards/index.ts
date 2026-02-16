@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isUserPremium } from "../generate-study-plan/_utils_subscription.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,20 @@ serve(async (req: Request) => {
 
     const userData = await userResponse.json();
     const userId = userData.id;
+
+    // Free tier limits
+    const { premium } = await isUserPremium(userId);
+    if (!premium) {
+      if (!count || count > 20) {
+        return new Response(
+          JSON.stringify({ error: 'Free tier limit: Max 20 flashcards per deck. Upgrade for unlimited.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
 
     // Log and parse the raw request body for debugging
     const rawBody = await req.text();
