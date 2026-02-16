@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import TeacherNavbar from './components/TeacherNavbar';
@@ -49,12 +49,11 @@ import { SubscriptionPage } from './components/SubscriptionPage';
 import SYOW from './pages/SYOW';
 
 function AppContent() {
-  const { user, role, loading, isPremium, isAdmin, trialStart, trialActive, onboardingCompleted, signOut } = useAuth();
+  const { user, role, loading, isPremium, onboardingCompleted } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const isFullscreen = (() => {
     try {
@@ -80,22 +79,6 @@ function AppContent() {
     }
   }, []);
 
-  let trialExpired = false;
-  if (!isPremium && !isAdmin) {
-    if (!trialStart) {
-      trialExpired = true;
-    } else if (trialActive === false) {
-      trialExpired = true;
-    } else {
-      const now = new Date();
-      const diff = now.getTime() - trialStart.getTime();
-      if (diff > 7 * 24 * 60 * 60 * 1000) {
-        trialExpired = true;
-      }
-    }
-  }
-
-
   const handleSubscribeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     await initiatePayment();
@@ -117,45 +100,6 @@ function AppContent() {
   if (!onboardingCompleted) return <Onboarding />;
 
   const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
-
-  if (trialExpired && !isPremium && !isAdmin && !isSubscriptionRoute) {
-    const isNewUser = !isPremium && !trialActive;
-
-    return (
-      <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }} />
-
-        <div className="neo-card bg-white max-w-lg w-full text-center relative z-10">
-          <div className="w-20 h-20 bg-neo-secondary border-4 border-black flex items-center justify-center mx-auto mb-8 shadow-[4px_4px_0px_0px_#000] sticky top-0">
-            <Crown className="w-10 h-10 text-black stroke-[2.5px]" />
-          </div>
-          <h2 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black italic">
-            {isNewUser ? 'WELCOME TO THE NEURAL OS' : 'TRIAL EXPIRED'}
-          </h2>
-          <p className="text-black/70 mb-10 text-lg font-bold leading-snug">
-            {isNewUser
-              ? 'Complete your setup by activating your 7-day free trial. Select a plan to begin your neural augmentation.'
-              : 'Your 7-day free access has ended. Level up to a Pro subscription to keep your neural edge.'}
-          </p>
-          <div className="space-y-4">
-            <button
-              onClick={() => navigate('/pricing')}
-              className="w-full neo-button bg-neo-accent py-5 text-xl"
-            >
-              {isNewUser ? 'START FREE TRIAL' : 'VIEW SUBSCRIPTION PLANS'}
-            </button>
-            <button
-              onClick={() => signOut()}
-              className="w-full text-black/40 font-black uppercase text-xs tracking-widest hover:text-red-500 transition-colors"
-            >
-              LOGOUT / CHANGE ACCOUNT
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-neo-bg selection:bg-neo-accent selection:text-black">
