@@ -51,7 +51,16 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['@vapi-ai/web', 'events', '@daily-co/daily-js'],
+    include: [
+      '@vapi-ai/web',
+      '@vapi-ai/web > events',
+      '@vapi-ai/web > @daily-co/daily-js',
+      '@daily-co/daily-js',
+      'events',
+    ],
+  },
+  define: {
+    global: 'globalThis',
   },
   server: {
     port: 5173,
@@ -83,10 +92,11 @@ export default defineConfig({
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
+      requireReturnsDefault: 'auto',
+      strictRequires: true,
     },
     rollupOptions: {
       output: {
-        format: 'es',
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'
