@@ -51,6 +51,7 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['@vapi-ai/web', 'events', '@daily-co/daily-js'],
   },
   server: {
     port: 5173,
@@ -79,6 +80,10 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'esbuild',
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         format: 'es',
