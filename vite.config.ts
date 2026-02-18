@@ -1,6 +1,30 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+
+/**
+ * Custom plugin to clean up CJS patterns that slip through Rollup's
+ * @rollup/plugin-commonjs. This happens when pre-bundled ESM files
+ * (like @daily-co/daily-js/dist/daily-esm.js) internally embed CJS
+ * fragments from their sub-dependencies (canvas renderers, lodash, etc).
+ * Rollup marks these as ESM and skips CJS transformation.
+ */
+function cjsShimPlugin(): Plugin {
+  return {
+    name: 'cjs-shim',
+    renderChunk(code) {
+      const hasCjs = code.includes('module.exports') || code.includes('require(');
+      if (!hasCjs) return null;
+
+      // Inject module/exports shims at the top of the chunk.
+      // This provides browser-safe globals for any embedded CJS fragments
+      // that Rollup's commonjs plugin missed (e.g. code inside pre-bundled
+      // ESM files like @daily-co/daily-js/dist/daily-esm.js).
+      const shim = `var module=module||{exports:{}};var exports=module.exports;\n`;
+      return { code: shim + code, map: null };
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -47,7 +71,8 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
       },
-    })
+    }),
+    cjsShimPlugin(),
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
@@ -76,15 +101,6 @@ export default defineConfig({
       // Ensure sw.js is served with the correct MIME type
       allow: ['..'],
     },
-    middlewareMode: false,
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        if (req.url === '/sw.js') {
-          res.setHeader('Content-Type', 'application/javascript');
-        }
-        next();
-      });
-    },
   },
   build: {
     target: 'esnext',
@@ -93,7 +109,6 @@ export default defineConfig({
       include: [/node_modules/],
       transformMixedEsModules: true,
       requireReturnsDefault: 'auto',
-      strictRequires: true,
     },
     rollupOptions: {
       output: {
