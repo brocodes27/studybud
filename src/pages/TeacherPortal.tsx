@@ -9,7 +9,7 @@ const TeacherPortal: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        <div className="w-12 h-12 rounded-full border border-primary/30 border-t-primary animate-spin" />
       </div>
     );
   }

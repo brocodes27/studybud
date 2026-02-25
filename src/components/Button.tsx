@@ -21,8 +21,8 @@ const buttonVariants = {
   success: 'neo-button bg-green-400',
   warning: 'neo-button bg-yellow-400',
   danger: 'neo-button bg-red-500',
-  ghost: 'bg-transparent hover:bg-black/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
-  outline: 'neo-border bg-transparent hover:bg-black/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
+  ghost: 'bg-transparent hover:bg-slate-900/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
+  outline: 'neo-border bg-transparent hover:bg-slate-900/5 font-bold uppercase tracking-wider px-4 py-2 transition-all',
 };
 
 const buttonSizes = {
@@ -33,9 +33,9 @@ const buttonSizes = {
 };
 
 const shadowSizes = {
-  sm: 'shadow-[2px_2px_0px_0px_#000]',
-  md: 'shadow-[4px_4px_0px_0px_#000]',
-  lg: 'shadow-[6px_6px_0px_0px_#000]',
+  sm: 'shadow-neo',
+  md: 'shadow-neo',
+  lg: 'shadow-neo',
 };
 
 export const Button: React.FC<ButtonProps> = ({

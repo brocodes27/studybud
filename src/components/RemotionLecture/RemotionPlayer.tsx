@@ -15,7 +15,7 @@ export const RemotionPlayer: React.FC<RemotionPlayerProps> = ({ config, onClose 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-            <div className="relative w-full max-w-6xl aspect-video bg-white shadow-2xl rounded-[2rem] overflow-hidden flex flex-col">
+            <div className="relative w-full max-w-6xl aspect-video bg-slate-800 shadow-2xl rounded-[2rem] overflow-hidden flex flex-col">
 
                 {/* Close Button Only - Header is now in composition */}
                 <div className="absolute top-8 right-8 z-[110]">

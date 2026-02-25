@@ -14,8 +14,8 @@ const Landing: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neo-bg">
-        <div className="w-16 h-16 border-8 border-black border-t-neo-accent animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="w-16 h-16 border border-white/10 border-t-neo-accent animate-spin" />
       </div>
     );
   }
@@ -25,7 +25,7 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neo-bg text-black selection:bg-neo-accent selection:text-black">
+    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-neo-accent selection:text-slate-100">
       <LandingHeader />
       <LandingHero />
       <LandingBenefits />

@@ -122,7 +122,7 @@ export function GuidedPaperSolver() {
                         {/* Upload Card */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="group cursor-pointer border-2 border-dashed border-gray-700 bg-gray-900/50 rounded-3xl h-64 flex flex-col items-center justify-center p-6 hover:border-teal-500/50 hover:bg-teal-900/10 transition-all duration-300 relative overflow-hidden"
+                            className="group cursor-pointer border border-dashed border-gray-700 bg-gray-900/50 rounded-3xl h-64 flex flex-col items-center justify-center p-6 hover:border-teal-500/50 hover:bg-teal-900/10 transition-all duration-300 relative overflow-hidden"
                         >
                             <input
                                 type="file"
@@ -195,7 +195,7 @@ export function GuidedPaperSolver() {
 
     // View: Solver Interface
     return (
-        <div className="min-h-screen bg-black/90 text-white flex flex-col md:flex-row">
+        <div className="min-h-screen bg-slate-900/90 text-white flex flex-col md:flex-row">
             {/* Sidebar / Back */}
             <div className="w-full md:w-80 border-r border-gray-800 p-6 flex flex-col bg-gray-900/50 backdrop-blur-xl h-screen sticky top-0">
                 <button

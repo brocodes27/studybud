@@ -41,7 +41,7 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
 
     if (compact) {
         return (
-            <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex items-center gap-2 bg-slate-800 border border-white/10 px-3 py-1 shadow-neo">
                 <Zap className="w-4 h-4 text-neo-accent" />
                 <span className="font-black text-sm">{totalXp.toLocaleString()}</span>
 
@@ -62,7 +62,7 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
     }
 
     return (
-        <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_#000] p-4 relative overflow-hidden">
+        <div className="bg-slate-800 border border-white/10 shadow-neo p-4 relative overflow-hidden">
             {/* Animated XP gain */}
             <AnimatePresence>
                 {animatingXp !== null && (
@@ -70,7 +70,7 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
                         initial={{ opacity: 0, scale: 0.5, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, y: -30 }}
-                        className="absolute top-2 right-2 bg-neo-accent text-white px-3 py-1 font-black text-lg border-2 border-black shadow-[2px_2px_0px_0px_#000] -rotate-3"
+                        className="absolute top-2 right-2 bg-neo-accent text-white px-3 py-1 font-black text-lg border border-white/10 shadow-neo -rotate-3"
                     >
                         <ChevronUp className="w-4 h-4 inline" />+{animatingXp} XP
                     </motion.div>
@@ -81,7 +81,7 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
                 {/* Level Badge */}
                 {showLevel && (
                     <div
-                        className="w-14 h-14 flex items-center justify-center border-4 border-black text-3xl"
+                        className="w-14 h-14 flex items-center justify-center border border-white/10 text-3xl"
                         style={{ backgroundColor: levelInfo.color + '30' }}
                     >
                         {levelInfo.badge}
@@ -90,14 +90,14 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
 
                 <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-100/40">
                             LEVEL {levelInfo.level} • {levelInfo.name}
                         </span>
                         <span className="font-black text-neo-accent">{totalXp.toLocaleString()} XP</span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="h-3 bg-neo-bg border-2 border-black relative overflow-hidden">
+                    <div className="h-3 bg-slate-900 border border-white/10 relative overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${levelInfo.progress}%` }}
@@ -109,10 +109,10 @@ export function XPCounter({ compact = false, showLevel = true }: XPCounterProps)
 
                     {nextLevelConfig && (
                         <div className="flex justify-between mt-1">
-                            <span className="text-[8px] font-bold text-black/40">
+                            <span className="text-[8px] font-bold text-slate-100/40">
                                 {currentLevelConfig?.minXp.toLocaleString()} XP
                             </span>
-                            <span className="text-[8px] font-bold text-black/40">
+                            <span className="text-[8px] font-bold text-slate-100/40">
                                 {xpToNext.toLocaleString()} XP to Level {levelInfo.level + 1}
                             </span>
                         </div>

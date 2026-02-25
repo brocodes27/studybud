@@ -33,7 +33,7 @@ export const ChemStructure: React.FC<{ media: MediaSpec }> = ({ media }) => {
     if (media.type !== 'chemistry') return null;
 
     return (
-        <div className="relative bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex items-center justify-center">
+        <div className="relative bg-slate-800 p-6 rounded-3xl shadow-xl border border-slate-100 flex items-center justify-center">
             <svg ref={svgRef} width={360} height={360} />
             {media.data.label && (
                 <div className="absolute bottom-4 text-xs font-semibold text-slate-500">{media.data.label}</div>

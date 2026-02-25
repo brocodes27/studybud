@@ -212,12 +212,12 @@ export function StudyPlans() {
       {/* Header */}
       <div className="text-center mb-16 relative">
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none whitespace-nowrap overflow-hidden w-full">
-          <span className="text-[120px] font-black uppercase tracking-[0.2em] text-black italic leading-none select-none">SCHEDULES</span>
+          <span className="text-[120px] font-black uppercase tracking-[0.2em] text-slate-100 italic leading-none select-none">SCHEDULES</span>
         </div>
-        <h1 className="text-6xl md:text-8xl font-black text-black mb-6 tracking-tighter uppercase italic relative z-10">
+        <h1 className="text-6xl md:text-8xl font-black text-slate-100 mb-6 tracking-tighter uppercase italic relative z-10">
           MY <span className="text-neo-accent stroke-text">STUDY PLANS</span>
         </h1>
-        <p className="text-black font-bold text-xl uppercase tracking-widest bg-neo-secondary border-4 border-black px-6 py-2 inline-block -rotate-1 shadow-[4px_4px_0px_0px_#000]">
+        <p className="text-slate-100 font-bold text-xl uppercase tracking-widest bg-neo-secondary border border-white/10 px-6 py-2 inline-block -rotate-1 shadow-neo">
           MANAGE YOUR MENTAL BLUEPRINTS
         </p>
       </div>
@@ -228,16 +228,16 @@ export function StudyPlans() {
           { label: 'TOTAL PLANS', value: studyPlans.length, icon: BookOpen, color: 'bg-neo-muted' },
           { label: 'ACTIVE PLANS', value: studyPlans.filter(p => new Date(p.exam_date) > new Date()).length, icon: Target, color: 'bg-neo-secondary' },
           { label: 'THIS WEEK', value: studyPlans.filter(p => { const d = differenceInDays(new Date(p.exam_date), new Date()); return d <= 7 && d >= 0; }).length, icon: AlertCircle, color: 'bg-neo-accent', text: 'text-white' },
-          { label: 'COMPLETED', value: studyPlans.filter(p => new Date(p.exam_date) < new Date()).length, icon: TrendingUp, color: 'bg-white' }
+          { label: 'COMPLETED', value: studyPlans.filter(p => new Date(p.exam_date) < new Date()).length, icon: TrendingUp, color: 'bg-slate-800' }
         ].map((stat, index) => (
-          <div key={index} className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] rotate-1 hover:rotate-0 transition-transform">
+          <div key={index} className="bg-slate-800 border border-white/10 p-6 shadow-neo rotate-1 hover:rotate-0 transition-transform">
             <div className="flex items-center gap-5">
-              <div className={`w-14 h-14 border-4 border-black ${stat.color} ${stat.text || 'text-black'} flex items-center justify-center shadow-[4px_4px_0px_0px_#000]`}>
+              <div className={`w-14 h-14 border border-white/10 ${stat.color} ${stat.text || 'text-slate-100'} flex items-center justify-center shadow-neo`}>
                 <stat.icon className="w-8 h-8 stroke-[3px]" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-black/40 uppercase tracking-widest">{stat.label}</p>
-                <p className="text-3xl font-black text-black tracking-tighter italic leading-none mt-1">{stat.value.toString().padStart(2, '0')}</p>
+                <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest">{stat.label}</p>
+                <p className="text-3xl font-black text-slate-100 tracking-tighter italic leading-none mt-1">{stat.value.toString().padStart(2, '0')}</p>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ export function StudyPlans() {
       {/* Create New Plan Button */}
       <div className="flex justify-center mb-16">
         <Link to="/create">
-          <button className="bg-black text-white px-12 py-6 text-xl font-black uppercase tracking-widest border-4 border-black shadow-[8px_8px_0px_0px_#FF6B6B] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center gap-4">
+          <button className="bg-slate-900 text-white px-12 py-6 text-xl font-black uppercase tracking-widest border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center gap-4">
             <Plus className="w-8 h-8 stroke-[4px]" />
             NEW BLUEPRINT
           </button>
@@ -256,14 +256,14 @@ export function StudyPlans() {
 
       {/* Study Plans Grid */}
       {studyPlans.length === 0 ? (
-        <div className="text-center py-24 bg-white border-8 border-black shadow-[16px_16px_0px_0px_#000] -rotate-1">
-          <div className="w-32 h-32 bg-neo-muted border-4 border-black flex items-center justify-center mx-auto mb-10 shadow-[6px_6px_0px_0px_#000] rotate-12">
-            <BookOpen className="w-16 h-16 text-black stroke-[3px]" />
+        <div className="text-center py-24 bg-slate-800 border border-white/10 shadow-neo -rotate-1">
+          <div className="w-32 h-32 bg-neo-muted border border-white/10 flex items-center justify-center mx-auto mb-10 shadow-neo rotate-12">
+            <BookOpen className="w-16 h-16 text-slate-100 stroke-[3px]" />
           </div>
-          <h3 className="text-4xl font-black text-black uppercase tracking-tighter mb-6">EMPTY ARCHIVE</h3>
-          <p className="text-black/60 font-bold mb-12 text-xl max-w-md mx-auto leading-snug">NO STUDY PLANS DETECTED. INITIALIZE YOUR FIRST LEARNING SEQUENCE.</p>
+          <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter mb-6">EMPTY ARCHIVE</h3>
+          <p className="text-slate-100/60 font-bold mb-12 text-xl max-w-md mx-auto leading-snug">NO STUDY PLANS DETECTED. INITIALIZE YOUR FIRST LEARNING SEQUENCE.</p>
           <Link to="/create">
-            <button className="bg-neo-accent text-white px-10 py-5 font-black uppercase tracking-widest border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
+            <button className="bg-neo-accent text-white px-10 py-5 font-black uppercase tracking-widest border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
               INITIALIZE PLAN
             </button>
           </Link>
@@ -277,7 +277,7 @@ export function StudyPlans() {
             const rotation = idx % 2 === 0 ? 'rotate-1' : '-rotate-1';
 
             return (
-              <div key={plan.id} className={`bg-white border-4 border-black p-8 shadow-[10px_10px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] transition-all group ${rotation}`}>
+              <div key={plan.id} className={`bg-slate-800 border border-white/10 p-8 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all group ${rotation}`}>
                 <div className="relative z-10">
                   {/* Header */}
                   <div className="flex items-start justify-between mb-8">
@@ -287,26 +287,26 @@ export function StudyPlans() {
                           <input
                             value={newPlanName}
                             onChange={(e) => setNewPlanName(e.target.value)}
-                            className="w-full bg-neo-bg border-4 border-black p-3 font-black uppercase text-sm focus:outline-none focus:shadow-[4px_4px_0px_0px_#000]"
+                            className="w-full bg-slate-900 border border-white/10 p-3 font-black uppercase text-sm focus:outline-none focus:shadow-neo"
                             placeholder="PLAN NAME..."
                           />
                           <div className="flex gap-2">
                             <button
                               onClick={() => updatePlanName(plan.id)}
-                              className="flex-1 bg-neo-accent text-white border-2 border-black p-2 font-black uppercase text-[10px] shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                              className="flex-1 bg-neo-accent text-white border border-white/10 p-2 font-black uppercase text-[10px] shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
                             >
                               SAVE
                             </button>
                             <button
                               onClick={cancelEditing}
-                              className="flex-1 bg-white border-2 border-black p-2 font-black uppercase text-[10px] shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                              className="flex-1 bg-slate-800 border border-white/10 p-2 font-black uppercase text-[10px] shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
                             >
                               CANCEL
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <h3 className="text-2xl font-black text-black uppercase tracking-tight italic leading-tight group-hover:text-neo-accent transition-colors truncate">
+                        <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tight italic leading-tight group-hover:text-neo-accent transition-colors truncate">
                           {plan.plan_name || `${plan.subject} MISSION`}
                         </h3>
                       )}
@@ -314,13 +314,13 @@ export function StudyPlans() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => startEditing(plan)}
-                        className="p-2 border-2 border-black bg-neo-bg shadow-[2px_2px_0px_0px_#000] hover:bg-neo-secondary active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
+                        className="p-2 border border-white/10 bg-slate-800 shadow-neo hover:bg-neo-secondary active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
                       >
-                        <Pencil className="w-4 h-4 text-black stroke-[3px]" />
+                        <Pencil className="w-4 h-4 text-slate-100 stroke-[3px]" />
                       </button>
                       <button
                         onClick={() => deletePlan(plan.id)}
-                        className="p-2 border-2 border-black bg-neo-bg shadow-[2px_2px_0px_0px_#000] hover:bg-red-500 hover:text-white active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
+                        className="p-2 border border-white/10 bg-slate-800 shadow-neo hover:bg-red-500 hover:text-white active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
                       >
                         <Trash2 className="w-4 h-4 stroke-[3px]" />
                       </button>
@@ -329,16 +329,16 @@ export function StudyPlans() {
 
                   {/* Plan Details */}
                   <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-black/60">
-                      <div className="bg-neo-muted p-1 border-2 border-black"><BookOpen className="w-3 h-3 text-black stroke-[3px]" /></div>
+                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
+                      <div className="bg-neo-muted p-1 border border-white/10"><BookOpen className="w-3 h-3 text-slate-100 stroke-[3px]" /></div>
                       {plan.subject}
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-black/60">
-                      <div className="bg-neo-accent p-1 border-2 border-black"><Calendar className="w-3 h-3 text-white stroke-[3px]" /></div>
+                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
+                      <div className="bg-neo-accent p-1 border border-white/10"><Calendar className="w-3 h-3 text-white stroke-[3px]" /></div>
                       EXAM: {format(new Date(plan.exam_date), 'MMM dd, yyyy')}
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-black/60">
-                      <div className="bg-neo-secondary p-1 border-2 border-black"><Clock className="w-3 h-3 text-black stroke-[3px]" /></div>
+                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
+                      <div className="bg-neo-secondary p-1 border border-white/10"><Clock className="w-3 h-3 text-slate-100 stroke-[3px]" /></div>
                       {plan.plan.daily_schedule.length} STUDY SESSIONS
                     </div>
 
@@ -346,8 +346,8 @@ export function StudyPlans() {
                     {(() => {
                       const upcoming = getUpcoming(plan);
                       return (
-                        <div className="mt-8 p-5 bg-neo-bg border-4 border-black shadow-[4px_4px_0px_0px_#000] rotate-1">
-                          <div className="text-[10px] font-black text-black/40 mb-4 uppercase tracking-[0.2em] border-b-2 border-black pb-2">NEXT STEPS</div>
+                        <div className="mt-8 p-5 bg-slate-900 border border-white/10 shadow-neo rotate-1">
+                          <div className="text-[10px] font-black text-slate-100/40 mb-4 uppercase tracking-[0.2em] border-b-2 border-white/10 pb-2">NEXT STEPS</div>
                           {upcoming.length > 0 ? (
                             <ul className="space-y-3">
                               {upcoming.map((d) => (
@@ -355,12 +355,12 @@ export function StudyPlans() {
                                   <span className="font-black text-neo-accent text-[9px] uppercase tracking-tighter italic">
                                     {format(new Date(`${d.date}T00:00:00`), 'dd MMMM')}
                                   </span>
-                                  <span className="text-xs font-black text-black uppercase tracking-tight leading-tight truncate">{d.topic}</span>
+                                  <span className="text-xs font-black text-slate-100 uppercase tracking-tight leading-tight truncate">{d.topic}</span>
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <div className="text-xs font-black text-black/20 italic uppercase tracking-widest py-2">NO DATA DETECTED</div>
+                            <div className="text-xs font-black text-slate-100/20 italic uppercase tracking-widest py-2">NO DATA DETECTED</div>
                           )}
                         </div>
                       );
@@ -371,11 +371,11 @@ export function StudyPlans() {
                   <div className="mb-8">
                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest mb-3">
                       <span>MISSION PROGRESS</span>
-                      <span className="bg-neo-accent text-white px-2 py-0.5 border-2 border-black">{Math.round(progress)}%</span>
+                      <span className="bg-neo-accent text-white px-2 py-0.5 border border-white/10">{Math.round(progress)}%</span>
                     </div>
-                    <div className="w-full bg-black/10 border-4 border-black h-8 relative overflow-hidden">
+                    <div className="w-full bg-slate-900/10 border border-white/10 h-8 relative overflow-hidden">
                       <div
-                        className="h-full bg-neo-secondary border-r-4 border-black transition-all duration-700 ease-out"
+                        className="h-full bg-neo-secondary border-r-4 border-white/10 transition-all duration-700 ease-out"
                         style={{ width: `${progress}%` }}
                       >
                         {progress > 10 && (
@@ -388,16 +388,16 @@ export function StudyPlans() {
                   </div>
 
                   {/* Status Badge */}
-                  <div className="flex items-center justify-between mb-8 pt-4 border-t-2 border-black/10">
-                    <div className={`px-4 py-2 border-4 border-black font-black uppercase tracking-widest text-[9px] shadow-[3px_3px_0px_0px_#000] ${status.color === 'success' ? 'bg-neo-secondary' :
+                  <div className="flex items-center justify-between mb-8 pt-4 border-t-2 border-white/10/10">
+                    <div className={`px-4 py-2 border border-white/10 font-black uppercase tracking-widest text-[9px] shadow-neo ${status.color === 'success' ? 'bg-neo-secondary' :
                       status.color === 'warning' ? 'bg-neo-accent text-white' :
                         status.color === 'primary' ? 'bg-neo-muted' :
-                          'bg-white'
+                          'bg-slate-800'
                       }`}>
                       {status.text}
                     </div>
                     {daysUntil >= 0 && (
-                      <div className="text-[10px] font-black uppercase tracking-widest text-black/40 italic">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-100/40 italic">
                         {daysUntil === 0 ? 'D-DAY' : `T-MINUS ${daysUntil} DAYS`}
                       </div>
                     )}
@@ -406,12 +406,12 @@ export function StudyPlans() {
                   {/* Action Buttons */}
                   <div className="flex gap-4">
                     <Link to={`/study/${plan.id}`} className="flex-1">
-                      <button className="w-full py-4 bg-black text-white font-black uppercase tracking-widest text-[10px] border-4 border-black shadow-[4px_4px_0px_0px_#FF6B6B] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-3">
+                      <button className="w-full py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-3">
                         <Eye className="w-4 h-4 stroke-[3px]" /> VIEW
                       </button>
                     </Link>
                     <Link to={`/study/${plan.id}`} className="flex-1">
-                      <button className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-[10px] border-4 border-black shadow-[4px_4px_0px_0px_#000] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all">
+                      <button className="w-full py-4 bg-slate-800 text-slate-100 font-black uppercase tracking-widest text-[10px] border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all">
                         DEPLOY STUDY
                       </button>
                     </Link>

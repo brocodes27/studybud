@@ -129,7 +129,7 @@ const VAPITestComponent: React.FC = () => {
   return (
     <div className="p-6 bg-gray-800 rounded-xl border border-gray-700">
       <h2 className="text-2xl font-bold text-white mb-6">VAPI Integration Test</h2>
-      
+
       <div className="space-y-4">
         <div className="bg-gray-700 p-4 rounded-lg">
           <p className="text-gray-300 mb-2">Status: <span className="text-blue-400">{status}</span></p>
@@ -145,49 +145,49 @@ const VAPITestComponent: React.FC = () => {
           >
             Test Call Creation
           </button>
-          
+
           <button
             onClick={testGetVoices}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
           >
             Test Get Voices
           </button>
-          
+
           <button
             onClick={testGetAssistants}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors"
           >
             Test Get Assistants
           </button>
-          
+
           <button
             onClick={testConversationAnalysis}
-            className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 transition-colors"
+            className="bg-neo-accent text-slate-900 px-4 py-2 rounded hover:bg-cyan-400 transition-colors"
           >
             Test Gemini Analysis
           </button>
-          
+
           <button
             onClick={testPersonalizedFeedback}
             className="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 transition-colors"
           >
             Test Personalized Feedback
           </button>
-          
+
           <button
             onClick={testAdaptiveQuestions}
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors"
           >
             Test Adaptive Questions
           </button>
-          
+
           <button
             onClick={testEmotionalDetection}
             className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition-colors"
           >
             Test Emotional Detection
           </button>
-          
+
           {callId && (
             <>
               <button
@@ -196,7 +196,7 @@ const VAPITestComponent: React.FC = () => {
               >
                 Get Transcript
               </button>
-              
+
               <button
                 onClick={testEndCall}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"

@@ -168,55 +168,55 @@ export function Curriculum() {
   }, [tasks]);
 
   return (
-    <div className="space-y-12 animate-fade-in pb-20 min-h-screen bg-neo-bg">
+    <div className="space-y-12 animate-fade-in pb-20 min-h-screen bg-slate-950">
       {/* Guided Tour Overlay */}
       <CurriculumTour hasMonthlyPlan={hasMonthlyPlan} hasTasks={groupedTasks.length > 0} ready={!loading} />
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 border-b-8 border-black pb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 border-b-8 border-white/10 pb-8">
         <div>
           <div className="flex items-center gap-6 mb-4">
-            <div className="bg-neo-accent p-4 border-4 border-black shadow-[6px_6px_0px_0px_#000] -rotate-3 hover:rotate-0 transition-transform">
+            <div className="bg-neo-accent p-4 border border-white/10 shadow-neo -rotate-3 hover:rotate-0 transition-transform">
               <ListChecks className="h-8 w-8 text-white stroke-[3px]" />
             </div>
             <div>
-              <h1 className="text-5xl font-black text-black uppercase tracking-tighter italic leading-none">CURRICULUM</h1>
-              <div className="bg-black text-white px-3 py-1 text-xs font-black uppercase tracking-widest inline-block -rotate-1 mt-2">
+              <h1 className="text-5xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">CURRICULUM</h1>
+              <div className="bg-slate-900 text-white px-3 py-1 text-xs font-black uppercase tracking-widest inline-block -rotate-1 mt-2">
                 STUDY_PLAN_v5.0
               </div>
             </div>
           </div>
 
           {plan ? (
-            <div className="flex flex-wrap gap-3 ml-2 font-bold text-black/60 uppercase text-sm tracking-wide">
-              <span className="bg-neo-secondary text-black px-2 py-0.5 border-2 border-black">GOAL: {plan.aim}</span>
-              {plan.class_level && <span className="bg-white px-2 py-0.5 border-2 border-black">GRADE {plan.class_level}</span>}
+            <div className="flex flex-wrap gap-3 ml-2 font-bold text-slate-100/60 uppercase text-sm tracking-wide">
+              <span className="bg-neo-secondary text-slate-100 px-2 py-0.5 border border-white/10">GOAL: {plan.aim}</span>
+              {plan.class_level && <span className="bg-slate-800 px-2 py-0.5 border border-white/10">GRADE {plan.class_level}</span>}
               {plan.subjects && plan.subjects.length > 0 && (
-                <span className="bg-neo-muted px-2 py-0.5 border-2 border-black">SUBJECTS: {plan.subjects.length}</span>
+                <span className="bg-neo-muted px-2 py-0.5 border border-white/10">SUBJECTS: {plan.subjects.length}</span>
               )}
             </div>
           ) : (
-            <div className="text-black font-bold uppercase tracking-widest bg-neo-secondary border-2 border-black px-4 py-2 inline-block">
+            <div className="text-slate-100 font-bold uppercase tracking-widest bg-neo-secondary border border-white/10 px-4 py-2 inline-block">
               NO ACTIVE PLAN
             </div>
           )}
         </div>
 
         {/* Month Navigator */}
-        <div className="bg-white p-2 border-4 border-black shadow-[8px_8px_0px_0px_#000] flex items-center gap-2 rotate-1">
+        <div className="bg-slate-800 p-2 border border-white/10 shadow-neo flex items-center gap-2 rotate-1">
           <button
             onClick={() => setMonthCursor(prev => subMonths(prev, 1))}
-            className="px-4 py-3 bg-neo-bg border-2 border-black hover:bg-black hover:text-white transition-all font-black uppercase text-sm"
+            className="px-4 py-3 bg-slate-900 border border-white/10 hover:bg-slate-900 hover:text-white transition-all font-black uppercase text-sm"
             data-tour="month-prev"
           >
             PREV
           </button>
-          <div className="px-6 py-3 bg-neo-accent text-white border-2 border-black font-black flex items-center gap-3 uppercase tracking-wider relative -top-2 shadow-[2px_2px_0px_0px_#000]" data-tour="month-label">
+          <div className="px-6 py-3 bg-neo-accent text-white border border-white/10 font-black flex items-center gap-3 uppercase tracking-wider relative -top-2 shadow-neo" data-tour="month-label">
             <Calendar className="h-5 w-5 stroke-[3px]" /> {format(monthStart, 'MMMM yyyy')}
           </div>
           <button
             onClick={() => setMonthCursor(prev => addMonths(prev, 1))}
-            className="px-4 py-3 bg-neo-bg border-2 border-black hover:bg-black hover:text-white transition-all font-black uppercase text-sm"
+            className="px-4 py-3 bg-slate-900 border border-white/10 hover:bg-slate-900 hover:text-white transition-all font-black uppercase text-sm"
             data-tour="month-next"
           >
             NEXT
@@ -225,31 +225,31 @@ export function Curriculum() {
       </div>
 
       {/* Actions / Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-black">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-slate-100">
         {/* Task Count Card */}
-        <div className="bg-white p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] transition-all group">
+        <div className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all group">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-neo-secondary border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:rotate-12 transition-transform">
-              <Clock className="h-8 w-8 text-black stroke-[3px]" />
+            <div className="w-16 h-16 bg-neo-secondary border border-white/10 flex items-center justify-center shadow-neo group-hover:rotate-12 transition-transform">
+              <Clock className="h-8 w-8 text-slate-100 stroke-[3px]" />
             </div>
             <div>
-              <div className="text-[10px] font-black text-black/40 uppercase tracking-widest">TASKS_THIS_MONTH</div>
-              <div className="text-4xl font-black text-black italic leading-none mt-1">
+              <div className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest">TASKS_THIS_MONTH</div>
+              <div className="text-4xl font-black text-slate-100 italic leading-none mt-1">
                 {counts.total}
-                <span className="text-sm font-bold text-black/40 not-italic ml-2">({counts.completed} DONE)</span>
+                <span className="text-sm font-bold text-slate-100/40 not-italic ml-2">({counts.completed} DONE)</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Source Breakdown Card */}
-        <div className="bg-white p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] transition-all group">
+        <div className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all group">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-neo-muted border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:-rotate-12 transition-transform">
-              <Filter className="h-8 w-8 text-black stroke-[3px]" />
+            <div className="w-16 h-16 bg-neo-muted border border-white/10 flex items-center justify-center shadow-neo group-hover:-rotate-12 transition-transform">
+              <Filter className="h-8 w-8 text-slate-100 stroke-[3px]" />
             </div>
             <div>
-              <div className="text-[10px] font-black text-black/40 uppercase tracking-widest">SOURCE_VIEW</div>
+              <div className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest">SOURCE_VIEW</div>
               <div className="flex flex-col gap-1 mt-2 text-xs font-bold uppercase tracking-wide">
                 <span className="text-blue-600">PLAN: {counts.monthly}</span>
                 <span className="text-purple-600">TEST: {counts.exam}</span>
@@ -260,13 +260,13 @@ export function Curriculum() {
         </div>
 
         {/* Action Card */}
-        <div className="bg-white p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] flex flex-col justify-center gap-4">
+        <div className="bg-slate-800 p-6 border border-white/10 shadow-neo flex flex-col justify-center gap-4">
           <div className="flex items-center justify-between">
             <div className="text-sm font-bold">
               {hasMonthlyPlan ? (
-                <span className="inline-flex items-center gap-2 bg-neo-accent text-white px-3 py-1 border-2 border-black -rotate-2"><Sparkles className="h-4 w-4 fill-current" /> PLAN_ACTIVE</span>
+                <span className="inline-flex items-center gap-2 bg-neo-accent text-white px-3 py-1 border border-white/10 -rotate-2"><Sparkles className="h-4 w-4 fill-current" /> PLAN_ACTIVE</span>
               ) : (
-                <span className="inline-flex items-center gap-2 bg-neo-secondary text-black px-3 py-1 border-2 border-black rotate-1"><AlertTriangle className="h-4 w-4" /> NO_PLAN</span>
+                <span className="inline-flex items-center gap-2 bg-neo-secondary text-slate-100 px-3 py-1 border border-white/10 rotate-1"><AlertTriangle className="h-4 w-4" /> NO_PLAN</span>
               )}
             </div>
 
@@ -274,7 +274,7 @@ export function Curriculum() {
               <button
                 onClick={handleGenerateMonth}
                 disabled={generating}
-                className="bg-black text-white px-4 py-2 text-sm font-black uppercase tracking-wider border-4 border-black shadow-[4px_4px_0px_0px_#FF6B6B] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-slate-900 text-white px-4 py-2 text-sm font-black uppercase tracking-wider border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-tour="generate-btn"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 stroke-[3px]" />}
@@ -286,19 +286,19 @@ export function Curriculum() {
       </div>
 
       {/* Filters */}
-      <div className="bg-neo-bg border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000]" data-tour="filters">
+      <div className="bg-slate-900 border border-white/10 p-6 shadow-neo" data-tour="filters">
         <div className="flex flex-wrap items-center gap-8">
-          <div className="flex items-center gap-2 text-lg font-black text-black uppercase italic">
+          <div className="flex items-center gap-2 text-lg font-black text-slate-100 uppercase italic">
             <Filter className="h-6 w-6 stroke-[3px]" />
             FILTERS
           </div>
 
-          <div className="h-8 w-1 bg-black hidden md:block" />
+          <div className="h-8 w-1 bg-slate-900 hidden md:block" />
 
           <div className="flex items-center gap-4">
             {(['monthly', 'exam', 'manual'] as const).map(key => (
               <label key={key} className="inline-flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 border-2 border-black flex items-center justify-center transition-all ${filterSource[key] ? 'bg-neo-accent' : 'bg-white'}`}>
+                <div className={`w-5 h-5 border border-white/10 flex items-center justify-center transition-all ${filterSource[key] ? 'bg-neo-accent' : 'bg-slate-800'}`}>
                   {filterSource[key] && <CheckCircle className="w-3 h-3 text-white" />}
                 </div>
                 <input
@@ -307,18 +307,18 @@ export function Curriculum() {
                   onChange={(e) => setFilterSource(s => ({ ...s, [key]: e.target.checked }))}
                   className="hidden"
                 />
-                <span className="text-xs font-black uppercase tracking-widest group-hover:underline text-black">{key === 'monthly' ? 'PLAN' : key === 'exam' ? 'TEST' : 'MY TASKS'}</span>
+                <span className="text-xs font-black uppercase tracking-widest group-hover:underline text-slate-100">{key === 'monthly' ? 'PLAN' : key === 'exam' ? 'TEST' : 'MY TASKS'}</span>
               </label>
             ))}
           </div>
 
-          <div className="h-8 w-1 bg-black hidden md:block" />
+          <div className="h-8 w-1 bg-slate-900 hidden md:block" />
 
-          <div className="flex items-center gap-4 text-black">
+          <div className="flex items-center gap-4 text-slate-100">
             {(['pending', 'completed', 'skipped', 'rescheduled'] as const).map(key => (
               <label key={key} className="inline-flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 border-2 border-black flex items-center justify-center transition-all ${filterStatus[key] ? 'bg-neo-secondary' : 'bg-white'}`}>
-                  {filterStatus[key] && <CheckCircle className="w-3 h-3 text-black" />}
+                <div className={`w-5 h-5 border border-white/10 flex items-center justify-center transition-all ${filterStatus[key] ? 'bg-neo-secondary' : 'bg-slate-800'}`}>
+                  {filterStatus[key] && <CheckCircle className="w-3 h-3 text-slate-100" />}
                 </div>
                 <input
                   type="checkbox"
@@ -336,45 +336,45 @@ export function Curriculum() {
       {/* Content */}
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
-          <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
-          <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic text-black">LOADING_DATA...</h2>
+          <div className="w-20 h-20 border border-white/10 border-t-neo-accent animate-spin" />
+          <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic text-slate-100">LOADING_DATA...</h2>
         </div>
       ) : !plan ? (
-        <div className="text-center py-20 bg-white border-4 border-black border-dashed">
-          <div className="w-24 h-24 bg-neo-muted border-4 border-black mx-auto mb-8 flex items-center justify-center rotate-3 shadow-[8px_8px_0px_0px_#000]">
-            <ListChecks className="h-10 w-10 text-black stroke-[3px]" />
+        <div className="text-center py-20 bg-slate-800 border border-white/10 border-dashed">
+          <div className="w-24 h-24 bg-neo-muted border border-white/10 mx-auto mb-8 flex items-center justify-center rotate-3 shadow-neo">
+            <ListChecks className="h-10 w-10 text-slate-100 stroke-[3px]" />
           </div>
-          <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">NO PLAN FOUND</h3>
-          <p className="text-black font-bold max-w-xl mx-auto uppercase tracking-wide">
+          <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">NO PLAN FOUND</h3>
+          <p className="text-slate-100 font-bold max-w-xl mx-auto uppercase tracking-wide">
             Start by creating a new study plan to visualize your tasks.
           </p>
         </div>
       ) : groupedTasks.length === 0 ? (
-        <div className="text-center py-20 bg-white border-4 border-black border-dashed">
-          <div className="w-24 h-24 bg-neo-bg border-4 border-black mx-auto mb-8 flex items-center justify-center -rotate-3 shadow-[8px_8px_0px_0px_#000]">
-            <Calendar className="h-10 w-10 text-black stroke-[3px]" />
+        <div className="text-center py-20 bg-slate-800 border border-white/10 border-dashed">
+          <div className="w-24 h-24 bg-slate-900 border border-white/10 mx-auto mb-8 flex items-center justify-center -rotate-3 shadow-neo">
+            <Calendar className="h-10 w-10 text-slate-100 stroke-[3px]" />
           </div>
-          <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">NO TASKS</h3>
-          <p className="text-black font-bold max-w-xl mx-auto uppercase tracking-wide">
+          <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">NO TASKS</h3>
+          <p className="text-slate-100 font-bold max-w-xl mx-auto uppercase tracking-wide">
             {hasMonthlyPlan ? 'ADJUST YOUR FILTERS OR REGENERATE.' : 'GENERATE THE PLAN TO SEE YOUR TASKS.'}
           </p>
         </div>
       ) : (
         <div className="space-y-12">
           {groupedTasks.map(([date, dayTasks]) => (
-            <div key={date} className="bg-white border-4 border-black shadow-[12px_12px_0px_0px_#000]">
-              <div className="flex items-center justify-between p-6 border-b-4 border-black bg-neo-secondary">
-                <div className="text-2xl font-black text-black uppercase tracking-tight italic">{format(new Date(`${date}T00:00:00`), 'EEEE, MMM dd')}</div>
-                <div className="bg-black text-white px-3 py-1 text-xs font-black uppercase tracking-widest">
+            <div key={date} className="bg-slate-800 border border-white/10 shadow-neo">
+              <div className="flex items-center justify-between p-6 border-b-4 border-white/10 bg-neo-secondary">
+                <div className="text-2xl font-black text-slate-100 uppercase tracking-tight italic">{format(new Date(`${date}T00:00:00`), 'EEEE, MMM dd')}</div>
+                <div className="bg-slate-900 text-white px-3 py-1 text-xs font-black uppercase tracking-widest">
                   {dayTasks.length} TASK{dayTasks.length > 1 ? 'S' : ''}
                 </div>
               </div>
               <div className="divide-y-4 divide-black">
                 {dayTasks.map(t => (
-                  <div key={t.id} className="p-6 flex items-start gap-6 hover:bg-neo-bg transition-colors group">
+                  <div key={t.id} className="p-6 flex items-start gap-6 hover:bg-slate-900 transition-colors group">
                     <button
                       onClick={() => toggleTaskCompleted(t)}
-                      className={`mt-1 w-8 h-8 flex-shrink-0 border-4 border-black flex items-center justify-center transition-all bg-white hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0px_0px_#000] ${t.status === 'completed' ? 'bg-neo-accent' : ''}`}
+                      className={`mt-1 w-8 h-8 flex-shrink-0 border border-white/10 flex items-center justify-center transition-all bg-slate-800 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-neo ${t.status === 'completed' ? 'bg-neo-accent' : ''}`}
                       title={t.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
                       data-tour="task-toggle"
                     >
@@ -384,24 +384,24 @@ export function Curriculum() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-3 mb-2">
                         {t.subject && (
-                          <span className="bg-black text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 -rotate-1">
+                          <span className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 -rotate-1">
                             {t.subject}
                           </span>
                         )}
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border-2 border-black ${t.source === 'exam' ? 'bg-purple-200 text-black' : t.source === 'manual' ? 'bg-amber-100 text-black' : 'bg-white text-black'}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-white/10 ${t.source === 'exam' ? 'bg-purple-200 text-slate-100' : t.source === 'manual' ? 'bg-amber-100 text-slate-100' : 'bg-slate-800 text-slate-100'}`}>
                           SOURCE: {t.source === 'monthly' ? 'ATLAS' : t.source === 'exam' ? 'TEST' : 'MY TASK'}
                         </span>
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border-2 border-black ${t.status === 'completed' ? 'bg-green-300 text-black' : t.status === 'pending' ? 'bg-gray-200 text-black' : t.status === 'skipped' ? 'bg-red-200 text-black' : 'bg-yellow-200 text-black'}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-white/10 ${t.status === 'completed' ? 'bg-green-300 text-slate-100' : t.status === 'pending' ? 'bg-gray-200 text-slate-100' : t.status === 'skipped' ? 'bg-red-200 text-slate-100' : 'bg-yellow-200 text-slate-100'}`}>
                           STATUS: {t.status}
                         </span>
                       </div>
 
-                      <div className={`text-xl font-bold uppercase tracking-tight ${t.status === 'completed' ? 'text-black/30 line-through decoration-4 decoration-black/30' : 'text-black'}`}>
+                      <div className={`text-xl font-bold uppercase tracking-tight ${t.status === 'completed' ? 'text-slate-100/30 line-through decoration-4 decoration-black/30' : 'text-slate-100'}`}>
                         {t.title || 'UNTITLED_UNIT'}
                       </div>
 
                       {t.description && (
-                        <div className="mt-3 text-sm font-mono text-black bg-black/5 p-3 border-l-4 border-black whitespace-pre-wrap">
+                        <div className="mt-3 text-sm font-mono text-slate-100 bg-slate-900/5 p-3 border-l-4 border-white/10 whitespace-pre-wrap">
                           {t.description}
                         </div>
                       )}

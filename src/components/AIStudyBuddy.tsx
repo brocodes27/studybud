@@ -11,6 +11,7 @@ import { MessageList } from './AIStudyBuddy/MessageList';
 import { SuggestedQuestions } from './AIStudyBuddy/SuggestedQuestions';
 import { ChatInput } from './AIStudyBuddy/ChatInput';
 import { VoiceVisualizer } from './AIStudyBuddy/VoiceVisualizer';
+import { SkillLauncher } from './AIStudyBuddy/SkillLauncher';
 import Vapi from '@vapi-ai/web';
 
 const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY || '');
@@ -1244,7 +1245,7 @@ What shall we tackle today?`;
   };
 
   return (
-    <div className="flex flex-col h-full bg-neo-bg overflow-hidden border-r-4 border-black relative">
+    <div className="flex flex-col h-full bg-slate-950 overflow-hidden border-r-4 border-white/10 relative">
 
       {/* Voice HUD Overlay */}
       <VoiceVisualizer
@@ -1267,238 +1268,251 @@ What shall we tackle today?`;
         onToggleVoice={toggleVapiSession}
       />
 
-      {/* Memory: Notes + Study Plan Selector */}
-      {!isMentor && studyPlans.length > 0 && (
-        <ContextPanel
-          notes={notes}
-          setNotes={setNotes}
-          saveNotes={saveNotes}
-          homework={homework}
-          setHomework={saveHomeworkLocal}
-          selectedPlan={selectedPlan}
-          setSelectedPlan={setSelectedPlan}
-          studyPlans={studyPlans}
-          showContext={showContext}
-          setShowContext={setShowContext}
-        />
-      )}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Skills Sidebar */}
+        <div className="w-[300px] bg-slate-900/50 border-r border-white/5 overflow-y-auto hidden lg:block custom-scrollbar">
+          <SkillLauncher
+            onStartSkill={(id) => skillsEngine.startSkill(id)}
+            activeSkillId={skillsEngine.activeSkillId}
+          />
+        </div>
 
-      {/* Today's Plan Summary and Quick Actions */}
-      {!hideMissionControl && selectedPlan && (() => {
-        const plan = studyPlans.find(p => p.id === selectedPlan);
-        let dayNumber = 1;
-        if (plan?.created_at) {
-          const created = new Date(plan.created_at);
-          dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          if (dayNumber < 1) dayNumber = 1;
-        }
-        const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
-        return (
-          <div className="mx-4 mt-6 bg-white border-4 border-black p-5 shadow-[6px_6px_0px_0px_#000] sticky top-0 z-20" data-tour="ranjan-today-panel">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-neo-accent border-2 border-black -rotate-6">
-                  <Brain className="h-5 w-5 text-white" strokeWidth={3} />
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+          {/* Memory: Notes + Study Plan Selector */}
+          {!isMentor && studyPlans.length > 0 && (
+            <ContextPanel
+              notes={notes}
+              setNotes={setNotes}
+              saveNotes={saveNotes}
+              homework={homework}
+              setHomework={saveHomeworkLocal}
+              selectedPlan={selectedPlan}
+              setSelectedPlan={setSelectedPlan}
+              studyPlans={studyPlans}
+              showContext={showContext}
+              setShowContext={setShowContext}
+            />
+          )}
+
+          {/* Today's Plan Summary and Quick Actions */}
+          {!hideMissionControl && storageNamespace !== 'atlas_core' && selectedPlan && (() => {
+            const plan = studyPlans.find(p => p.id === selectedPlan);
+            let dayNumber = 1;
+            if (plan?.created_at) {
+              const created = new Date(plan.created_at);
+              dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              if (dayNumber < 1) dayNumber = 1;
+            }
+            const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
+            return (
+              <div className="mx-4 mt-6 bg-slate-800 border border-white/10 p-5 shadow-neo sticky top-0 z-20" data-tour="ranjan-today-panel">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-neo-accent border border-white/10 -rotate-6">
+                      <Brain className="h-5 w-5 text-white" strokeWidth={3} />
+                    </div>
+                    <h3 className="text-lg font-black uppercase tracking-tighter italic">TODAY'S MISSION</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowTodayMission(!showTodayMission)}
+                    className="p-1 border border-white/10 hover:bg-slate-900/50 transition-colors"
+                    title={showTodayMission ? "Collapse" : "Expand"}
+                  >
+                    {showTodayMission ? (
+                      <ChevronUp className="h-4 w-4 stroke-[3px]" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 stroke-[3px]" />
+                    )}
+                  </button>
                 </div>
-                <h3 className="text-lg font-black uppercase tracking-tighter italic">TODAY'S MISSION</h3>
-              </div>
-              <button
-                onClick={() => setShowTodayMission(!showTodayMission)}
-                className="p-1 border-2 border-black hover:bg-neo-bg transition-colors"
-                title={showTodayMission ? "Collapse" : "Expand"}
-              >
-                {showTodayMission ? (
-                  <ChevronUp className="h-4 w-4 stroke-[3px]" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 stroke-[3px]" />
+
+                {showTodayMission && (
+                  <>
+                    <div className="space-y-3 mb-6">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1 bg-neo-secondary border border-white/10 font-black uppercase text-[10px] tracking-widest">{plan?.subject}</span>
+                        <span className="px-3 py-1 bg-neo-muted border border-white/10 font-black uppercase text-[10px] tracking-widest text-slate-100">CLASS {plan?.class}</span>
+                      </div>
+                      <div className="p-3 bg-slate-900 border border-white/10">
+                        <p className="text-xs font-black uppercase tracking-tight mb-1 text-slate-100/40">TOPIC</p>
+                        <p className="text-md font-black uppercase tracking-tight italic">{today?.topic || 'GENERAL STUDY'}</p>
+                      </div>
+                      <p className="text-xs font-bold text-slate-100/70 leading-snug">{today?.description || 'No specific description'}</p>
+                    </div>
+
+                    <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+                      <div className="inline-flex gap-3 pb-2">
+                        {[
+                          { label: "EXPLAIN TOPIC", tour: "atlas-explain", color: "bg-slate-800", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
+                          { label: "FEYNMAN TUTOR", tour: "atlas-feynman", color: "bg-neo-accent text-white", text: `ATLAS, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
+                          { label: "STEM SOLVER", tour: "atlas-solve", color: "bg-slate-800", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
+                          { label: "5 PRACTICES", tour: "atlas-practice", color: "bg-slate-800", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
+                          { label: "DAILY MOCK TEST", tour: "atlas-quiz", color: "bg-slate-800", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
+                          { label: "5-BULLET SUMMARY", tour: "atlas-summary", color: "bg-slate-800", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
+                        ].map((btn) => (
+                          <button
+                            key={btn.label}
+                            onClick={() => sendMessage(btn.text)}
+                            className={`text-[10px] font-black uppercase tracking-widest ${btn.color} border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
+                            data-tour={btn.tour}
+                          >
+                            {btn.label}
+                          </button>
+                        ))}
+
+                        <button
+                          onClick={() => skillsEngine.startSkill('dailyStudy')}
+                          className="text-[10px] font-black uppercase tracking-widest bg-neo-accent text-white border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
+                          data-tour="ranjan-start-study"
+                        >
+                          START STUDY
+                        </button>
+
+                        <button
+                          onClick={() => skillsEngine.startSkill('rescheduler')}
+                          className="text-[10px] font-black uppercase tracking-widest bg-neo-secondary border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
+                          data-tour="ranjan-rescheduler"
+                        >
+                          RESCHEDULE
+                        </button>
+
+                        <button
+                          onClick={toggleTodayCompletion}
+                          disabled={isTogglingCompletion}
+                          className={`text-[9px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-slate-100' : 'bg-neo-muted text-slate-100'} border border-white/10 px-3 py-1.5 shadow-neo active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all whitespace-nowrap`}
+                          data-tour="ranjan-mark-done"
+                        >
+                          {isTodayCompleted ? '✓ COMPLETED' : 'MARK DONE'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 )}
-              </button>
-            </div>
+              </div>
+            )
+          })()}
 
-            {showTodayMission && (
-              <>
-                <div className="space-y-3 mb-6">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-neo-secondary border-2 border-black font-black uppercase text-[10px] tracking-widest">{plan?.subject}</span>
-                    <span className="px-3 py-1 bg-neo-muted border-2 border-black font-black uppercase text-[10px] tracking-widest text-black">CLASS {plan?.class}</span>
+          {/* Mentor: lightweight quick chip for Reschedule */}
+          {!hideMissionControl && isMentor && selectedPlan !== '' && (() => {
+            const plan = studyPlans.find(p => p.id === selectedPlan);
+            let dayNumber = 1;
+            if (plan?.created_at) {
+              const created = new Date(plan.created_at);
+              dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+              if (dayNumber < 1) dayNumber = 1;
+            }
+            const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
+            return (
+              <div className="px-4 pt-4 pb-2">
+                <div className="flex flex-wrap items-center gap-3 bg-slate-800 border border-white/10 p-3 shadow-neo">
+                  <div className="text-[10px] font-black uppercase tracking-tight">
+                    <span className="text-slate-100/40">TODAY:</span> {today?.topic || 'GENERAL'}
                   </div>
-                  <div className="p-3 bg-neo-bg border-2 border-black">
-                    <p className="text-xs font-black uppercase tracking-tight mb-1 text-black/40">TOPIC</p>
-                    <p className="text-md font-black uppercase tracking-tight italic">{today?.topic || 'GENERAL STUDY'}</p>
-                  </div>
-                  <p className="text-xs font-bold text-black/70 leading-snug">{today?.description || 'No specific description'}</p>
-                </div>
-
-                <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
-                  <div className="inline-flex gap-3 pb-2">
-                    {[
-                      { label: "EXPLAIN TOPIC", tour: "atlas-explain", color: "bg-white", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
-                      { label: "FEYNMAN TUTOR", tour: "atlas-feynman", color: "bg-neo-accent text-white", text: `ATLAS, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
-                      { label: "STEM SOLVER", tour: "atlas-solve", color: "bg-white", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
-                      { label: "5 PRACTICES", tour: "atlas-practice", color: "bg-white", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
-                      { label: "DAILY MOCK TEST", tour: "atlas-quiz", color: "bg-white", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
-                      { label: "5-BULLET SUMMARY", tour: "atlas-summary", color: "bg-white", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
-                    ].map((btn) => (
-                      <button
-                        key={btn.label}
-                        onClick={() => sendMessage(btn.text)}
-                        className={`text-[10px] font-black uppercase tracking-widest ${btn.color} border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
-                        data-tour={btn.tour}
-                      >
-                        {btn.label}
-                      </button>
-                    ))}
-
-                    <button
-                      onClick={() => skillsEngine.startSkill('dailyStudy')}
-                      className="text-[10px] font-black uppercase tracking-widest bg-neo-accent text-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
-                      data-tour="ranjan-start-study"
+                  <div className="ml-auto flex items-center gap-2">
+                    <select
+                      value={selectedPlan}
+                      onChange={(e) => setSelectedPlan(e.target.value)}
+                      className="text-[9px] font-black uppercase bg-slate-900 border border-white/10 px-2 py-1 focus:outline-none"
+                      data-tour="ranjan-plan-select"
                     >
-                      START STUDY
-                    </button>
-
+                      {studyPlans.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.subject} - CLASS {p.class}
+                        </option>
+                      ))}
+                    </select>
                     <button
-                      onClick={() => skillsEngine.startSkill('rescheduler')}
-                      className="text-[10px] font-black uppercase tracking-widest bg-neo-secondary border-2 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
-                      data-tour="ranjan-rescheduler"
+                      className="px-3 py-1 bg-neo-accent text-white border border-white/10 shadow-neo active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] text-[9px] font-black uppercase"
+                      onClick={() => {
+                        const plan = studyPlans.find(p => p.id === selectedPlan);
+                        if (plan) {
+                          setFlow({ name: 'reschedule', step: 0, data: { planId: plan.id } });
+                          addAssistant(`I see you want to reschedule your plan for **${plan.subject}**. \n\nHow many days have you missed? (e.g., "2 days")`);
+                        }
+                      }}
+                      data-tour="ranjan-quick-reschedule"
                     >
                       RESCHEDULE
                     </button>
-
-                    <button
-                      onClick={toggleTodayCompletion}
-                      disabled={isTogglingCompletion}
-                      className={`text-[9px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-black' : 'bg-neo-muted text-black'} border-2 border-black px-3 py-1.5 shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all whitespace-nowrap`}
-                      data-tour="ranjan-mark-done"
-                    >
-                      {isTodayCompleted ? '✓ COMPLETED' : 'MARK DONE'}
-                    </button>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        )
-      })()}
-
-      {/* Mentor: lightweight quick chip for Reschedule */}
-      {!hideMissionControl && isMentor && selectedPlan !== '' && (() => {
-        const plan = studyPlans.find(p => p.id === selectedPlan);
-        let dayNumber = 1;
-        if (plan?.created_at) {
-          const created = new Date(plan.created_at);
-          dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-          if (dayNumber < 1) dayNumber = 1;
-        }
-        const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
-        return (
-          <div className="px-4 pt-4 pb-2">
-            <div className="flex flex-wrap items-center gap-3 bg-white border-2 border-black p-3 shadow-[2px_2px_0px_0px_#000]">
-              <div className="text-[10px] font-black uppercase tracking-tight">
-                <span className="text-black/40">TODAY:</span> {today?.topic || 'GENERAL'}
               </div>
-              <div className="ml-auto flex items-center gap-2">
-                <select
-                  value={selectedPlan}
-                  onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="text-[9px] font-black uppercase bg-neo-bg border-2 border-black px-2 py-1 focus:outline-none"
-                  data-tour="ranjan-plan-select"
-                >
-                  {studyPlans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.subject} - CLASS {p.class}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="px-3 py-1 bg-neo-accent text-white border-2 border-black shadow-[1.5px_1.5px_0px_0px_#000] active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] text-[9px] font-black uppercase"
-                  onClick={() => {
-                    const plan = studyPlans.find(p => p.id === selectedPlan);
-                    if (plan) {
-                      setFlow({ name: 'reschedule', step: 0, data: { planId: plan.id } });
-                      addAssistant(`I see you want to reschedule your plan for **${plan.subject}**. \n\nHow many days have you missed? (e.g., "2 days")`);
-                    }
-                  }}
-                  data-tour="ranjan-quick-reschedule"
-                >
-                  RESCHEDULE
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+            );
+          })()}
 
-      {/* Messages */}
-      <MessageList
-        messages={messages}
-        isLoading={isLoading}
-        isMentor={isMentor}
-        title={title}
-        messagesEndRef={messagesEndRef}
-        formatTime={formatTime}
-      />
+          {/* Messages */}
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            isMentor={isMentor}
+            title={title}
+            messagesEndRef={messagesEndRef}
+            formatTime={formatTime}
+          />
 
-      {/* One-off Progress Panel (rendered only when requested) */}
-      {progressPanel.visible && (
-        <div className="px-4 pb-2">
-          <div className="glass-card border border-white/10 rounded-xl p-4 backdrop-blur-md">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-white">Last 7 Days Progress</h3>
-              <button
-                className="text-xs text-gray-400 hover:text-white"
-                onClick={() => setProgressPanel({ visible: false, loading: false, data: [] })}
-              >
-                Dismiss
-              </button>
-            </div>
-            {progressPanel.loading ? (
-              <div className="text-sm text-gray-400">Loading...</div>
-            ) : (
-              <div className="space-y-2">
-                {progressPanel.data.length === 0 && (
-                  <div className="text-sm text-gray-400">No data available.</div>
-                )}
-                {progressPanel.data.map((d, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="w-24 text-xs text-gray-400">{d.date.slice(5)}</div>
-                    <div className="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="h-2 bg-gradient-to-r from-neon-blue to-blue-500"
-                        style={{ width: `${(d.count / Math.max(1, ...progressPanel.data.map(x => x.count))) * 100}%` }}
-                      />
-                    </div>
-                    <div className="w-8 text-xs text-gray-300 text-right">{d.count}</div>
+          {/* One-off Progress Panel (rendered only when requested) */}
+          {progressPanel.visible && (
+            <div className="px-4 pb-2">
+              <div className="glass-card border border-white/10 rounded-xl p-4 backdrop-blur-md">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-white">Last 7 Days Progress</h3>
+                  <button
+                    className="text-xs text-gray-400 hover:text-white"
+                    onClick={() => setProgressPanel({ visible: false, loading: false, data: [] })}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+                {progressPanel.loading ? (
+                  <div className="text-sm text-gray-400">Loading...</div>
+                ) : (
+                  <div className="space-y-2">
+                    {progressPanel.data.length === 0 && (
+                      <div className="text-sm text-gray-400">No data available.</div>
+                    )}
+                    {progressPanel.data.map((d, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className="w-24 text-xs text-gray-400">{d.date.slice(5)}</div>
+                        <div className="flex-1 bg-slate-800/5 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-2 bg-gradient-to-r from-neon-blue to-blue-500"
+                            style={{ width: `${(d.count / Math.max(1, ...progressPanel.data.map(x => x.count))) * 100}%` }}
+                          />
+                        </div>
+                        <div className="w-8 text-xs text-gray-300 text-right">{d.count}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Suggested Questions */}
+          {!isMentor && selectedPlan && messages.length <= 1 && (
+            <SuggestedQuestions
+              questions={getSuggestedQuestions()}
+              onSelect={sendMessage}
+            />
+          )}
+
+          {/* Input */}
+          <ChatInput
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            isLoading={isLoading}
+            isRecording={isRecording}
+            isListening={isListening}
+            isMentor={isMentor}
+            onSubmit={handleSubmit}
+            startVoiceRecording={startVoiceRecording}
+            stopVoiceRecording={stopVoiceRecording}
+            onImageSelect={setSelectedImage}
+            selectedImage={selectedImage}
+          />
         </div>
-      )}
-
-      {/* Suggested Questions */}
-      {!isMentor && selectedPlan && messages.length <= 1 && (
-        <SuggestedQuestions
-          questions={getSuggestedQuestions()}
-          onSelect={sendMessage}
-        />
-      )}
-
-      {/* Input */}
-      <ChatInput
-        inputMessage={inputMessage}
-        setInputMessage={setInputMessage}
-        isLoading={isLoading}
-        isRecording={isRecording}
-        isListening={isListening}
-        isMentor={isMentor}
-        onSubmit={handleSubmit}
-        startVoiceRecording={startVoiceRecording}
-        stopVoiceRecording={stopVoiceRecording}
-        onImageSelect={setSelectedImage}
-        selectedImage={selectedImage}
-      />
+      </div>
     </div>
   );
 }

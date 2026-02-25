@@ -204,23 +204,23 @@ export function VoiceLectureInterface({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[110] backdrop-blur-[4px] p-4">
-      <div className="bg-white border-8 border-black max-w-4xl w-full max-h-[90vh] flex flex-col shadow-[32px_32px_0px_0px_#000]">
+    <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-[110] backdrop-blur-[4px] p-4">
+      <div className="bg-slate-800 border border-white/10 max-w-4xl w-full max-h-[90vh] flex flex-col shadow-neo">
 
         {/* Header */}
-        <div className="p-8 border-b-8 border-black bg-white flex items-center justify-between">
+        <div className="p-8 border-b-8 border-white/10 bg-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="bg-neo-secondary border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] rotate-3">
-              <Brain className="h-10 w-10 text-black stroke-[4px]" />
+            <div className="bg-neo-secondary border border-white/10 p-4 shadow-neo rotate-3">
+              <Brain className="h-10 w-10 text-slate-100 stroke-[4px]" />
             </div>
             <div>
-              <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic leading-none">{lessonTitle}</h2>
+              <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">{lessonTitle}</h2>
               <div className="flex items-center gap-3 mt-2">
-                <span className={`px-3 py-0.5 font-black uppercase text-[10px] tracking-widest border-2 border-black ${isCallActive ? 'bg-neo-accent text-white' : 'bg-neo-bg text-black'}`}>
+                <span className={`px-3 py-0.5 font-black uppercase text-[10px] tracking-widest border border-white/10 ${isCallActive ? 'bg-neo-accent text-white' : 'bg-slate-900 text-slate-100'}`}>
                   {isPremium ? (isCallActive ? 'VOICE_SYNC_ON' : 'TEXT_MODE_ONLY') : 'PREMIUM_LOCKED'}
                 </span>
                 {isPremium && (
-                  <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic truncate max-w-[200px]">
+                  <span className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest italic truncate max-w-[200px]">
                     [{status}]
                   </span>
                 )}
@@ -233,7 +233,7 @@ export function VoiceLectureInterface({
               value={selectedPersonality}
               onChange={(e) => setSelectedPersonality(e.target.value)}
               disabled={isCallActive || !isPremium}
-              className="bg-white border-4 border-black px-4 py-2 font-black uppercase text-xs tracking-widest italic outline-none focus:bg-neo-bg transition-all disabled:opacity-50"
+              className="bg-slate-800 border border-white/10 px-4 py-2 font-black uppercase text-xs tracking-widest italic outline-none focus:bg-slate-900 transition-all disabled:opacity-50"
             >
               <option value="friendly">NEUTRAL_FRIENDLY</option>
               <option value="encouraging">HIGH_ENCOURAGE</option>
@@ -243,7 +243,7 @@ export function VoiceLectureInterface({
 
             <button
               onClick={onClose}
-              className="bg-white border-4 border-black p-2 hover:bg-neo-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              className="bg-slate-800 border border-white/10 p-2 hover:bg-neo-accent hover:text-white transition-all shadow-neo active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
             >
               <X className="h-8 w-8 stroke-[4px]" />
             </button>
@@ -252,19 +252,19 @@ export function VoiceLectureInterface({
 
         <FeatureGate fallback="lock" featureName="Neural Voice Lecture">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-neo-bg/5 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-950/5 custom-scrollbar">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-6 border-4 border-black shadow-[8px_8px_0px_0px_#000] relative ${message.type === 'user'
+                  className={`max-w-[80%] p-6 border border-white/10 shadow-neo relative ${message.type === 'user'
                     ? 'bg-neo-secondary -rotate-1'
-                    : 'bg-white rotate-1'
+                    : 'bg-slate-800 rotate-1'
                     }`}
                 >
-                  <div className={`absolute -top-4 ${message.type === 'user' ? '-right-4' : '-left-4'} bg-black text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest`}>
+                  <div className={`absolute -top-4 ${message.type === 'user' ? '-right-4' : '-left-4'} bg-slate-900 text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest`}>
                     {message.type.toUpperCase()}_ID
                   </div>
                   <p className="font-black text-xl italic uppercase tracking-tight leading-tight">{message.content}</p>
@@ -278,13 +278,13 @@ export function VoiceLectureInterface({
           </div>
 
           {/* Controls */}
-          <div className="p-8 border-t-8 border-black bg-white space-y-8">
+          <div className="p-8 border-t-8 border-white/10 bg-slate-800 space-y-8">
             <div className="flex items-center gap-6">
               <button
                 onClick={handleVoiceInput}
-                className={`flex-1 flex items-center justify-center gap-4 px-10 py-6 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none ${isListening
+                className={`flex-1 flex items-center justify-center gap-4 px-10 py-6 border border-white/10 font-black uppercase italic tracking-tighter text-2xl transition-all shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none ${isListening
                   ? 'bg-neo-accent text-white animate-pulse'
-                  : 'bg-neo-secondary text-black'
+                  : 'bg-neo-secondary text-slate-100'
                   }`}
               >
                 {isListening ? (
@@ -301,7 +301,7 @@ export function VoiceLectureInterface({
               </button>
               <button
                 onClick={completeLesson}
-                className="px-10 py-6 border-4 border-black bg-black text-white font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000]"
+                className="px-10 py-6 border border-white/10 bg-slate-900 text-white font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-neo"
               >
                 FINISH_CONV
               </button>
@@ -314,13 +314,13 @@ export function VoiceLectureInterface({
                   value={currentInput}
                   onChange={(e) => setCurrentInput(e.target.value)}
                   placeholder="TYPE_SYSTEM_INPUT_HERE..."
-                  className="w-full bg-white border-4 border-black px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-neo-bg outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
+                  className="w-full bg-slate-800 border border-white/10 px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-slate-900 outline-none transition-all shadow-neo"
                 />
-                <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 text-black/20 h-8 w-8" />
+                <MessageSquare className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-100/20 h-8 w-8" />
               </div>
               <button
                 type="submit"
-                className="bg-black text-white px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-[8px_8px_0px_0px_#000] active:translate-y-1 active:shadow-none"
+                className="bg-slate-900 text-white px-10 py-5 border border-white/10 font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-neo active:translate-y-1 active:shadow-none"
               >
                 <Send className="h-8 w-8 stroke-[4px]" />
               </button>

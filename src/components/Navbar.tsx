@@ -23,19 +23,19 @@ import {
 import { getUserGamification, calculateLevel } from '../lib/gamification';
 
 const navLinks = [
-  { href: '/', label: 'HOME', icon: Brain, color: 'bg-neo-accent' },
-  { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'bg-neo-secondary' },
-  { href: '/syow', label: 'SYOW', icon: Zap, color: 'bg-neo-accent' },
-  { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'bg-neo-accent' },
-  { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'bg-neo-secondary' },
-  { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'bg-neo-muted' },
-  { href: '/guided-paper', label: 'SOLVER', icon: HelpCircle, color: 'bg-neo-accent' },
-  { href: '/feynman', label: 'FEYNMAN', icon: Mic, color: 'bg-neo-muted' },
-  { href: '/tools', label: 'TOOLS', icon: Wrench, color: 'bg-neo-muted' },
-  { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'bg-neo-accent' },
-  { href: '/social', label: 'SOCIAL HUB', icon: Users, color: 'bg-neo-secondary' },
-  { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'bg-neo-secondary' },
-  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'bg-neo-accent' },
+  { href: '/', label: 'HOME', icon: Brain, color: 'text-primary' },
+  { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'text-blue-400' },
+  { href: '/syow', label: 'SYOW', icon: Zap, color: 'text-amber-400' },
+  { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'text-indigo-400' },
+  { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'text-emerald-400' },
+  { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'text-slate-400' },
+  { href: '/guided-paper', label: 'SOLVER', icon: HelpCircle, color: 'text-sky-400' },
+  { href: '/feynman', label: 'FEYNMAN', icon: Mic, color: 'text-rose-400' },
+  { href: '/tools', label: 'TOOLS', icon: Wrench, color: 'text-slate-400' },
+  { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'text-violet-400' },
+  { href: '/social', label: 'SOCIAL HUB', icon: Users, color: 'text-blue-400' },
+  { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'text-amber-400' },
+  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'text-primary' },
 ];
 
 const Navbar = () => {
@@ -50,7 +50,6 @@ const Navbar = () => {
     badge: string;
   } | null>(null);
 
-  // Load gamification data
   useEffect(() => {
     if (user?.id) {
       loadGamification();
@@ -59,9 +58,6 @@ const Navbar = () => {
 
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', '16rem');
-    return () => {
-      // document.documentElement.style.setProperty('--sidebar-width', '0px');
-    };
   }, []);
 
   const loadGamification = async () => {
@@ -97,126 +93,123 @@ const Navbar = () => {
       <NavLink
         to={link.href}
         onClick={onClick}
-        className={`relative group flex items-center px-3 py-1.5 my-0.5 border-2 transition-all duration-100
+        className={`relative group flex items-center px-4 py-3 my-1 transition-all duration-200 rounded-xl
           ${isActive
-            ? `${link.color} border-black shadow-[2px_2px_0px_0px_#000] translate-x-[-1px] translate-y-[-1px]`
-            : 'border-transparent hover:border-black hover:bg-black/5'
+            ? 'bg-primary/10 border border-primary/20 text-white shadow-lg'
+            : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
           }
         `}
       >
-        <div className={`flex items-center justify-center w-6 h-6 ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform`}>
-          <link.icon className="w-5 h-5 stroke-[2px] text-black" />
+        <div className={`flex items-center justify-center w-5 h-5 ${isActive ? 'scale-110' : 'group-hover:scale-110 text-slate-500'} transition-transform`}>
+          <link.icon className={`w-5 h-5 stroke-[2px] ${isActive ? link.color : ''}`} />
         </div>
 
-        <span className="ml-3 font-black text-xs tracking-tight text-black whitespace-nowrap">
+        <span className={`ml-4 font-black text-[10px] tracking-[0.1em] uppercase whitespace-nowrap ${isActive ? 'text-white' : ''}`}>
           {link.label}
         </span>
+
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+        )}
       </NavLink>
     );
   };
 
   return (
     <>
-      <div className="md:hidden fixed top-4 right-4 z-50">
+      <div className="md:hidden fixed top-4 right-4 z-[100]">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-3 bg-neo-accent border-4 border-black shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+          className="p-3 bg-primary text-white rounded-xl shadow-lg ring-1 ring-primary/20"
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
       <aside
-        className="hidden md:flex fixed left-0 top-0 h-screen bg-neo-bg border-r-2 border-black transition-all duration-300 z-40 flex-col w-64"
+        className="hidden md:flex fixed left-0 top-0 h-screen bg-card-dark border-r border-white/5 transition-all duration-300 z-40 flex-col w-64 shadow-2xl"
       >
-        <div className="h-16 flex items-center px-5 border-b-2 border-black bg-neo-secondary">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-neo-accent border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center">
-              <span className="text-sm font-black text-black">EF</span>
+        <div className="h-20 flex items-center px-6 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center">
+              <span className="text-sm font-black text-primary">EF</span>
             </div>
             <div>
-              <h1 className="text-base font-black text-black leading-none uppercase tracking-tight">StudyBud</h1>
-              <p className="text-[7px] font-black tracking-[0.1em] text-black/60">BY ELEVENFOLKS</p>
+              <h1 className="text-lg font-black text-white leading-none uppercase tracking-tighter italic">StudyBud</h1>
+              <p className="text-[8px] font-black tracking-[0.3em] text-slate-500 uppercase mt-1">ElevenFolks</p>
             </div>
           </div>
         </div>
 
         {/* Gamification Stats */}
         {gamificationData && (
-          <div className="flex gap-3 px-4 py-3 border-b-2 border-black/10 bg-white">
-            {/* Streak */}
-            <div className="flex items-center gap-1 flex-1">
-              <div className="flex items-center gap-1 bg-orange-100 border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_#000]">
-                <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />
-                <span className="text-xs font-black">{gamificationData.streak}d</span>
+          <div className="flex flex-col gap-3 px-6 py-5 border-b border-white/5 bg-slate-900/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-neo-accent" />
+                <span className="text-sm font-black text-white">{gamificationData.streak} DAYS</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-sm font-black text-white">{gamificationData.totalXp} XP</span>
               </div>
             </div>
-
-            {/* XP */}
-            <div className="flex items-center gap-1 flex-1">
-              <div className="flex items-center gap-1 bg-green-100 border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_#000]">
-                <Zap className="w-3 h-3 text-green-600" />
-                <span className="text-xs font-black">{gamificationData.totalXp}</span>
-              </div>
-            </div>
-
-            {/* Level */}
-            <div className="flex items-center gap-1 bg-purple-100 border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_#000]">
-              <span className="text-sm">{gamificationData.badge}</span>
-              <span className="text-xs font-black">L{gamificationData.level}</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+              <span className="text-lg">{gamificationData.badge}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Level {gamificationData.level} Learner</span>
             </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto no-scrollbar pt-6 px-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto custom-scrollbar p-4 py-6 space-y-1">
           {navLinks.map((link) => (
             <NavItem key={link.href} link={link} />
           ))}
-        </div>
+        </nav>
 
-        <div className="p-3 border-t-2 border-black bg-white">
-          <div className="relative group flex items-center gap-2 mb-3">
+        <div className="p-4 border-t border-white/5 bg-slate-900/60 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-4 px-2">
             <div className="relative">
-              <div className="w-8 h-8 border-2 border-black bg-neo-muted flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
-                <span className="text-black font-black text-sm">{user?.email?.[0].toUpperCase()}</span>
+              <div className="w-10 h-10 rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center text-white font-black">
+                {user?.email?.[0].toUpperCase()}
               </div>
               {isPremium && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-neo-secondary border border-black rounded-full flex items-center justify-center">
-                  <Crown className="w-2 w-2 text-black" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[8px] border border-card-dark">
+                  <Crown size={8} fill="white" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black text-black truncate uppercase">
+              <p className="text-xs font-black text-white truncate uppercase tracking-tight">
                 {user?.user_metadata?.full_name || 'STUDENT'}
               </p>
-              <p className="text-[8px] font-bold text-black truncate opacity-70">{user?.email}</p>
+              <p className="text-[9px] font-bold text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
 
           <button
             onClick={handleSignOut}
-            className="relative group flex items-center justify-center w-full p-2 border-2 border-black bg-neo-white hover:bg-red-400 font-bold uppercase tracking-wider transition-all gap-2"
+            className="flex items-center justify-center w-full p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-black uppercase tracking-widest text-[9px] transition-all gap-2 border border-white/5 shadow-lg shadow-black/20"
           >
-            <LogOut className="w-4 h-4 stroke-[2px]" />
-            <span className="text-[10px] text-black">SIGN OUT</span>
+            <LogOut className="w-4 h-4" />
+            Sign Out
           </button>
         </div>
       </aside>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-neo-bg overflow-y-auto no-scrollbar">
+        <div className="md:hidden fixed inset-0 z-[100] bg-slate-950 overflow-y-auto no-scrollbar">
           <div className="flex flex-col min-h-screen p-6">
-            <div className="flex items-center justify-between mb-8 border-b-4 border-black pb-6">
+            <div className="flex items-center justify-between mb-8 border-b-4 border-white/10 pb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-neo-accent border-4 border-black shadow-[4px_4px_0px_0px_#000] flex items-center justify-center">
-                  <span className="text-xl font-black text-black">EF</span>
+                <div className="w-10 h-10 bg-neo-accent border border-white/10 shadow-neo flex items-center justify-center">
+                  <span className="text-xl font-black text-slate-100">EF</span>
                 </div>
-                <h1 className="text-2xl font-black text-black uppercase">StudyBud</h1>
+                <h1 className="text-2xl font-black text-slate-100 uppercase">StudyBud</h1>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000]"
+                className="p-2 bg-slate-800 border border-white/10 shadow-neo"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -232,10 +225,10 @@ const Navbar = () => {
               ))}
             </div>
 
-            <div className="mt-8 pt-8 border-t-4 border-black pb-6 text-black">
+            <div className="mt-8 pt-8 border-t-4 border-white/10 pb-6 text-slate-100">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-4 p-4 border-4 border-black bg-white hover:bg-red-400 font-black uppercase tracking-widest text-sm"
+                className="w-full flex items-center justify-center gap-4 p-4 border border-white/10 bg-slate-800 hover:bg-red-400 font-black uppercase tracking-widest text-sm"
               >
                 <LogOut className="w-5 h-5 stroke-[3px]" />
                 SIGN OUT

@@ -31,14 +31,14 @@ export function Profile() {
                 Account Security
               </h3>
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/5 hover:bg-slate-800/10 transition-colors group">
                   <div className="flex items-center gap-3">
                     <Key className="h-4 w-4 text-gray-400 group-hover:text-white" />
                     <span className="text-gray-300 group-hover:text-white">Change Password</span>
                   </div>
                   <span className="text-xs text-gray-500">Last changed 30d ago</span>
                 </button>
-                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/5 hover:bg-slate-800/10 transition-colors group">
                   <div className="flex items-center gap-3">
                     <Bell className="h-4 w-4 text-gray-400 group-hover:text-white" />
                     <span className="text-gray-300 group-hover:text-white">Notification Preferences</span>
@@ -53,7 +53,7 @@ export function Profile() {
                 Data & Privacy
               </h3>
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                <button className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800/5 hover:bg-slate-800/10 transition-colors group">
                   <span className="text-gray-300 group-hover:text-white">Export Account Data</span>
                 </button>
                 <button className="w-full flex items-center justify-between p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition-colors group border border-red-500/20">

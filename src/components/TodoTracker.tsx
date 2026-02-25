@@ -48,18 +48,18 @@ export function TodoTracker() {
     const categories = [
         { id: 'urgent' as const, label: 'Urgent', color: 'text-red-400', bg: 'bg-red-400/10' },
         { id: 'regular' as const, label: 'Regular', color: 'text-neon-blue', bg: 'bg-neon-blue/10' },
-        { id: 'backlog' as const, label: 'Backlog', color: 'text-gray-400', bg: 'bg-white/5' },
+        { id: 'backlog' as const, label: 'Backlog', color: 'text-gray-400', bg: 'bg-slate-800/5' },
     ];
 
     return (
-        <div className="p-10 text-black max-w-3xl mx-auto min-h-full bg-neo-bg/20">
+        <div className="p-10 text-slate-100 max-w-3xl mx-auto min-h-full bg-slate-900/20">
             <div className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] -rotate-6">
+                <div className="w-16 h-16 bg-neo-accent border border-white/10 flex items-center justify-center shadow-neo -rotate-6">
                     <ListTodo className="text-white w-8 h-8 stroke-[3px]" />
                 </div>
                 <div>
                     <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none">STUDY TASKS</h2>
-                    <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: ORGANIZATION_SEQUENCE</p>
+                    <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: ORGANIZATION_SEQUENCE</p>
                 </div>
             </div>
 
@@ -70,11 +70,11 @@ export function TodoTracker() {
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="DEFINE NEW OBJECTIVE..."
-                        className="flex-1 bg-white border-4 border-black px-6 py-4 font-black uppercase tracking-tight italic text-lg focus:bg-neo-secondary outline-none transition-all placeholder:text-black/20 shadow-[6px_6px_0px_0px_#000]"
+                        className="flex-1 bg-slate-800 border border-white/10 px-6 py-4 font-black uppercase tracking-tight italic text-lg focus:bg-neo-secondary outline-none transition-all placeholder:text-slate-100/20 shadow-neo"
                     />
                     <button
                         type="submit"
-                        className="bg-black text-white px-10 py-4 border-4 border-black font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[4px_4px_0px_0px_#000] flex items-center justify-center gap-3"
+                        className="bg-slate-900 text-white px-10 py-4 border border-white/10 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo flex items-center justify-center gap-3"
                     >
                         <Plus className="w-6 h-6 stroke-[4px]" />
                         ADD
@@ -88,10 +88,10 @@ export function TodoTracker() {
                             type="button"
                             onClick={() => setCategory(cat.id)}
                             className={`
-                                px-6 py-2 border-4 border-black font-black uppercase text-[10px] tracking-widest transition-all 
+                                px-6 py-2 border border-white/10 font-black uppercase text-[10px] tracking-widest transition-all 
                                 ${category === cat.id
-                                    ? `bg-neo-secondary shadow-[4px_4px_0px_0px_#000] -translate-y-1`
-                                    : 'bg-white hover:bg-neo-muted hover:shadow-[2px_2px_0px_0px_#000]'
+                                    ? `bg-neo-secondary shadow-neo -translate-y-1`
+                                    : 'bg-slate-800 hover:bg-neo-muted hover:shadow-neo'
                                 }
                             `}
                         >
@@ -103,9 +103,9 @@ export function TodoTracker() {
 
             <div className="space-y-6">
                 {todos.length === 0 ? (
-                    <div className="text-center py-20 bg-white border-8 border-dashed border-black/10 rotate-1">
-                        <Target className="w-16 h-16 text-black/10 mx-auto mb-6" />
-                        <p className="font-black text-black/20 uppercase tracking-[0.3em] text-sm">NO ACTIVE TARGETS FOUND</p>
+                    <div className="text-center py-20 bg-slate-800 border border-dashed border-white/10/10 rotate-1">
+                        <Target className="w-16 h-16 text-slate-100/10 mx-auto mb-6" />
+                        <p className="font-black text-slate-100/20 uppercase tracking-[0.3em] text-sm">NO ACTIVE TARGETS FOUND</p>
                     </div>
                 ) : (
                     todos.sort((a, b) => {
@@ -115,10 +115,10 @@ export function TodoTracker() {
                         <div
                             key={todo.id}
                             className={`
-                                group flex items-center gap-6 p-6 border-4 border-black transition-all duration-200 
+                                group flex items-center gap-6 p-6 border border-white/10 transition-all duration-200 
                                 ${todo.completed
-                                    ? 'bg-neo-muted/30 border-black/20 opacity-50 shadow-none'
-                                    : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#000]'
+                                    ? 'bg-neo-muted/30 border-white/10/20 opacity-50 shadow-none'
+                                    : 'bg-slate-800 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo'
                                 }
                                 ${idx % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}
                             `}
@@ -126,24 +126,24 @@ export function TodoTracker() {
                             <button
                                 onClick={() => toggleTodo(todo.id)}
                                 className={`
-                                    w-10 h-10 border-4 border-black flex items-center justify-center transition-all
-                                    ${todo.completed ? 'bg-neo-secondary' : 'bg-white hover:bg-neo-muted'}
+                                    w-10 h-10 border border-white/10 flex items-center justify-center transition-all
+                                    ${todo.completed ? 'bg-neo-secondary' : 'bg-slate-800 hover:bg-neo-muted'}
                                 `}
                             >
                                 {todo.completed ? <CheckCircle2 className="w-6 h-6 stroke-[4px]" /> : <Circle className="w-6 h-6 stroke-[3px]" />}
                             </button>
 
                             <div className="flex-1 min-w-0">
-                                <p className={`text-xl font-black uppercase tracking-tight italic transition-all ${todo.completed ? 'line-through text-black/40' : 'text-black'}`}>
+                                <p className={`text-xl font-black uppercase tracking-tight italic transition-all ${todo.completed ? 'line-through text-slate-100/40' : 'text-slate-100'}`}>
                                     {todo.text}
                                 </p>
                                 <div className="flex items-center gap-4 mt-2">
-                                    <div className={`px-2 py-0.5 border-2 border-black font-black uppercase text-[8px] tracking-widest ${todo.category === 'urgent' ? 'bg-neo-accent text-white' :
-                                            todo.category === 'regular' ? 'bg-neo-secondary' : 'bg-neo-muted'
+                                    <div className={`px-2 py-0.5 border border-white/10 font-black uppercase text-[8px] tracking-widest ${todo.category === 'urgent' ? 'bg-neo-accent text-white' :
+                                        todo.category === 'regular' ? 'bg-neo-secondary' : 'bg-neo-muted'
                                         }`}>
                                         {todo.category}
                                     </div>
-                                    <span className="text-[10px] font-black text-black/40 uppercase tracking-widest italic">
+                                    <span className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest italic">
                                         TIMESTAMP: {new Date(todo.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
@@ -151,7 +151,7 @@ export function TodoTracker() {
 
                             <button
                                 onClick={() => deleteTodo(todo.id)}
-                                className="p-3 border-4 border-black bg-white hover:bg-neo-accent hover:text-white transition-all active:shadow-none shadow-[2px_2px_0px_0px_#000]"
+                                className="p-3 border border-white/10 bg-slate-800 hover:bg-neo-accent hover:text-white transition-all active:shadow-none shadow-neo"
                             >
                                 <Trash2 className="w-5 h-5 stroke-[3px]" />
                             </button>

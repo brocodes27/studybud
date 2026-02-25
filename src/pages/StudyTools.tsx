@@ -41,8 +41,8 @@ export function StudyTools() {
       label: 'Focus Mode',
       icon: Timer,
       description: 'Timer + Task List',
-      color: 'from-orange-500 to-rose-600',
-      iconColor: 'text-orange-500'
+      color: 'from-blue-500 to-cyan-500',
+      iconColor: 'text-neo-accent'
     },
     {
       id: 'progresser' as const,
@@ -59,15 +59,15 @@ export function StudyTools() {
       {/* Header */}
       <div className="text-center mb-16 relative">
         <div className="flex flex-col items-center justify-center gap-6">
-          <div className="w-24 h-24 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[6px_6px_0px_0px_#000] -rotate-12">
+          <div className="w-24 h-24 bg-neo-accent border border-white/10 flex items-center justify-center shadow-neo -rotate-12">
             <Zap className="w-12 h-12 text-white stroke-[4px]" />
           </div>
-          <h1 className="text-6xl md:text-8xl font-black text-black tracking-tighter uppercase italic leading-none">
-            <span className="bg-white px-8 py-4 border-8 border-black shadow-[12px_12px_0px_0px_#000] inline-block rotate-2">STUDY TOOLS</span>
+          <h1 className="text-6xl md:text-8xl font-black text-slate-100 tracking-tighter uppercase italic leading-none">
+            <span className="bg-slate-800 px-8 py-4 border border-white/10 shadow-neo inline-block rotate-2">STUDY TOOLS</span>
           </h1>
         </div>
-        <div className="mt-12 bg-neo-muted border-4 border-black p-6 inline-block -rotate-1 shadow-[4px_4px_0px_0px_#000] max-w-2xl">
-          <p className="text-lg font-black text-black uppercase tracking-widest leading-snug">
+        <div className="mt-12 bg-neo-muted border border-white/10 p-6 inline-block -rotate-1 shadow-neo max-w-2xl">
+          <p className="text-lg font-black text-slate-100 uppercase tracking-widest leading-snug">
             SUPERCHARGE YOUR ARCHIVE WITH AI-POWERED FLASHCARDS, PRACTICE TESTS, AND QUESTION GENERATORS.
           </p>
         </div>
@@ -84,15 +84,15 @@ export function StudyTools() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-4 px-8 py-5 border-4 border-black transition-all duration-200 
-                  shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]
+                  flex items-center gap-4 px-8 py-5 border border-white/10 transition-all duration-200 
+                  shadow-neo active:shadow-none active:translate-x-[4px] active:translate-y-[4px]
                   ${isActive
-                    ? 'bg-neo-accent text-white rotate-2 -translate-y-2 shadow-[8px_8px_0px_0px_#000]'
-                    : 'bg-white text-black hover:bg-neo-secondary'
+                    ? 'bg-neo-accent text-white rotate-2 -translate-y-2 shadow-neo'
+                    : 'bg-slate-800 text-slate-100 hover:bg-neo-secondary'
                   }
                 `}
               >
-                <div className={`p-2 border-2 border-black ${isActive ? 'bg-black text-white' : 'bg-neo-bg'}`}>
+                <div className={`p-2 border border-white/10 ${isActive ? 'bg-slate-900 text-white' : 'bg-slate-800'}`}>
                   <Icon className="w-6 h-6 stroke-[3px]" />
                 </div>
                 <div className="text-left">
@@ -107,8 +107,8 @@ export function StudyTools() {
 
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] overflow-hidden min-h-[600px] relative">
-          <div className="absolute top-0 left-0 w-full h-2 bg-black opacity-5"></div>
+        <div className="bg-slate-800 border border-white/10 shadow-neo overflow-hidden min-h-[600px] relative">
+          <div className="absolute top-0 left-0 w-full h-2 bg-slate-900 opacity-5"></div>
           {activeTab === 'flashcards' && <FlashcardGenerator />}
           {activeTab === 'tests' && <PracticeTestEngine />}
           {activeTab === 'ai-questions' && <QuestionGenerator />}
@@ -116,7 +116,7 @@ export function StudyTools() {
           {activeTab === 'focus' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x-8 divide-black">
               <PomodoroTimer />
-              <div className="border-t-8 lg:border-t-0 border-black">
+              <div className="border-t-8 lg:border-t-0 border-white/10">
                 <TodoTracker />
               </div>
             </div>

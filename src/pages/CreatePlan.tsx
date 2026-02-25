@@ -119,24 +119,24 @@ export function CreatePlan() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6 space-y-12 text-black">
+    <div className="max-w-6xl mx-auto py-12 px-6 space-y-12 text-slate-100">
       {/* Neo-Brutalist Header */}
       <div className="relative">
-        <div className="sticker bg-neo-secondary mb-4 text-sm inline-block px-3 py-1 border-2 border-black rotate-1">AI_GENERATOR_v5.0</div>
+        <div className="sticker bg-neo-secondary mb-4 text-sm inline-block px-3 py-1 border border-white/10 rotate-1">AI_GENERATOR_v5.0</div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none">
-              NEW <span className="text-stroke-neo text-black">PLAN</span>
+              NEW <span className="text-stroke-neo text-slate-100">PLAN</span>
             </h1>
-            <p className="text-xl font-bold text-black/60 mt-4 max-w-xl">
+            <p className="text-xl font-bold text-slate-100/60 mt-4 max-w-xl">
               Map your path to the 1600. Expert scaling, adaptive timeline, and rigor-first scheduling.
             </p>
           </div>
           <div className="flex gap-4">
-             <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] rotate-2">
+             <div className="bg-slate-800 border border-white/10 p-4 shadow-neo rotate-2">
                 <Target className="h-6 w-6 text-neo-accent" />
              </div>
-             <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] -rotate-2">
+             <div className="bg-slate-800 border border-white/10 p-4 shadow-neo -rotate-2">
                 <Zap className="h-6 w-6 text-neo-secondary" />
              </div>
           </div>
@@ -157,8 +157,8 @@ export function CreatePlan() {
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
         {!studyPlan ? (
-          <div className="neo-card bg-white border-8 border-black p-8 md:p-12 shadow-[20px_20px_0px_0px_#000]">
-            <div className="flex items-center gap-3 mb-10 border-b-4 border-black pb-4">
+          <div className="neo-card bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo">
+            <div className="flex items-center gap-3 mb-10 border-b-4 border-white/10 pb-4">
                <Sparkles className="h-6 w-6 text-neo-accent" />
                <span className="font-black uppercase tracking-widest text-sm italic">Input_Parameters</span>
             </div>
@@ -166,7 +166,7 @@ export function CreatePlan() {
           </div>
         ) : (
           <div className="space-y-12">
-            <div className="neo-card bg-neo-secondary/10 border-4 border-black p-6 flex justify-between items-center">
+            <div className="neo-card bg-neo-secondary/10 border border-white/10 p-6 flex justify-between items-center">
                <div className="font-black italic text-2xl uppercase tracking-tighter">Plan Generated Successfully</div>
                <button onClick={handleCreateNew} className="neo-button-white px-6 py-2 text-xs">CREATE ANOTHER</button>
             </div>

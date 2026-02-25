@@ -43,7 +43,7 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
 
     if (compact) {
         return (
-            <div className="flex items-center gap-2 bg-white border-2 border-black px-3 py-1 shadow-[2px_2px_0px_0px_#000]">
+            <div className="flex items-center gap-2 bg-slate-800 border border-white/10 px-3 py-1 shadow-neo">
                 <motion.div
                     animate={streak > 0 ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: Infinity, duration: 1.5 }}
@@ -62,7 +62,7 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
     }
 
     return (
-        <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_#000] p-4">
+        <div className="bg-slate-800 border border-white/10 shadow-neo p-4">
             <div className="flex items-center gap-4">
                 {/* Flame Icon */}
                 <motion.div
@@ -71,7 +71,7 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
                         rotate: [0, 5, -5, 0]
                     } : {}}
                     transition={{ repeat: Infinity, duration: 2 }}
-                    className={`w-16 h-16 border-4 border-black flex items-center justify-center ${flameStyle.glow ? 'shadow-[0_0_20px_rgba(255,107,107,0.5)]' : ''
+                    className={`w-16 h-16 border border-white/10 flex items-center justify-center ${flameStyle.glow ? 'shadow-neo' : ''
                         }`}
                     style={{ backgroundColor: streak > 0 ? flameStyle.color + '20' : '#f0f0f0' }}
                 >
@@ -88,16 +88,16 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-4xl font-black">{streak}</span>
-                        <span className="text-sm font-black uppercase text-black/40">DAY{streak !== 1 ? 'S' : ''}</span>
+                        <span className="text-sm font-black uppercase text-slate-100/40">DAY{streak !== 1 ? 'S' : ''}</span>
                         {hasShield && showShield && (
-                            <div className="bg-blue-100 border-2 border-blue-400 px-2 py-0.5 flex items-center gap-1" title="Streak Shield Active">
+                            <div className="bg-blue-100 border border-blue-400 px-2 py-0.5 flex items-center gap-1" title="Streak Shield Active">
                                 <Shield className="w-3 h-3 text-blue-600" />
                                 <span className="text-[8px] font-black text-blue-600">PROTECTED</span>
                             </div>
                         )}
                     </div>
 
-                    <p className="text-[10px] font-black uppercase tracking-widest text-black/40">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-100/40">
                         {streak === 0 ? 'START YOUR STREAK TODAY!' :
                             streak < 3 ? 'KEEP IT GOING!' :
                                 streak < 7 ? 'YOU\'RE ON FIRE!' :
@@ -107,7 +107,7 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
                     </p>
 
                     {longestStreak > streak && (
-                        <p className="text-[8px] font-bold text-black/30 mt-1">
+                        <p className="text-[8px] font-bold text-slate-100/30 mt-1">
                             Personal best: {longestStreak} days
                         </p>
                     )}
@@ -122,15 +122,15 @@ export function StreakDisplay({ compact = false, showShield = true }: StreakDisp
                     return (
                         <div
                             key={i}
-                            className={`flex-1 h-2 border-2 border-black ${isActive ? 'bg-neo-accent' : 'bg-neo-bg'
+                            className={`flex-1 h-2 border border-white/10 ${isActive ? 'bg-neo-accent' : 'bg-slate-900'
                                 }`}
                         />
                     );
                 })}
             </div>
             <div className="flex justify-between mt-1">
-                <span className="text-[8px] font-bold text-black/30">6 DAYS AGO</span>
-                <span className="text-[8px] font-bold text-black/30">TODAY</span>
+                <span className="text-[8px] font-bold text-slate-100/30">6 DAYS AGO</span>
+                <span className="text-[8px] font-bold text-slate-100/30">TODAY</span>
             </div>
         </div>
     );

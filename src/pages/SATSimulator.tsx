@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AIService from '../lib/aiService';
 import {
   Flag, Timer, ChevronRight, ChevronLeft, CheckCircle2,
-  Target, ShieldCheck, PenTool, Sparkles, Trophy, ArrowRight, Gauge
+  Target, ShieldCheck, PenTool, Sparkles, Trophy, ArrowRight, Gauge, Activity
 } from 'lucide-react';
 
 /**
@@ -226,77 +226,88 @@ export default function SATSimulator() {
 
   if (step === 'intro') {
     return (
-      <div className="max-w-6xl mx-auto py-12 px-6 space-y-16 text-black">
+      <div className="max-w-6xl mx-auto py-16 px-6 space-y-20 text-white">
         {/* Hero Section */}
-        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-neo-accent p-1.5 border-2 border-black shadow-[2px_2px_0px_0px_#000]">
-                <Sparkles className="h-4 w-4 text-white" />
+        <div className="flex flex-col md:flex-row gap-12 items-start md:items-center">
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 border border-primary/20 rounded-lg">
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
-              <span className="font-black tracking-widest uppercase text-[10px] bg-black text-white px-2 py-0.5 rotate-1">Atlas // Performance_Engine</span>
+              <span className="font-black tracking-[0.3em] uppercase text-[10px] text-slate-500">Atlas_Neural_Engine v4.0</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black italic tracking-tight leading-none">
-              SAT <span className="text-stroke-neo text-black">TEST</span>
+            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none uppercase">
+              SAT <span className="text-primary">Test</span>
             </h1>
-            <p className="text-lg font-bold text-black/60 max-w-xl leading-relaxed">
-              Experience the world's first fully adaptive AI-powered Digital SAT simulator. Designed for the 1600 track.
+            <p className="text-xl font-medium text-slate-400 max-w-xl leading-relaxed">
+              Precision adaptive testing calibrated for elite university track. 1600_PROTOCOL_ACTIVE.
             </p>
           </div>
 
-          <div className="w-full md:w-64 space-y-3">
+          <div className="w-full md:w-80 space-y-4">
             <button onClick={() => { setSection('rw'); setPart(1); generatePartQuestions('rw', 1); }}
-              className="w-full neo-button bg-neo-accent py-5 text-2xl italic group flex items-center justify-center gap-3">
-              START TEST <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+              className="w-full bg-primary hover:bg-blue-600 text-white py-6 rounded-2xl text-2xl font-black italic group flex items-center justify-center gap-4 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95">
+              Launch Test <ArrowRight className="h-7 w-7 group-hover:translate-x-2 transition-transform" />
             </button>
-            <div className="bg-black text-white p-2 border-2 border-black font-black text-[9px] tracking-widest uppercase text-center italic">
-              Syllabus Lockdown: ACTIVE
+            <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 px-4 py-2 rounded-full text-center">
+              <span className="text-[10px] font-black tracking-[0.2em] text-cyan-500 uppercase">Neural_Syllabus_Lock: ACTIVE</span>
             </div>
           </div>
         </div>
 
         {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="neo-card bg-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_#000] space-y-4">
-            <div className="w-14 h-14 bg-neo-secondary border-4 border-black flex items-center justify-center rotate-3">
-              <Gauge className="h-8 w-8 text-black" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Gauge className="h-9 w-9 text-primary" />
             </div>
-            <h3 className="text-2xl font-black italic uppercase">Adaptive Track</h3>
-            <p className="font-bold text-sm text-black/50">Part 2 scaling based on Part 1 accuracy. Elite performance detection included.</p>
+            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Adaptive Track</h3>
+            <p className="font-medium text-slate-400 leading-relaxed italic">Part 2 scaling based on Part 1 accuracy. Elite performance detection included.</p>
           </div>
 
-          <div className="neo-card bg-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_#000] space-y-4">
-            <div className="w-14 h-14 bg-neo-muted border-4 border-black flex items-center justify-center -rotate-3">
-              <ShieldCheck className="h-8 w-8 text-black" />
+          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
+            <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ShieldCheck className="h-9 w-9 text-emerald-500" />
             </div>
-            <h3 className="text-2xl font-black italic uppercase">Strict Rigor</h3>
-            <p className="font-bold text-sm text-black/50">Official 2024 domains. Harder distractors. Professional-grade passages.</p>
+            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Strict Rigor</h3>
+            <p className="font-medium text-slate-400 leading-relaxed italic">Official 2024 domains. Harder distractors. Professional-grade passages.</p>
           </div>
 
-          <div className="neo-card bg-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_#000] space-y-4">
-            <div className="w-14 h-14 bg-neo-accent border-4 border-black flex items-center justify-center rotate-6">
-              <Trophy className="h-8 w-8 text-white" />
+          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
+            <div className="w-16 h-16 bg-neo-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Trophy className="h-9 w-9 text-neo-accent" />
             </div>
-            <h3 className="text-2xl font-black italic uppercase">Score Matrix</h3>
-            <p className="font-bold text-sm text-black/50">Advanced statistical modeling to estimate your scaled score (1600 scale).</p>
+            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Score Matrix</h3>
+            <p className="font-medium text-slate-400 leading-relaxed italic">Advanced statistical modeling to estimate your scaled score (1600 scale).</p>
           </div>
         </div>
 
         {/* Requirements Box */}
-        <div className="bg-neo-secondary border-2 border-black p-8 shadow-[8px_8px_0px_0px_#000] flex flex-col md:flex-row gap-8">
-          <div className="flex-1 space-y-3">
-            <h4 className="text-2xl font-black uppercase italic">The Protocol</h4>
-            <ul className="space-y-2 font-bold text-base">
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-black" /> READING_WRITING: 64 MINS / 54 Qs</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-black" /> MATHEMATICS: 70 MINS / 44 Qs</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-black" /> CALCULATOR: ALWAYS_ACTIVE</li>
+        <div className="bg-slate-900 border border-white/5 p-12 rounded-[2rem] shadow-2xl flex flex-col md:flex-row gap-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+          <div className="flex-1 space-y-6">
+            <h4 className="text-3xl font-black uppercase italic tracking-tighter text-white">The Protocol</h4>
+            <ul className="space-y-4 font-bold text-lg text-slate-300">
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                <CheckCircle2 className="h-6 w-6 text-primary" />
+                <span>READING_WRITING: 64 MINS / 54 Qs</span>
+              </li>
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                <CheckCircle2 className="h-6 w-6 text-primary" />
+                <span>MATHEMATICS: 70 MINS / 44 Qs</span>
+              </li>
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                <CheckCircle2 className="h-6 w-6 text-primary" />
+                <span>CALCULATOR: ALWAYS_ACTIVE</span>
+              </li>
             </ul>
           </div>
-          <div className="md:w-56 flex items-center justify-center">
-            <div className="w-40 h-40 bg-white border-2 border-black rounded-full flex flex-col items-center justify-center text-center p-4 shadow-inner animate-pulse">
-              <Target className="h-8 w-8 mb-1" />
-              <span className="text-[10px] font-black uppercase">Mission_Target</span>
-              <span className="text-3xl font-black italic">1550+</span>
+          <div className="md:w-64 flex items-center justify-center">
+            <div className="w-52 h-52 bg-slate-950 border border-white/10 rounded-full flex flex-col items-center justify-center text-center p-8 shadow-inner relative group cursor-default">
+              <div className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-20" />
+              <Target className="h-10 w-10 mb-2 text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Mission_Target</span>
+              <span className="text-5xl font-black italic text-white tracking-tighter">1550+</span>
             </div>
           </div>
         </div>
@@ -306,11 +317,11 @@ export default function SATSimulator() {
 
   if (step === 'loading') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-neo-bg">
-        <div className="w-16 h-16 border-4 border-black border-t-neo-accent animate-spin" />
-        <h2 className="text-xl font-black italic mt-6 text-black uppercase tracking-widest text-center">
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
+        <div className="w-20 h-20 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-10 shadow-lg shadow-primary/10" />
+        <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter text-center leading-none">
           Building Part {part}...<br />
-          <span className="text-xs opacity-40">Injecting Expert Domains</span>
+          <span className="text-sm font-black tracking-[0.4em] text-slate-500 mt-4 block">Injecting_Expert_Domains</span>
         </h2>
       </div>
     );
@@ -318,15 +329,18 @@ export default function SATSimulator() {
 
   if (step === 'break') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-neo-bg text-center space-y-6 text-black">
-        <div className="w-24 h-24 bg-neo-accent border-4 border-black flex items-center justify-center mx-auto rotate-12 shadow-[8px_8px_0px_0px_#000]">
-          <PenTool className="h-12 w-12 text-white" />
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center space-y-10 text-white p-6">
+        <div className="w-32 h-32 bg-primary/20 border border-primary/30 rounded-[2rem] flex items-center justify-center mx-auto rotate-12 shadow-2xl relative">
+          <div className="absolute inset-0 bg-primary opacity-20 blur-2xl rounded-full" />
+          <PenTool className="h-16 w-16 text-primary relative z-10" />
         </div>
-        <h2 className="text-5xl font-black italic uppercase tracking-tighter">Reading Done</h2>
-        <p className="font-bold text-xl text-black/40">Calm your mind. Mathematics begins now.</p>
+        <div className="space-y-4">
+          <h2 className="text-6xl font-black italic uppercase tracking-tighter leading-none">Reading Done</h2>
+          <p className="font-bold text-2xl text-slate-500 uppercase tracking-widest">Neural fatigue detected. Stabilizing for Mathematics.</p>
+        </div>
         <button onClick={() => { setSection('math'); setPart(1); generatePartQuestions('math', 1); }}
-          className="neo-button bg-neo-accent px-16 py-6 text-3xl italic group flex items-center gap-4 mx-auto">
-          START MATH <ArrowRight className="h-8 w-8 group-hover:translate-x-2 transition-transform" />
+          className="bg-primary hover:bg-blue-600 text-white px-20 py-8 rounded-2xl text-3xl font-black italic group flex items-center gap-6 mx-auto shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+          Start Math <ArrowRight className="h-10 w-10 group-hover:translate-x-2 transition-transform" />
         </button>
       </div>
     );
@@ -334,68 +348,81 @@ export default function SATSimulator() {
 
   if (step === 'results') {
     return (
-      <div className="max-w-4xl mx-auto py-20 text-center space-y-12 text-black px-6">
-        <div className="space-y-4">
-          <h1 className="text-7xl font-black italic uppercase tracking-tighter leading-none">TEST_COMPLETE</h1>
-          <p className="font-black text-neo-accent uppercase tracking-[0.3em] text-sm italic">Neural Data Synthesized // Performance Validated</p>
+      <div className="max-w-4xl mx-auto py-24 text-center space-y-16 text-white px-6">
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md mb-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">
+              Protocol_1600_Complete
+            </span>
+          </div>
+          <h1 className="text-8xl font-black italic uppercase tracking-tighter leading-none">Test Result</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="neo-card p-12 border-8 border-black bg-white shadow-[20px_20px_0px_0px_#000] space-y-6 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-2 bg-neo-accent" />
-            <div className="text-xs font-black opacity-40 tracking-[0.4em] mb-2 uppercase italic">Estimated Scaled Score</div>
-            <div className="text-9xl font-black italic text-black tabular-nums group-hover:scale-110 transition-transform duration-500">{results?.total}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="bg-card-dark p-16 rounded-[3rem] border border-white/5 shadow-2xl space-y-10 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-cyan-500" />
+            <div className="text-[10px] font-black text-slate-500 tracking-[0.4em] uppercase italic">Estimated Scaled Score</div>
+            <div className="text-[10rem] font-black italic text-white tabular-nums leading-none drop-shadow-2xl group-hover:scale-105 transition-transform duration-700">{results?.total}</div>
 
-            <div className="grid grid-cols-2 gap-6 mt-10">
-              <div className="p-6 bg-neo-bg border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
-                <div className="text-[10px] font-black uppercase text-black/40 mb-1">RW_SECTION</div>
-                <div className="text-3xl font-black italic">{results?.rwScore}</div>
+            <div className="grid grid-cols-2 gap-8 mt-12">
+              <div className="p-8 bg-slate-900 border border-white/5 rounded-3xl shadow-inner">
+                <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">RW SECTION</div>
+                <div className="text-4xl font-black italic text-white">{results?.rwScore}</div>
               </div>
-              <div className="p-6 bg-neo-bg border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
-                <div className="text-[10px] font-black uppercase text-black/40 mb-1">MATH_SECTION</div>
-                <div className="text-3xl font-black italic">{results?.mathScore}</div>
+              <div className="p-8 bg-slate-900 border border-white/5 rounded-3xl shadow-inner">
+                <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">MATH SECTION</div>
+                <div className="text-4xl font-black italic text-white">{results?.mathScore}</div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="neo-card bg-neo-secondary p-8 border-4 border-black shadow-[10px_10px_0px_0px_#000] text-left">
-              <h3 className="text-xl font-black uppercase italic mb-4 flex items-center gap-3">
-                <Trophy className="h-6 w-6" /> PERSISTENCE_LOG
+          <div className="space-y-8">
+            <div className="bg-slate-900 border border-white/5 p-10 rounded-[2.5rem] shadow-2xl text-left relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+              <h3 className="text-2xl font-black uppercase italic mb-8 flex items-center gap-4 text-white">
+                <Trophy className="h-8 w-8 text-amber-500" /> Persistence Log
               </h3>
-              <ul className="space-y-4 font-bold text-sm">
-                <li className="flex justify-between border-b-2 border-black/10 pb-2">
-                  <span>XP EARNED</span>
-                  <span className="text-neo-accent">+200 XP</span>
+              <ul className="space-y-6">
+                <li className="flex justify-between items-center border-b border-white/5 pb-4">
+                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">XP Earned</span>
+                  <span className="font-black text-2xl text-primary">+200 XP</span>
                 </li>
-                <li className="flex justify-between border-b-2 border-black/10 pb-2">
-                  <span>MASTERY UPDATE</span>
-                  <span>8 DOMAINS MAPPED</span>
+                <li className="flex justify-between items-center border-b border-white/5 pb-4">
+                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">Knowledge Map</span>
+                  <span className="font-black text-xl text-white">8 Domains Mapped</span>
                 </li>
-                <li className="flex justify-between border-b-2 border-black/10 pb-2">
-                  <span>AI INSIGHTS</span>
-                  <span className="bg-black text-white px-2 italic text-[10px]">GENERATING...</span>
+                <li className="flex justify-between items-center pb-2">
+                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">Neural Insights</span>
+                  <span className="bg-slate-800 text-slate-400 px-3 py-1 rounded-md italic text-[10px] font-black uppercase tracking-widest animate-pulse">Processing...</span>
                 </li>
               </ul>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <button onClick={() => window.location.href = '/progress'} className="neo-button bg-black text-white py-6 text-xl tracking-tighter italic uppercase flex items-center justify-center gap-4 group">
-                VIEW KNOWLEDGE MAP <Target className="group-hover:rotate-45 transition-transform" />
+              <button
+                onClick={() => window.location.href = '/progress'}
+                className="bg-primary hover:bg-blue-600 text-white py-8 rounded-2xl text-2xl font-black italic uppercase flex items-center justify-center gap-6 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95 group"
+              >
+                Deep Progress <Target className="h-8 w-8 group-hover:rotate-45 transition-transform" />
               </button>
-              <button onClick={() => setStep('intro')} className="neo-button-white border-4 border-black py-4 font-black uppercase tracking-widest text-xs hover:bg-neo-bg transition-all">
-                RESTART_SIMULATION
+              <button
+                onClick={() => setStep('intro')}
+                className="bg-slate-900 border border-white/5 text-slate-500 py-5 rounded-xl font-black uppercase tracking-[0.3em] text-xs hover:bg-slate-800 hover:text-white transition-all"
+              >
+                Restart_Simulation
               </button>
             </div>
           </div>
         </div>
 
-        <div className="bg-white border-4 border-black p-10 shadow-[15px_15px_0px_0px_rgba(45,158,100,0.3)]">
-          <p className="text-xs font-black uppercase tracking-widest opacity-40 mb-6">Neural_Weakness_Detected</p>
-          <div className="flex flex-wrap justify-center gap-4">
+        <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 p-12 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-rose-500/50" />
+          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-600 mb-8">Neural_Weakness_Detected</p>
+          <div className="flex flex-wrap justify-center gap-6">
             {SECTION_SPECS.math.domains.slice(0, 2).map((d, i) => (
-              <div key={i} className="px-4 py-2 bg-red-100 border-2 border-black font-black uppercase text-[10px] italic">
-                ! {d}
+              <div key={i} className="px-6 py-3 bg-rose-500/10 border border-rose-500/20 rounded-xl font-black uppercase text-xs italic text-rose-500 shadow-lg">
+                CRITICAL: {d}
               </div>
             ))}
           </div>
@@ -406,69 +433,95 @@ export default function SATSimulator() {
 
   const q = questions[currentIdx];
   return (
-    <div className="h-screen flex flex-col bg-neo-bg overflow-hidden text-black text-[13px]">
-      <header className="flex justify-between items-center bg-black text-white px-4 py-2 border-b border-neo-accent z-20">
-        <div>
-          <h1 className="font-black italic text-base leading-none uppercase">SAT Test</h1>
-          <p className="text-[7px] font-bold text-neo-accent uppercase tracking-widest mt-0.5">{section} / Part {part}</p>
+    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden text-white selection:bg-primary/30">
+      <header className="flex justify-between items-center bg-slate-900 px-6 py-4 border-b border-white/5 z-20 shadow-2xl">
+        <div className="flex items-center gap-6">
+          <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary">
+            <Activity className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-black italic text-xl leading-none uppercase tracking-tighter">SAT Simulator</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{section} SECTION</span>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">// PART {part}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3 font-mono font-black text-lg bg-white/5 px-2 py-0.5 border border-white/10 rounded">
-          <Timer className="w-4 h-4 text-neo-accent" /> {formatTime(timeLeft)}
+        <div className="flex items-center gap-4 bg-slate-950 px-6 py-2 rounded-2xl border border-white/5 shadow-inner">
+          <Timer className="w-5 h-5 text-primary" />
+          <span className="font-black text-2xl tabular-nums text-white tracking-tight">{formatTime(timeLeft)}</span>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Compact Navigator */}
-        <div className="w-16 lg:w-48 bg-white border-r-2 border-black overflow-y-auto p-2 space-y-1 hidden sm:block">
+        <div className="w-20 lg:w-64 bg-card-dark border-r border-white/5 overflow-y-auto p-4 space-y-2 hidden sm:block shadow-2xl">
+          <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 mb-6 px-2">Navigation_Map</div>
           {questions.map((_, i) => (
             <button
               key={`${part}-${i}`}
               onClick={() => setCurrentIdx(i)}
-              className={`w-full p-2 border-2 border-black font-black text-xs text-left transition-all ${currentIdx === i ? 'bg-neo-accent' : 'bg-white hover:bg-neo-bg'
-                } ${answers[questions[i].id] !== undefined ? 'opacity-100' : 'opacity-30'}`}
+              className={`w-full p-4 rounded-xl border font-black text-sm text-left transition-all relative group overflow-hidden ${currentIdx === i
+                ? 'bg-primary/10 border-primary/30 text-white shadow-lg shadow-primary/5'
+                : 'bg-slate-900/40 border-white/5 text-slate-500 hover:text-white hover:bg-slate-800'
+                } ${answers[questions[i].id] !== undefined ? 'opacity-100' : 'opacity-40'}`}
             >
-              <span className="hidden lg:inline">Q</span>{i + 1}
-              {flags[questions[i].id] && <Flag className="h-2 w-2 fill-red-500 text-red-500 float-right mt-0.5" />}
+              <span className="relative z-10"><span className="hidden lg:inline">Unit_</span>{i + 1}</span>
+              {flags[questions[i].id] && (
+                <div className="absolute top-0 right-0 p-1">
+                  <Flag className="h-2.5 w-2.5 fill-rose-500 text-rose-500" />
+                </div>
+              )}
+              {currentIdx === i && (
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+              )}
             </button>
           ))}
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-white">
-          <div className="max-w-4xl mx-auto space-y-4">
-            <div className="flex justify-between items-center border-b border-black/5 pb-1">
-              <div className="text-[9px] font-black uppercase text-black/40">Question {currentIdx + 1} of {questions.length}</div>
-              <div className="flex items-center gap-2">
-                <span className="text-[8px] font-bold uppercase text-black/30 tracking-widest">{q?.domain}</span>
-                <button
-                  onClick={() => setFlags(f => ({ ...f, [q.id]: !f[q.id] }))}
-                  className={`p-1 border-2 border-black ${flags[q.id] ? 'bg-red-500 text-white' : 'bg-white'}`}
-                >
-                  <Flag className="h-3 w-3" />
-                </button>
+        <div className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-20 bg-slate-950/30">
+          <div className="max-w-5xl mx-auto space-y-12">
+            <div className="flex justify-between items-end border-b border-white/5 pb-8">
+              <div>
+                <div className="text-[10px] font-black uppercase text-slate-600 tracking-[0.4em] mb-2 leading-none">ANALYSIS_NODE_{currentIdx + 1}</div>
+                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter leading-none">{q?.domain}</h2>
               </div>
+              <button
+                onClick={() => setFlags(f => ({ ...f, [q.id]: !f[q.id] }))}
+                className={`flex items-center gap-3 px-6 py-3 rounded-xl border transition-all font-black uppercase text-[10px] tracking-widest ${flags[q.id] ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-slate-900 border-white/5 text-slate-500 hover:text-white'}`}
+              >
+                <Flag className={`h-4 w-4 ${flags[q.id] ? 'fill-rose-500' : ''}`} /> {flags[q.id] ? 'FLAGGED' : 'FLAG ITEM'}
+              </button>
             </div>
 
             {/* Two Column Layout for RW Passage */}
-            <div className={`grid grid-cols-1 ${q?.passage ? 'lg:grid-cols-2' : ''} gap-6`}>
+            <div className={`grid grid-cols-1 ${q?.passage ? 'lg:grid-cols-2' : ''} gap-16`}>
               {q?.passage && (
-                <div className="p-4 bg-neo-bg border border-black text-sm leading-relaxed font-serif italic max-h-[40vh] lg:max-h-none overflow-y-auto">
-                  <div className="text-[9px] font-black uppercase mb-3 opacity-40">Passage Content</div>
+                <div className="p-10 bg-card-dark border border-white/5 rounded-[2rem] text-lg leading-relaxed font-medium italic text-slate-300 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-2 h-full bg-primary/20" />
+                  <div className="text-[10px] font-black uppercase mb-8 text-primary tracking-[0.4em] opacity-60">Source_Passage</div>
                   {q.passage}
                 </div>
               )}
 
-              <div className="space-y-4">
-                <h2 className="text-lg md:text-xl font-black text-black leading-tight">{q?.question}</h2>
-                <div className="grid grid-cols-1 gap-2">
+              <div className="space-y-12">
+                <div className="relative">
+                  <div className="absolute -left-8 top-0 w-1.5 h-full bg-primary rounded-full shadow-lg shadow-primary/20" />
+                  <h3 className="text-3xl font-bold text-white leading-tight italic drop-shadow-sm">"{q?.question}"</h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
                   {q?.options.map((opt, i) => (
                     <button key={i} onClick={() => setAnswers(prev => ({ ...prev, [q.id]: i }))}
-                      className={`text-left p-3 border-2 border-black font-bold text-sm transition-all flex items-center gap-3 ${answers[q.id] === i ? 'bg-neo-secondary border-black shadow-none translate-x-0.5 translate-y-0.5' : 'bg-white hover:bg-neo-bg shadow-[1px_1px_0px_0px_#000]'
+                      className={`text-left p-6 rounded-2xl border transition-all flex items-center gap-6 group relative overflow-hidden ${answers[q.id] === i
+                        ? 'bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.02]'
+                        : 'bg-slate-900 border-white/5 hover:bg-slate-800 hover:border-primary/30 shadow-lg'
                         }`}>
-                      <span className={`w-6 h-6 shrink-0 rounded-full border-2 border-black flex items-center justify-center text-[10px] font-black ${answers[q.id] === i ? 'bg-black text-white' : 'bg-neo-bg'}`}>
+                      <span className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center text-sm font-black transition-all ${answers[q.id] === i ? 'bg-white text-primary border-white' : 'bg-slate-950 border-white/5 text-slate-600 group-hover:text-white'}`}>
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className="flex-1">{opt}</span>
+                      <span className={`flex-1 font-bold text-lg ${answers[q.id] === i ? 'text-white' : 'text-slate-300'}`}>{opt}</span>
                     </button>
                   ))}
                 </div>
@@ -478,21 +531,21 @@ export default function SATSimulator() {
         </div>
       </div>
 
-      <footer className="bg-white border-t-4 border-black p-4 flex justify-between items-center z-20">
+      <footer className="bg-slate-900 border-t border-white/5 p-6 flex justify-between items-center z-20 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
         <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
-          className="neo-button-white px-6 py-2 font-black flex items-center gap-2 group text-xs disabled:opacity-20" disabled={currentIdx === 0}>
-          <ChevronLeft className="h-4 w-4" /> BACK
+          className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-xl border border-white/5 font-black flex items-center gap-4 group text-xs disabled:opacity-20 transition-all active:scale-95" disabled={currentIdx === 0}>
+          <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" /> PREVIOUS
         </button>
 
-        <div className="hidden sm:flex gap-1">
+        <div className="hidden sm:flex gap-1.5 px-4 py-2 bg-slate-950 border border-white/5 rounded-full shadow-inner">
           {questions.map((_, i) => (
-            <div key={i} className={`w-1.5 h-1 border border-black ${answers[questions[i].id] !== undefined ? 'bg-black' : 'bg-black/10'}`} />
+            <div key={i} className={`w-2 h-2 rounded-full border border-white/10 transition-all ${answers[questions[i].id] !== undefined ? 'bg-primary' : 'bg-slate-800'}`} />
           ))}
         </div>
 
-        <button onClick={handleNext} className="neo-button bg-neo-accent px-10 py-3 font-black text-sm italic group uppercase tracking-widest">
-          {currentIdx === questions.length - 1 ? 'FINISH' : 'NEXT'}
-          <ChevronRight className="h-4 w-4 ml-2" />
+        <button onClick={handleNext} className="bg-primary hover:bg-blue-600 text-white px-12 py-4 rounded-xl font-black text-sm italic group uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-4">
+          {currentIdx === questions.length - 1 ? 'Terminate Part' : 'Next Node'}
+          <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </button>
       </footer>
     </div>

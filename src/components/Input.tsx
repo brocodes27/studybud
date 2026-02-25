@@ -17,7 +17,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 const inputVariants = {
   default: 'neo-input w-full',
-  filled: 'neo-input w-full bg-white',
+  filled: 'neo-input w-full bg-slate-800',
   outline: 'neo-input w-full bg-transparent',
 };
 
@@ -103,7 +103,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 hover:bg-neo-secondary border-2 border-transparent hover:border-black transition-all text-neo-ink"
+              className="p-1 hover:bg-neo-secondary border border-transparent hover:border-white/10 transition-all text-neo-ink"
             >
               <X className="w-4 h-4" />
             </button>
@@ -113,7 +113,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="p-1 hover:bg-neo-secondary border-2 border-transparent hover:border-black transition-all text-neo-ink"
+              className="p-1 hover:bg-neo-secondary border border-transparent hover:border-white/10 transition-all text-neo-ink"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -133,7 +133,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
             <p className="text-sm font-bold text-red-600 uppercase tracking-tight">{error}</p>
           )}
           {helperText && !error && (
-            <p className="text-sm font-medium text-black/60">{helperText}</p>
+            <p className="text-sm font-medium text-slate-100/60">{helperText}</p>
           )}
         </div>
       )}

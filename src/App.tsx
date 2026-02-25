@@ -86,11 +86,12 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neo-bg flex flex-col items-center justify-center p-6">
-        <div className="w-24 h-24 border-8 border-black border-t-neo-accent animate-spin" />
-        <div className="mt-12 text-center p-8 bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000]">
-          <h2 className="text-4xl font-black uppercase tracking-tighter">ELEVENFOLKS</h2>
-          <p className="text-black/60 font-bold uppercase tracking-widest text-sm mt-2">Initializing Experience...</p>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5 blur-[120px] rounded-full translate-y-1/2" />
+        <div className="relative z-10 w-24 h-24 border-2 border-primary/20 border-t-primary rounded-full animate-spin shadow-2xl shadow-primary/20" />
+        <div className="mt-16 text-center space-y-4 relative z-10">
+          <h2 className="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">Atlas</h2>
+          <p className="text-slate-500 font-black uppercase tracking-[0.4em] text-xs">Initializing_Neural_Matrix_v4.0</p>
         </div>
       </div>
     );
@@ -99,47 +100,51 @@ function AppContent() {
   if (!user) return <Landing />;
   if (!onboardingCompleted) return <Onboarding />;
 
-  const isSubscriptionRoute = location.pathname === '/pricing' || location.pathname === '/subscription';
-
   return (
-    <div className="min-h-screen bg-neo-bg selection:bg-neo-accent selection:text-black">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/30 selection:text-white">
       <div className="relative z-10">
         {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
 
-        <div className={!isFullscreen ? "md:pl-[var(--sidebar-width,16rem)] transition-all duration-300" : ""}>
+        <div className={!isFullscreen ? "md:pl-[var(--sidebar-width,20rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]" : ""}>
           {!isFullscreen && !isOnline && (
-            <div className="bg-neo-muted text-black text-center py-4 text-sm font-black border-b-4 border-black uppercase tracking-widest">
-              📱 OFFLINE MODE ACTIVE
+            <div className="bg-rose-500/10 border-b border-rose-500/20 text-rose-500 text-center py-3 text-[10px] font-black uppercase tracking-[0.3em] backdrop-blur-xl">
+              ⚠️ Offline_Mode_Active // Limited_Sync
             </div>
           )}
 
           {!isFullscreen && isPremium === false && showSubscribeBanner && (
-            <div className="w-full flex justify-center sticky top-4 z-50">
-              <div className="relative flex items-center justify-between w-full max-w-3xl mx-4 bg-neo-secondary border-4 border-black p-4 shadow-[8px_8px_0px_0px_#000]">
-                <div className="flex items-center gap-4">
-                  <Crown className="w-6 h-6 text-black stroke-[2.5px]" />
-                  <span className="font-black uppercase tracking-tighter text-lg">LEVEL UP TO PREMIUM</span>
+            <div className="w-full flex justify-center sticky top-6 z-50 pointer-events-none">
+              <div className="pointer-events-auto relative flex items-center justify-between w-full max-w-4xl mx-6 bg-slate-900/80 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl shadow-black/50 overflow-hidden group">
+                <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
+                <div className="flex items-center gap-6">
+                  <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-inner">
+                    <Crown className="w-8 h-8 drop-shadow-lg" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="font-black uppercase tracking-tighter text-2xl italic leading-none block">Level Up to Premium</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unlock Advanced AI Models & Global Analytics</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <button
                     onClick={handleSubscribeClick}
                     disabled={isLoadingPayment}
-                    className="bg-black text-white px-6 py-2 font-black uppercase text-sm hover:bg-neo-ink translate-y-[-2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] active:translate-y-0 active:shadow-none transition-all"
+                    className="bg-primary hover:bg-blue-600 text-white px-8 py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95"
                   >
                     {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
                   </button>
                   <button
                     onClick={() => setShowSubscribeBanner(false)}
-                    className="p-1 hover:bg-black/10"
+                    className="p-3 text-slate-600 hover:text-white transition-colors"
                   >
-                    <X className="w-5 h-5 stroke-[3px]" />
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full max-w-7xl mx-auto px-6 py-10 transition-all"}>
+          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full mx-auto px-6 py-12 transition-all"}>
             <Routes>
               {/* Daily Experience - New Primary Flow */}
               <Route path="/" element={<DailyCheckin />} />

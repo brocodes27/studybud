@@ -274,30 +274,40 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
     const levelInfo = calculateLevel(checkinState.totalXp);
 
     return (
-        <div className="min-h-screen bg-neo-bg p-4 md:p-8 selection:bg-neo-accent selection:text-black">
+        <div className="min-h-screen bg-slate-950 p-4 md:p-10 selection:bg-primary/30">
             <div className="max-w-6xl mx-auto">
                 {/* Header with XP and Streak */}
-                <div className="flex items-center justify-between mb-12">
-                    <div className="flex flex-col gap-2">
-                        <span className="bg-black text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest self-start">
-                            NEURAL_OS_v3.2 // {getGreeting()}
-                        </span>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase">MISSION_CONTROL</h1>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-md">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                NEURAL_CORE // {getGreeting()}
+                            </span>
+                        </div>
+                        <h1 className="text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
+                            Daily <span className="text-primary">Intel</span>
+                        </h1>
                     </div>
+
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3 bg-white border-4 border-black px-6 py-3 shadow-[6px_6px_0px_0px_#000]">
-                            <Flame className="w-6 h-6 text-orange-500 fill-orange-500" />
+                        <div className="flex items-center gap-4 bg-card-dark border border-white/5 px-8 py-4 rounded-2xl shadow-2xl relative group overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-neo-accent opacity-50" />
+                            <Flame className="w-8 h-8 text-neo-accent group-hover:scale-110 transition-transform" />
                             <div>
-                                <div className="text-[10px] font-black uppercase text-black/40 leading-none mb-1">STREAK</div>
-                                <div className="font-black text-2xl leading-none">{checkinState.streak} <span className="text-xs italic">DAYS</span></div>
+                                <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">STREAK</div>
+                                <div className="font-black text-3xl text-white tabular-nums leading-none">
+                                    {checkinState.streak} <span className="text-xs italic text-slate-500 font-bold ml-1 uppercase">Days</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-white border-4 border-black px-6 py-3 shadow-[6px_6px_0px_0px_#000]">
-                            <div className="text-3xl grayscale hover:grayscale-0 transition-all cursor-default">{levelInfo.badge}</div>
+                        <div className="flex items-center gap-4 bg-card-dark border border-white/5 px-8 py-4 rounded-2xl shadow-2xl relative group overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-50" />
+                            <div className="text-4xl group-hover:scale-110 transition-transform cursor-default">{levelInfo.badge}</div>
                             <div>
-                                <div className="text-[10px] font-black uppercase text-black/40 leading-none mb-1">LEVEL {levelInfo.level}</div>
-                                <div className="font-black text-xl italic uppercase font-serif tracking-tight">{levelInfo.name}</div>
+                                <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">LEVEL {levelInfo.level}</div>
+                                <div className="font-black text-2xl italic uppercase text-white tracking-tight leading-none">{levelInfo.name}</div>
                             </div>
                         </div>
                     </div>
@@ -310,52 +320,60 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex flex-col items-center justify-center py-40 bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] rotate-1"
+                            className="flex flex-col items-center justify-center py-40 bg-slate-900/50 border border-white/5 rounded-3xl backdrop-blur-md"
                         >
-                            <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin mb-8" />
-                            <p className="font-black uppercase tracking-[0.3em] text-black">INITIALIZING_NEURAL_LINK...</p>
+                            <div className="w-20 h-20 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-10" />
+                            <p className="font-black uppercase tracking-[0.4em] text-slate-500 text-sm">Synchronizing_Systems...</p>
                         </motion.div>
                     )}
 
                     {state === 'question' && question && (
                         <motion.div
                             key="question"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.05 }}
-                            className="bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] overflow-hidden rotate-[-0.5deg]"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="bg-card-dark border border-white/5 rounded-3xl shadow-2xl overflow-hidden shadow-primary/5"
                         >
-                            <div className="bg-black text-white p-6 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-neo-accent p-3 border-2 border-white shadow-[4px_4px_0px_0px_#fff]">
-                                        <Brain className="w-6 h-6" />
+                            <div className="bg-slate-900 px-10 py-8 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-lg">
+                                        <Brain className="w-8 h-8" />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-black uppercase tracking-tighter italic">DAILY_POWER_UP</h2>
-                                        <p className="text-[10px] text-neo-accent font-black uppercase tracking-[0.2em]">{question.domain} // {question.subdomain}</p>
+                                        <h2 className="text-3xl font-black uppercase tracking-tighter italic text-white leading-none mb-2">Daily Power Up</h2>
+                                        <div className="flex items-center gap-3">
+                                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded border border-primary/20">{question.domain}</span>
+                                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">{question.subdomain}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-neo-secondary font-black text-2xl">+{isCorrect === null ? '60' : isCorrect ? '60' : '40'} XP</div>
+                                    <div className="text-primary font-black text-3xl tabular-nums">+{isCorrect === null ? '60' : isCorrect ? '60' : '40'} <span className="text-sm italic opacity-50">XP</span></div>
                                 </div>
                             </div>
 
-                            <div className="p-10">
-                                <p className="text-3xl font-black tracking-tight leading-tight mb-12 border-l-8 border-neo-accent pl-8 italic">"{question.question}"</p>
-                                <div className="grid md:grid-cols-2 gap-6">
+                            <div className="p-10 md:p-16">
+                                <div className="relative mb-16">
+                                    <div className="absolute -left-8 top-0 w-1 h-full bg-primary rounded-full shadow-lg shadow-primary/20" />
+                                    <p className="text-4xl font-bold tracking-tight leading-[1.15] text-white italic drop-shadow-sm">"{question.question}"</p>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-8">
                                     {question.options.map((option, index) => {
-                                        let bgClass = 'bg-neo-bg hover:bg-neo-secondary hover:-translate-y-2 hover:shadow-[12px_12px_0px_0px_#000]';
-                                        let borderClass = 'border-black';
+                                        let bgClass = 'bg-slate-900 hover:bg-slate-800 hover:scale-[1.02] border-white/5';
+                                        let textClass = 'text-slate-300';
 
                                         if (selectedAnswer !== null) {
                                             if (index === question.correctIndex) {
-                                                bgClass = 'bg-neo-secondary shadow-none';
-                                                borderClass = 'border-black';
+                                                bgClass = 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20';
+                                                textClass = 'text-emerald-400';
                                             } else if (index === selectedAnswer && !isCorrect) {
-                                                bgClass = 'bg-red-400 shadow-none';
-                                                borderClass = 'border-black';
+                                                bgClass = 'bg-rose-500/10 border-rose-500/30 ring-1 ring-rose-500/20';
+                                                textClass = 'text-rose-400';
                                             } else {
-                                                bgClass = 'bg-white opacity-40';
+                                                bgClass = 'bg-slate-900 opacity-30 border-white/5';
+                                                textClass = 'text-slate-600';
                                             }
                                         }
 
@@ -364,14 +382,14 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                                 key={index}
                                                 onClick={() => handleAnswerSelect(index)}
                                                 disabled={selectedAnswer !== null}
-                                                className={`w-full p-6 border-4 ${borderClass} ${bgClass} text-left font-black text-xl transition-all shadow-[8px_8px_0px_0px_#000] disabled:cursor-not-allowed flex items-center justify-between group`}
+                                                className={`w-full p-8 border rounded-2xl ${bgClass} ${textClass} text-left font-bold text-xl transition-all shadow-xl disabled:cursor-not-allowed flex items-center justify-between group`}
                                             >
-                                                <span>{option}</span>
+                                                <span className="leading-tight">{option}</span>
                                                 {selectedAnswer !== null && index === question.correctIndex && (
-                                                    <Check className="w-8 h-8 text-black stroke-[4px]" />
+                                                    <Check className="w-8 h-8 shrink-0 text-emerald-400 stroke-[4px]" />
                                                 )}
                                                 {selectedAnswer === index && !isCorrect && (
-                                                    <X className="w-8 h-8 text-black stroke-[4px]" />
+                                                    <X className="w-8 h-8 shrink-0 text-rose-400 stroke-[4px]" />
                                                 )}
                                             </button>
                                         );
@@ -380,15 +398,17 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
 
                                 {selectedAnswer !== null && (
                                     <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        className="mt-12 p-8 bg-neo-muted border-4 border-black shadow-[8px_8px_0px_0px_#000]"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mt-16 p-10 bg-slate-900 border border-white/5 rounded-3xl shadow-inner shadow-black/20"
                                     >
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <Sparkles className="w-6 h-6 text-black" />
-                                            <p className="text-xs font-black uppercase tracking-widest text-black">ATLAS_EXPLANATION</p>
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Sparkles className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Atlas_Neural_Insight</p>
                                         </div>
-                                        <p className="text-xl font-bold leading-tight italic">"{question.explanation}"</p>
+                                        <p className="text-2xl font-medium leading-relaxed italic text-slate-300">"{question.explanation}"</p>
                                     </motion.div>
                                 )}
                             </div>
@@ -401,76 +421,52 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] p-12 text-center rotate-1"
+                            className="bg-card-dark border border-white/5 rounded-[3rem] p-16 md:p-24 text-center shadow-2xl relative overflow-hidden"
                         >
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+
                             <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ type: 'spring', delay: 0.2 }}
-                                className={`w-32 h-32 mx-auto mb-8 border-4 border-black flex items-center justify-center ${isCorrect ? 'bg-neo-secondary' : 'bg-neo-muted'
-                                    } shadow-[8px_8px_0px_0px_#000] rotate-[-5deg]`}
+                                initial={{ scale: 0, rotate: -20 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: 'spring', damping: 10, delay: 0.2 }}
+                                className={`w-40 h-40 mx-auto mb-12 rounded-3xl flex items-center justify-center ${isCorrect ? 'bg-emerald-500/20 text-emerald-500' : 'bg-primary/20 text-primary'
+                                    } shadow-2xl border border-white/5`}
                             >
                                 {isCorrect ? (
-                                    <Trophy className="w-16 h-16 text-black" />
+                                    <Trophy size={80} strokeWidth={1.5} />
                                 ) : (
-                                    <Target className="w-16 h-16 text-black" />
+                                    <Target size={80} strokeWidth={1.5} />
                                 )}
                             </motion.div>
 
-                            <h2 className="text-5xl font-black uppercase italic mb-4 tracking-tighter">
-                                {isCorrect ? 'NAILED THE LINK!' : 'CONNECTION_STABLE'}
+                            <h2 className="text-6xl font-black uppercase italic mb-6 tracking-tighter text-white">
+                                {isCorrect ? 'Nailed it!' : 'Stabilized'}
                             </h2>
-                            <p className="text-black/60 font-bold mb-10 text-xl uppercase tracking-widest">
+                            <p className="text-slate-500 font-bold mb-16 text-2xl uppercase tracking-[0.2em] leading-tight">
                                 {isCorrect
-                                    ? "NEURAL mastery increasing. Logic gaps plugged."
-                                    : "Every question is a data point. Analyzing results..."}
+                                    ? "Neural mastery spiking. Logic gaps plugged."
+                                    : "Data acquired. Analyzing errors for recalibration."}
                             </p>
 
-                            <div className="flex justify-center gap-6 mb-12">
-                                <div className="bg-neo-accent text-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] rotate-[-2deg]">
-                                    <Zap className="w-10 h-10 mx-auto mb-3" />
-                                    <div className="text-4xl font-black">+{checkinResult.xpEarned}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em]">XP_EARNED</div>
+                            <div className="flex flex-col md:flex-row justify-center gap-8 mb-16">
+                                <div className="bg-primary/10 border border-primary/20 p-8 rounded-3xl shadow-xl flex-1">
+                                    <Zap className="w-10 h-10 mx-auto mb-4 text-primary" />
+                                    <div className="text-5xl font-black text-white tabular-nums">+{checkinResult.xpEarned}</div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mt-2">XP Earned</div>
                                 </div>
 
-                                <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] rotate-[2deg]">
-                                    <Flame className="w-10 h-10 mx-auto mb-3 text-orange-500 fill-orange-500" />
-                                    <div className="text-4xl font-black">{checkinResult.streak}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em]">DAY_STREAK</div>
+                                <div className="bg-neo-accent/10 border border-neo-accent/20 p-8 rounded-3xl shadow-xl flex-1">
+                                    <Flame className="w-10 h-10 mx-auto mb-4 text-neo-accent" />
+                                    <div className="text-5xl font-black text-white tabular-nums">{checkinResult.streak}</div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-neo-accent mt-2">Day Streak</div>
                                 </div>
                             </div>
 
-                            {checkinResult.streakBonus > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.5 }}
-                                    className="bg-neo-secondary border-4 border-black p-4 mb-10 inline-block shadow-[4px_4px_0px_0px_#000]"
-                                >
-                                    <p className="font-black uppercase italic">
-                                        🔥 NEURAL_STREAK_BONUS: +{checkinResult.streakBonus} XP
-                                    </p>
-                                </motion.div>
-                            )}
-
-                            {checkinResult.levelUp && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 0.7, type: 'spring' }}
-                                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-4 border-black p-8 mb-10 shadow-[12px_12px_0px_0px_#000]"
-                                >
-                                    <Sparkles className="w-12 h-12 mx-auto mb-4 animate-pulse" />
-                                    <h3 className="text-3xl font-black uppercase italic tracking-tighter">LEVEL_UNLOCKED!</h3>
-                                    <p className="text-xl font-bold uppercase tracking-widest">You reached Level {checkinResult.newLevel}!</p>
-                                </motion.div>
-                            )}
-
                             <button
                                 onClick={handleContinue}
-                                className="bg-black text-white border-4 border-black px-12 py-5 font-black uppercase tracking-[0.2em] text-xl shadow-[10px_10px_0px_0px_#666] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[14px_14px_0px_0px_#666] active:shadow-none transition-all flex items-center gap-4 mx-auto"
+                                className="bg-primary hover:bg-blue-600 text-white px-16 py-6 rounded-2xl font-black uppercase tracking-[0.3em] text-xl shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-6 mx-auto"
                             >
-                                MISSION_CONTROL <ArrowRight className="w-8 h-8" />
+                                MISSION CONTROL <ArrowRight size={28} strokeWidth={3} />
                             </button>
                         </motion.div>
                     )}
@@ -480,111 +476,120 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             key="mission"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="space-y-12"
+                            className="space-y-16"
                         >
                             <div className="grid lg:grid-cols-3 gap-12">
-                                <div className="lg:col-span-2 space-y-8">
+                                <div className="lg:col-span-2 space-y-10">
                                     {todayMission && (
-                                        <div className="bg-white border-8 border-black shadow-[16px_16px_0px_0px_#000] relative group overflow-hidden">
-                                            <div className="absolute top-0 right-0 bg-neo-accent text-white px-8 py-3 border-l-4 border-b-4 border-black font-black italic tracking-tighter uppercase whitespace-nowrap">
-                                                DAY {todayMission.dayNumber} PROTOCOL
+                                        <div className="bg-card-dark border border-white/10 glass rounded-3xl shadow-2xl relative group overflow-hidden">
+                                            <div className="absolute top-0 right-0 bg-primary/20 text-primary px-8 py-3 rounded-bl-3xl border-l border-b border-primary/30 font-black italic tracking-widest uppercase text-xs">
+                                                Day {todayMission.dayNumber} Protocol
                                             </div>
-                                            <div className="p-10">
-                                                <div className="flex items-center gap-4 mb-8">
-                                                    <div className="w-16 h-16 bg-neo-secondary border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                                            <div className="p-12">
+                                                <div className="flex items-center gap-6 mb-12">
+                                                    <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-lg">
                                                         <Target className="w-10 h-10" />
                                                     </div>
                                                     <div>
-                                                        <h2 className="text-xs font-black uppercase tracking-[0.3em] text-black/40 mb-1">CURRENT_TARGET</h2>
-                                                        <h3 className="text-4xl font-black uppercase italic tracking-tighter leading-none">{todayMission.plan.subject}</h3>
+                                                        <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-2">PRIMARY TARGET</h2>
+                                                        <h3 className="text-5xl font-black uppercase italic tracking-tighter text-white leading-none">{todayMission.plan.subject}</h3>
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-neo-bg border-4 border-black p-8 mb-10 relative">
-                                                    <div className="absolute top-[-2px] left-[-2px] bg-black text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-widest">UNIT_FOCUS</div>
-                                                    <h4 className="text-2xl font-black mb-2 italic uppercase">{todayMission.task?.topic || 'General Practice'}</h4>
-                                                    <p className="font-bold text-black/60 leading-tight uppercase text-sm tracking-wide">{todayMission.task?.description}</p>
+                                                <div className="bg-slate-900 border border-white/5 p-10 rounded-2xl mb-12 relative shadow-inner">
+                                                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 opacity-40">
+                                                        <div className="w-1 h-1 rounded-full bg-primary" />
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-500">Unit_Focus</span>
+                                                    </div>
+                                                    <h4 className="text-3xl font-black text-white italic uppercase mb-2">{todayMission.task?.topic || 'General Practice'}</h4>
+                                                    <p className="font-bold text-slate-500 leading-relaxed uppercase text-sm tracking-wide">{todayMission.task?.description}</p>
                                                 </div>
 
-                                                <div className="grid sm:grid-cols-2 gap-6">
+                                                <div className="grid sm:grid-cols-2 gap-8">
                                                     <Link
                                                         to="/atlas"
-                                                        className="bg-black text-white border-4 border-black p-6 font-black uppercase italic text-xl text-center shadow-[8px_8px_0px_0px_#666] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#666] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-4"
+                                                        className="bg-primary hover:bg-blue-600 text-white p-8 rounded-2xl font-black uppercase italic text-2xl text-center shadow-xl shadow-primary/10 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-6"
                                                     >
-                                                        <Brain className="w-8 h-8 text-neo-secondary" /> LAUNCH_ATLAS
+                                                        <Brain className="w-10 h-10" /> Launch Atlas
                                                     </Link>
                                                     <Link
                                                         to="/sat-simulator"
-                                                        className="bg-white border-4 border-black p-6 font-black uppercase italic text-xl text-center shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-4"
+                                                        className="bg-slate-800 hover:bg-slate-700 text-white p-8 rounded-2xl font-black uppercase italic text-2xl text-center border border-white/5 shadow-xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-6"
                                                     >
-                                                        <Activity className="w-8 h-8 text-neo-accent" /> START_SIMULATOR
+                                                        <Activity className="w-10 h-10 text-primary" /> Simulator
                                                     </Link>
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="bg-neo-muted border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000]">
-                                        <div className="flex items-center gap-4 mb-8">
-                                            <div className="bg-white p-2 border-2 border-black">
-                                                <Zap className="w-6 h-6" />
+                                    <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 p-10 rounded-3xl shadow-xl">
+                                        <div className="flex items-center gap-4 mb-10">
+                                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                                <Zap className="w-7 h-7" />
                                             </div>
-                                            <h3 className="text-2xl font-black uppercase tracking-tighter italic">NEURAL_INGESTION_MODULE</h3>
+                                            <h3 className="text-3xl font-black uppercase tracking-tighter italic text-white leading-none">Neural Ingestion</h3>
                                         </div>
-                                        <p className="font-bold uppercase text-xs tracking-widest text-black/40 mb-8 border-b-2 border-black/10 pb-4">DRAG_AND_DROP_TO_BIFURCATE_ANY_SOURCE</p>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <button onClick={() => handleMagicIngest('pdf')} className="bg-white border-2 border-black p-6 flex flex-col items-center gap-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] group">
-                                                <FileUp className="w-10 h-10 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">PDF</span>
-                                            </button>
-                                            <button onClick={() => handleMagicIngest('link')} className="bg-white border-2 border-black p-6 flex flex-col items-center gap-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] group">
-                                                <Globe className="w-10 h-10 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">LINK</span>
-                                            </button>
-                                            <button onClick={() => handleMagicIngest('youtube')} className="bg-white border-2 border-black p-6 flex flex-col items-center gap-3 hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_#000] group">
-                                                <Youtube className="w-10 h-10 text-red-600 group-hover:scale-110 transition-transform" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">YOUTUBE</span>
-                                            </button>
+                                        <div className="grid grid-cols-3 gap-6">
+                                            {[
+                                                { type: 'pdf', icon: FileUp, label: 'PDF Source' },
+                                                { type: 'link', icon: Globe, label: 'Web Data' },
+                                                { type: 'youtube', icon: Youtube, label: 'Video Feed', color: 'text-rose-500' },
+                                            ].map((item) => (
+                                                <button
+                                                    key={item.type}
+                                                    onClick={() => handleMagicIngest(item.type)}
+                                                    className="bg-slate-800 border border-white/5 p-8 rounded-2xl flex flex-col items-center gap-4 hover:bg-slate-700 hover:border-primary/20 transition-all shadow-lg group"
+                                                >
+                                                    <item.icon className={`w-12 h-12 ${item.color || 'text-slate-400'} group-hover:scale-110 transition-transform`} />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-white transition-colors">{item.label}</span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-8">
-                                    <div className="bg-white border-4 border-black p-4 md:p-6 shadow-[8px_8px_0px_0px_#000]">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <Activity className="w-5 h-5 text-neo-accent" />
-                                            <h4 className="font-black uppercase tracking-tighter italic">NEURAL_ACTIVITY_MAP</h4>
+                                <div className="space-y-10">
+                                    <div className="bg-slate-900/60 border border-white/5 p-8 rounded-3xl shadow-xl">
+                                        <div className="flex items-center gap-4 mb-8 px-2">
+                                            <Activity className="w-6 h-6 text-primary" />
+                                            <h4 className="text-xl font-black uppercase tracking-tighter italic text-white">Neural activity</h4>
                                         </div>
-                                        <div className="w-full overflow-hidden">
+                                        <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5 shadow-inner">
                                             <MasteryHeatmap />
                                         </div>
                                     </div>
 
-                                    <div className="bg-black text-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)]">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <AlertCircle className="w-6 h-6 text-neo-secondary" />
-                                            <h4 className="text-xl font-black uppercase italic tracking-tighter">CRITICAL_LOGIC_GAPS</h4>
+                                    <div className="bg-slate-900 border border-white/5 p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/30" />
+                                        <div className="flex items-center gap-4 mb-8 px-2">
+                                            <AlertCircle className="w-7 h-7 text-amber-500" />
+                                            <h4 className="text-2xl font-black uppercase italic tracking-tighter text-white">Neural Gaps</h4>
                                         </div>
                                         <div className="space-y-4">
                                             {logicGaps.length > 0 ? logicGaps.map((gap, i) => (
-                                                <div key={i} className="bg-white/10 border-2 border-white/20 p-4 group hover:border-neo-secondary transition-all cursor-pointer" onClick={() => handlePlugGap(gap)}>
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="overflow-hidden">
-                                                            <div className="text-[10px] font-black tracking-widest text-neo-secondary uppercase">{gap.domain}</div>
-                                                            <h5 className="font-black uppercase text-sm truncate">{gap.subdomain}</h5>
+                                                <div
+                                                    key={i}
+                                                    className="bg-slate-800/40 border border-white/5 p-6 rounded-2xl group hover:border-primary/50 transition-all cursor-pointer shadow-lg"
+                                                    onClick={() => handlePlugGap(gap)}
+                                                >
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-[10px] font-black tracking-widest text-primary uppercase mb-1">{gap.domain}</div>
+                                                            <h5 className="font-black uppercase text-base text-white truncate italic">{gap.subdomain}</h5>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="text-xl font-black text-neo-secondary">{gap.mastery_score}%</div>
-                                                            <div className="text-[8px] font-black opacity-40">MASTERY</div>
+                                                        <div className="text-right pl-4">
+                                                            <div className="text-3xl font-black text-amber-500 leading-none mb-1">{gap.mastery_score}%</div>
+                                                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mastery</div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-neo-accent group-hover:translate-x-2 transition-transform uppercase">
-                                                        PLUG_GAP_WITH_ATLAS <ChevronRight className="w-3 h-3" />
+                                                    <div className="pt-4 border-t border-white/5 flex items-center gap-3 text-[10px] font-black text-primary group-hover:translate-x-2 transition-transform uppercase tracking-widest">
+                                                        Plug Gap with Atlas <ChevronRight size={14} strokeWidth={3} />
                                                     </div>
                                                 </div>
                                             )) : (
-                                                <div className="text-white/40 font-black uppercase text-center py-8 border-2 border-dashed border-white/20">
-                                                    NO_GAPS_DETECTED_YET
+                                                <div className="text-slate-600 font-black uppercase text-center py-12 border-2 border-dashed border-white/5 rounded-2xl opacity-40">
+                                                    No_Gaps_MAPPED_YET
                                                 </div>
                                             )}
                                         </div>
@@ -592,22 +597,22 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 pt-12 border-t-8 border-black">
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 pt-16 border-t border-white/5">
                                 {[
-                                    { label: 'CURRICULUM', icon: List, href: '/curriculum' },
-                                    { label: 'VIDEO_VAULT', icon: Youtube, href: '/videos' },
-                                    { label: 'FEYNMAN_BOARD', icon: Sparkles, href: '/feynman' },
-                                    { label: 'MY_ROADMAPS', icon: Activity, href: '/roadmaps' },
-                                    { label: 'SOCIAL_DECK', icon: LayoutDashboard, href: '/social' },
-                                    { label: 'SYOW_ARCHIVE', icon: Monitor, href: '/syow' },
+                                    { label: 'Curriculum', icon: List, href: '/curriculum' },
+                                    { label: 'Video Vault', icon: Youtube, href: '/videos' },
+                                    { label: 'Feynman', icon: Sparkles, href: '/feynman' },
+                                    { label: 'Roadmaps', icon: Activity, href: '/roadmaps' },
+                                    { label: 'Social Deck', icon: LayoutDashboard, href: '/social' },
+                                    { label: 'SYOW Feed', icon: Monitor, href: '/syow' },
                                 ].map((action) => (
                                     <Link
                                         key={action.label}
                                         to={action.href}
-                                        className="bg-white border-4 border-black p-6 text-center shadow-[6px_6px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all flex flex-col items-center justify-center group"
+                                        className="bg-slate-900 border border-white/5 p-8 rounded-2xl text-center shadow-lg hover:bg-slate-800 hover:border-primary/20 transition-all hover:-translate-y-1 group"
                                     >
-                                        <action.icon className="w-10 h-10 mb-3 group-hover:scale-110 transition-transform" />
-                                        <span className="font-black uppercase text-[10px] tracking-widest">{action.label}</span>
+                                        <action.icon className="w-10 h-10 mb-4 mx-auto text-slate-500 group-hover:text-primary transition-colors" />
+                                        <span className="font-black uppercase text-[10px] tracking-widest text-slate-500 group-hover:text-white transition-colors">{action.label}</span>
                                     </Link>
                                 ))}
                             </div>
@@ -616,14 +621,18 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                 </AnimatePresence>
             </div>
 
-            <footer className="mt-40 text-center pb-20 border-t-4 border-black/10 pt-20">
-                <div className="flex items-center justify-center gap-8 mb-8 opacity-20">
-                    <Brain className="w-8 h-8" />
-                    <Activity className="w-8 h-8" />
-                    <Sparkles className="w-8 h-8" />
+            <footer className="mt-48 text-center pb-24 border-t border-white/5 pt-20">
+                <div className="flex items-center justify-center gap-12 mb-10 opacity-10">
+                    <Brain size={32} />
+                    <Activity size={32} />
+                    <Sparkles size={32} />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/20 italic">
-                    NEURAL_OS_STUDYBUD_GEN_2026 // ALL_SYSTEMS_OPERATIONAL
+                <div className="inline-flex items-center gap-4 bg-slate-900 px-6 py-2 rounded-full border border-white/5 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">All Systems Operational</span>
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.8em] text-slate-700 italic">
+                    Deep_Focus_2026
                 </p>
             </footer>
         </div>

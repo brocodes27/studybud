@@ -126,80 +126,80 @@ export function QuestionGenerator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-12 bg-white border-8 border-black shadow-[20px_20px_0px_0px_#000] rotate-1 mt-12 mb-20">
-      <div className="flex items-center gap-6 mb-10 border-b-8 border-black pb-8">
-        <div className="bg-neo-accent border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] -rotate-6">
+    <div className="max-w-4xl mx-auto p-12 bg-slate-800 border border-white/10 shadow-neo rotate-1 mt-12 mb-20">
+      <div className="flex items-center gap-6 mb-10 border-b-8 border-white/10 pb-8">
+        <div className="bg-neo-accent border border-white/10 p-4 shadow-neo -rotate-6">
           <Sparkles className="h-10 w-10 text-white stroke-[3px]" />
         </div>
         <div>
-          <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">QUERY_ARCHITECT</h2>
-          <p className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: NEURAL_QUESTION_SYNTHESIS</p>
+          <h2 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">QUERY_ARCHITECT</h2>
+          <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: NEURAL_QUESTION_SYNTHESIS</p>
         </div>
       </div>
 
       <div className="space-y-10">
         <div className="relative group">
           <textarea
-            className="w-full h-64 p-8 bg-white border-4 border-black font-black uppercase tracking-tight italic text-xl focus:bg-neo-bg outline-none transition-all shadow-[8px_8px_0px_0px_#000] resize-none"
+            className="w-full h-64 p-8 bg-slate-800 border border-white/10 font-black uppercase tracking-tight italic text-xl focus:bg-slate-900 outline-none transition-all shadow-neo resize-none"
             placeholder="INSERT_NOTES_DATA_PACKETS_HERE..."
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
-          <div className="absolute -bottom-4 right-6 bg-black text-white px-4 py-1 font-black uppercase text-[10px] tracking-widest shadow-[4px_4px_0px_0px_#FF6B6B]">
+          <div className="absolute -bottom-4 right-6 bg-slate-900 text-white px-4 py-1 font-black uppercase text-[10px] tracking-widest shadow-neo">
             DATA_VOLUME: {notes.length} BYTES
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-8 p-8 border-4 border-black bg-neo-bg/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 py-1 px-4 bg-black text-white font-black text-[10px] uppercase italic -rotate-1 translate-x-1">
+        <div className="flex flex-col md:flex-row items-center gap-8 p-8 border border-white/10 bg-slate-950/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 py-1 px-4 bg-slate-900 text-white font-black text-[10px] uppercase italic -rotate-1 translate-x-1">
             OCR_OVERRIDE_ACTIVE
           </div>
-          <div className="flex-shrink-0 bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
-            <Upload className="h-8 w-8 text-black stroke-[3px]" />
+          <div className="flex-shrink-0 bg-slate-800 border border-white/10 p-4 shadow-neo">
+            <Upload className="h-8 w-8 text-slate-100 stroke-[3px]" />
           </div>
           <div className="flex-grow space-y-2">
-            <label className="text-black font-black uppercase tracking-widest text-xs italic block">SOURCE_PDF_INJECTION</label>
+            <label className="text-slate-100 font-black uppercase tracking-widest text-xs italic block">SOURCE_PDF_INJECTION</label>
             <input
               type="file"
               accept="application/pdf"
               onChange={handlePdfUpload}
-              className="w-full text-xs font-black uppercase italic cursor-pointer file:bg-black file:text-white file:border-none file:px-6 file:py-2 file:mr-4 file:font-black file:uppercase file:italic hover:file:bg-neo-accent transition-all animate-none"
+              className="w-full text-xs font-black uppercase italic cursor-pointer file:bg-slate-900 file:text-white file:border-none file:px-6 file:py-2 file:mr-4 file:font-black file:uppercase file:italic hover:file:bg-neo-accent transition-all animate-none"
               disabled={pdfLoading}
             />
           </div>
           {pdfLoading && (
-            <div className="bg-neo-accent text-white px-6 py-3 border-4 border-black font-black uppercase tracking-tighter italic shadow-[6px_6px_0px_0px_#000] animate-pulse">
+            <div className="bg-neo-accent text-white px-6 py-3 border border-white/10 font-black uppercase tracking-tighter italic shadow-neo animate-pulse">
               {ocrProgress !== null ? `DECODING: ${ocrProgress}%` : 'EXTRACTING...'}
             </div>
           )}
         </div>
 
         {pdfError && (
-          <div className="flex items-center gap-4 text-white bg-neo-accent border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000]">
+          <div className="flex items-center gap-4 text-white bg-neo-accent border border-white/10 p-4 shadow-neo">
             <AlertCircle className="h-6 w-6 stroke-[3px]" />
             <span className="font-black uppercase text-xs italic tracking-widest">{pdfError}</span>
           </div>
         )}
 
         <div className="space-y-4">
-          <label className="text-[10px] font-black text-black uppercase tracking-[0.2em] italic block">CLASSIFICATION_TAG <span className="text-neo-accent">*</span></label>
+          <label className="text-[10px] font-black text-slate-100 uppercase tracking-[0.2em] italic block">CLASSIFICATION_TAG <span className="text-neo-accent">*</span></label>
           <input
-            className="w-full py-5 px-8 bg-white border-4 border-black font-black text-2xl uppercase italic tracking-tighter focus:bg-neo-secondary outline-none transition-all shadow-[6px_6px_0px_0px_#000]"
+            className="w-full bg-slate-800 border border-white/10 px-8 py-5 font-black text-xl uppercase italic tracking-tighter focus:bg-slate-900 outline-none transition-all shadow-neo"
             placeholder="E.G. ORGANIC_SYNTHESIS_ALPHA"
             value={topic}
             onChange={e => setTopic(e.target.value)}
           />
-          {topicError && <div className="bg-black text-white px-4 py-1 inline-block font-black uppercase text-[10px] tracking-widest -rotate-2">{topicError}</div>}
+          {topicError && <div className="bg-slate-900 text-white px-4 py-1 inline-block font-black uppercase text-[10px] tracking-widest -rotate-2">{topicError}</div>}
         </div>
 
         <button
-          className="w-full bg-black text-white py-8 border-4 border-black font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-[8px_8px_0px_0px_#000] disabled:opacity-50"
+          className="w-full bg-slate-900 text-white py-8 border border-white/10 font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo disabled:opacity-50"
           onClick={handleGenerate}
           disabled={loading || !notes.trim()}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-6">
-              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="w-10 h-10 border border-white/30 border-t-white rounded-full animate-spin"></div>
               PROCESSING...
             </span>
           ) : (
@@ -211,32 +211,32 @@ export function QuestionGenerator() {
         </button>
 
         {error && (
-          <div className="flex items-center gap-6 text-white bg-black border-4 border-black p-8 shadow-[8px_8px_0px_0px_#FF6B6B] -rotate-1">
+          <div className="flex items-center gap-6 text-white bg-slate-900 border border-white/10 p-8 shadow-neo -rotate-1">
             <AlertCircle className="h-10 w-10 text-neo-accent stroke-[3px]" />
             <span className="text-xl font-black uppercase tracking-tight italic">{error}</span>
           </div>
         )}
 
         {questions.length > 0 && (
-          <div className="mt-16 space-y-10 border-t-8 border-black pt-12">
+          <div className="mt-16 space-y-10 border-t-8 border-white/10 pt-12">
             <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-              <h3 className="text-3xl font-black text-black uppercase tracking-tighter italic flex items-center gap-6">
-                <div className="bg-neo-secondary border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000]">
-                  <FileText className="h-8 w-8 text-black stroke-[3px]" />
+              <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic flex items-center gap-6">
+                <div className="bg-neo-secondary border border-white/10 p-3 shadow-neo">
+                  <FileText className="h-8 w-8 text-slate-100 stroke-[3px]" />
                 </div>
                 SYNTHESIZED_QUERIES
               </h3>
               <button
                 className={`
-                    px-10 py-5 border-4 border-black font-black uppercase italic tracking-tighter text-xl transition-all shadow-[8px_8px_0px_0px_#000]
-                    ${saveAllStatus === 'saved' ? 'bg-neo-secondary text-black' : 'bg-black text-white hover:bg-neo-accent'}
+                    px-10 py-5 border border-white/10 font-black uppercase italic tracking-tighter text-xl transition-all shadow-neo
+                    ${saveAllStatus === 'saved' ? 'bg-neo-secondary text-slate-100' : 'bg-slate-900 text-white hover:bg-neo-accent'}
                 `}
                 onClick={handleSaveAll}
                 disabled={saveAllStatus === 'saving' || saveAllStatus === 'saved'}
               >
                 {saveAllStatus === 'saving' ? (
                   <span className="flex items-center gap-4">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border border-white/30 border-t-white rounded-full animate-spin"></div>
                     LINKING...
                   </span>
                 ) : saveAllStatus === 'saved' ? (
@@ -252,7 +252,7 @@ export function QuestionGenerator() {
             </div>
 
             {saveAllStatus === 'error' && (
-              <div className="bg-neo-accent text-white p-4 border-4 border-black font-black uppercase text-xs tracking-widest text-center italic shadow-[4px_4px_0px_0px_#000]">
+              <div className="bg-neo-accent text-white p-4 border border-white/10 font-black uppercase text-xs tracking-widest text-center italic shadow-neo">
                 TRANSMISSION_ERROR: ARCHIVE_SYNC_FAILED
               </div>
             )}
@@ -260,13 +260,13 @@ export function QuestionGenerator() {
             <ul className="grid grid-cols-1 gap-6">
               {questions.map((q, i) => (
                 <li key={i} className={`
-                    bg-white border-4 border-black p-8 shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_#000] transition-all flex gap-8
+                    bg-slate-800 border border-white/10 p-8 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all flex gap-8
                     ${i % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}
                 `}>
-                  <span className="flex-shrink-0 w-12 h-12 border-4 border-black bg-black text-white flex items-center justify-center text-xl font-black italic -rotate-12 translate-x-[-10px]">
+                  <span className="flex-shrink-0 w-12 h-12 border border-white/10 bg-slate-900 text-white flex items-center justify-center text-xl font-black italic -rotate-12 translate-x-[-10px]">
                     {i + 1}
                   </span>
-                  <span className="text-xl font-black text-black uppercase tracking-tight italic leading-relaxed">{q}</span>
+                  <span className="text-xl font-black text-slate-100 uppercase tracking-tight italic leading-relaxed">{q}</span>
                 </li>
               ))}
             </ul>

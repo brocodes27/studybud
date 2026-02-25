@@ -91,7 +91,7 @@ export const GlobalGenerationStatus = () => {
                 >
                     <div className={`glass-card p-4 rounded-2xl border ${gen.status === 'completed' ? 'border-neon-green/30 bg-neon-green/5' :
                         gen.status === 'failed' ? 'border-red-500/30 bg-red-500/5' :
-                            'border-white/10 bg-black/60 shadow-[0_8px_32px_rgba(0,0,0,0.4)]'
+                            'border-white/10 bg-slate-900/60 shadow-neo'
                         } backdrop-blur-xl min-w-[280px] max-w-[320px] transition-all hover:scale-[1.02]`}>
                         <div className="flex items-start gap-3">
                             <div className={`p-2 rounded-xl ${gen.status === 'completed' ? 'bg-neon-green/20 text-neon-green' :
@@ -112,9 +112,9 @@ export const GlobalGenerationStatus = () => {
                                 </p>
 
                                 {gen.status !== 'completed' && gen.status !== 'failed' && (
-                                    <div className="mt-3 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div className="mt-3 h-1 w-full bg-slate-800/5 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-neon-blue transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                            className="h-full bg-neon-blue transition-all duration-1000 shadow-neo"
                                             style={{ width: `${gen.progress}%` }}
                                         />
                                     </div>

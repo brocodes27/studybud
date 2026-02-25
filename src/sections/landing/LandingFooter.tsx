@@ -2,7 +2,7 @@ import { Facebook, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
 
 export function LandingFooter() {
   return (
-    <footer className="bg-black border-t-8 border-black text-white text-sm py-20 relative overflow-hidden">
+    <footer className="bg-slate-900 border-t-8 border-white/10 text-white text-sm py-20 relative overflow-hidden">
       {/* Decorative Halftone */}
       <div className="absolute top-0 right-0 w-64 h-64 opacity-20 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(#fff 2px, transparent 2px)', backgroundSize: '15px 15px' }} />
@@ -10,7 +10,7 @@ export function LandingFooter() {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col items-center">
           {/* Logo Box */}
-          <div className="w-16 h-16 bg-neo-accent border-4 border-white flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(255,255,255,0.2)] mb-8 -rotate-2">
+          <div className="w-16 h-16 bg-neo-accent border border-white flex items-center justify-center shadow-neo mb-8 -rotate-2">
             <span className="text-3xl font-black italic text-white">EF</span>
           </div>
 

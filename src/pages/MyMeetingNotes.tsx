@@ -88,7 +88,7 @@ export function MyMeetingNotes() {
           </div>
         ) : notes.length === 0 ? (
           <div className="glass-panel p-12 rounded-2xl border border-white/10 text-center">
-            <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-slate-800/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mic className="h-8 w-8 text-gray-500" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No notes yet</h3>
@@ -111,7 +111,7 @@ export function MyMeetingNotes() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
-                  <div className="p-2 rounded-lg bg-white/10 text-white">
+                  <div className="p-2 rounded-lg bg-slate-800/10 text-white">
                     <ExternalLink className="h-4 w-4" />
                   </div>
                 </div>
@@ -147,12 +147,12 @@ export function MyMeetingNotes() {
                     </span>
                     <div className="flex -space-x-2 ml-2">
                       {note.screenshots.slice(0, 3).map((img, idx) => (
-                        <div key={idx} className="w-8 h-8 rounded-lg border border-black bg-gray-800 overflow-hidden">
+                        <div key={idx} className="w-8 h-8 rounded-lg border border-white/10 bg-gray-800 overflow-hidden">
                           <img src={img} alt="" className="w-full h-full object-cover opacity-70" />
                         </div>
                       ))}
                       {note.screenshots.length > 3 && (
-                        <div className="w-8 h-8 rounded-lg border border-black bg-gray-800 flex items-center justify-center text-[10px] text-white font-medium">
+                        <div className="w-8 h-8 rounded-lg border border-white/10 bg-gray-800 flex items-center justify-center text-[10px] text-white font-medium">
                           +{note.screenshots.length - 3}
                         </div>
                       )}

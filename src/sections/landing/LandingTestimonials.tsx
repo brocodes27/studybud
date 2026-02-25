@@ -43,18 +43,18 @@ const Column = ({ items, className = '', duration = 15, reverse = false }: { ite
       {[...items, ...items].map((t, i) => (
         <div
           key={i}
-          className={`neo-card bg-white ${i % 2 === 0 ? 'rotate-1' : '-rotate-1'} hover:rotate-0 p-8`}
+          className={`neo-card bg-slate-800 ${i % 2 === 0 ? 'rotate-1' : '-rotate-1'} hover:rotate-0 p-8`}
         >
           <div className="flex items-center mb-6">
-            <div className={`w-14 h-14 border-4 border-black flex items-center justify-center mr-4 shadow-[3px_3px_0px_0px_#000] ${t.color}`}>
+            <div className={`w-14 h-14 border border-white/10 flex items-center justify-center mr-4 shadow-neo ${t.color}`}>
               <span className="text-xl font-black italic">{t.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}</span>
             </div>
             <div>
-              <h4 className="text-xl font-black uppercase tracking-tight text-black">{t.name}</h4>
-              <p className="text-black/50 font-bold uppercase text-sm">{t.grade}</p>
+              <h4 className="text-xl font-black uppercase tracking-tight text-slate-100">{t.name}</h4>
+              <p className="text-slate-100/50 font-bold uppercase text-sm">{t.grade}</p>
             </div>
           </div>
-          <p className="text-black/80 font-bold text-lg leading-snug italic">"{t.text}"</p>
+          <p className="text-slate-100/80 font-bold text-lg leading-snug italic">"{t.text}"</p>
         </div>
       ))}
     </motion.div>
@@ -63,7 +63,7 @@ const Column = ({ items, className = '', duration = 15, reverse = false }: { ite
 
 export function LandingTestimonials() {
   return (
-    <section id="testimonials" className="py-32 px-6 bg-neo-bg relative border-t-8 border-black overflow-hidden">
+    <section id="testimonials" className="py-32 px-6 bg-slate-950 relative border-t-8 border-white/10 overflow-hidden">
       {/* Halftone Overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '20px 20px' }} />
@@ -73,20 +73,20 @@ export function LandingTestimonials() {
           <motion.span
             initial={{ rotate: 1 }}
             whileInView={{ rotate: -1 }}
-            className="sticker bg-neo-secondary border-4 border-black mb-4 px-6 text-sm py-2"
+            className="sticker bg-neo-secondary border border-white/10 mb-4 px-6 text-sm py-2"
           >
             TESTIMONIALS
           </motion.span>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black mt-6 leading-none">
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-slate-100 mt-6 leading-none">
             LOVED BY <span className="text-neo-accent italic underline decoration-8">STUDENTS</span><br />
             WORLDWIDE
           </h2>
-          <p className="text-black/60 mt-6 text-xl font-bold max-w-2xl mx-auto">
+          <p className="text-slate-100/60 mt-6 text-xl font-bold max-w-2xl mx-auto">
             Join thousands of learners who've transformed their study experience with ElevenFolks.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16 max-h-[800px] overflow-hidden rounded-none border-4 border-black bg-black/5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16 max-h-[800px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/5">
           <Column items={testimonials} duration={20} />
           <Column items={testimonials} className="hidden md:block" duration={25} reverse={true} />
           <Column items={testimonials} className="hidden lg:block" duration={22} />

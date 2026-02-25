@@ -52,8 +52,8 @@ export function MasteryHeatmap() {
     const domains = [...new Set(masteryData.map(d => d.domain))];
 
     if (loading) return (
-        <div className="p-20 text-center bg-white border-8 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center gap-6">
-            <div className="w-16 h-16 border-8 border-black border-t-neo-accent animate-spin" />
+        <div className="p-20 text-center bg-slate-900 border border-white/10 shadow-neo flex flex-col items-center gap-6">
+            <div className="w-16 h-16 border border-white/10 border-t-neo-accent animate-spin" />
             <span className="text-xl font-black italic tracking-widest uppercase">SCANNING_NEURAL_WEAKNESSES...</span>
         </div>
     );
@@ -61,9 +61,9 @@ export function MasteryHeatmap() {
     return (
         <div className="space-y-8">
             {/* 1. OVERVIEW HUD */}
-            <div className="bg-black text-white p-6 border-4 border-black shadow-[10px_10px_0px_0px_rgba(45,158,100,0.5)] flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden">
+            <div className="bg-slate-900 text-white p-6 border border-white/10 shadow-neo flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden">
                 <div className="flex items-center gap-4">
-                    <div className="bg-neo-accent p-2 border-2 border-white shadow-[2px_2px_0px_0px_#FFF] shrink-0">
+                    <div className="bg-neo-accent p-2 border border-white shadow-neo shrink-0">
                         <BarChart3 className="h-6 w-6 text-white" />
                     </div>
                     <div className="min-w-0">
@@ -77,7 +77,7 @@ export function MasteryHeatmap() {
                         <button
                             key={t}
                             onClick={() => setExamType(t.toLowerCase())}
-                            className={`px-4 py-2 border-2 border-black font-black uppercase tracking-widest text-[10px] transition-all shadow-[3px_3px_0px_0px_#FFF] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${examType === t.toLowerCase() ? 'bg-neo-accent text-white' : 'bg-white text-black'}`}
+                            className={`px-4 py-2 border border-white/10 font-black uppercase tracking-widest text-[10px] transition-all shadow-neo hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${examType === t.toLowerCase() ? 'bg-neo-accent text-white' : 'bg-slate-800 text-slate-100'}`}
                         >
                             {t}
                         </button>
@@ -88,16 +88,16 @@ export function MasteryHeatmap() {
             {/* 2. THE HEATMAP GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {domains.length === 0 ? (
-                    <div className="md:col-span-2 py-16 bg-white border-4 border-black flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden">
+                    <div className="md:col-span-2 py-16 bg-slate-800 border border-white/10 flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden">
                         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, black 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
                         <div className="relative">
-                            <Sparkles className="h-16 w-16 text-black/10 animate-pulse" />
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border border-black/5 rounded-full animate-ping" />
+                            <Sparkles className="h-16 w-16 text-slate-100/10 animate-pulse" />
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 border border-white/10/5 rounded-full animate-ping" />
                         </div>
 
                         <div className="space-y-2 relative z-10">
-                            <h3 className="text-4xl font-black uppercase italic tracking-tighter text-black/20">Zero_Data_Detected</h3>
+                            <h3 className="text-4xl font-black uppercase italic tracking-tighter text-slate-100/20">Zero_Data_Detected</h3>
                             <p className="font-bold text-[10px] max-w-xs uppercase tracking-widest leading-relaxed opacity-40">
                                 INITIALIZE NEURAL PROBE BY COMPLETING A STUDY UNIT OR REFRESHING YOUR SESSION DATA.
                             </p>
@@ -105,11 +105,11 @@ export function MasteryHeatmap() {
 
                         <div className="grid grid-cols-8 gap-2 opacity-10">
                             {Array.from({ length: 16 }).map((_, i) => (
-                                <div key={i} className="w-6 h-6 border-2 border-black bg-neo-muted" />
+                                <div key={i} className="w-6 h-6 border border-white/10 bg-neo-muted" />
                             ))}
                         </div>
 
-                        <button className="bg-black text-white px-10 py-4 font-black uppercase italic shadow-[8px_8px_0px_0px_#2D9E64] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_#2D9E64] active:translate-x-0 active:translate-y-0 active:shadow-none transition-all text-sm z-10">
+                        <button className="bg-slate-900 text-white px-10 py-4 font-black uppercase italic shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all text-sm z-10">
                             INITIATE_PROBE_SESSION
                         </button>
                     </div>
@@ -118,8 +118,8 @@ export function MasteryHeatmap() {
                     const domainMastery = domainData.reduce((acc, d) => acc + Number(d.mastery_score), 0) / domainData.length;
 
                     return (
-                        <div key={idx} className="bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-5 space-y-6 hover:-translate-y-1 transition-transform relative group">
-                            <div className="absolute top-0 right-0 bg-black text-white px-3 py-0.5 text-[8px] font-black uppercase italic">CORE_DOMAIN</div>
+                        <div key={idx} className="bg-slate-800 border border-white/10 shadow-neo p-5 space-y-6 hover:-translate-y-1 transition-transform relative group">
+                            <div className="absolute top-0 right-0 bg-slate-900 text-white px-3 py-0.5 text-[8px] font-black uppercase italic">CORE_DOMAIN</div>
 
                             <div className="flex items-center justify-between">
                                 <div>
@@ -140,16 +140,16 @@ export function MasteryHeatmap() {
                                 {domainData.map((sub, sIdx) => (
                                     <div
                                         key={sIdx}
-                                        className={`aspect-square border-2 border-black relative group/cell cursor-help transition-all hover:scale-110 z-10 ${getHeatColor(sub.mastery_score)} shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]`}
+                                        className={`aspect-square border border-white/10 relative group/cell cursor-help transition-all hover:scale-110 z-10 ${getHeatColor(sub.mastery_score)} shadow-neo`}
                                     >
                                         {/* Hover Info Tooltip */}
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-black text-white p-2 border border-neo-accent hidden group-hover/cell:block z-50 shadow-[4px_4px_0px_0px_#000]">
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-slate-900 text-white p-2 border border-neo-accent hidden group-hover/cell:block z-50 shadow-neo">
                                             <p className="text-[9px] font-black uppercase text-neo-accent mb-0.5">{sub.subdomain || 'General'}</p>
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-[7px] font-black">ACCURACY:</span>
                                                 <span className="text-[10px] font-black">{(sub.mastery_score).toFixed(1)}%</span>
                                             </div>
-                                            <div className="w-full h-0.5 bg-white/20">
+                                            <div className="w-full h-0.5 bg-slate-800/20">
                                                 <div className="h-full bg-neo-accent" style={{ width: `${sub.mastery_score}%` }} />
                                             </div>
                                         </div>
@@ -157,7 +157,7 @@ export function MasteryHeatmap() {
                                 ))}
                             </div>
 
-                            <button className="w-full flex items-center justify-between p-2.5 bg-neo-bg/20 border border-black font-black uppercase text-[10px] hover:bg-neo-accent hover:text-white transition-all">
+                            <button className="w-full flex items-center justify-between p-2.5 bg-slate-800 border border-white/10 font-black uppercase text-[10px] hover:bg-neo-accent hover:text-white transition-all">
                                 FOCUS_RESEARCH <ChevronRight className="h-4 w-4" />
                             </button>
                         </div>
@@ -166,11 +166,11 @@ export function MasteryHeatmap() {
             </div>
 
             {/* 3. LEGEND PANEL */}
-            <div className="bg-neo-bg/10 border-2 border-black p-4 flex flex-wrap items-center justify-center gap-8 font-black uppercase tracking-widest text-[9px]">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#FFEDED] border border-black" /> 0-20% CRITICAL</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#FECACA] border border-black" /> 21-60% VULNERABLE</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#93C5FD] border border-black" /> 61-80% STABLE</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#2D9E64]/30 border border-black" /> 80%+ APEX</div>
+            <div className="bg-slate-900/10 border border-white/10 p-4 flex flex-wrap items-center justify-center gap-8 font-black uppercase tracking-widest text-[9px]">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#FFEDED] border border-white/10" /> 0-20% CRITICAL</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#FECACA] border border-white/10" /> 21-60% VULNERABLE</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#93C5FD] border border-white/10" /> 61-80% STABLE</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-[#2D9E64]/30 border border-white/10" /> 80%+ APEX</div>
             </div>
         </div>
     );

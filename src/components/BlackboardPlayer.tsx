@@ -950,15 +950,15 @@ Rules:
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95">
+    <div className="fixed inset-0 z-50 bg-slate-900/95">
       <div ref={containerRef} className="absolute inset-0">
         <canvas ref={canvasRef} className="w-full h-full" style={{ display: 'block' }} />
 
         {/* Dust Overlay (kept as sharp points for texture) */}
         <div className="pointer-events-none absolute inset-0 opacity-10" aria-hidden="true">
-          <div className="absolute left-[20%] top-[10%] w-2 h-2 bg-white/20 border border-white/40"></div>
-          <div className="absolute left-[70%] top-[30%] w-1 h-1 bg-white/30"></div>
-          <div className="absolute left-[40%] top-[70%] w-3 h-3 bg-white/10 rotate-45"></div>
+          <div className="absolute left-[20%] top-[10%] w-2 h-2 bg-slate-800/20 border border-white/40"></div>
+          <div className="absolute left-[70%] top-[30%] w-1 h-1 bg-slate-800/30"></div>
+          <div className="absolute left-[40%] top-[70%] w-3 h-3 bg-slate-800/10 rotate-45"></div>
         </div>
 
         {/* Controls */}
@@ -966,36 +966,36 @@ Rules:
           <div className="absolute top-8 right-8 z-50">
             <button
               onClick={handleClose}
-              className="bg-white border-4 border-black p-3 shadow-[4px_4px_0px_0px_#000] hover:bg-neo-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              className="bg-slate-800 border border-white/10 p-3 shadow-neo hover:bg-neo-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               title="TERMINATE_SESSION"
             >
-              <X className="w-8 h-8 text-black stroke-[4px]" />
+              <X className="w-8 h-8 text-slate-100 stroke-[4px]" />
             </button>
           </div>
         )}
 
         {/* Start overlay */}
         {!isPlaying && currentIndex === -1 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-12 z-40 bg-black/40">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-12 z-40 bg-slate-900/40">
             {loading ? (
-              <div className="bg-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_#000] rotate-2 flex flex-col items-center max-w-xl">
-                <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin mb-8" />
-                <h2 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">COMPILING_LESSON</h2>
-                <p className="text-black/60 font-black uppercase tracking-widest text-xs">CALIBRATING_CHALK_VECTORS + NEURAL_VOICE_CORE</p>
+              <div className="bg-slate-800 border border-white/10 p-12 shadow-neo rotate-2 flex flex-col items-center max-w-xl">
+                <div className="w-20 h-20 border border-white/10 border-t-neo-accent animate-spin mb-8" />
+                <h2 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">COMPILING_LESSON</h2>
+                <p className="text-slate-100/60 font-black uppercase tracking-widest text-xs">CALIBRATING_CHALK_VECTORS + NEURAL_VOICE_CORE</p>
               </div>
             ) : (
-              <div className="bg-white border-8 border-black p-12 shadow-[32px_32px_0px_0px_#000] -rotate-1 max-w-2xl">
-                <div className="bg-neo-secondary border-4 border-black p-6 mb-8 inline-block shadow-[8px_8px_0px_0px_#000] rotate-6">
-                  <Play className="w-16 h-16 text-black fill-current" />
+              <div className="bg-slate-800 border border-white/10 p-12 shadow-neo -rotate-1 max-w-2xl">
+                <div className="bg-neo-secondary border border-white/10 p-6 mb-8 inline-block shadow-neo rotate-6">
+                  <Play className="w-16 h-16 text-slate-100 fill-current" />
                 </div>
-                <h2 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-6">ARCHIVE_READY</h2>
-                <p className="text-black/60 font-black uppercase tracking-widest text-sm mb-12">
+                <h2 className="text-6xl font-black text-slate-100 uppercase tracking-tighter italic mb-6">ARCHIVE_READY</h2>
+                <p className="text-slate-100/60 font-black uppercase tracking-widest text-sm mb-12">
                   PROTOCOLS ENGAGED: BROWSER_SYNTH_V2 + CHEMDoodle_RENDER_ENGINE
                 </p>
 
                 <button
                   onClick={startLesson}
-                  className="w-full py-6 bg-black text-white border-4 border-black font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:text-black transition-all shadow-[12px_12px_0px_0px_#000] active:shadow-none active:translate-x-[6px] active:translate-y-[6px]"
+                  className="w-full py-6 bg-slate-900 text-white border border-white/10 font-black uppercase italic tracking-tighter text-4xl hover:bg-neo-accent hover:text-slate-100 transition-all shadow-neo active:shadow-none active:translate-x-[6px] active:translate-y-[6px]"
                 >
                   INITIALIZE_CHAMBER
                 </button>

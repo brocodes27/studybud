@@ -22,17 +22,17 @@ const toastIcons = {
 };
 
 const toastStyles = {
-  success: 'bg-neo-secondary border-black text-black',
-  error: 'bg-neo-accent border-black text-black',
-  warning: 'bg-neo-muted border-black text-black',
-  info: 'bg-white border-black text-black',
+  success: 'bg-neo-secondary border-white/10 text-slate-100',
+  error: 'bg-neo-accent border-white/10 text-slate-100',
+  warning: 'bg-neo-muted border-white/10 text-slate-100',
+  info: 'bg-slate-800 border-white/10 text-slate-100',
 };
 
 const iconStyles = {
-  success: 'text-black',
-  error: 'text-black',
-  warning: 'text-black',
-  info: 'text-black',
+  success: 'text-slate-100',
+  error: 'text-slate-100',
+  warning: 'text-slate-100',
+  info: 'text-slate-100',
 };
 
 export const Toaster: React.FC<ToasterProps> = ({ toasts = [], removeToast = () => { } }) => {
@@ -81,9 +81,9 @@ const Toast: React.FC<ToastProps> = ({ toast, icon: Icon, onRemove }) => {
       initial={{ x: 100, opacity: 0, rotate: 5 }}
       animate={{ x: 0, opacity: 1, rotate: 0 }}
       exit={{ x: 100, opacity: 0, scale: 0.9 }}
-      className={`relative group border-4 ${toastStyles[toast.type]} shadow-[8px_8px_0px_0px_#000] p-6 min-w-[320px] max-w-md flex items-center gap-5`}
+      className={`relative group border ${toastStyles[toast.type]} shadow-neo p-6 min-w-[320px] max-w-md flex items-center gap-5`}
     >
-      <div className={`flex-shrink-0 ${iconStyles[toast.type]} bg-white border-4 border-black p-2 -rotate-3 group-hover:rotate-0 transition-transform`}>
+      <div className={`flex-shrink-0 ${iconStyles[toast.type]} bg-slate-800 border border-white/10 p-2 -rotate-3 group-hover:rotate-0 transition-transform`}>
         <Icon className="w-6 h-6" strokeWidth={3} />
       </div>
 
@@ -95,9 +95,9 @@ const Toast: React.FC<ToastProps> = ({ toast, icon: Icon, onRemove }) => {
 
       <button
         onClick={() => onRemove(toast.id)}
-        className="flex-shrink-0 bg-white border-4 border-black p-2 shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all hover:bg-neo-accent"
+        className="flex-shrink-0 bg-slate-800 border border-white/10 p-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all hover:bg-neo-accent"
       >
-        <X className="w-5 h-5 text-black stroke-[3px]" />
+        <X className="w-5 h-5 text-slate-100 stroke-[3px]" />
       </button>
 
       {/* Background patterns */}

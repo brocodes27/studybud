@@ -193,8 +193,8 @@ export function CalendarSync() {
                           navigate(`/create?subject=${encodeURIComponent(cleanedSubject)}&exam_date=${dateStr.split('T')[0]}${chaptersQP}`);
                         }}
                         className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${isTooFarAway
-                            ? 'bg-white/5 text-gray-500 cursor-not-allowed border border-white/5'
-                            : 'bg-neon-green/10 text-neon-green border border-neon-green/20 hover:bg-neon-green/20'
+                          ? 'bg-slate-800/5 text-gray-500 cursor-not-allowed border border-white/5'
+                          : 'bg-neon-green/10 text-neon-green border border-neon-green/20 hover:bg-neon-green/20'
                           }`}
                         disabled={isTooFarAway}
                       >
@@ -204,9 +204,9 @@ export function CalendarSync() {
                     </div>
 
                     {isTooFarAway && (
-                      <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-orange-400 shrink-0 mt-0.5" />
-                        <span className="text-sm text-orange-300">
+                      <div className="mt-4 p-3 bg-neo-accent/10 border border-neo-accent/20 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-neo-accent shrink-0 mt-0.5" />
+                        <span className="text-sm text-neo-accent/80">
                           This event is {daysUntilEvent} days away. AI study plans are currently optimized for 30-day sprints.
                         </span>
                       </div>

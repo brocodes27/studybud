@@ -292,14 +292,14 @@ export function Progresser() {
 
     if (step === 'setup') {
         return (
-            <div className="min-h-screen bg-neo-bg p-8 flex flex-col items-center justify-center space-y-12">
-                <div className="max-w-4xl w-full bg-white border-8 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] p-12 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 bg-neo-accent p-4 border-l-8 border-b-8 border-black">
+            <div className="min-h-screen bg-slate-950 p-8 flex flex-col items-center justify-center space-y-12">
+                <div className="max-w-4xl w-full bg-slate-800 border border-white/10 shadow-neo p-12 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-neo-accent p-4 border-l-8 border-b-8 border-white/10">
                         <Zap className="h-10 w-10 text-white animate-pulse" />
                     </div>
 
                     <div className="flex items-center gap-6 mb-12">
-                        <div className="bg-black p-5 rotate-2 shadow-[4px_4px_0px_0px_#2D9E64] border-4 border-[#2D9E64]">
+                        <div className="bg-slate-900 p-5 rotate-2 shadow-neo border border-[#2D9E64]">
                             <Brain className="h-12 w-12 text-white" />
                         </div>
                         <div>
@@ -310,13 +310,13 @@ export function Progresser() {
 
                     <div className="grid md:grid-cols-2 gap-10">
                         <div className="space-y-4">
-                            <label className="text-xs font-black uppercase text-black/40">PHASE_01: TARGET_CLASS</label>
+                            <label className="text-xs font-black uppercase text-slate-100/40">PHASE_01: TARGET_CLASS</label>
                             <div className="flex gap-4">
                                 {['10', '12'].map(c => (
                                     <button
                                         key={c}
                                         onClick={() => { setSelectedClass(c); setSelectedSubject(''); }}
-                                        className={`flex-1 py-6 border-4 border-black font-black text-4xl transition-all ${selectedClass === c ? 'bg-black text-white shadow-[8px_8px_0px_0px_#2D9E64]' : 'bg-white hover:bg-neo-bg'}`}
+                                        className={`flex-1 py-6 border border-white/10 font-black text-4xl transition-all ${selectedClass === c ? 'bg-slate-900 text-white shadow-neo' : 'bg-slate-800 hover:bg-slate-900'}`}
                                     >
                                         {c}
                                     </button>
@@ -326,11 +326,11 @@ export function Progresser() {
 
                         {selectedClass && (
                             <div className="space-y-4 animate-in slide-in-from-right duration-300">
-                                <label className="text-xs font-black uppercase text-black/40">PHASE_02: SUBJECT_SCAN</label>
+                                <label className="text-xs font-black uppercase text-slate-100/40">PHASE_02: SUBJECT_SCAN</label>
                                 <select
                                     value={selectedSubject}
                                     onChange={(e) => setSelectedSubject(e.target.value)}
-                                    className="w-full p-6 border-4 border-black font-black uppercase text-xl focus:outline-none bg-white shadow-[8px_8px_0px_0px_#000]"
+                                    className="w-full p-6 border border-white/10 font-black uppercase text-xl focus:outline-none bg-slate-800 shadow-neo"
                                 >
                                     <option value="">-- INITIALIZE --</option>
                                     {subjects[selectedClass as keyof typeof subjects].map(s => (
@@ -343,13 +343,13 @@ export function Progresser() {
 
                     {selectedSubject && (
                         <div className="mt-10 space-y-4 animate-in fade-in duration-500">
-                            <label className="text-xs font-black uppercase text-black/40">PHASE_03: CHAPTER_SELECT</label>
+                            <label className="text-xs font-black uppercase text-slate-100/40">PHASE_03: CHAPTER_SELECT</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {availableChapters.map(chap => (
                                     <button
                                         key={chap}
                                         onClick={() => setSelectedChapter(chap)}
-                                        className={`p-4 border-2 border-black font-bold text-xs uppercase text-left transition-all ${selectedChapter === chap ? 'bg-neo-secondary shadow-[4px_4px_0px_0px_#000]' : 'bg-gray-50 hover:bg-white'}`}
+                                        className={`p-4 border border-white/10 font-bold text-xs uppercase text-left transition-all ${selectedChapter === chap ? 'bg-neo-secondary shadow-neo' : 'bg-gray-50 hover:bg-slate-800'}`}
                                     >
                                         {chap}
                                     </button>
@@ -362,7 +362,7 @@ export function Progresser() {
                         <button
                             onClick={handleStart}
                             disabled={!selectedChapter}
-                            className="w-full group flex items-center justify-between bg-black text-white px-10 py-8 border-4 border-black font-black text-3xl uppercase tracking-tighter hover:bg-[#2D9E64] hover:text-black transition-all shadow-[12px_12px_0px_0px_rgba(0,0,0,0.3)] disabled:opacity-20"
+                            className="w-full group flex items-center justify-between bg-slate-900 text-white px-10 py-8 border border-white/10 font-black text-3xl uppercase tracking-tighter hover:bg-[#2D9E64] hover:text-slate-100 transition-all shadow-neo disabled:opacity-20"
                         >
                             START NEURAL SESSION
                             <ArrowRight className="h-10 w-10 group-hover:translate-x-3 transition-transform" />
@@ -374,19 +374,19 @@ export function Progresser() {
     }
 
     return (
-        <div className="min-h-screen bg-white flex flex-col font-sans">
+        <div className="min-h-screen bg-slate-800 flex flex-col font-sans">
             {/* HUD */}
-            <div className="bg-black text-white p-6 flex items-center justify-between border-b-8 border-neo-accent sticky top-0 z-50">
+            <div className="bg-slate-900 text-white p-6 flex items-center justify-between border-b-8 border-neo-accent sticky top-0 z-50">
                 <div className="flex items-center gap-8">
                     <div className="flex flex-col">
                         <span className="text-[8px] font-black uppercase tracking-widest text-white/40 leading-none mb-1">MODULE_ACTIVE</span>
                         <span className="text-2xl font-black tracking-tighter uppercase italic leading-none">{selectedSubject}: {selectedChapter}</span>
                     </div>
-                    <div className="h-10 w-[1px] bg-white/10" />
+                    <div className="h-10 w-[1px] bg-slate-800/10" />
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-black uppercase tracking-widest text-white/40 mb-1">CURRENT_BIAS</span>
-                            <div className="px-3 py-0.5 bg-neo-secondary text-black text-[10px] font-black rounded-sm border border-white">
+                            <div className="px-3 py-0.5 bg-neo-secondary text-slate-100 text-[10px] font-black rounded-sm border border-white">
                                 {availableDifficulties[currentLevel] ? DIFFICULTY_LABELS[availableDifficulties[currentLevel]] : 'SYNCHRONIZING'}
                             </div>
                         </div>
@@ -407,7 +407,7 @@ export function Progresser() {
                             {stats.consecutiveCorrect} <Award className="h-6 w-6" />
                         </div>
                     </div>
-                    <button onClick={() => setStep('setup')} className="bg-white/10 p-3 hover:bg-red-500 transition-colors border border-white/20">
+                    <button onClick={() => setStep('setup')} className="bg-slate-800/10 p-3 hover:bg-red-500 transition-colors border border-white/20">
                         <Power className="h-5 w-5" />
                     </button>
                 </div>
@@ -418,18 +418,18 @@ export function Progresser() {
                     <div className="flex flex-col items-center justify-center py-32 space-y-8 animate-pulse">
                         <div className="relative">
                             <Database className="h-20 w-20 text-neo-accent" />
-                            <Zap className="h-10 w-10 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                            <Zap className="h-10 w-10 text-slate-100 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                         </div>
                         <p className="font-black uppercase tracking-[0.4em] italic text-xl">REROUTING_NEURAL_PATHWAY...</p>
                     </div>
                 ) : currentQuestion && (
                     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-500">
                         {/* THE QUESTION BOX */}
-                        <div className="bg-white border-8 border-black shadow-[15px_15px_0px_0px_rgba(0,0,0,1)] p-12 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 bg-black text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest">
+                        <div className="bg-slate-800 border border-white/10 shadow-neo p-12 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 bg-slate-900 text-white px-4 py-1 text-[10px] font-black uppercase tracking-widest">
                                 Neural Challenge #{stats.total + 1}
                             </div>
-                            <div className="text-3xl font-bold leading-relaxed text-black">
+                            <div className="text-3xl font-bold leading-relaxed text-slate-100">
                                 {isVariant ? renderMath(variantQuestion || '') : renderMath(currentQuestion.question)}
                             </div>
                         </div>
@@ -443,7 +443,7 @@ export function Progresser() {
                                             key={idx}
                                             disabled={showFeedback}
                                             onClick={() => setUserAnswer(idx)}
-                                            className={`p-8 border-4 border-black text-left font-black text-xl transition-all shadow-[8px_8px_0px_0px_#000] active:shadow-none hover:-translate-y-1 ${userAnswer === idx ? 'bg-black text-white' : 'bg-white hover:bg-neo-bg'} ${showFeedback && idx === currentQuestion.correct_index ? 'bg-[#2D9E64] text-white border-black' : ''} ${showFeedback && userAnswer === idx && idx !== currentQuestion.correct_index ? 'bg-red-500 text-white' : ''}`}
+                                            className={`p-8 border border-white/10 text-left font-black text-xl transition-all shadow-neo active:shadow-none hover:-translate-y-1 ${userAnswer === idx ? 'bg-slate-900 text-white' : 'bg-slate-800 hover:bg-slate-900'} ${showFeedback && idx === currentQuestion.correct_index ? 'bg-[#2D9E64] text-white border-white/10' : ''} ${showFeedback && userAnswer === idx && idx !== currentQuestion.correct_index ? 'bg-red-500 text-white' : ''}`}
                                         >
                                             <span className="text-neo-accent mr-4 italic">0{idx + 1}.</span>
                                             {renderMath(opt)}
@@ -457,7 +457,7 @@ export function Progresser() {
                                         value={userAnswer as string}
                                         onChange={(e) => setUserAnswer(e.target.value)}
                                         placeholder="EXPLAIN YOUR THOUGHT PROCESS..."
-                                        className="w-full p-10 border-8 border-black bg-neo-bg shadow-[15px_15px_0px_0px_#000] font-bold text-2xl min-h-[250px] focus:outline-none focus:bg-white transition-colors"
+                                        className="w-full p-10 border border-white/10 bg-slate-900 shadow-neo font-bold text-2xl min-h-[250px] focus:outline-none focus:bg-slate-800 transition-colors"
                                     />
                                 </div>
                             )}
@@ -466,7 +466,7 @@ export function Progresser() {
                                 <button
                                     onClick={handleCheckAnswer}
                                     disabled={userAnswer === ''}
-                                    className="w-full bg-neo-accent text-black py-8 border-8 border-black font-black text-3xl uppercase tracking-tighter shadow-[15px_15px_0px_0px_#000] hover:translate-y-[-4px] active:shadow-none transition-all disabled:opacity-20"
+                                    className="w-full bg-neo-accent text-slate-100 py-8 border border-white/10 font-black text-3xl uppercase tracking-tighter shadow-neo hover:translate-y-[-4px] active:shadow-none transition-all disabled:opacity-20"
                                 >
                                     EVALUATE_ANSWER
                                 </button>
@@ -475,7 +475,7 @@ export function Progresser() {
 
                         {/* FEEDBACK OVERLAY */}
                         {showFeedback && (
-                            <div className={`p-12 border-8 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] animate-in zoom-in-95 duration-300 ${isCorrect ? 'bg-neo-secondary' : 'bg-red-50'}`}>
+                            <div className={`p-12 border border-white/10 shadow-neo animate-in zoom-in-95 duration-300 ${isCorrect ? 'bg-neo-secondary' : 'bg-red-50'}`}>
                                 <div className="flex items-center justify-between mb-8">
                                     <div className="flex items-center gap-6">
                                         {isCorrect ? <CheckCircle className="h-16 w-16 text-green-700" /> : <XCircle className="h-16 w-16 text-red-700" />}
@@ -483,15 +483,15 @@ export function Progresser() {
                                             {isCorrect ? 'NEURAL_MATCH!' : 'SYSTEM_ERROR'}
                                         </h3>
                                     </div>
-                                    <div className="text-2xl font-black italic text-black/20">#{stats.total}</div>
+                                    <div className="text-2xl font-black italic text-slate-100/20">#{stats.total}</div>
                                 </div>
 
-                                <div className="text-2xl font-bold mb-10 leading-snug border-l-8 border-black pl-8">
+                                <div className="text-2xl font-bold mb-10 leading-snug border-l-8 border-white/10 pl-8">
                                     {renderMath(currentQuestion.explanation || "Correct interpretation. Concepts verified.")}
                                 </div>
 
                                 {!isCorrect && stepByStepExplanation && (
-                                    <div className="mb-10 p-8 bg-white border-4 border-black shadow-[10px_10px_0px_0px_#000] prose prose-xl max-w-none">
+                                    <div className="mb-10 p-8 bg-slate-800 border border-white/10 shadow-neo prose prose-xl max-w-none">
                                         <h4 className="text-xl font-black uppercase mb-6 flex items-center gap-3">
                                             <ShieldCheck className="h-6 w-6 text-neo-accent" />
                                             NEURAL_RECOVERY_PROTOCOL
@@ -504,7 +504,7 @@ export function Progresser() {
 
                                 <button
                                     onClick={handleNext}
-                                    className="w-full bg-black text-white py-8 px-8 border-4 border-black font-black text-4xl uppercase tracking-tighter shadow-[10px_10px_0px_0px_rgba(0,0,0,0.3)] hover:bg-neo-accent hover:text-black transition-all flex items-center justify-center gap-6 group"
+                                    className="w-full bg-slate-900 text-white py-8 px-8 border border-white/10 font-black text-4xl uppercase tracking-tighter shadow-neo hover:bg-neo-accent hover:text-slate-100 transition-all flex items-center justify-center gap-6 group"
                                 >
                                     {isCorrect ? 'EVOLVE_SYSTEM' : 'INITIATE_RETRY'}
                                     <ArrowRight className="h-12 w-12 group-hover:translate-x-4 transition-transform" />
@@ -516,14 +516,14 @@ export function Progresser() {
             </main>
 
             {/* PROGRESS TRACKER HUD (BOTTOM) */}
-            <footer className="fixed bottom-0 inset-x-0 bg-white border-t-8 border-black p-4 flex justify-center gap-3">
+            <footer className="fixed bottom-0 inset-x-0 bg-slate-800 border-t-8 border-white/10 p-4 flex justify-center gap-3">
                 {availableDifficulties.map((lev, idx) => (
                     <div
                         key={lev}
-                        className={`h-4 flex-1 max-w-[200px] border-4 border-black transition-all duration-500 ${idx <= currentLevel ? (idx === 0 ? 'bg-neo-secondary' : idx === 1 ? 'bg-neo-accent' : 'bg-neo-muted') : 'bg-gray-100'}`}
+                        className={`h-4 flex-1 max-w-[200px] border border-white/10 transition-all duration-500 ${idx <= currentLevel ? (idx === 0 ? 'bg-neo-secondary' : idx === 1 ? 'bg-neo-accent' : 'bg-neo-muted') : 'bg-slate-900/50'}`}
                     >
                         <div className="h-full w-full relative group">
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] font-black px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {lev.toUpperCase()}
                             </span>
                         </div>

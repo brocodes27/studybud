@@ -270,17 +270,17 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
 
     if (mode === 'select') {
         return (
-            <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 bg-neo-bg relative">
+            <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 bg-slate-950 relative">
                 {/* Ingestion Overlay */}
                 {isIngesting && (
-                    <div className="absolute inset-0 z-50 bg-neo-bg/90 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
-                        <div className="w-24 h-24 bg-neo-secondary border-4 border-black shadow-[8px_8px_0px_0px_#000] flex items-center justify-center mb-8 animate-bounce">
-                            <Brain className="w-12 h-12 text-black" />
+                    <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+                        <div className="w-24 h-24 bg-neo-secondary border border-white/10 shadow-neo flex items-center justify-center mb-8 animate-bounce">
+                            <Brain className="w-12 h-12 text-slate-100" />
                         </div>
                         <h2 className="text-4xl font-black uppercase tracking-tighter italic mb-2">NEURAL_INGESTION_ACTIVE</h2>
-                        <p className="text-black/60 font-bold uppercase tracking-widest text-sm mb-8">ATLAS is scanning and indexing source content...</p>
+                        <p className="text-slate-100/60 font-bold uppercase tracking-widest text-sm mb-8">ATLAS is scanning and indexing source content...</p>
 
-                        <div className="w-full max-w-md h-8 bg-white border-4 border-black shadow-[4px_4px_0px_0px_#000] overflow-hidden relative">
+                        <div className="w-full max-w-md h-8 bg-slate-800 border border-white/10 shadow-neo overflow-hidden relative">
                             <div
                                 className="h-full bg-neo-accent transition-all duration-300 ease-out"
                                 style={{ width: `${ingestionProgress}%` }}
@@ -295,13 +295,13 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                 <div className="max-w-4xl w-full">
                     <div className="text-center mb-12">
                         <h1 className="text-6xl font-black uppercase tracking-tighter italic mb-4">SYOW_<span className="text-neo-accent">v1.0</span></h1>
-                        <p className="text-xl font-bold uppercase tracking-widest text-black/60">Study Your Own Way: PDF | Link | YouTube</p>
+                        <p className="text-xl font-bold uppercase tracking-widest text-slate-100/60">Study Your Own Way: PDF | Link | YouTube</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <button
                             onClick={() => setContentType('pdf')}
-                            className={`p-8 border-4 border-black transition-all ${contentType === 'pdf' ? 'bg-neo-accent shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:translate-y-[-4px]'}`}
+                            className={`p-8 border border-white/10 transition-all ${contentType === 'pdf' ? 'bg-neo-accent shadow-none translate-x-1 translate-y-1' : 'bg-slate-800 shadow-neo hover:translate-y-[-4px]'}`}
                         >
                             <FileUp className="h-16 w-16 mx-auto mb-6" />
                             <h3 className="text-2xl font-black uppercase tracking-tight">PDF UPLOAD</h3>
@@ -309,7 +309,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
 
                         <button
                             onClick={() => setContentType('link')}
-                            className={`p-8 border-4 border-black transition-all ${contentType === 'link' ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:translate-y-[-4px]'}`}
+                            className={`p-8 border border-white/10 transition-all ${contentType === 'link' ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1' : 'bg-slate-800 shadow-neo hover:translate-y-[-4px]'}`}
                         >
                             <Globe className="h-16 w-16 mx-auto mb-6" />
                             <h3 className="text-2xl font-black uppercase tracking-tight">WEB LINK</h3>
@@ -317,7 +317,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
 
                         <button
                             onClick={() => setContentType('youtube')}
-                            className={`p-8 border-4 border-black transition-all ${contentType === 'youtube' ? 'bg-neo-muted shadow-none translate-x-1 translate-y-1' : 'bg-white shadow-[8px_8px_0px_0px_#000] hover:translate-y-[-4px]'}`}
+                            className={`p-8 border border-white/10 transition-all ${contentType === 'youtube' ? 'bg-neo-muted shadow-none translate-x-1 translate-y-1' : 'bg-slate-800 shadow-neo hover:translate-y-[-4px]'}`}
                         >
                             <Youtube className="h-16 w-16 mx-auto mb-6 text-red-600" />
                             <h3 className="text-2xl font-black uppercase tracking-tight">YOUTUBE</h3>
@@ -325,7 +325,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                     </div>
 
                     {contentType && (
-                        <div className="mt-12 bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] animate-in slide-in-from-bottom-6">
+                        <div className="mt-12 bg-slate-800 border border-white/10 p-8 shadow-neo animate-in slide-in-from-bottom-6">
                             <h2 className="text-3xl font-black uppercase italic mb-6">Initialize {contentType.toUpperCase()} Source</h2>
 
                             {contentType === 'pdf' ? (
@@ -334,7 +334,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                         type="file"
                                         accept=".pdf"
                                         onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
-                                        className="w-full bg-neo-bg border-4 border-black p-4 font-bold text-xl cursor-pointer"
+                                        className="w-full bg-slate-900 border border-white/10 p-4 font-bold text-xl cursor-pointer"
                                     />
                                     {pdfFile && <p className="font-black text-neo-accent uppercase">FILE DETECTED: {pdfFile.name}</p>}
                                 </div>
@@ -344,21 +344,21 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                     value={tempSource}
                                     onChange={(e) => setTempSource(e.target.value)}
                                     placeholder={`PASTE ${contentType.toUpperCase()} URL HERE...`}
-                                    className="w-full bg-neo-bg border-4 border-black p-4 text-2xl font-black placeholder-black/20 focus:outline-none"
+                                    className="w-full bg-slate-900 border border-white/10 p-4 text-2xl font-black placeholder-white/20 focus:outline-none"
                                 />
                             )}
 
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setContentType(null)}
-                                    className="mt-6 bg-white text-black border-4 border-black p-6 font-black text-2xl uppercase tracking-widest hover:bg-neo-bg transition-all"
+                                    className="mt-6 bg-slate-800 text-slate-100 border border-white/10 p-6 font-black text-2xl uppercase tracking-widest hover:bg-slate-900/50 transition-all"
                                 >
                                     CANCEL
                                 </button>
                                 <button
                                     onClick={handleStartStudy}
                                     disabled={contentType === 'pdf' ? !pdfFile : !tempSource}
-                                    className="flex-1 mt-6 bg-black text-white p-6 font-black text-2xl uppercase tracking-widest hover:bg-neo-accent hover:text-black transition-all disabled:opacity-50"
+                                    className="flex-1 mt-6 bg-slate-900 text-white p-6 font-black text-2xl uppercase tracking-widest hover:bg-neo-accent hover:text-slate-100 transition-all disabled:opacity-50"
                                 >
                                     START NEURAL SESSION
                                 </button>
@@ -379,15 +379,15 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                     <div
                                         key={s.id}
                                         onClick={() => loadSession(s)}
-                                        className="group bg-white border-4 border-black p-4 flex items-center justify-between cursor-pointer hover:bg-neo-accent transition-all hover:translate-x-1 shadow-[4px_4px_0px_0px_#000] hover:shadow-none"
+                                        className="group bg-slate-800 border border-white/10 p-4 flex items-center justify-between cursor-pointer hover:bg-neo-accent transition-all hover:translate-x-1 shadow-neo hover:shadow-none"
                                     >
                                         <div className="flex items-center gap-4 overflow-hidden">
-                                            <div className="p-2 bg-black text-white shrink-0">
+                                            <div className="p-2 bg-slate-900 text-white shrink-0">
                                                 {s.contentType === 'pdf' ? <FileUp className="w-5 h-5" /> : s.contentType === 'youtube' ? <Youtube className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
                                             </div>
                                             <div className="overflow-hidden">
                                                 <h3 className="font-black uppercase text-sm truncate">{s.title || 'Untitled Session'}</h3>
-                                                <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest">
+                                                <p className="text-[10px] font-bold text-slate-100/40 uppercase tracking-widest">
                                                     {new Date(s.timestamp).toLocaleDateString()} • {s.chapters.length} UNITS
                                                 </p>
                                             </div>
@@ -409,9 +409,9 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
     }
 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col bg-neo-bg overflow-hidden border-2 border-black m-2 shadow-[8px_8px_0px_0px_#000]">
+        <div className="h-[calc(100vh-100px)] flex flex-col bg-slate-950 overflow-hidden border border-white/10 m-2 shadow-neo">
             {/* Header Bar */}
-            <div className="bg-black text-white p-3 flex items-center justify-between border-b-2 border-neo-accent">
+            <div className="bg-slate-900 text-white p-3 flex items-center justify-between border-b-2 border-neo-accent">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => {
@@ -432,7 +432,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                 localStorage.removeItem(`syow_session_history_default_user`);
                             }
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-neo-accent text-black hover:bg-white border-2 border-black transition-all shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:shadow-none"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-neo-accent text-slate-100 hover:bg-slate-800 border border-white/10 transition-all shadow-neo hover:shadow-none"
                     >
                         <Zap className="w-3.5 h-3.5" />
                         <span className="text-[10px] font-black uppercase">New Session</span>
@@ -445,7 +445,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                             setTempSource('');
                             setPdfFile(null);
                         }}
-                        className="p-1 hover:bg-white/20 transition-colors"
+                        className="p-1 hover:bg-slate-800/20 transition-colors"
                     >
                         <ArrowLeft className="h-6 w-6" />
                     </button>
@@ -464,19 +464,19 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
 
             <div className="flex-1 flex overflow-hidden">
                 {/* LEFT PANE: SOURCE or NOTES */}
-                <div className="flex-1 bg-white border-r-2 border-black flex flex-col relative">
+                <div className="flex-1 bg-slate-800 border-r-2 border-white/10 flex flex-col relative">
                     {/* View Switcher Header */}
-                    <div className="flex border-b-2 border-black bg-neo-bg">
+                    <div className="flex border-b-2 border-white/10 bg-slate-950">
                         <button
                             onClick={() => setLeftView('source')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-black uppercase tracking-widest transition-all ${leftView === 'source' ? 'bg-black text-white' : 'hover:bg-black/5'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-black uppercase tracking-widest transition-all ${leftView === 'source' ? 'bg-slate-900 text-white' : 'hover:bg-slate-900/5'}`}
                         >
                             <Monitor className="w-4 h-4" />
                             RESOURCE_VIEW
                         </button>
                         <button
                             onClick={() => setLeftView('notes')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-black uppercase tracking-widest transition-all ${leftView === 'notes' ? 'bg-black text-white' : 'hover:bg-black/5'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-xs font-black uppercase tracking-widest transition-all ${leftView === 'notes' ? 'bg-slate-900 text-white' : 'hover:bg-slate-900/5'}`}
                         >
                             <FileText className="w-4 h-4" />
                             SESSION_NOTES
@@ -506,7 +506,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                 />
                             )
                         ) : (
-                            <div className="h-full flex flex-col bg-neo-bg p-6 overflow-hidden">
+                            <div className="h-full flex flex-col bg-slate-950 p-6 overflow-hidden">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-2">
                                         <BookOpen className="w-6 h-6 text-neo-accent" />
@@ -514,13 +514,13 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                     </div>
                                     <button
                                         onClick={() => setNotesViewMode(prev => prev === 'edit' ? 'preview' : 'edit')}
-                                        className="px-4 py-2 bg-black text-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:bg-neo-accent hover:text-black transition-all flex items-center gap-2 text-xs font-black"
+                                        className="px-4 py-2 bg-slate-900 text-white border border-white/10 shadow-neo hover:bg-neo-accent hover:text-slate-100 transition-all flex items-center gap-2 text-xs font-black"
                                     >
                                         {notesViewMode === 'edit' ? <><Eye className="w-4 h-4" /> PREVIEW</> : <><EyeOff className="w-4 h-4" /> EDIT</>}
                                     </button>
                                 </div>
 
-                                <div className="flex-1 bg-white border-4 border-black shadow-[8px_8px_0px_0px_#000] p-6 overflow-hidden flex flex-col">
+                                <div className="flex-1 bg-slate-800 border border-white/10 shadow-neo p-6 overflow-hidden flex flex-col">
                                     {notesViewMode === 'edit' ? (
                                         <textarea
                                             value={notes}
@@ -534,10 +534,10 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                                 }
                                             }}
                                             placeholder="Capture insights, formulas, and key takeaways from this resource... ATLAS can see these too! (Supports Markdown & LaTeX)"
-                                            className="w-full h-full bg-transparent resize-none focus:outline-none font-bold text-lg leading-relaxed placeholder-black/10"
+                                            className="w-full h-full bg-transparent resize-none focus:outline-none font-medium text-lg leading-relaxed placeholder-slate-700 selection:bg-primary/30"
                                         />
                                     ) : (
-                                        <div className="h-full overflow-y-auto prose prose-lg prose-black max-w-none custom-scrollbar pb-12">
+                                        <div className="h-full overflow-y-auto prose prose-lg prose-invert max-w-none custom-scrollbar pb-12">
                                             <ReactMarkdown
                                                 remarkPlugins={[remarkMath]}
                                                 rehypePlugins={[rehypeKatex]}
@@ -547,7 +547,7 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                         </div>
                                     )}
                                 </div>
-                                <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-black/40 uppercase tracking-widest">
+                                <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-100/40 uppercase tracking-widest">
                                     <Sparkles className="w-3 h-3" />
                                     NOTES_ARE_PERSISTED_TO_STUDY_CONTEXT
                                 </div>
@@ -557,9 +557,9 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                 </div>
 
                 {/* RIGHT: AI STUDY BUDDY & VOICE LECTURES */}
-                <div className="w-[550px] lg:w-[650px] xl:w-[750px] border-l-4 border-black flex flex-col bg-white overflow-hidden shadow-[-8px_0px_0px_0px_rgba(0,0,0,0.1)]">
+                <div className="w-[550px] lg:w-[650px] xl:w-[750px] border-l-4 border-white/10 flex flex-col bg-slate-800 overflow-hidden shadow-neo">
                     {/* SYOW Modules Section */}
-                    <div className="bg-neo-bg border-b-2 border-black p-4">
+                    <div className="bg-slate-950 border-b-2 border-white/10 p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-black uppercase italic flex items-center gap-2">
                                 <List className="w-4 h-4 text-neo-accent" /> SYOW_UNITS
@@ -578,15 +578,15 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                     <button
                                         key={idx}
                                         onClick={() => startLecture(chapter.title, chapter.description)}
-                                        className="group bg-white border-2 border-black p-2 flex items-center justify-between hover:bg-neo-accent transition-all hover:translate-x-1"
+                                        className="group bg-slate-800 border border-white/10 p-2 flex items-center justify-between hover:bg-neo-accent transition-all hover:translate-x-1"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 bg-black text-white flex items-center justify-center text-[10px] font-black">
+                                            <div className="w-6 h-6 bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">
                                                 {idx + 1}
                                             </div>
                                             <div className="text-left">
                                                 <h4 className="text-[11px] font-black uppercase truncate max-w-[200px]">{chapter.title}</h4>
-                                                <p className="text-[9px] font-bold text-black/50 uppercase truncate max-w-[200px]">{chapter.description}</p>
+                                                <p className="text-[9px] font-bold text-slate-100/50 uppercase truncate max-w-[200px]">{chapter.description}</p>
                                             </div>
                                         </div>
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -596,12 +596,12 @@ When a student starts a lecture on a unit, focus DEEPLY on that unit's descripti
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-black/5 border-2 border-black border-dashed p-4 text-center">
-                                <p className="text-[10px] font-bold uppercase text-black/40 mb-2">No units generated yet.</p>
+                            <div className="bg-slate-900/5 border border-white/10 border-dashed p-4 text-center">
+                                <p className="text-[10px] font-bold uppercase text-slate-100/40 mb-2">No units generated yet.</p>
                                 <button
                                     onClick={() => generateChapters(extractedContent)}
                                     disabled={!extractedContent || isGeneratingChapters}
-                                    className="text-[10px] font-black uppercase bg-black text-white px-3 py-1 hover:bg-neo-accent hover:text-black transition-colors disabled:opacity-50"
+                                    className="text-[10px] font-black uppercase bg-slate-900 text-white px-3 py-1 hover:bg-neo-accent hover:text-slate-100 transition-colors disabled:opacity-50"
                                 >
                                     {isGeneratingChapters ? 'WORKING...' : 'RE-BIFURCATE CONTENT'}
                                 </button>

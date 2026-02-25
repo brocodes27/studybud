@@ -100,23 +100,23 @@ const TeacherPanel: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neo-bg animate-fade-in pb-20">
+    <div className="min-h-screen bg-slate-950 animate-fade-in pb-20">
       {/* Header */}
-      <div className="bg-white border-b-8 border-black sticky top-0 z-10 transition-all">
+      <div className="bg-slate-800 border-b-8 border-white/10 sticky top-0 z-10 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <div className="bg-neo-accent p-3 border-4 border-black shadow-[4px_4px_0px_0px_#000] -rotate-2">
+              <div className="bg-neo-accent p-3 border border-white/10 shadow-neo -rotate-2">
                 <GraduationCap className="h-8 w-8 text-white stroke-[3px]" />
               </div>
               <div>
-                <h1 className="text-4xl font-black text-black uppercase tracking-tighter italic leading-none">TEACHER_HUB</h1>
-                <p className="text-xs font-black uppercase tracking-widest text-black/60 mt-1">CLASSROOM_MANAGEMENT_SYSTEM_V1</p>
+                <h1 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">TEACHER_HUB</h1>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-100/60 mt-1">CLASSROOM_MANAGEMENT_SYSTEM_V1</p>
               </div>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-neo-secondary text-black px-6 py-3 font-black uppercase tracking-widest border-4 border-black shadow-[6px_6px_0px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all flex items-center gap-2"
+              className="bg-neo-secondary text-slate-100 px-6 py-3 font-black uppercase tracking-widest border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all flex items-center gap-2"
             >
               <Plus className="h-5 w-5 stroke-[3px]" /> CREATE_CLASS
             </button>
@@ -126,27 +126,27 @@ const TeacherPanel: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {!isTeacher ? (
-          <div className="text-center py-20 bg-white border-4 border-black border-dashed">
-            <div className="w-24 h-24 bg-neo-muted border-4 border-black mx-auto mb-8 flex items-center justify-center rotate-3 shadow-[8px_8px_0px_0px_#000]">
-              <Lock className="h-10 w-10 text-black stroke-[3px]" />
+          <div className="text-center py-20 bg-slate-800 border border-white/10 border-dashed">
+            <div className="w-24 h-24 bg-neo-muted border border-white/10 mx-auto mb-8 flex items-center justify-center rotate-3 shadow-neo">
+              <Lock className="h-10 w-10 text-slate-100 stroke-[3px]" />
             </div>
-            <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">ACCESS DENIED</h3>
-            <p className="text-black font-bold max-w-xl mx-auto uppercase tracking-wide">
+            <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">ACCESS DENIED</h3>
+            <p className="text-slate-100 font-bold max-w-xl mx-auto uppercase tracking-wide">
               You must be a verified instructor to access this panel.
             </p>
           </div>
         ) : loading || loadingClasses ? (
           <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
-            <div className="w-20 h-20 border-8 border-black border-t-neo-accent animate-spin" />
-            <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic">LOADING_CLASSES...</h2>
+            <div className="w-20 h-20 border border-white/10 border-t-neo-accent animate-spin" />
+            <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic">LOADING_CLASSES...</h2>
           </div>
         ) : classes.length === 0 ? (
-          <div className="text-center py-20 bg-white border-4 border-black border-dashed">
-            <div className="w-24 h-24 bg-neo-bg border-4 border-black mx-auto mb-8 flex items-center justify-center -rotate-3 shadow-[8px_8px_0px_0px_#000]">
-              <BookOpen className="h-10 w-10 text-black stroke-[3px]" />
+          <div className="text-center py-20 bg-slate-800 border border-white/10 border-dashed">
+            <div className="w-24 h-24 bg-slate-900 border border-white/10 mx-auto mb-8 flex items-center justify-center -rotate-3 shadow-neo">
+              <BookOpen className="h-10 w-10 text-slate-100 stroke-[3px]" />
             </div>
-            <h3 className="text-4xl font-black text-black uppercase tracking-tighter italic mb-4">NO CLASSES FOUND</h3>
-            <p className="text-black font-bold max-w-xl mx-auto uppercase tracking-wide">
+            <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">NO CLASSES FOUND</h3>
+            <p className="text-slate-100 font-bold max-w-xl mx-auto uppercase tracking-wide">
               Create your first class to start managing students and operations.
             </p>
           </div>
@@ -156,29 +156,29 @@ const TeacherPanel: React.FC = () => {
               <div
                 key={cls.id}
                 onClick={() => navigate(`/teacher/class/${cls.id}`)}
-                className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[12px_12px_0px_0px_#000] transition-all cursor-pointer group relative"
+                className="bg-slate-800 border border-white/10 p-6 shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo transition-all cursor-pointer group relative"
               >
-                <div className="absolute top-4 right-4 bg-neo-accent text-white px-2 py-1 text-xs font-black uppercase tracking-widest border-2 border-black rotate-3">
+                <div className="absolute top-4 right-4 bg-neo-accent text-white px-2 py-1 text-xs font-black uppercase tracking-widest border border-white/10 rotate-3">
                   ACTIVE
                 </div>
 
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-neo-muted border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:rotate-6 transition-transform">
-                    <Users className="h-8 w-8 text-black stroke-[3px]" />
+                  <div className="w-16 h-16 bg-neo-muted border border-white/10 flex items-center justify-center shadow-neo group-hover:rotate-6 transition-transform">
+                    <Users className="h-8 w-8 text-slate-100 stroke-[3px]" />
                   </div>
                 </div>
 
-                <h3 className="text-2xl font-black text-black uppercase tracking-tight italic mb-2 line-clamp-1 group-hover:underline">{cls.name}</h3>
-                <p className="text-sm font-bold text-black/60 uppercase tracking-widest mb-6 border-b-4 border-black pb-4">{cls.subject}</p>
+                <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tight italic mb-2 line-clamp-1 group-hover:underline">{cls.name}</h3>
+                <p className="text-sm font-bold text-slate-100/60 uppercase tracking-widest mb-6 border-b-4 border-white/10 pb-4">{cls.subject}</p>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase tracking-widest">CODE:</span>
-                    <span className="bg-black text-white px-2 py-1 text-xs font-mono font-bold tracking-wider -rotate-1 shadow-[2px_2px_0px_0px_#neo-accent]">
+                    <span className="bg-slate-900 text-white px-2 py-1 text-xs font-mono font-bold tracking-wider -rotate-1 shadow-neo">
                       {cls.code}
                     </span>
                   </div>
-                  <div className="bg-neo-bg border-2 border-black p-1 hover:bg-black hover:text-white transition-colors">
+                  <div className="bg-slate-900 border border-white/10 p-1 hover:bg-slate-800 hover:text-white transition-colors">
                     <Settings className="h-5 w-5 stroke-[2.5px]" />
                   </div>
                 </div>
@@ -189,20 +189,20 @@ const TeacherPanel: React.FC = () => {
 
         {/* Create Class Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-neo-bg border-4 border-black w-full max-w-md p-8 shadow-[16px_16px_0px_0px_#000] relative animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-slate-900 border border-white/10 w-full max-w-md p-8 shadow-neo relative animate-in zoom-in-95 duration-200">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="absolute top-4 right-4 text-black hover:rotate-90 transition-transform"
+                className="absolute top-4 right-4 text-slate-100 hover:rotate-90 transition-transform"
               >
                 <X className="h-8 w-8 stroke-[4px]" />
               </button>
 
               <div className="flex items-center gap-4 mb-8">
-                <div className="bg-neo-secondary p-2 border-4 border-black shadow-[4px_4px_0px_0px_#000]">
+                <div className="bg-neo-secondary p-2 border border-white/10 shadow-neo">
                   <Plus className="h-6 w-6 stroke-[4px]" />
                 </div>
-                <h2 className="text-3xl font-black text-black uppercase tracking-tighter italic">NEW_CLASS</h2>
+                <h2 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic">NEW_CLASS</h2>
               </div>
 
               <form onSubmit={handleCreateClass} className="space-y-6">
@@ -213,14 +213,14 @@ const TeacherPanel: React.FC = () => {
                     required
                     value={newClassName}
                     onChange={(e) => setNewClassName(e.target.value)}
-                    className="w-full bg-white border-4 border-black px-4 py-3 font-bold text-lg focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all placeholder:text-black/20"
+                    className="w-full bg-slate-800 border border-white/10 px-4 py-3 font-bold text-lg focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
                     placeholder="e.g. Physics 101"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest mb-2">Subject</label>
                   <select
-                    className="w-full bg-white border-4 border-black px-4 py-3 font-bold text-lg focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] appearance-none"
+                    className="w-full bg-slate-800 border border-white/10 px-4 py-3 font-bold text-lg focus:outline-none focus:shadow-neo appearance-none"
                     value={newClassSubject}
                     onChange={e => setNewClassSubject(e.target.value)}
                     disabled={creating}
@@ -241,12 +241,12 @@ const TeacherPanel: React.FC = () => {
                   </select>
                 </div>
 
-                {createError && <div className="text-white font-bold bg-neo-accent border-4 border-black p-3 uppercase tracking-wide text-xs">{createError}</div>}
+                {createError && <div className="text-white font-bold bg-neo-accent border border-white/10 p-3 uppercase tracking-wide text-xs">{createError}</div>}
 
                 <button
                   type="submit"
                   disabled={creating}
-                  className="w-full bg-black text-white py-4 font-black uppercase tracking-widest text-xl border-4 border-black shadow-[8px_8px_0px_0px_#neo-accent] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                  className="w-full bg-slate-900 text-white py-4 font-black uppercase tracking-widest text-xl border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
                 >
                   {creating ? (
                     <>

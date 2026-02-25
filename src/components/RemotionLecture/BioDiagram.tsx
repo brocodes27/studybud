@@ -9,7 +9,7 @@ export const BioDiagram: React.FC<{ media: MediaSpec }> = ({ media }) => {
     const height = 360;
 
     return (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-white rounded-3xl shadow-xl border border-slate-100">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-slate-800 rounded-3xl shadow-xl border border-slate-100">
             {/* Connections */}
             {connections.map((c: any, i: number) => (
                 <line key={`c-${i}`} x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2} stroke="#CBD5E1" strokeWidth={2} />

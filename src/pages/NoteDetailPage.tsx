@@ -97,7 +97,7 @@ export function NoteDetailPage() {
             </div>
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/5 hover:bg-slate-800/10 text-white border border-white/10 transition-colors"
             >
               <Download className="h-4 w-4" />
               Export PDF
@@ -116,7 +116,7 @@ export function NoteDetailPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {note.screenshots.map((img, idx) => (
-                  <div key={idx} className="group relative rounded-xl overflow-hidden border border-white/10 bg-black/40">
+                  <div key={idx} className="group relative rounded-xl overflow-hidden border border-white/10 bg-slate-900/40">
                     <img
                       src={img}
                       alt={`Screenshot ${idx + 1}`}

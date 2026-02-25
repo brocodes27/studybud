@@ -97,24 +97,24 @@ const FeynmanBoard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neo-bg p-6 pb-20 text-black">
+    <div className="min-h-screen bg-slate-950 p-6 pb-20 text-slate-100">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Link to="/dashboard" className="flex items-center gap-2 font-black uppercase tracking-widest text-sm hover:underline">
             <ArrowLeft className="w-4 h-4" /> BACK
           </Link>
-          <div className="bg-neo-accent text-white px-4 py-1 border-2 border-black shadow-[4px_4px_0px_0px_#000] font-black uppercase text-xs -rotate-2 italic">
+          <div className="bg-neo-accent text-white px-4 py-1 border border-white/10 shadow-neo font-black uppercase text-xs -rotate-2 italic">
             FEYNMAN_BOARD_v5.0 (VAPI_POWERED)
           </div>
         </div>
 
         {/* Main Card */}
-        <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] relative overflow-hidden">
+        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo relative overflow-hidden">
 
           {/* Topic Input */}
           <div className="mb-12 text-center">
-            <label className="block text-xs font-black uppercase tracking-widest text-black/40 mb-4">
+            <label className="block text-xs font-black uppercase tracking-widest text-slate-100/40 mb-4">
               CURRENT_LEARNING_FOCUS
             </label>
             <input
@@ -122,7 +122,7 @@ const FeynmanBoard = () => {
               placeholder="E.g., Quantum Physics, SAT Algebra..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full text-center text-3xl md:text-5xl font-black uppercase italic border-b-4 border-black focus:outline-none focus:border-neo-accent placeholder-black/20 bg-transparent py-4 text-black"
+              className="w-full text-center text-3xl md:text-5xl font-black uppercase italic border-b-4 border-white/10 focus:outline-none focus:border-neo-accent placeholder-black/20 bg-transparent py-4 text-slate-100"
             />
           </div>
 
@@ -130,19 +130,19 @@ const FeynmanBoard = () => {
 
             {isListening ? (
               <div className="relative text-center">
-                <div className="w-40 h-40 rounded-full border-4 border-black flex items-center justify-center animate-pulse bg-neo-accent text-white shadow-[8px_8px_0px_0px_#000]">
+                <div className="w-40 h-40 rounded-full border border-white/10 flex items-center justify-center animate-pulse bg-neo-accent text-white shadow-neo">
                   <Mic className="w-16 h-16" />
                 </div>
-                <div className="absolute inset-0 w-full h-full rounded-full border-4 border-neo-accent animate-ping opacity-20"></div>
+                <div className="absolute inset-0 w-full h-full rounded-full border border-neo-accent animate-ping opacity-20"></div>
                 <p className="mt-8 font-black uppercase tracking-widest animate-bounce">ATLAS IS LISTENING...</p>
                 <p className="text-[10px] font-bold opacity-40 mt-2 uppercase">Explain smoothly. Pause to get feedback.</p>
               </div>
             ) : feedback ? (
               <div className="text-center w-full max-w-2xl animate-fade-in">
-                <div className="w-24 h-24 bg-neo-secondary border-4 border-black flex items-center justify-center mx-auto mb-6 shadow-[8px_8px_0px_0px_#000] rotate-3">
-                  <Brain className="w-12 h-12 text-black" />
+                <div className="w-24 h-24 bg-neo-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 shadow-neo rotate-3">
+                  <Brain className="w-12 h-12 text-slate-100" />
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-widest text-black/40 mb-4 italic">ATLAS_FEEDBACK</h3>
+                <h3 className="text-xl font-black uppercase tracking-widest text-slate-100/40 mb-4 italic">ATLAS_FEEDBACK</h3>
                 <p className="text-2xl font-bold leading-relaxed mb-8">"{feedback}"</p>
                 <button onClick={toggleListening} className="text-sm font-black uppercase tracking-widest flex items-center gap-2 mx-auto hover:text-neo-accent">
                   RESUME SESSION
@@ -158,7 +158,7 @@ const FeynmanBoard = () => {
 
             {/* Live Transcript */}
             {isListening && transcript && (
-              <div className="mt-12 p-4 bg-black/5 border-2 border-black/10 rounded w-full text-center max-w-2xl">
+              <div className="mt-12 p-4 bg-slate-900/5 border border-white/10/10 rounded w-full text-center max-w-2xl">
                 <p className="font-mono text-xs opacity-60 uppercase mb-2">LIVE_TRANSCRIPT</p>
                 <p className="text-sm italic">"{transcript}"</p>
               </div>
@@ -171,14 +171,14 @@ const FeynmanBoard = () => {
             {!isListening ? (
               <button
                 onClick={toggleListening}
-                className="bg-neo-accent text-white border-4 border-black px-10 py-5 font-black uppercase tracking-widest text-xl shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_#000] active:translate-y-1 active:shadow-none transition-all flex items-center gap-4 italic"
+                className="bg-neo-accent text-white border border-white/10 px-10 py-5 font-black uppercase tracking-widest text-xl shadow-neo hover:-translate-y-1 hover:shadow-neo active:translate-y-1 active:shadow-none transition-all flex items-center gap-4 italic"
               >
-                <Zap className="w-8 h-8 fill-yellow-300 text-black" /> CONNECT_TO_ATLAS
+                <Zap className="w-8 h-8 fill-yellow-300 text-slate-100" /> CONNECT_TO_ATLAS
               </button>
             ) : (
               <button
                 onClick={toggleListening}
-                className="bg-white text-black border-4 border-black px-8 py-4 font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_#000] hover:bg-red-500 hover:text-white flex items-center gap-2"
+                className="bg-slate-800 text-slate-100 border border-white/10 px-8 py-4 font-black uppercase tracking-widest shadow-neo hover:bg-red-500 hover:text-white flex items-center gap-2"
               >
                 <Square className="w-5 h-5 fill-current" /> DISCONNECT
               </button>
@@ -188,9 +188,9 @@ const FeynmanBoard = () => {
         </div>
 
         {/* Tip Card */}
-        <div className="mt-12 bg-neo-secondary border-4 border-black p-6 shadow-[8px_8px_0px_0px_#000] flex items-start gap-4 -rotate-1">
-          <div className="bg-white p-2 border-2 border-black">
-            <Zap className="w-6 h-6 text-black fill-yellow-400" />
+        <div className="mt-12 bg-neo-secondary border border-white/10 p-6 shadow-neo flex items-start gap-4 -rotate-1">
+          <div className="bg-slate-800 p-2 border border-white/10">
+            <Zap className="w-6 h-6 text-slate-100 fill-yellow-400" />
           </div>
           <div>
             <h4 className="font-black uppercase italic mb-1">ATLAS_PROTOCOL</h4>

@@ -190,43 +190,43 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
             <div
                 ref={containerRef}
-                className="relative w-full max-w-6xl bg-white border-8 border-black shadow-[32px_32px_0px_0px_#000] overflow-hidden flex flex-col"
+                className="relative w-full max-w-6xl bg-slate-800 border border-white/10 shadow-neo overflow-hidden flex flex-col"
             >
                 {/* Close Button Header */}
-                <div className="p-4 border-b-8 border-black bg-white flex justify-between items-center">
+                <div className="p-4 border-b-8 border-white/10 bg-slate-800 flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <div className="bg-black text-white px-4 py-1 font-black uppercase text-xs italic -rotate-1">
+                        <div className="bg-slate-900 text-white px-4 py-1 font-black uppercase text-xs italic -rotate-1">
                             MODULE_ID: MANIM_V1
                         </div>
-                        <h2 className="text-2xl font-black text-black uppercase tracking-tighter italic truncate max-w-md">{topic}</h2>
+                        <h2 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic truncate max-w-md">{topic}</h2>
                     </div>
-                    <button onClick={onClose} className="p-2 border-4 border-black bg-white hover:bg-neo-accent transition-all shadow-[4px_4px_0px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    <button onClick={onClose} className="p-2 border border-white/10 bg-slate-800 hover:bg-neo-accent transition-all shadow-neo active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
                         <X className="h-8 w-8 stroke-[4px]" />
                     </button>
                 </div>
 
                 {/* Main View Area */}
-                <div className="relative aspect-video bg-black/10 flex-grow">
+                <div className="relative aspect-video bg-slate-900/10 flex-grow">
                     {isGenerating && !error && (
-                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white px-12">
+                        <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
                             <div className="relative mb-12">
-                                <div className="w-40 h-40 border-8 border-black border-t-neo-accent animate-spin" />
+                                <div className="w-40 h-40 border border-white/10 border-t-neo-accent animate-spin" />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <Sparkles className="text-black w-12 h-12 stroke-[4px] animate-pulse" />
+                                    <Sparkles className="text-slate-100 w-12 h-12 stroke-[4px] animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-4">ENGINE_RENDER</h3>
-                            <p className="text-black/40 font-black uppercase tracking-widest text-sm mb-12 italic">PROTOCOL: NEURAL_VISUALIZATION_V2</p>
+                            <h3 className="text-6xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">ENGINE_RENDER</h3>
+                            <p className="text-slate-100/40 font-black uppercase tracking-widest text-sm mb-12 italic">PROTOCOL: NEURAL_VISUALIZATION_V2</p>
 
                             <div className="w-full max-w-xl space-y-4">
                                 <div className="flex justify-between font-black uppercase italic text-xl">
                                     <span>CONSTRUCTION_SYNC</span>
                                     <span className="text-neo-accent">{currentProgress}%</span>
                                 </div>
-                                <div className="h-12 w-full bg-black border-4 border-black relative">
+                                <div className="h-12 w-full bg-slate-900 border border-white/10 relative">
                                     <div
                                         className="h-full bg-neo-accent transition-all duration-700"
                                         style={{ width: `${currentProgress}%` }}
@@ -238,12 +238,12 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                             </div>
 
                             {/* Logs Terminal */}
-                            <div className="mt-12 w-full max-w-3xl bg-black border-4 border-black shadow-[12px_12px_0px_0px_#000] rotate-1">
-                                <div className="px-4 py-2 bg-black border-b-2 border-white/20 flex items-center gap-2">
+                            <div className="mt-12 w-full max-w-3xl bg-slate-900 border border-white/10 shadow-neo rotate-1">
+                                <div className="px-4 py-2 bg-slate-900 border-b-2 border-white/20 flex items-center gap-2">
                                     <div className="flex gap-2">
                                         <div className="w-2 h-2 bg-neo-accent" />
                                         <div className="w-2 h-2 bg-neo-secondary" />
-                                        <div className="w-2 h-2 bg-neo-bg" />
+                                        <div className="w-2 h-2 bg-slate-900" />
                                     </div>
                                     <span className="text-[10px] font-mono text-white/40 ml-2 uppercase tracking-widest flex items-center gap-2">
                                         <TerminalIcon className="h-3 w-3" />
@@ -269,16 +269,16 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
 
                     {error && (
                         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-neo-accent px-12 text-center">
-                            <div className="bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_#000] -rotate-2 mb-10">
-                                <AlertCircle className="text-black w-20 h-20 stroke-[4px]" />
+                            <div className="bg-slate-800 border border-white/10 p-8 shadow-neo -rotate-2 mb-10">
+                                <AlertCircle className="text-slate-100 w-20 h-20 stroke-[4px]" />
                             </div>
-                            <h3 className="text-6xl font-black text-black uppercase tracking-tighter italic mb-6">SYNC_CRITICAL_FAILURE</h3>
-                            <p className="text-black font-black text-2xl max-w-2xl mb-12 uppercase italic leading-tight">
+                            <h3 className="text-6xl font-black text-slate-100 uppercase tracking-tighter italic mb-6">SYNC_CRITICAL_FAILURE</h3>
+                            <p className="text-slate-100 font-black text-2xl max-w-2xl mb-12 uppercase italic leading-tight">
                                 {error}
                             </p>
                             <button
                                 onClick={onClose}
-                                className="px-16 py-6 bg-black text-white border-4 border-black font-black uppercase italic tracking-tighter text-3xl hover:bg-white hover:text-black transition-all shadow-[12px_12px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
+                                className="px-16 py-6 bg-slate-900 text-white border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-slate-800 hover:text-slate-100 transition-all shadow-neo active:shadow-none active:translate-x-[4px] active:translate-y-[4px]"
                             >
                                 ABORT_AND_EXIT
                             </button>
@@ -290,7 +290,7 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                             key={actualSrc}
                             ref={videoRef}
                             src={actualSrc}
-                            className="w-full h-full bg-black object-contain"
+                            className="w-full h-full bg-slate-900 object-contain"
                             onTimeUpdate={handleTimeUpdate}
                             onEnded={() => setIsPlaying(false)}
                             onError={handleError}
@@ -299,22 +299,22 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                     )}
 
                     {activeInteraction && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-8 animate-in fade-in zoom-in duration-300">
-                             <div className="bg-white border-8 border-black p-8 shadow-[20px_20px_0px_0px_#000] max-w-2xl w-full rotate-1 relative">
-                                <div className="absolute -top-6 -right-6 bg-neo-accent border-4 border-black p-2 rotate-12 shadow-[4px_4px_0px_0px_#000]">
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-8 animate-in fade-in zoom-in duration-300">
+                            <div className="bg-slate-800 border border-white/10 p-8 shadow-neo max-w-2xl w-full rotate-1 relative">
+                                <div className="absolute -top-6 -right-6 bg-neo-accent border border-white/10 p-2 rotate-12 shadow-neo">
                                     <Sparkles className="w-8 h-8 text-white stroke-[3px]" />
                                 </div>
-                                <div className="flex items-center gap-4 mb-8 border-b-4 border-black pb-4">
-                                    <div className="bg-black p-3 border-2 border-black">
+                                <div className="flex items-center gap-4 mb-8 border-b-4 border-white/10 pb-4">
+                                    <div className="bg-slate-900 p-3 border border-white/10">
                                         <Brain className="w-8 h-8 text-white stroke-[3px]" />
                                     </div>
                                     <div>
-                                        <div className="text-xs font-black uppercase tracking-widest text-black/40">INTERACTIVE CHECKPOINT</div>
+                                        <div className="text-xs font-black uppercase tracking-widest text-slate-100/40">INTERACTIVE CHECKPOINT</div>
                                         <h3 className="text-3xl font-black uppercase italic leading-none">PREDICT THE NEXT STEP</h3>
                                     </div>
                                 </div>
-                                
-                                <p className="text-xl font-bold text-black mb-8 leading-relaxed">
+
+                                <p className="text-xl font-bold text-slate-100 mb-8 leading-relaxed">
                                     {activeInteraction.question}
                                 </p>
 
@@ -322,18 +322,18 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                                     {activeInteraction.options.map((opt) => {
                                         const isSelected = selectedOption === opt.id;
                                         const isCorrect = opt.isCorrect;
-                                        let statusColor = "bg-neo-bg hover:bg-neo-secondary border-black"; // Default
+                                        let statusColor = "bg-slate-900 hover:bg-neo-secondary border-white/10"; // Default
                                         let Icon = Zap;
 
                                         if (showFeedback) {
                                             if (isCorrect) {
-                                                statusColor = "bg-green-500 text-white border-black";
+                                                statusColor = "bg-green-500 text-white border-white/10";
                                                 Icon = CheckCircle;
                                             } else if (isSelected && !isCorrect) {
-                                                statusColor = "bg-red-500 text-white border-black";
+                                                statusColor = "bg-red-500 text-white border-white/10";
                                                 Icon = XCircle;
                                             } else {
-                                                statusColor = "bg-gray-100 text-gray-400 border-gray-300";
+                                                statusColor = "bg-slate-900/50 text-gray-400 border-gray-300";
                                             }
                                         }
 
@@ -342,7 +342,7 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
                                                 key={opt.id}
                                                 onClick={() => !showFeedback && handleOptionSelect(opt.id)}
                                                 disabled={showFeedback}
-                                                className={`w-full text-left p-6 border-4 ${statusColor} hover:shadow-[8px_8px_0px_0px_#000] hover:-translate-y-1 transition-all font-black text-lg group flex items-center justify-between uppercase italic ${showFeedback ? 'cursor-default' : ''}`}
+                                                className={`w-full text-left p-6 border ${statusColor} hover:shadow-neo hover:-translate-y-1 transition-all font-black text-lg group flex items-center justify-between uppercase italic ${showFeedback ? 'cursor-default' : ''}`}
                                             >
                                                 <span>{opt.text}</span>
                                                 <Icon className={`w-8 h-8 stroke-[3px] ${!showFeedback ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'} transition-opacity`} />
@@ -353,24 +353,24 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
 
                                 {showFeedback && (
                                     <div className="mt-8 text-center animate-fade-in">
-                                        <button 
+                                        <button
                                             onClick={resumePlayback}
-                                            className="px-8 py-3 bg-black text-white font-black uppercase tracking-widest border-4 border-black hover:bg-neo-accent hover:text-black transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none"
+                                            className="px-8 py-3 bg-slate-900 text-white font-black uppercase tracking-widest border border-white/10 hover:bg-neo-accent hover:text-slate-100 transition-all shadow-neo active:shadow-none"
                                         >
                                             CONTINUE SIMULATION »
                                         </button>
                                     </div>
                                 )}
-                             </div>
+                            </div>
                         </div>
                     )}
 
                     {/* Controls */}
                     {!isGenerating && !error && (
                         <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-8 bg-gradient-to-t from-black/60 to-transparent">
-                            <div className="bg-white border-4 border-black p-6 shadow-[16px_16px_0px_0px_#000] space-y-6">
+                            <div className="bg-slate-800 border border-white/10 p-6 shadow-neo space-y-6">
                                 {/* Progress Seeker */}
-                                <div className="relative h-6 bg-black border-2 border-black group cursor-pointer">
+                                <div className="relative h-6 bg-slate-900 border border-white/10 group cursor-pointer">
                                     <div
                                         className="h-full bg-neo-accent transition-all duration-100"
                                         style={{ width: `${progress}%` }}
@@ -386,27 +386,27 @@ export function ManimVideoPlayer({ videoUrl, topic, generationId, isPreparing, e
 
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-6">
-                                        <button onClick={togglePlay} className="p-4 border-4 border-black bg-black text-white hover:bg-neo-accent hover:text-black transition-all active:translate-y-1">
+                                        <button onClick={togglePlay} className="p-4 border border-white/10 bg-slate-900 text-white hover:bg-neo-accent hover:text-slate-100 transition-all active:translate-y-1">
                                             {isPlaying ? <Pause className="h-8 w-8 stroke-[4px]" /> : <Play className="h-8 w-8 stroke-[4px]" />}
                                         </button>
-                                        <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0; }} className="p-4 border-4 border-black bg-white hover:bg-neo-secondary transition-all active:translate-y-1">
+                                        <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0; }} className="p-4 border border-white/10 bg-slate-800 hover:bg-neo-secondary transition-all active:translate-y-1">
                                             <RotateCcw className="h-6 w-6 stroke-[3px]" />
                                         </button>
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-black text-white px-4 py-2 font-black uppercase text-xs italic">
+                                            <div className="bg-slate-900 text-white px-4 py-2 font-black uppercase text-xs italic">
                                                 VOL_TRACKER
                                             </div>
-                                            <div className="w-32 h-4 bg-black/10 border-2 border-black p-0.5">
+                                            <div className="w-32 h-4 bg-slate-900/10 border border-white/10 p-0.5">
                                                 <div className="w-1/2 h-full bg-neo-secondary" />
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-6">
-                                        <div className="bg-neo-secondary border-2 border-black px-4 py-1 font-black text-xs uppercase italic rotate-1">
+                                        <div className="bg-neo-secondary border border-white/10 px-4 py-1 font-black text-xs uppercase italic rotate-1">
                                             1080P_HD_READY
                                         </div>
-                                        <button onClick={toggleFullscreen} className="p-4 border-4 border-black bg-white hover:bg-neo-accent transition-all">
+                                        <button onClick={toggleFullscreen} className="p-4 border border-white/10 bg-slate-800 hover:bg-neo-accent transition-all">
                                             <Maximize className="h-6 w-6 stroke-[3px]" />
                                         </button>
                                     </div>

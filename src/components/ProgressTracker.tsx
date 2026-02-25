@@ -32,8 +32,8 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const weeklyProgressPercentage = (weeklyProgress / weeklyGoal) * 100;
 
   const getStreakColor = () => {
-    if (currentStreak >= 7) return 'text-orange-500';
-    if (currentStreak >= 3) return 'text-yellow-500';
+    if (currentStreak >= 7) return 'text-neo-accent';
+    if (currentStreak >= 3) return 'text-cyan-400';
     return 'text-blue-500';
   };
 
@@ -47,7 +47,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   return (
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Learning Journey</h2>
-      
+
       {/* Level and XP Section */}
       <div className="grid grid-cols-1 gap-6 mb-8">
         {/* Level Progress */}
@@ -129,22 +129,19 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
           {achievements.slice(0, 3).map((achievement) => (
             <div
               key={achievement.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
-                achievement.isUnlocked
+              className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${achievement.isUnlocked
                   ? 'border-green-500 bg-green-900/20'
                   : 'border-gray-600 bg-gray-700 opacity-60'
-              }`}
+                }`}
             >
               <span className="text-xl">{achievement.icon}</span>
               <div className="flex-1">
-                <h4 className={`font-medium ${
-                  achievement.isUnlocked ? 'text-gray-900' : 'text-gray-400'
-                }`}>
+                <h4 className={`font-medium ${achievement.isUnlocked ? 'text-gray-900' : 'text-gray-400'
+                  }`}>
                   {achievement.title}
                 </h4>
-                <p className={`text-sm ${
-                  achievement.isUnlocked ? 'text-gray-300' : 'text-gray-500'
-                }`}>
+                <p className={`text-sm ${achievement.isUnlocked ? 'text-gray-300' : 'text-gray-500'
+                  }`}>
                   {achievement.description}
                 </p>
               </div>
@@ -154,7 +151,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
             </div>
           ))}
         </div>
-        
+
         {achievements.length > 3 && (
           <button className="w-full mt-4 py-2 text-blue-400 hover:text-blue-300 font-medium">
             View all achievements ({achievements.length})

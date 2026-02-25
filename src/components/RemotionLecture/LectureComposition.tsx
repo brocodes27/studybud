@@ -60,9 +60,9 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
     let currentStartFrameOffset = 0;
 
     return (
-        <AbsoluteFill className="bg-white font-sans overflow-hidden" style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}>
+        <AbsoluteFill className="bg-slate-800 font-sans overflow-hidden" style={{ fontFamily: "Inter, ui-sans-serif, system-ui" }}>
             {/* Minimalist Background with Subtle Mesh */}
-            <AbsoluteFill className="bg-slate-50">
+            <AbsoluteFill className="bg-slate-900/50">
                 <div
                     className="absolute inset-0 opacity-[0.03]"
                     style={{
@@ -87,7 +87,7 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
 
                             {/* "Card" Container - High Elevation "Fab" Look */}
                             <div
-                                className="relative w-full max-w-[1600px] mx-auto bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden flex"
+                                className="relative w-full max-w-[1600px] mx-auto bg-slate-800 rounded-[2.5rem] shadow-neo border border-slate-100 overflow-hidden flex"
                                 style={{
                                     height: '800px',
                                     opacity: interpolate(relativeFrame, [0, 15], [0, 1]),
@@ -145,7 +145,7 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
                                 </div>
 
                                 {/* Right Side: Visual Engine (40%) - Tinted Background */}
-                                <div className="w-[40%] bg-slate-50 border-l border-slate-100 flex items-center justify-center relative overflow-hidden">
+                                <div className="w-[40%] bg-slate-900/50 border-l border-slate-100 flex items-center justify-center relative overflow-hidden">
                                     {/* Background Decor */}
                                     <div
                                         className="absolute -right-20 -bottom-20 opacity-10"
@@ -170,12 +170,12 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
                                             <div className="flex items-center justify-center">
                                                 {segment.media.data?.type === 'circle' ? (
                                                     <div
-                                                        className="w-64 h-64 rounded-full border-8 bg-white shadow-2xl"
+                                                        className="w-64 h-64 rounded-full border bg-slate-800 shadow-2xl"
                                                         style={{ borderColor: primaryColor }}
                                                     />
                                                 ) : (
                                                     <div
-                                                        className="w-64 h-64 rounded-3xl border-8 bg-white shadow-2xl"
+                                                        className="w-64 h-64 rounded-3xl border bg-slate-800 shadow-2xl"
                                                         style={{ borderColor: primaryColor }}
                                                     />
                                                 )}
@@ -183,7 +183,7 @@ export const LectureComposition: React.FC<LectureConfig> = ({ topic, subject, se
                                         )}
 
                                         {segment.media?.type === 'equation' && (
-                                            <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center">
+                                            <div className="bg-slate-800 p-8 rounded-3xl shadow-xl border border-slate-100 text-center">
                                                 <div className="text-4xl text-slate-800 font-serif">
                                                     <BlockMath math={segment.media.data} />
                                                 </div>

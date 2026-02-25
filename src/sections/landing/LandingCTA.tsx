@@ -12,7 +12,7 @@ export function LandingCTA() {
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 45]);
 
   return (
-    <section ref={sectionRef} className="py-32 bg-neo-bg relative border-t-8 border-black overflow-hidden">
+    <section ref={sectionRef} className="py-32 bg-slate-950 relative border-t-8 border-white/10 overflow-hidden">
       {/* Halftone Overlay */}
       <div className="absolute inset-0 opacity-5 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '25px 25px' }} />
@@ -21,37 +21,37 @@ export function LandingCTA() {
         <div className="relative text-center max-w-4xl mx-auto">
           <motion.div
             style={{ translateY, rotate }}
-            className="absolute -left-20 -top-20 hidden md:flex w-32 h-32 bg-neo-accent border-4 border-black items-center justify-center shadow-[8px_8px_0px_0px_#000]"
+            className="absolute -left-20 -top-20 hidden md:flex w-32 h-32 bg-neo-accent border border-white/10 items-center justify-center shadow-neo"
           >
-            <Sparkles className="w-16 h-16 text-black stroke-[2.5px]" />
+            <Sparkles className="w-16 h-16 text-slate-100 stroke-[2.5px]" />
           </motion.div>
 
           <motion.div
             style={{ translateY: useTransform(scrollYProgress, [0, 1], [-100, 100]), rotate: useTransform(scrollYProgress, [0, 1], [0, -45]) }}
-            className="absolute -right-20 -bottom-20 hidden md:flex w-32 h-32 bg-neo-secondary border-4 border-black items-center justify-center shadow-[8px_8px_0px_0px_#000]"
+            className="absolute -right-20 -bottom-20 hidden md:flex w-32 h-32 bg-neo-secondary border border-white/10 items-center justify-center shadow-neo"
           >
-            <Zap className="w-16 h-16 text-black stroke-[2.5px]" />
+            <Zap className="w-16 h-16 text-slate-100 stroke-[2.5px]" />
           </motion.div>
 
-          <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-black leading-none italic">
+          <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-slate-100 leading-none italic">
             READY TO <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>TRANSFORM</span> <br />
             YOUR PRODUCTIVITY?
           </h2>
-          <p className="text-black/70 mt-8 text-2xl font-bold max-w-2xl mx-auto italic leading-tight">
+          <p className="text-slate-100/70 mt-8 text-2xl font-bold max-w-2xl mx-auto italic leading-tight">
             Join thousands of students already using <span className="underline decoration-neo-secondary decoration-8">ElevenFolks</span> to achieve more.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6 mt-16 justify-center">
           <button
-            className="neo-button bg-neo-accent text-black text-2xl py-6 px-12"
+            className="neo-button bg-neo-accent text-slate-100 text-2xl py-6 px-12"
             onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
           >
             GET STARTED FOR FREE
             <ArrowRight className="h-8 w-8 stroke-[3.5px]" />
           </button>
           <button
-            className="neo-button-muted border-4 border-black text-2xl py-6 px-12"
+            className="neo-button-muted border border-white/10 text-2xl py-6 px-12"
             onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
           >
             LEARN MORE

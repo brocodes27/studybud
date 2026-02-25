@@ -130,7 +130,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
   return (
     <div className="space-y-8">
       {!isPremium && (
-        <div className="bg-neo-bg border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] text-[10px] font-black uppercase tracking-widest">
+        <div className="bg-slate-900 border border-white/10 p-4 shadow-neo text-[10px] font-black uppercase tracking-widest">
           FREE_LIMITS: 1_STUDY_PLAN/MO · 1_SUBJECT_ONLY · PLAN_LENGTH_MAX_30_DAYS
         </div>
       )}
@@ -147,7 +147,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               value={formData.plan_name}
               onChange={(e) => handleInputChange('plan_name', e.target.value)}
               placeholder="e.g., SAT_FINAL_TRACK"
-              className={`w-full bg-neo-bg text-black p-4 border-4 border-black font-black placeholder:text-black/20 focus:outline-none focus:shadow-[4px_4px_0px_0px_#000] transition-all ${errors.plan_name ? 'bg-red-50' : ''}`}
+              className={`w-full bg-slate-900 text-slate-100 p-4 border border-white/10 font-black placeholder:text-slate-100/20 focus:outline-none focus:shadow-neo transition-all ${errors.plan_name ? 'bg-red-50' : ''}`}
             />
           </div>
 
@@ -161,7 +161,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               value={formData.class}
               onChange={(e) => handleInputChange('class', e.target.value)}
               placeholder="e.g., Grade 12"
-              className="w-full bg-neo-bg text-black p-4 border-4 border-black font-black placeholder:text-black/20 focus:outline-none"
+              className="w-full bg-slate-900 text-slate-100 p-4 border border-white/10 font-black placeholder:text-slate-100/20 focus:outline-none"
             />
           </div>
 
@@ -175,7 +175,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
               value={formData.subject}
               onChange={(e) => handleInputChange('subject', e.target.value)}
               placeholder="e.g., Math / Reading"
-              className="w-full bg-neo-bg text-black p-4 border-4 border-black font-black placeholder:text-black/20 focus:outline-none"
+              className="w-full bg-slate-900 text-slate-100 p-4 border border-white/10 font-black placeholder:text-slate-100/20 focus:outline-none"
             />
           </div>
         </div>
@@ -190,7 +190,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
             onChange={(e) => handleInputChange('chapters', e.target.value)}
             placeholder="e.g., Algebra, Linear Equations, Rhetorical Synthesis"
             rows={3}
-            className="w-full bg-neo-bg text-black p-4 border-4 border-black font-black placeholder:text-black/20 focus:outline-none"
+            className="w-full bg-slate-900 text-slate-100 p-4 border border-white/10 font-black placeholder:text-slate-100/20 focus:outline-none"
           />
         </div>
 
@@ -205,9 +205,9 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
             onChange={(e) => handleInputChange('exam_date', e.target.value)}
             min={minDateString}
             max={maxDateString}
-            className="w-full bg-neo-bg text-black p-4 border-4 border-black font-black focus:outline-none"
+            className="w-full bg-slate-900 text-slate-100 p-4 border border-white/10 font-black focus:outline-none"
           />
-          <p className="text-[10px] font-black text-black/40 mt-3 flex items-center gap-2">
+          <p className="text-[10px] font-black text-slate-100/40 mt-3 flex items-center gap-2">
             <HelpCircle className="h-3 w-3" /> MAX_PLAN_DURATION: 30_DAYS
           </p>
         </div>
@@ -223,7 +223,7 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
             </div>
           ) : (
             <div className="flex items-center justify-center gap-3">
-               INITIALIZE_PLAN <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+              INITIALIZE_PLAN <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
             </div>
           )}
         </button>
@@ -231,11 +231,11 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
 
       {/* Limit Popup */}
       {showLimitPopup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in">
-          <div className="neo-card bg-white p-8 max-w-md w-full border-8 border-black shadow-[20px_20px_0px_0px_#000] space-y-6">
-            <div className="flex items-center gap-4 border-b-4 border-black pb-4">
-              <div className="bg-neo-secondary p-2 border-2 border-black rotate-3">
-                <AlertCircle className="h-6 w-6 text-black" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in">
+          <div className="neo-card bg-slate-800 p-8 max-w-md w-full border border-white/10 shadow-neo space-y-6">
+            <div className="flex items-center gap-4 border-b-4 border-white/10 pb-4">
+              <div className="bg-neo-secondary p-2 border border-white/10 rotate-3">
+                <AlertCircle className="h-6 w-6 text-slate-100" />
               </div>
               <h3 className="text-2xl font-black italic uppercase">Time_Constraint</h3>
             </div>
@@ -244,12 +244,12 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
             </p>
             <div className="flex gap-4 pt-4">
               <button onClick={() => setShowLimitPopup(false)} className="neo-button-white flex-1 py-3 text-sm">BACK</button>
-              <button 
+              <button
                 onClick={() => {
                   setShowLimitPopup(false);
                   const d = new Date(); d.setMonth(d.getMonth() + 1);
                   handleInputChange('exam_date', d.toISOString().split('T')[0]);
-                }} 
+                }}
                 className="neo-button bg-neo-accent flex-1 py-3 text-sm"
               >
                 FIX_TO_MAX
@@ -260,11 +260,11 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
       )}
 
       {showFreeLimitPopup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in">
-          <div className="neo-card bg-white p-8 max-w-md w-full border-8 border-black shadow-[20px_20px_0px_0px_#000] space-y-6">
-            <div className="flex items-center gap-4 border-b-4 border-black pb-4">
-              <div className="bg-neo-accent p-2 border-2 border-black rotate-3">
-                <AlertCircle className="h-6 w-6 text-black" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[200] p-4 animate-in fade-in">
+          <div className="neo-card bg-slate-800 p-8 max-w-md w-full border border-white/10 shadow-neo space-y-6">
+            <div className="flex items-center gap-4 border-b-4 border-white/10 pb-4">
+              <div className="bg-neo-accent p-2 border border-white/10 rotate-3">
+                <AlertCircle className="h-6 w-6 text-slate-100" />
               </div>
               <h3 className="text-2xl font-black italic uppercase">Free_Tier_Limit</h3>
             </div>

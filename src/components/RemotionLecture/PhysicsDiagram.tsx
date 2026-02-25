@@ -9,7 +9,7 @@ export const PhysicsDiagram: React.FC<{ media: MediaSpec }> = ({ media }) => {
     const height = 360;
 
     return (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-white rounded-3xl shadow-xl border border-slate-100">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-slate-800 rounded-3xl shadow-xl border border-slate-100">
             {/* Axes */}
             {axes?.show && (
                 <>

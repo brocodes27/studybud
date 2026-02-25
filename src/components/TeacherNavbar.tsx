@@ -25,13 +25,13 @@ const TeacherNavbar = () => {
 
   useEffect(() => {
     try {
-      const width = isCollapsed ? '5rem' : '18rem';
+      const width = isCollapsed ? '5.5rem' : '20rem';
       document.documentElement.style.setProperty('--sidebar-width', width);
       document.body.classList.toggle('sidebar-collapsed', isCollapsed);
     } catch { }
     return () => {
       try {
-        document.documentElement.style.setProperty('--sidebar-width', '18rem');
+        document.documentElement.style.setProperty('--sidebar-width', '20rem');
         document.body.classList.remove('sidebar-collapsed');
       } catch { }
     };
@@ -45,13 +45,13 @@ const TeacherNavbar = () => {
     <NavLink
       to={link.href}
       className={({ isActive }) =>
-        `flex items-center p-4 my-2 border-4 border-transparent transition-all font-black uppercase tracking-tight italic ${isActive
-          ? 'bg-neo-accent border-black shadow-[4px_4px_0px_0px_#000] text-white translate-x-[-2px] translate-y-[-2px]'
-          : 'text-black hover:bg-black/5 hover:border-black/10'
+        `flex items-center p-4 my-2 rounded-2xl border transition-all font-bold uppercase tracking-tight italic ${isActive
+          ? 'bg-primary border-primary shadow-lg shadow-primary/20 text-white'
+          : 'text-slate-400 border-transparent hover:bg-white/5 hover:text-white'
         }`
       }
     >
-      <link.icon className="w-7 h-7 stroke-[2.5px]" />
+      <link.icon className="w-7 h-7" />
       {!isCollapsed && <span className="ml-4">{link.label}</span>}
     </NavLink>
   );
@@ -62,23 +62,23 @@ const TeacherNavbar = () => {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-neo-bg transition-all duration-300 ease-in-out z-40 hidden md:flex flex-col border-r-4 border-black ${isCollapsed ? 'w-20' : 'w-72'
+        className={`fixed top-0 left-0 h-full bg-slate-900 border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-40 hidden md:flex flex-col ${isCollapsed ? 'w-[5.5rem]' : 'w-80'
           }`}
       >
-        <div className="flex items-center justify-between p-6 border-b-4 border-black bg-black text-white">
+        <div className="flex items-center justify-between p-8 border-b border-white/5">
           {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-neo-accent border-2 border-white flex items-center justify-center -rotate-3">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary">
                 <span className="text-xl font-black italic">EF</span>
               </div>
-              <span className="text-xl font-black uppercase tracking-tighter">TEACHER</span>
+              <span className="text-xl font-black uppercase tracking-tighter text-white">TEACHER</span>
             </div>
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`p-2 bg-white text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all ${isCollapsed ? 'mx-auto' : ''}`}
+            className={`p-3 bg-slate-950 text-slate-400 rounded-xl border border-white/5 hover:text-white transition-all shadow-xl ${isCollapsed ? 'mx-auto' : ''}`}
           >
-            {isCollapsed ? <ChevronRight strokeWidth={3} /> : <ChevronLeft strokeWidth={3} />}
+            {isCollapsed ? <ChevronRight strokeWidth={2.5} className="w-5 h-5" /> : <ChevronLeft strokeWidth={2.5} className="w-5 h-5" />}
           </button>
         </div>
 
@@ -88,21 +88,21 @@ const TeacherNavbar = () => {
           ))}
         </nav>
 
-        <div className="p-6 border-t-4 border-black bg-white">
+        <div className="p-8 border-t border-white/5 bg-slate-950/30">
           {user && (
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
-              <div className="w-12 h-12 bg-neo-secondary border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000] -rotate-2">
-                <User className="w-7 h-7 text-black stroke-[2.5px]" />
+              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shadow-lg">
+                <User className="w-6 h-6 text-slate-300" />
               </div>
               {!isCollapsed && (
                 <div className="ml-5">
-                  <p className="font-black uppercase text-xs tracking-widest text-black mb-1">{fullName || 'TEACHER'}</p>
+                  <p className="font-black uppercase text-xs tracking-[0.2em] text-slate-500 mb-1">{fullName || 'TEACHER'}</p>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center text-xs font-black uppercase text-black hover:text-neo-accent transition-colors underline decoration-2 underline-offset-4"
+                    className="flex items-center text-xs font-black uppercase text-rose-500 hover:text-rose-400 transition-colors"
                   >
-                    <LogOut className="w-4 h-4 mr-2 stroke-[3px]" />
-                    LOGOUT
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
                   </button>
                 </div>
               )}
@@ -112,39 +112,42 @@ const TeacherNavbar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 w-full bg-neo-bg p-4 z-50 flex items-center justify-between border-b-4 border-black shadow-[0_4px_0px_0px_#000]">
+      <header className="md:hidden fixed top-0 left-0 w-full bg-slate-900/80 backdrop-blur-xl p-4 z-50 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_#000]">
-            <span className="text-xl font-black italic text-white">EF</span>
+          <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary">
+            <span className="text-xl font-black italic">EF</span>
           </div>
-          <span className="text-2xl font-black uppercase tracking-tighter italic">TEACHER</span>
+          <span className="text-2xl font-black uppercase tracking-tighter italic text-white">TEACHER</span>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 border-4 border-black shadow-[2px_2px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] bg-neo-secondary"
+          className="p-3 bg-slate-900 border border-white/10 rounded-xl text-slate-300"
         >
-          {isMobileMenuOpen ? <X size={28} strokeWidth={3} /> : <Menu size={28} strokeWidth={3} />}
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </header>
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/40 z-[60] md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60] md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
           <motion.nav
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
-            className="fixed top-0 left-0 h-full w-4/5 bg-neo-bg p-8 border-r-8 border-black flex flex-col"
+            className="fixed top-0 left-0 h-full w-[85%] bg-slate-900 p-8 border-r border-white/5 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-10 pb-6 border-b-4 border-black">
+            <div className="flex justify-between items-center mb-12 pb-6 border-b border-white/5">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neo-accent border-4 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
-                  <span className="text-2xl font-black text-white italic">EF</span>
+                <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary">
+                  <span className="text-2xl font-black italic">EF</span>
                 </div>
-                <span className="text-3xl font-black uppercase tracking-tighter italic">TEACHER</span>
+                <span className="text-3xl font-black uppercase tracking-tighter italic text-white">TEACHER</span>
               </div>
-              <button onClick={() => setIsMobileMenuOpen(false)}>
-                <X size={32} strokeWidth={4} />
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-slate-500"
+              >
+                <X size={32} />
               </button>
             </div>
 
@@ -155,32 +158,32 @@ const TeacherNavbar = () => {
                   to={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center p-5 border-4 border-black transition-all font-black uppercase text-xl italic ${isActive
-                      ? 'bg-neo-accent shadow-[4px_4px_0px_0px_#000] text-white'
-                      : 'bg-white hover:bg-black/5'
+                    `flex items-center p-6 rounded-2.5xl border transition-all font-black uppercase text-xl italic ${isActive
+                      ? 'bg-primary border-primary text-white shadow-2xl shadow-primary/20'
+                      : 'bg-slate-950/50 border-white/5 text-slate-400'
                     }`
                   }
                 >
-                  <link.icon className="w-8 h-8 mr-6 stroke-[3px]" />
+                  <link.icon className="w-8 h-8 mr-6" />
                   <span>{link.label}</span>
                 </NavLink>
               ))}
             </div>
 
-            <div className="mt-auto pt-8 border-t-4 border-black">
+            <div className="mt-auto pt-8 border-t border-white/5">
               {user && (
-                <div className="flex items-center p-4 bg-white border-4 border-black shadow-[6px_6px_0px_0px_#000]">
-                  <div className="w-16 h-16 bg-neo-secondary border-4 border-black flex items-center justify-center -rotate-3">
-                    <User className="w-8 h-8 text-black stroke-[2.5px]" />
+                <div className="flex items-center p-6 bg-slate-950/50 rounded-[2rem] border border-white/5">
+                  <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shadow-lg">
+                    <User className="w-8 h-8 text-slate-300" />
                   </div>
                   <div className="ml-6">
-                    <p className="font-black uppercase text-lg tracking-tight text-black">{fullName || user.email.split('@')[0]}</p>
+                    <p className="font-black uppercase text-lg tracking-tight text-white leading-none mb-2">{fullName || user.email.split('@')[0]}</p>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center text-sm font-black uppercase text-neo-accent underline underline-offset-4 decoration-4"
+                      className="flex items-center text-sm font-black uppercase text-rose-500"
                     >
-                      <LogOut className="w-5 h-5 mr-2 stroke-[3px]" />
-                      LOGOUT
+                      <LogOut className="w-5 h-5 mr-2" />
+                      Logout
                     </button>
                   </div>
                 </div>

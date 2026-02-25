@@ -30,7 +30,7 @@ export const GraphRenderer: React.FC<{ media: MediaSpec }> = ({ media }) => {
     const yTickVals = Array.from({ length: yTicks + 1 }, (_, i) => yMin + ((yMax - yMin) * i) / yTicks);
 
     return (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-white rounded-3xl shadow-xl border border-slate-100">
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="bg-slate-800 rounded-3xl shadow-xl border border-slate-100">
             {/* Grid */}
             {xTickVals.map((v, i) => {
                 const xPos = xScale(v);

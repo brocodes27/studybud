@@ -57,7 +57,7 @@ export function Auth() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="relative group">
-              <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(0,243,255,0.3)] group-hover:scale-110 transition-transform duration-300">
+              <div className="w-16 h-16 bg-gradient-to-br from-neon-blue to-blue-600 rounded-2xl flex items-center justify-center shadow-neo group-hover:scale-110 transition-transform duration-300">
                 <Brain className="h-8 w-8 text-white" />
               </div>
               <Sparkles className="absolute -top-3 -right-3 h-6 w-6 text-neon-yellow animate-bounce" />
@@ -92,7 +92,7 @@ export function Auth() {
                       required
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-900/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
                       placeholder="Full Name"
                     />
                   </div>
@@ -105,7 +105,7 @@ export function Auth() {
                         required
                         value={formData.grade}
                         onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-900/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
                         placeholder="Grade / Class (e.g., 12)"
                       />
                     </div>
@@ -119,7 +119,7 @@ export function Auth() {
                       type="text"
                       value={formData.school}
                       onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-900/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
                       placeholder="School Name (Optional)"
                     />
                   </div>
@@ -134,7 +134,7 @@ export function Auth() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-900/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
                 placeholder="Email Address"
               />
             </div>
@@ -146,7 +146,7 @@ export function Auth() {
                 required
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-900/40 border border-white/10 text-white placeholder-gray-500 focus:border-neon-blue focus:ring-1 focus:ring-neon-blue/50 focus:outline-none transition-all"
                 placeholder="Password"
                 minLength={6}
               />

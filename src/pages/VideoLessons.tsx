@@ -60,7 +60,7 @@ const subjectVisuals: Record<string, SubjectVisual> = {
         icon: <Atom className="w-8 h-8 stroke-[3px]" />
     },
     chemistry: {
-        color: 'bg-neo-bg',
+        color: 'bg-slate-800',
         icon: <FlaskConical className="w-8 h-8 stroke-[3px]" />
     },
     biology: {
@@ -72,7 +72,7 @@ const subjectVisuals: Record<string, SubjectVisual> = {
         icon: <Globe2 className="w-8 h-8 stroke-[3px]" />
     },
     general: {
-        color: 'bg-white',
+        color: 'bg-slate-800',
         icon: <Sparkles className="w-8 h-8 stroke-[3px]" />
     }
 };
@@ -203,7 +203,7 @@ export const VideoLessons = () => {
     };
 
     const getQuestionTypeBadge = (type: string) => (
-        <span className="text-[10px] font-black uppercase tracking-widest border-2 border-black px-2 py-0.5 bg-white shadow-[2px_2px_0px_0px_#000]">
+        <span className="text-[10px] font-black uppercase tracking-widest border border-white/10 px-2 py-0.5 bg-slate-800 shadow-neo">
             {type}
         </span>
     );
@@ -287,12 +287,12 @@ export const VideoLessons = () => {
     return (
         <div className="space-y-12 animate-fade-in relative min-h-screen pb-20">
             {showLectureLock && !isPremium && (
-                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-8 text-center">
+                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl p-8 text-center">
                     <h3 className="text-4xl font-black text-neo-accent uppercase tracking-tighter italic mb-4">PRO_ONLY</h3>
                     <p className="text-white/60 mb-8 max-w-md">Neural video lectures are Pro-only. Upgrade to unlock unlimited HD lectures.</p>
                     <div className="flex gap-4">
-                        <button onClick={() => setShowLectureLock(false)} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">OK</button>
-                        <button onClick={() => window.location.href = '/subscription'} className="px-8 py-3 bg-neo-accent text-black font-black uppercase italic tracking-widest">UPGRADE</button>
+                        <button onClick={() => setShowLectureLock(false)} className="px-8 py-3 bg-slate-800 text-slate-100 font-black uppercase italic tracking-widest">OK</button>
+                        <button onClick={() => window.location.href = '/subscription'} className="px-8 py-3 bg-neo-accent text-slate-100 font-black uppercase italic tracking-widest">UPGRADE</button>
                     </div>
                 </div>
             )}
@@ -319,9 +319,9 @@ export const VideoLessons = () => {
             {playingLesson && renderMode === 'remotion' && (
                 <>
                     {isPreparing ? (
-                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl">
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl">
                             <div className="relative mb-12">
-                                <div className="w-40 h-40 border-8 border-white/5 border-t-[#4D96FF] animate-spin rounded-full" />
+                                <div className="w-40 h-40 border border-white/5 border-t-[#4D96FF] animate-spin rounded-full" />
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <Sparkles className="text-white w-12 h-12 stroke-[2px] animate-pulse" />
                                 </div>
@@ -335,7 +335,7 @@ export const VideoLessons = () => {
                             onClose={() => { setPlayingLesson(null); setRenderMode(null); setRemotionConfig(null); }}
                         />
                     ) : generationError && (
-                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-black/90 backdrop-blur-xl p-8 text-center">
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl p-8 text-center">
                             <h3 className="text-4xl font-black text-red-500 uppercase tracking-tighter italic mb-4">GENERATION_FAILED</h3>
                             <p className="text-white/60 mb-8 max-w-md">{generationError}</p>
                             <div className="flex gap-4">
@@ -347,11 +347,11 @@ export const VideoLessons = () => {
                                         }
                                         setGenerationError(null);
                                     }}
-                                    className="px-8 py-3 bg-neo-accent text-black font-black uppercase italic tracking-widest"
+                                    className="px-8 py-3 bg-neo-accent text-slate-100 font-black uppercase italic tracking-widest"
                                 >
                                     REGENERATE
                                 </button>
-                                <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-white text-black font-black uppercase italic tracking-widest">Abort Process</button>
+                                <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-slate-800 text-slate-100 font-black uppercase italic tracking-widest">Abort Process</button>
                             </div>
                         </div>
                     )}
@@ -359,24 +359,24 @@ export const VideoLessons = () => {
             )}
 
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b-8 border-black pb-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b-8 border-white/10 pb-10">
                 <div className="flex items-center gap-6">
-                    <div className="bg-neo-accent border-4 border-black p-5 shadow-[8px_8px_0px_0px_#000] rotate-3">
+                    <div className="bg-neo-accent border border-white/10 p-5 shadow-neo rotate-3">
                         <Video className="h-10 w-10 text-white stroke-[3px]" />
                     </div>
                     <div>
-                        <h1 className="text-5xl font-black text-black uppercase tracking-tighter italic leading-none">
+                        <h1 className="text-5xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">
                             {viewMode === 'plans' ? 'VIDEO_ARCHIVE' :
                                 viewMode === 'chapters' ? 'CHAPTER_INDEX' : 'TOPIC_NODES'}
                         </h1>
-                        <p className="text-black/40 font-black uppercase tracking-widest text-sm mt-3 flex items-center gap-3">
+                        <p className="text-slate-100/40 font-black uppercase tracking-widest text-sm mt-3 flex items-center gap-3">
                             {viewMode !== 'plans' && (
                                 <button
                                     onClick={() => {
                                         if (viewMode === 'lessons') { setViewMode('chapters'); setSelectedChapter(null); }
                                         else { setViewMode('plans'); setSelectedPlan(null); }
                                     }}
-                                    className="flex items-center gap-2 hover:text-black transition-colors"
+                                    className="flex items-center gap-2 hover:text-slate-100 transition-colors"
                                 >
                                     <ChevronLeft className="w-5 h-5 stroke-[3px]" /> REVERT
                                 </button>
@@ -391,8 +391,8 @@ export const VideoLessons = () => {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center h-96 space-y-8">
-                    <div className="w-24 h-24 border-8 border-black border-t-neo-accent animate-spin" />
-                    <h3 className="text-3xl font-black text-black uppercase tracking-tighter italic">LOADING_ARCHIVES...</h3>
+                    <div className="w-24 h-24 border border-white/10 border-t-neo-accent animate-spin" />
+                    <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic">LOADING_ARCHIVES...</h3>
                 </div>
             ) : (
                 <div className="space-y-16">
@@ -400,12 +400,12 @@ export const VideoLessons = () => {
                     {viewMode === 'plans' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                             {plans.length === 0 ? (
-                                <div className="col-span-full bg-white border-8 border-black p-20 shadow-[16px_16px_0px_0px_#000] text-center rotate-1">
-                                    <div className="w-24 h-24 bg-neo-muted border-4 border-black flex items-center justify-center mx-auto mb-10 shadow-[8px_8px_0px_0px_#000]">
-                                        <AlertCircle className="w-12 h-12 text-black stroke-[3px]" />
+                                <div className="col-span-full bg-slate-800 border border-white/10 p-20 shadow-neo text-center rotate-1">
+                                    <div className="w-24 h-24 bg-neo-muted border border-white/10 flex items-center justify-center mx-auto mb-10 shadow-neo">
+                                        <AlertCircle className="w-12 h-12 text-slate-100 stroke-[3px]" />
                                     </div>
-                                    <h3 className="text-4xl font-black text-black uppercase tracking-tighter mb-4">NO_PLANS_DETECTED</h3>
-                                    <p className="text-black/60 font-bold uppercase tracking-widest text-sm">INITIALIZE A STUDY SEQUENCE TO GENERATE VISUAL ASSETS.</p>
+                                    <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter mb-4">NO_PLANS_DETECTED</h3>
+                                    <p className="text-slate-100/60 font-bold uppercase tracking-widest text-sm">INITIALIZE A STUDY SEQUENCE TO GENERATE VISUAL ASSETS.</p>
                                 </div>
                             ) : plans.map((plan, idx) => (
                                 <div
@@ -416,19 +416,19 @@ export const VideoLessons = () => {
                                         if (planChapters.length === 1) { setSelectedChapter(planChapters[0]); setViewMode('lessons'); }
                                         else { setViewMode('chapters'); }
                                     }}
-                                    className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[18px_18px_0px_0px_#000] cursor-pointer transition-all group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
+                                    className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo cursor-pointer transition-all group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
                                 >
                                     <div className="flex items-center gap-6 mb-8">
-                                        <div className="w-16 h-16 border-4 border-black bg-neo-secondary flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:rotate-12 transition-transform">
-                                            <BookOpen className="w-8 h-8 text-black stroke-[3px]" />
+                                        <div className="w-16 h-16 border border-white/10 bg-neo-secondary flex items-center justify-center shadow-neo group-hover:rotate-12 transition-transform">
+                                            <BookOpen className="w-8 h-8 text-slate-100 stroke-[3px]" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic leading-none">{plan.name}</h3>
-                                            <span className="text-[10px] font-black text-black/40 uppercase tracking-widest mt-2 block">{plan.subject}</span>
+                                            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">{plan.name}</h3>
+                                            <span className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2 block">{plan.subject}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-black/10">
-                                        <span className="bg-black text-white px-3 py-1 -rotate-2">{plan.lessonCount} NODES</span>
+                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-white/10/10">
+                                        <span className="bg-slate-900 text-white px-3 py-1 -rotate-2">{plan.lessonCount} NODES</span>
                                         <span className="text-neo-accent group-hover:translate-x-2 transition-transform italic">ACCESS_DIR »</span>
                                     </div>
                                 </div>
@@ -443,18 +443,18 @@ export const VideoLessons = () => {
                                 <div
                                     key={chapter.name}
                                     onClick={() => { setSelectedChapter(chapter.name); setViewMode('lessons'); }}
-                                    className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[18px_18px_0px_0px_#4D96FF] cursor-pointer transition-all group ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}
+                                    className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo cursor-pointer transition-all group ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}
                                 >
                                     <div className="flex items-center gap-6 mb-8">
-                                        <div className="w-16 h-16 border-4 border-black bg-neo-bg flex items-center justify-center shadow-[4px_4px_0px_0px_#000] group-hover:-rotate-12 transition-transform">
-                                            <Video className="w-8 h-8 text-black stroke-[3px]" />
+                                        <div className="w-16 h-16 border border-white/10 bg-slate-900 flex items-center justify-center shadow-neo group-hover:-rotate-12 transition-transform">
+                                            <Video className="w-8 h-8 text-slate-100 stroke-[3px]" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-black uppercase tracking-tighter italic leading-none line-clamp-1">{chapter.name}</h3>
+                                            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic leading-none line-clamp-1">{chapter.name}</h3>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-black/10">
-                                        <span className="bg-black text-white px-3 py-1 rotate-1">{chapter.lessonCount} TOPICS</span>
+                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-white/10/10">
+                                        <span className="bg-slate-900 text-white px-3 py-1 rotate-1">{chapter.lessonCount} TOPICS</span>
                                         <span className="text-neo-bg group-hover:translate-x-2 transition-transform italic">SCAN_FLOW »</span>
                                     </div>
                                 </div>
@@ -471,13 +471,13 @@ export const VideoLessons = () => {
                                 const isGenerating = generations[cleanTopic]?.status === 'processing' || generations[cleanTopic]?.status === 'pending';
 
                                 return (
-                                    <div key={`${lesson.plan_id}-${idx}`} className={`bg-white border-6 border-black p-8 shadow-[12px_12px_0px_0px_#000] transition-all flex flex-col h-full group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
+                                    <div key={`${lesson.plan_id}-${idx}`} className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo transition-all flex flex-col h-full group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
                                         {/* Card Header Illustration */}
-                                        <div className="relative mb-8 h-40 border-4 border-black bg-black overflow-hidden shadow-[4px_4px_0px_0px_#000]">
+                                        <div className="relative mb-8 h-40 border border-white/10 bg-slate-900 overflow-hidden shadow-neo">
                                             <div className={`absolute inset-0 opacity-20 ${visual.color}`} />
                                             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 2px, transparent 2px)', backgroundSize: '20px 20px' }} />
                                             <div className="relative flex h-full items-center justify-center p-6 text-center flex-col gap-4">
-                                                <div className={`w-16 h-16 border-4 border-black ${visual.color} flex items-center justify-center shadow-[4px_4px_0px_0px_#000] rotate-12 group-hover:rotate-0 transition-transform`}>
+                                                <div className={`w-16 h-16 border border-white/10 ${visual.color} flex items-center justify-center shadow-neo rotate-12 group-hover:rotate-0 transition-transform`}>
                                                     {visual.icon}
                                                 </div>
                                                 <p className="text-white font-black uppercase tracking-widest text-[10px] italic">NODE_{idx.toString().padStart(3, '0')}</p>
@@ -486,17 +486,17 @@ export const VideoLessons = () => {
 
                                         <div className="flex justify-between items-start mb-6 gap-3 flex-wrap">
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-[10px] font-black text-black/40 uppercase italic">{format(new Date(lesson.date), 'MMM dd')}</span>
+                                                <span className="text-[10px] font-black text-slate-100/40 uppercase italic">{format(new Date(lesson.date), 'MMM dd')}</span>
                                                 <span className="text-xs font-black text-neo-accent uppercase tracking-tighter italic">{lesson.subject}</span>
                                             </div>
                                             {getQuestionTypeBadge(lesson.question_type)}
                                         </div>
 
-                                        <h3 className="text-2xl font-black text-black mb-4 uppercase tracking-tighter italic leading-none line-clamp-2 min-h-[3rem] group-hover:text-neo-accent transition-colors">
+                                        <h3 className="text-2xl font-black text-slate-100 mb-4 uppercase tracking-tighter italic leading-none line-clamp-2 min-h-[3rem] group-hover:text-neo-accent transition-colors">
                                             {lesson.topic}
                                         </h3>
 
-                                        <p className="text-sm font-bold text-black/60 uppercase tracking-widest line-clamp-3 mb-10 flex-grow leading-tight italic">
+                                        <p className="text-sm font-bold text-slate-100/60 uppercase tracking-widest line-clamp-3 mb-10 flex-grow leading-tight italic">
                                             {lesson.description}
                                         </p>
 
@@ -506,16 +506,16 @@ export const VideoLessons = () => {
                                                     setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
                                                     setRenderMode('classic');
                                                 }}
-                                                className="w-full py-4 border-4 border-black bg-white font-black uppercase italic tracking-tighter text-xl hover:bg-neo-bg transition-all shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] flex items-center justify-center gap-3"
+                                                className="w-full py-4 border border-white/10 bg-slate-800 font-black uppercase italic tracking-tighter text-xl hover:bg-slate-900 transition-all shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] flex items-center justify-center gap-3"
                                             >
                                                 <BookOpen className="w-5 h-5 stroke-[3px]" />
                                                 CLASSIC_VIEW
                                             </button>
                                             <button
                                                 onClick={() => handlePlayPremium(lesson)}
-                                                className={`w-full py-5 border-4 border-black font-black uppercase italic tracking-tighter text-2xl transition-all shadow-[8px_8px_0px_0px_#000] active:shadow-none active:translate-x-[4px] active:translate-y-[4px] flex items-center justify-center gap-4 ${isGenerating
-                                                    ? 'bg-neo-bg text-black animate-pulse'
-                                                    : 'bg-black text-white hover:bg-neo-accent hover:text-black'
+                                                className={`w-full py-5 border border-white/10 font-black uppercase italic tracking-tighter text-2xl transition-all shadow-neo active:shadow-none active:translate-x-[4px] active:translate-y-[4px] flex items-center justify-center gap-4 ${isGenerating
+                                                    ? 'bg-slate-900 text-slate-100 animate-pulse'
+                                                    : 'bg-slate-900 text-white hover:bg-neo-accent hover:text-slate-100'
                                                     }`}
                                             >
                                                 {isGenerating ? (

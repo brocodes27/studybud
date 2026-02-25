@@ -68,7 +68,7 @@ export function LandingAuth() {
   };
 
   return (
-    <section id="auth" className="py-32 px-6 bg-neo-bg relative border-t-8 border-black">
+    <section id="auth" className="py-32 px-6 bg-slate-950 relative border-t-8 border-white/10">
       {/* Decorative dots */}
       <div className="absolute inset-0 opacity-5 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '24px 24px' }} />
@@ -78,11 +78,11 @@ export function LandingAuth() {
           <motion.span
             initial={{ rotate: -1 }}
             whileInView={{ rotate: 1 }}
-            className="sticker bg-neo-muted border-4 border-black mb-4 px-6 text-sm py-2"
+            className="sticker bg-neo-muted border border-white/10 mb-4 px-6 text-sm py-2"
           >
             SECURE ACCESS
           </motion.span>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black mt-6 leading-none">
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-slate-100 mt-6 leading-none">
             {isSignUp ? 'JOIN THE' : 'WELCOME'}<br />
             <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>REVOLUTION</span>
           </h2>
@@ -92,13 +92,13 @@ export function LandingAuth() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="neo-card bg-white p-10 md:p-12"
+          className="neo-card bg-slate-800 p-10 md:p-12"
         >
           <div className="text-center mb-10">
-            <h3 className="text-3xl font-black uppercase tracking-tight text-black mb-2">
+            <h3 className="text-3xl font-black uppercase tracking-tight text-slate-100 mb-2">
               {isSignUp ? 'New Account' : 'Returning User'}
             </h3>
-            <p className="text-black/50 font-bold uppercase text-sm">
+            <p className="text-slate-100/50 font-bold uppercase text-sm">
               {isSignUp ? 'Start your AI learning journey' : 'Resume your study sessions'}
             </p>
           </div>
@@ -115,9 +115,9 @@ export function LandingAuth() {
                   className="neo-input"
                 />
 
-                <div className="flex items-center gap-3 p-4 bg-neo-accent border-4 border-black mb-6">
-                  <User className="h-6 w-6 text-black stroke-[3px]" />
-                  <span className="text-sm font-black uppercase tracking-widest text-black">Student Account Security</span>
+                <div className="flex items-center gap-3 p-4 bg-neo-accent border border-white/10 mb-6">
+                  <User className="h-6 w-6 text-slate-100 stroke-[3px]" />
+                  <span className="text-sm font-black uppercase tracking-widest text-slate-100">Student Account Security</span>
                 </div>
 
                 {selectedRole === 'student' && (
@@ -164,7 +164,7 @@ export function LandingAuth() {
             <button
               type="submit"
               disabled={formLoading}
-              className="neo-button w-full bg-black text-white text-xl py-5"
+              className="neo-button w-full bg-slate-900 text-white text-xl py-5"
             >
               {formLoading ? 'PROCESSING...' : (isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN')}
               <ArrowRight className="h-6 w-6 stroke-[3px]" />
@@ -175,25 +175,25 @@ export function LandingAuth() {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-black font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 decoration-4 decoration-neo-accent transition-all"
+              className="text-slate-100 font-black uppercase tracking-widest text-sm hover:underline underline-offset-8 decoration-4 decoration-neo-accent transition-all"
             >
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
           </div>
 
           <div className="flex items-center my-10">
-            <div className="flex-1 h-1 bg-black" />
-            <span className="mx-4 font-black uppercase text-black italic text-xl">OR</span>
-            <div className="flex-1 h-1 bg-black" />
+            <div className="flex-1 h-1 bg-slate-900" />
+            <span className="mx-4 font-black uppercase text-slate-100 italic text-xl">OR</span>
+            <div className="flex-1 h-1 bg-slate-900" />
           </div>
 
           <button
             type="button"
             disabled={googleLoading}
             onClick={handleGoogleSignIn}
-            className="neo-button w-full bg-white text-black text-lg py-4"
+            className="neo-button w-full bg-slate-800 text-slate-100 text-lg py-4"
           >
-            <span className="mr-3 inline-flex bg-white border-2 border-black rounded-none p-1">
+            <span className="mr-3 inline-flex bg-slate-800 border border-white/10 rounded-2xl p-1">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 9.656 8.337 6.306 14.691z" /><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 16.108 18.961 13 24 13c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.17 0 9.86-1.977 13.409-5.197l-6.19-5.236C29.133 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.553 5.047C9.482 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-3.994 5.566l.003-.002 6.19 5.236C35.246 40.416 40 34.667 40 26c0-1.341-.138-2.65-.389-3.917z" /></svg>
             </span>
             {googleLoading ? 'WAITING...' : 'CONTINUE WITH GOOGLE'}

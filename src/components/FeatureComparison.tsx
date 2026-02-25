@@ -40,7 +40,7 @@ export function FeatureComparison() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto my-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+    <div className="max-w-2xl mx-auto my-8 bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200">
       <h2 className="text-3xl font-extrabold mb-6 text-center text-gray-900">Compare Plans</h2>
       {/* Table for md+ screens */}
       <div className="overflow-x-auto hidden md:block">
@@ -54,7 +54,7 @@ export function FeatureComparison() {
           </thead>
           <tbody>
             {rows.map((row, idx) => (
-              <tr key={row.label} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              <tr key={row.label} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-slate-800'}>
                 <td className="text-left px-4 py-3 font-medium text-gray-800 border-b border-gray-200">{row.label}</td>
                 <td className="px-4 py-3 border-b border-gray-200">
                   {typeof row.free === 'boolean' ? (
