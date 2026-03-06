@@ -114,37 +114,37 @@ function AppContent() {
 
           {!isFullscreen && isPremium === false && showSubscribeBanner && (
             <div className="w-full flex justify-center sticky top-6 z-50 pointer-events-none">
-              <div className="pointer-events-auto relative flex items-center justify-between w-full max-w-4xl mx-6 bg-slate-900/80 backdrop-blur-2xl border border-white/10 p-6 rounded-[2rem] shadow-2xl shadow-black/50 overflow-hidden group">
-                <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
+              <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-slate-900/80 backdrop-blur-2xl border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] shadow-2xl shadow-black/50 overflow-hidden group gap-4 sm:gap-6">
+                <div className="absolute top-0 left-0 w-full h-1 sm:w-2 sm:h-full bg-primary" />
                 <div className="flex items-center gap-6">
-                  <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-inner">
-                    <Crown className="w-8 h-8 drop-shadow-lg" />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 border border-primary/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-primary shadow-inner shrink-0">
+                    <Crown className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" />
                   </div>
-                  <div className="space-y-1">
-                    <span className="font-black uppercase tracking-tighter text-2xl italic leading-none block">Level Up to Premium</span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unlock Advanced AI Models & Global Analytics</span>
+                  <div className="space-y-1 text-center sm:text-left">
+                    <span className="font-black uppercase tracking-tighter text-lg sm:text-2xl italic leading-none block">Level Up to Premium</span>
+                    <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Unlock Advanced AI Models & Global Analytics</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-center">
                   <button
                     onClick={handleSubscribeClick}
                     disabled={isLoadingPayment}
-                    className="bg-primary hover:bg-blue-600 text-white px-8 py-4 rounded-xl font-black uppercase text-sm tracking-widest shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95"
+                    className="flex-1 sm:flex-none bg-primary hover:bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-black uppercase text-xs sm:text-sm tracking-widest shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95"
                   >
                     {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
                   </button>
                   <button
                     onClick={() => setShowSubscribeBanner(false)}
-                    className="p-3 text-slate-600 hover:text-white transition-colors"
+                    className="p-2 sm:p-3 text-slate-600 hover:text-white transition-colors"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 sm:w-6 h-6" />
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full mx-auto px-6 py-12 transition-all"}>
+          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 transition-all"}>
             <Routes>
               {/* Daily Experience - New Primary Flow */}
               <Route path="/" element={<DailyCheckin />} />

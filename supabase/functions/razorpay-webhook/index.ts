@@ -64,6 +64,34 @@ serve(async (req) => {
       console.error('Supabase upsert error:', error);
       return new Response('Database error', { status: 500 });
     }
+
+    // Notify Dub.co of the sale
+    try {
+      const dubApiKey = Deno.env.get("DUB_API_KEY") || "dub_KgTsJoBfJGMT7jDjmxzF1m3I";
+      const dubResponse = await fetch("https://api.dub.co/track/sale", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${dubApiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          customerId: email,
+          externalId: user_id,
+          amount: event.payload?.payment?.entity?.amount || 19900,
+          currency: "inr",
+          paymentProcessor: "razorpay",
+          metadata: { email, userId: user_id }
+        })
+      });
+      if (!dubResponse.ok) {
+        console.error(`❌ Dub.co sale tracking failed with status: ${dubResponse.status}`);
+      } else {
+        console.log("📈 Tracked sale in Dub.co successfully");
+      }
+    } catch (dubErr) {
+      console.error("❌ Failed to track Dub.co sale:", dubErr);
+    }
+
     return new Response('OK', { status: 200 });
   }
 

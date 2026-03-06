@@ -80,7 +80,7 @@ export function SubscriptionPage() {
                         </h3>
 
                         <div className="text-6xl font-black mb-2 text-slate-100 italic">
-                            $9.99
+                            $15.99
                             <span className="text-lg text-slate-100/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span>
                         </div>
 

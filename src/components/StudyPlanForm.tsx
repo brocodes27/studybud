@@ -215,15 +215,15 @@ export function StudyPlanForm({ onSubmit, loading, initialData = {} }: StudyPlan
         <button
           type="submit"
           disabled={loading || checkingLimits}
-          className="w-full neo-button bg-neo-accent py-6 text-2xl group relative overflow-hidden"
+          className="w-full neo-button bg-neo-accent py-4 sm:py-6 text-lg sm:text-2xl group relative overflow-hidden"
         >
           {loading || checkingLimits ? (
             <div className="flex items-center justify-center gap-3 italic">
-              <Loader2 className="h-6 w-6 animate-spin" /> VALIDATING_LIMITS...
+              <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" /> VALIDATING_LIMITS...
             </div>
           ) : (
             <div className="flex items-center justify-center gap-3">
-              INITIALIZE_PLAN <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+              INITIALIZE_PLAN <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 group-hover:rotate-12 transition-transform" />
             </div>
           )}
         </button>

@@ -117,8 +117,36 @@ serve(async (req) => {
                         });
                     }
                 }
-
                 console.log("🎉 User upgraded to Premium successfully!");
+
+                // Notify Dub.co of the sale
+                try {
+                    const dubApiKey = Deno.env.get("DUB_API_KEY") || "dub_KgTsJoBfJGMT7jDjmxzF1m3I";
+                    const dubResponse = await fetch("https://api.dub.co/track/sale", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${dubApiKey}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            customerId: userEmail, // Used email as customerId in client tracking
+                            externalId: userId,
+                            amount: data.total_amount || 1599,
+                            currency: "usd",
+                            paymentProcessor: "dodo",
+                            metadata: { email: userEmail, userId: userId }
+                        })
+                    });
+
+                    if (!dubResponse.ok) {
+                        console.error(`❌ Dub.co sale tracking failed with status: ${dubResponse.status}`);
+                    } else {
+                        console.log("📈 Tracked sale in Dub.co successfully");
+                    }
+                } catch (dubErr) {
+                    console.error("❌ Failed to track Dub.co sale:", dubErr);
+                }
+
             } else {
                 console.warn("⚠️ Could not locate user. Email:", userEmail);
             }

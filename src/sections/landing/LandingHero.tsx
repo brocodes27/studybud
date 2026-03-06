@@ -19,9 +19,9 @@ export function LandingHero() {
               <span className="font-black uppercase tracking-widest text-sm">NEW: AI BLACKBOARD VIDEOS</span>
             </motion.div>
 
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.85] tracking-tighter mb-8">
+            <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black uppercase leading-[0.95] sm:leading-[0.85] tracking-tighter mb-8">
               STOP STUDYING.<br />
-              <span className="text-neo-accent" style={{ WebkitTextStroke: '3px black' }}>START</span> <br />
+              <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>START</span> <br />
               ARCHITECTING.
             </h1>
 

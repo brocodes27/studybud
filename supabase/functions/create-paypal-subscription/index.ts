@@ -51,7 +51,7 @@ async function createPayPalSubscription(accessToken: string, userData: any, curr
         custom_id: userData.user_id,
         amount: {
           currency_code: currency,
-          value: currency === 'USD' ? '9.99' : currency === 'EUR' ? '9.99' : '9.99'
+          value: currency === 'USD' ? '15.99' : currency === 'EUR' ? '15.99' : '15.99'
         }
       }
     ]

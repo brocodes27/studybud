@@ -202,8 +202,8 @@ const Navbar = () => {
           <div className="flex flex-col min-h-screen p-6">
             <div className="flex items-center justify-between mb-8 border-b-4 border-white/10 pb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-neo-accent border border-white/10 shadow-neo flex items-center justify-center">
-                  <span className="text-xl font-black text-slate-100">EF</span>
+                <div className="w-10 h-10 bg-neo-accent border border-white/10 shadow-neo flex items-center justify-center shrink-0">
+                  <span className="text-xl font-black text-slate-900">EF</span>
                 </div>
                 <h1 className="text-2xl font-black text-slate-100 uppercase">StudyBud</h1>
               </div>

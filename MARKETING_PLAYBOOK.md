@@ -52,7 +52,7 @@ Virality jump-starts growth; systematic levers sustain it.
 ## 💰 5. Pricing Strategy (US Students)
 Optimized for **"Budget Psychology."**
 
-- **Neural Pro:** **$9.99 / Month** (The "impl impulse buy" threshold).
+- **Neural Pro:** **$15.99 / Month** (The "impl impulse buy" threshold).
 - **The Semester Pass:** **$29.99 / 4-Months** (Aligns with academic cycles; easier for parents to approve).
 - **The Hook:** **7-Day Free Trial** ("Access the Neural Edge for your next midterm").
 

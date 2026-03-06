@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/useToast';
 import { Input } from '../../components/Input';
 import { User, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { trackDubEvent } from '../../lib/dub';
 
 export function LandingAuth() {
   const { signUp, signIn, signInWithGoogle } = useAuth() as any;
@@ -27,6 +28,8 @@ export function LandingAuth() {
       const { error } = await signInWithGoogle();
       if (error) {
         showToast(error.message || 'Google sign-in failed', 'error');
+      } else {
+        trackDubEvent('signup', { metadata: { method: 'google' } });
       }
     } catch (e: any) {
       showToast(e.message || 'Google sign-in failed', 'error');
@@ -51,6 +54,12 @@ export function LandingAuth() {
           showToast(error.message, 'error');
         } else {
           showToast('Account created successfully! Welcome to ElevenFolks!', 'success');
+          trackDubEvent('signup', {
+            customerId: formData.email,
+            customerEmail: formData.email,
+            customerName: formData.full_name,
+            metadata: { method: 'email' }
+          });
         }
       } else {
         const { error } = await signIn(formData.email, formData.password);

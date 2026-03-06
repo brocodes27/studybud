@@ -255,49 +255,51 @@ export function Dashboard() {
         >
           {/* Hero Section */}
           <div className="relative group">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">{greeting}, {displayName}</h2>
-              <div className="glass px-4 py-2 rounded-xl flex items-center gap-3 shadow-lg shadow-black/10">
-                <Flame className="w-5 h-5 text-neo-accent fill-neo-accent" />
-                <span className="font-bold text-xl tabular-nums">{stats.streak.toString().padStart(2, '0')}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold">{greeting}, {displayName}</h2>
+              <div className="glass px-4 py-2 rounded-xl flex items-center justify-between sm:justify-start gap-3 shadow-lg shadow-black/10">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-neo-accent fill-neo-accent" />
+                  <span className="font-bold text-xl tabular-nums">{stats.streak.toString().padStart(2, '0')}</span>
+                </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Day Streak</span>
               </div>
             </div>
 
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-card-dark to-card-dark border border-primary/30 p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
               <div className="relative z-10 space-y-4 max-w-xl">
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20">
                     Priority Target
                   </span>
-                  <span className="px-3 py-1 text-xs font-bold tracking-wider text-slate-400 uppercase bg-slate-900/50 rounded-full border border-white/5">
+                  <span className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 uppercase bg-slate-900/50 rounded-full border border-white/5">
                     Mode: {vibe.toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-4xl font-black mt-3 tracking-tight italic uppercase">
+                  <h3 className="text-3xl sm:text-4xl font-black mt-3 tracking-tight italic uppercase break-words">
                     {primaryTask?.subject || "Establish Objective"}
                   </h3>
-                  <p className="text-slate-400 text-lg leading-relaxed max-w-lg">
+                  <p className="text-slate-400 text-base sm:text-lg leading-relaxed max-w-lg mt-2">
                     {primaryTask?.topic || "Initialize a new study plan to begin your focus campaign."}
                   </p>
                 </div>
-                <div className="flex items-center gap-4 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 w-full sm:w-auto">
                   {primaryTask ? (
-                    <Link to={`/study/${primaryTask.planId}`}>
-                      <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
+                    <Link to={`/study/${primaryTask.planId}`} className="w-full sm:w-auto">
+                      <button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
                         Engage <ArrowRight className="h-5 w-5 stroke-[2.5]" />
                       </button>
                     </Link>
                   ) : (
-                    <Link to="/create">
-                      <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
+                    <Link to="/create" className="w-full sm:w-auto">
+                      <button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
                         New Plan <Target className="h-5 w-5 stroke-[2.5]" />
                       </button>
                     </Link>
                   )}
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Logistics</span>
+                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logistics</span>
                     <span className="text-sm font-bold">{remainingCount} targets pending today</span>
                   </div>
                 </div>
