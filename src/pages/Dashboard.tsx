@@ -13,8 +13,6 @@ import {
   ListChecks,
   Mic,
   Timer,
-  AlertCircle,
-  Clock,
   BatteryMedium,
   Ghost
 } from 'lucide-react';
@@ -42,37 +40,37 @@ interface StudyPlan {
 // Vibe Check Component
 const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
   const vibes = [
-    { id: 'fire', label: 'ON FIRE', icon: Zap, color: 'bg-primary', text: 'Ready to conquer!' },
-    { id: 'ok', label: 'STEADY', icon: Brain, color: 'bg-blue-500', text: 'Focused and steady.' },
-    { id: 'tired', label: 'DRAINED', icon: BatteryMedium, color: 'bg-amber-500', text: 'Lower energy today.' },
-    { id: 'dead', label: 'COOKED', icon: Ghost, color: 'bg-slate-500', text: 'Survival mode active.' },
+    { id: 'fire', label: 'ON FIRE', icon: Zap, color: 'bg-[#F472B6]', shadow: 'shadow-float-pink', text: 'Ready to conquer!' },
+    { id: 'ok', label: 'STEADY', icon: Brain, color: 'bg-[#00D1FF]', shadow: 'shadow-float-cyan', text: 'Focused and steady.' },
+    { id: 'tired', label: 'DRAINED', icon: BatteryMedium, color: 'bg-[#34D399]', shadow: 'shadow-float-mint', text: 'Lower energy today.' },
+    { id: 'dead', label: 'COOKED', icon: Ghost, color: 'bg-slate-300', shadow: 'shadow-neo', text: 'Survival mode active.' },
   ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass p-8 rounded-2xl mb-10 border-primary/20"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-white p-8 md:p-12 rounded-[40px] mb-12 border-4 border-[#0A192F]/5 shadow-sm relative overflow-hidden"
     >
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight italic uppercase">Status Report, Agent.</h2>
-          <p className="text-slate-400 font-medium">Initialize your mindset for this session.</p>
-        </div>
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#00D1FF]/10 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="flex flex-col mb-10 text-center">
+        <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#0A192F] mb-4">Status Report, <span className="text-[#00D1FF]">Agent.</span></h2>
+        <p className="text-[#64748B] text-lg font-medium">Initialize your mindset for this session.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
         {vibes.map((v) => (
           <button
             key={v.id}
             onClick={() => onSelect(v.id)}
-            className="group relative flex flex-col items-center p-6 bg-card-dark/50 border border-white/5 rounded-xl hover:border-primary/40 hover:-translate-y-1 transition-all"
+            className={`group relative flex flex-col items-center p-8 bg-slate-50 border-4 border-transparent rounded-[32px] hover:bg-white hover:border-[#0A192F]/10 hover:-translate-y-2 transition-all duration-300 ${v.shadow}`}
           >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${v.color} text-white shadow-lg shadow-black/20 group-hover:scale-110 transition-transform`}>
-              <v.icon size={24} strokeWidth={2.5} />
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${v.color} text-white shadow-lg group-hover:scale-110 transition-transform`}>
+              <v.icon size={28} strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-lg uppercase tracking-wider mb-1">{v.label}</span>
-            <span className="text-xs text-slate-500 text-center font-medium leading-tight">{v.text}</span>
+            <span className="font-extrabold text-xl text-[#0A192F] tracking-tight mb-2">{v.label}</span>
+            <span className="text-sm text-[#64748B] text-center font-medium leading-tight">{v.text}</span>
           </button>
         ))}
       </div>
@@ -93,7 +91,6 @@ export function Dashboard() {
     streak: 0,
     xp: 0
   });
-  const [userGoals, setUserGoals] = useState<any>(null);
   const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [vibe, setVibe] = useState<string | null>(null);
@@ -102,29 +99,15 @@ export function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
-      fetchUserGoals();
     }
   }, [user]);
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) setGreeting('GOOD MORNING');
-    else if (hour < 18) setGreeting('GOOD AFTERNOON');
-    else setGreeting('GOOD EVENING');
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
   }, []);
-
-  const fetchUserGoals = async () => {
-    try {
-      const { data } = await supabase
-        .from('user_study_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (data) setUserGoals(data);
-    } catch (e) {
-      console.log('No goals found yet');
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
@@ -222,8 +205,8 @@ export function Dashboard() {
   if (loading || dashboardLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
-        <div className="w-16 h-16 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        <p className="mt-6 font-bold tracking-[0.3em] text-slate-500 uppercase">Synchronizing Systems...</p>
+        <div className="w-16 h-16 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin"></div>
+        <p className="mt-6 font-extrabold tracking-widest text-[#0A192F] uppercase">Loading Elevenfolks...</p>
       </div>
     );
   }
@@ -239,7 +222,7 @@ export function Dashboard() {
     .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())[0];
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
+    <div className="space-y-12 animate-fade-in pb-20">
       <AnimatePresence>
         {!vibe && (
           <VibeCheck onSelect={setVibe} />
@@ -248,216 +231,195 @@ export function Dashboard() {
 
       {vibe && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="space-y-8"
+          className="space-y-12"
         >
-          {/* Hero Section */}
-          <div className="relative group">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <h2 className="text-xl sm:text-2xl font-bold">{greeting}, {displayName}</h2>
-              <div className="glass px-4 py-2 rounded-xl flex items-center justify-between sm:justify-start gap-3 shadow-lg shadow-black/10">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-neo-accent fill-neo-accent" />
-                  <span className="font-bold text-xl tabular-nums">{stats.streak.toString().padStart(2, '0')}</span>
+          {/* Header Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0A192F] tracking-tight">
+              {greeting}, <span className="text-[#00D1FF]">{displayName}</span>
+            </h1>
+            <div className="bg-white px-6 py-3 rounded-full flex items-center justify-between sm:justify-start gap-4 shadow-sm border-2 border-[#0A192F]/5">
+              <div className="flex items-center gap-2">
+                <Flame className="w-6 h-6 text-[#F472B6] fill-[#F472B6]" />
+                <span className="font-extrabold text-2xl text-[#0A192F] tabular-nums">{stats.streak.toString().padStart(2, '0')}</span>
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-[#64748B]">Day Streak</span>
+            </div>
+          </div>
+
+          {/* Hero Banner Module */}
+          <div className="relative overflow-hidden rounded-[40px] bg-[#0A192F] p-8 md:p-12 shadow-[0_20px_40px_rgba(10,25,47,0.15)] flex flex-col md:flex-row items-center justify-between gap-10">
+            <div className="absolute -top-32 -left-32 w-80 h-80 bg-[#00D1FF] rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob" />
+            <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-[#F472B6] rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-2000" />
+
+            <div className="relative z-10 space-y-6 max-w-2xl text-white">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full font-bold text-xs uppercase tracking-widest text-[#00D1FF] backdrop-blur-sm">
+                <Target className="w-4 h-4" /> Priority Target
+              </div>
+
+              <div>
+                <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] mb-4 text-white">
+                  {primaryTask?.subject || "Establish Objective"}
+                </h2>
+                <p className="text-slate-300 text-lg md:text-xl font-medium leading-relaxed">
+                  {primaryTask?.topic || "Initialize a new study plan to begin your focus campaign."}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 pt-4">
+                {primaryTask ? (
+                  <Link to={`/study/${primaryTask.planId}`} className="w-full sm:w-auto">
+                    <button className="w-full sm:w-auto neo-button bg-[#00D1FF] text-[#0A192F] px-10 py-5 text-xl font-extrabold hover:scale-105 transition-transform shadow-float-cyan flex items-center justify-center gap-3">
+                      Engage Task <ArrowRight className="h-6 w-6 stroke-[3px]" />
+                    </button>
+                  </Link>
+                ) : (
+                  <Link to="/create" className="w-full sm:w-auto">
+                    <button className="w-full sm:w-auto neo-button bg-[#00D1FF] text-[#0A192F] px-10 py-5 text-xl font-extrabold hover:scale-105 transition-transform shadow-float-cyan flex items-center justify-center gap-3">
+                      New Plan <Target className="h-6 w-6 stroke-[3px]" />
+                    </button>
+                  </Link>
+                )}
+
+                <div className="text-center sm:text-left">
+                  <p className="font-extrabold text-2xl text-white">{remainingCount}</p>
+                  <p className="text-sm font-bold uppercase tracking-widest text-[#F472B6]">Pending Today</p>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Day Streak</span>
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-card-dark to-card-dark border border-primary/30 p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
-              <div className="relative z-10 space-y-4 max-w-xl">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <span className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-primary uppercase bg-primary/10 rounded-full border border-primary/20">
-                    Priority Target
-                  </span>
-                  <span className="px-3 py-1 text-[10px] sm:text-xs font-bold tracking-wider text-slate-400 uppercase bg-slate-900/50 rounded-full border border-white/5">
-                    Mode: {vibe.toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-3xl sm:text-4xl font-black mt-3 tracking-tight italic uppercase break-words">
-                    {primaryTask?.subject || "Establish Objective"}
-                  </h3>
-                  <p className="text-slate-400 text-base sm:text-lg leading-relaxed max-w-lg mt-2">
-                    {primaryTask?.topic || "Initialize a new study plan to begin your focus campaign."}
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4 w-full sm:w-auto">
-                  {primaryTask ? (
-                    <Link to={`/study/${primaryTask.planId}`} className="w-full sm:w-auto">
-                      <button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
-                        Engage <ArrowRight className="h-5 w-5 stroke-[2.5]" />
-                      </button>
-                    </Link>
-                  ) : (
-                    <Link to="/create" className="w-full sm:w-auto">
-                      <button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]">
-                        New Plan <Target className="h-5 w-5 stroke-[2.5]" />
-                      </button>
-                    </Link>
-                  )}
-                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Logistics</span>
-                    <span className="text-sm font-bold">{remainingCount} targets pending today</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Decorative Icon */}
-              <div className="hidden md:flex absolute right-[-40px] top-[-20px] items-center justify-center opacity-[0.03] rotate-12 pointer-events-none">
-                <Zap size={320} className="text-white" />
+            {/* Visual Element Right Side */}
+            <div className="hidden md:flex relative z-10 p-8">
+              <div className="w-48 h-48 bg-white/5 backdrop-blur-md rounded-[40px] border-4 border-white/10 flex items-center justify-center rotate-6 shadow-2xl">
+                <Brain className="w-24 h-24 text-[#00D1FF] opacity-90" />
               </div>
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Stats Grid - Massive numbers */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: 'Completed', val: stats.completedTasks, icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-              { label: 'Pending', val: remainingCount, icon: Target, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-              { label: 'Active Plans', val: stats.activePlans, icon: Calendar, color: 'text-primary', bg: 'bg-primary/10' },
-              { label: 'Next Exam', val: upcomingExam ? format(new Date(upcomingExam.exam_date), 'MMM dd') : 'N/A', icon: Trophy, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+              { label: 'Completed', val: stats.completedTasks, color: '#34D399', bg: 'bg-[#34D399]', shadow: 'shadow-float-mint' },
+              { label: 'Total XP', val: stats.xp, color: '#00D1FF', bg: 'bg-[#00D1FF]', shadow: 'shadow-float-cyan' },
+              { label: 'Active Plans', val: stats.activePlans, color: '#F472B6', bg: 'bg-[#F472B6]', shadow: 'shadow-float-pink' },
+              { label: 'Next Exam', val: upcomingExam ? format(new Date(upcomingExam.exam_date), 'MMM dd') : 'N/A', color: '#0A192F', bg: 'bg-[#0A192F]', shadow: 'shadow-neo', textLight: true },
             ].map((s, i) => (
-              <div key={i} className="glass p-6 rounded-2xl border-white/5 hover:border-white/10 transition-all flex items-center gap-4 group">
-                <div className={`w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center ${s.color} transition-transform group-hover:scale-105`}>
-                  <s.icon className="h-6 w-6 stroke-[2.5]" />
+              <div key={i} className={`p-8 rounded-[32px] ${s.bg} text-${s.textLight ? 'white' : '[#0A192F]'} ${s.shadow} transform hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group`}>
+                <div className="absolute top-0 right-0 p-6 opacity-20 transition-transform group-hover:scale-110 group-hover:rotate-12">
+                  <Target className={`w-16 h-16 ${s.textLight ? 'text-white' : 'text-[#0A192F]'}`} />
                 </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{s.label}</p>
-                  <p className="text-2xl font-black tracking-tight">{s.val}</p>
-                </div>
+                <p className={`text-sm font-extrabold uppercase tracking-widest mb-2 opacity-80`}>{s.label}</p>
+                <p className={`text-5xl font-extrabold tracking-tighter`}>{s.val}</p>
               </div>
             ))}
           </div>
 
-          {/* Main Content Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
-            {/* Mission Log (Task List) */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black uppercase italic flex items-center gap-3">
-                  <ListChecks className="h-6 w-6 text-primary" />
-                  Mission Log
-                </h3>
-              </div>
+          {/* Main Layout Bottom */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-              <div className="space-y-3">
-                {todaysTasks.length > 0 ? (
-                  todaysTasks.map((task, i) => (
-                    <div
-                      key={i}
-                      className={`group flex items-center justify-between p-5 rounded-2xl border transition-all ${task.completed
-                        ? 'bg-slate-900/40 border-slate-800 opacity-60'
-                        : 'bg-card-dark border-white/5 hover:border-primary/30 shadow-lg shadow-black/5'
-                        }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-all ${task.completed
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : 'border-slate-700 group-hover:border-primary/50'
-                          }`}>
-                          {task.completed && <CheckCircle size={14} strokeWidth={3} />}
-                        </div>
-                        <div>
-                          <h4 className={`font-bold transition-all ${task.completed ? 'text-slate-500 line-through' : 'text-slate-200 uppercase italic'}`}>
-                            {task.topic}
-                          </h4>
-                          <div className="flex items-center gap-3 mt-1.5">
-                            <span className="text-[10px] font-black tracking-widest px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 uppercase">
-                              {task.subject}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
-                              {task.completed ? (
-                                <><CheckCircle size={10} strokeWidth={3} className="text-emerald-500" /> SECURED</>
-                              ) : (
-                                <><Clock size={10} strokeWidth={3} /> ACTIVE MISSION</>
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {!task.completed && (
-                        <Link to={`/study/${task.planId}`}>
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-primary/10 rounded-lg text-primary">
-                            <ArrowRight size={20} strokeWidth={3} />
-                          </div>
-                        </Link>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center p-16 glass border-dashed border-2 border-white/5 rounded-3xl opacity-50">
-                    <p className="font-bold tracking-[0.2em] uppercase">No mission targets today.</p>
+            {/* Mission Log */}
+            <div className="lg:col-span-2">
+              <div className="bg-white p-8 md:p-10 rounded-[40px] border-4 border-[#0A192F]/5 shadow-sm">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full flex items-center justify-center">
+                    <ListChecks className="w-6 h-6 stroke-[2.5px]" />
                   </div>
-                )}
+                  <h3 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">Mission Log</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {todaysTasks.length > 0 ? (
+                    todaysTasks.map((task, i) => (
+                      <div
+                        key={i}
+                        className={`group relative flex items-center justify-between p-6 rounded-[24px] border-4 transition-all duration-300 ${task.completed
+                          ? 'bg-slate-50 border-transparent opacity-60 grayscale'
+                          : 'bg-white border-[#0A192F]/5 hover:border-[#00D1FF] hover:shadow-float-cyan'
+                          }`}
+                      >
+                        <div className="flex items-center gap-6">
+                          <button className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${task.completed ? 'bg-[#34D399] border-[#34D399] text-white' : 'border-[#64748B] text-transparent hover:border-[#00D1FF]'}`}>
+                            <CheckCircle size={16} strokeWidth={3} />
+                          </button>
+                          <div>
+                            <h4 className={`text-xl font-extrabold mb-1 transition-all ${task.completed ? 'text-slate-400 line-through' : 'text-[#0A192F]'}`}>
+                              {task.topic}
+                            </h4>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold tracking-widest px-3 py-1 rounded-full bg-slate-100 text-slate-500 uppercase">
+                                {task.subject}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {!task.completed && (
+                          <Link to={`/study/${task.planId}`}>
+                            <button className="w-12 h-12 bg-[#0A192F] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hover:bg-[#00D1FF] shadow-md">
+                              <ArrowRight size={20} strokeWidth={3} />
+                            </button>
+                          </Link>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center p-16 bg-slate-50 border-4 border-dashed border-slate-200 rounded-[32px]">
+                      <p className="font-extrabold text-xl text-slate-400 uppercase tracking-widest">No mission targets today.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Sidebar (Tools & Extras) */}
-            <div className="space-y-8">
-              {/* Armory (Quick Tools) */}
-              <div className="glass p-6 rounded-2xl border-white/5">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-6 border-b border-white/5 pb-2">Armory</h3>
-                <div className="grid grid-cols-2 gap-3">
+            {/* Sidebar Modules */}
+            <div className="space-y-10">
+
+              {/* Focus Deck mini widget */}
+              <div className="bg-[#0A192F] text-white p-8 rounded-[40px] relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F472B6]/20 rounded-full blur-[40px] pointer-events-none" />
+
+                <div className="flex items-center gap-3 mb-8 relative z-10">
+                  <div className="w-10 h-10 bg-[#00D1FF] rounded-full flex items-center justify-center text-[#0A192F]">
+                    <Timer size={20} strokeWidth={2.5} />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-white">Focus Deck</h3>
+                </div>
+
+                <div className="text-center py-6 bg-white/5 rounded-[24px] border border-white/10 mb-8 relative z-10">
+                  <span className="text-6xl font-extrabold tracking-tighter text-white">25<span className="text-[#00D1FF]">:</span>00</span>
+                </div>
+
+                <button className="w-full neo-button bg-[#00D1FF] text-[#0A192F] py-4 text-lg shadow-float-cyan hover:scale-[1.02] transition-transform relative z-10">
+                  Initiate Focus
+                </button>
+              </div>
+
+              {/* Quick Tools */}
+              <div className="bg-white p-8 rounded-[40px] border-4 border-[#0A192F]/5 shadow-sm">
+                <h3 className="text-xl font-extrabold text-[#0A192F] mb-6">Quick Tools</h3>
+                <div className="grid grid-cols-2 gap-4">
                   {[
-                    { label: 'SAT Sim', icon: Brain, path: '/sat-simulator' },
-                    { label: 'Solver', icon: Zap, path: '/guided-paper' },
-                    { label: 'Videos', icon: ListChecks, path: '/videos' },
-                    { label: 'Feynman', icon: Mic, path: '/feynman' },
+                    { label: 'SAT Sim', icon: Target, path: '/sat-simulator', color: 'text-[#F472B6]', bg: 'bg-[#F472B6]/10' },
+                    { label: 'Solver', icon: Zap, path: '/guided-paper', color: 'text-[#00D1FF]', bg: 'bg-[#00D1FF]/10' },
+                    { label: 'Videos', icon: ListChecks, path: '/videos', color: 'text-[#34D399]', bg: 'bg-[#34D399]/10' },
+                    { label: 'Feynman', icon: Mic, path: '/feynman', color: 'text-[#A855F7]', bg: 'bg-[#A855F7]/10' }, // Kept one small purple icon as exception, or replace with another color. Let's replace with orange/gold
                   ].map((tool, i) => (
                     <Link
                       key={i}
                       to={tool.path}
-                      className="flex flex-col items-center justify-center gap-2 p-4 bg-slate-900/40 rounded-xl border border-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                      className="flex flex-col items-center justify-center gap-3 p-6 bg-slate-50 rounded-[24px] border-4 border-transparent hover:bg-white hover:border-[#0A192F]/10 hover:-translate-y-1 hover:shadow-lg transition-all"
                     >
-                      <tool.icon size={20} className="text-primary group-hover:scale-110 transition-transform" />
-                      <span className="text-[10px] font-black uppercase tracking-tighter">{tool.label}</span>
+                      <div className={`w-12 h-12 rounded-full ${tool.bg} ${tool.color} flex items-center justify-center`}>
+                        <tool.icon size={24} strokeWidth={2.5} />
+                      </div>
+                      <span className="text-sm font-bold text-[#0A192F]">{tool.label}</span>
                     </Link>
                   ))}
                 </div>
               </div>
 
-              {/* Countdown Sticker */}
-              {upcomingExam && (
-                <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-rose-500/10 to-transparent border border-rose-500/20">
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[10px] font-black tracking-widest uppercase text-rose-500/70 italic">Final Contact</span>
-                      <Trophy size={16} className="text-rose-500" />
-                    </div>
-                    <p className="text-sm font-bold text-slate-400 mb-1">{upcomingExam.subject}</p>
-                    <p className="text-3xl font-black tracking-tight italic uppercase drop-shadow-lg">
-                      {differenceInDays(new Date(upcomingExam.exam_date), new Date())} Days
-                    </p>
-                    <div className="mt-4 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden border border-white/5">
-                      <div
-                        className="bg-rose-500 h-full rounded-full shadow-[0_0_10px_rgba(244,63,94,0.5)]"
-                        style={{ width: '35%' }}
-                      ></div>
-                    </div>
-                    <p className="mt-3 text-[10px] text-slate-500 uppercase tracking-widest font-black italic">Locked and Loaded.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Focus Timer Mini */}
-              <div className="glass p-6 rounded-2xl border-primary/20 relative overflow-hidden">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <Timer size={18} strokeWidth={2.5} className="animate-pulse" />
-                  </div>
-                  <h3 className="text-sm font-black uppercase tracking-widest italic">Focus Deck</h3>
-                </div>
-                <div className="text-center py-4 bg-slate-950/40 rounded-xl border border-white/5 mb-6">
-                  <span className="text-4xl font-mono font-black text-primary drop-shadow-[0_0_15px_rgba(54,128,247,0.4)]">25:00</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="py-2.5 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Engage</button>
-                  <button className="py-2.5 bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-700 transition-all">Reset</button>
-                </div>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -465,3 +427,4 @@ export function Dashboard() {
     </div>
   );
 }
+

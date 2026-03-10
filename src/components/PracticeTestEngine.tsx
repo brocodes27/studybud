@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Clock, CheckCircle, X, Trophy, Target } from 'lucide-react';
+import { FileText, Clock, CheckCircle, X, Trophy, Target, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -75,10 +75,7 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(prev => {
-          if (prev <= 1) {
-            submitTest();
-            return 0;
-          }
+          if (prev <= 1) { submitTest(); return 0; }
           return prev - 1;
         });
       }, 1000);
@@ -86,129 +83,73 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-
   const fetchAvailablePlans = async () => {
     try {
       const { data, error } = await supabase
-        .from('exam_plans')
-        .select('id, subject, class, chapters, exam_date')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
+        .from('exam_plans').select('id, subject, class, chapters, exam_date')
+        .eq('user_id', user?.id).order('created_at', { ascending: false });
       if (error) throw error;
       setAvailablePlans(data || []);
-
-      if (!planId && data && data.length > 0) {
-        setSelectedPlan(data[0].id);
-      } else if (planId) {
-        setSelectedPlan(planId);
-      }
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    }
+      if (!planId && data && data.length > 0) setSelectedPlan(data[0].id);
+      else if (planId) setSelectedPlan(planId);
+    } catch (error) { console.error('Error fetching plans:', error); }
   };
 
   const fetchTests = async () => {
     try {
-      let query = supabase
-        .from('practice_tests')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-
-      if (planId) {
-        query = query.eq('plan_id', planId);
-      }
-
+      let query = supabase.from('practice_tests').select('*').eq('user_id', user?.id).order('created_at', { ascending: false });
+      if (planId) query = query.eq('plan_id', planId);
       const { data, error } = await query;
       if (error) throw error;
-
       setTests(data || []);
     } catch (error) {
       console.error('Error fetching tests:', error);
       showToast('Failed to load practice tests', 'error');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const fetchAttempts = async () => {
     try {
       const { data, error } = await supabase
-        .from('practice_test_attempts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('completed_at', { ascending: false })
-        .limit(10);
-
+        .from('practice_test_attempts').select('*').eq('user_id', user?.id)
+        .order('completed_at', { ascending: false }).limit(10);
       if (error) throw error;
       setAttempts(data || []);
-    } catch (error) {
-      console.error('Error fetching attempts:', error);
-    }
+    } catch (error) { console.error('Error fetching attempts:', error); }
   };
 
   const generateTest = async () => {
     const activePlanId = selectedPlan || planId;
-    if (!activePlanId) {
-      showToast('Please select a study plan to generate practice test', 'error');
-      return;
-    }
-
+    if (!activePlanId) { showToast('Please select a study plan', 'error'); return; }
     const selectedPlanData = availablePlans.find(plan => plan.id === activePlanId);
-    if (!selectedPlanData) {
-      showToast('Selected study plan not found', 'error');
-      return;
-    }
+    if (!selectedPlanData) { showToast('Study plan not found', 'error'); return; }
 
     setIsGenerating(true);
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-practice-test`;
-
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
         body: JSON.stringify({
-          subject: selectedPlanData.subject,
-          class: selectedPlanData.class,
-          chapters: selectedPlanData.chapters,
-          plan_id: activePlanId,
-          question_count: 20,
-          duration_minutes: 30
+          subject: selectedPlanData.subject, class: selectedPlanData.class, chapters: selectedPlanData.chapters,
+          plan_id: activePlanId, question_count: 20, duration_minutes: 30
         }),
       });
 
       if (!response.ok) {
         let errorMessage = 'Failed to generate practice test';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (parseError) {
-          try {
-            const errorText = await response.text();
-            if (errorText) {
-              errorMessage = errorText;
-            }
-          } catch (textError) {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          }
-        }
+        try { const errorData = await response.json(); errorMessage = errorData.error || errorData.message || errorMessage; }
+        catch { try { const errorText = await response.text(); if (errorText) errorMessage = errorText; } catch { errorMessage = `HTTP ${response.status}: ${response.statusText}`; } }
         throw new Error(errorMessage);
       }
 
       const newTest = await response.json();
       setTests(prev => [newTest, ...prev]);
-      showToast('Practice test generated successfully!', 'success');
+      showToast('Practice test generated!', 'success');
     } catch (error) {
-      console.error('Error generating test:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate practice test';
       showToast(errorMessage, 'error');
-    } finally {
-      setIsGenerating(false);
-    }
+    } finally { setIsGenerating(false); }
   };
 
   const startTest = (test: PracticeTest) => {
@@ -226,63 +167,28 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     setAnswers(newAnswers);
   };
 
-  const nextQuestion = () => {
-    if (currentQuestion < (currentTest?.total_questions || 0) - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    }
-  };
-
-  const previousQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-    }
-  };
+  const nextQuestion = () => { if (currentQuestion < (currentTest?.total_questions || 0) - 1) setCurrentQuestion(prev => prev + 1); };
+  const previousQuestion = () => { if (currentQuestion > 0) setCurrentQuestion(prev => prev - 1); };
 
   const submitTest = async () => {
     if (!currentTest) return;
-
     setIsActive(false);
-
     let correct = 0;
-    currentTest.questions.forEach((question, index) => {
-      if (answers[index] === question.correct_answer) {
-        correct++;
-      }
-    });
-
+    currentTest.questions.forEach((question, index) => { if (answers[index] === question.correct_answer) correct++; });
     const score = correct;
     const timeTaken = Math.ceil((currentTest.duration_minutes * 60 - timeLeft) / 60);
 
     try {
-      const { error } = await supabase
-        .from('practice_test_attempts')
-        .insert({
-          user_id: user?.id,
-          test_id: currentTest.id,
-          answers: answers,
-          score: score,
-          total_questions: currentTest.total_questions,
-          time_taken_minutes: timeTaken
-        });
-
-      if (error) throw error;
-
-      setTestResults({
-        score,
-        total: currentTest.total_questions,
-        percentage: Math.round((score / currentTest.total_questions) * 100),
-        timeTaken,
-        questions: currentTest.questions,
-        userAnswers: answers
+      const { error } = await supabase.from('practice_test_attempts').insert({
+        user_id: user?.id, test_id: currentTest.id, answers, score,
+        total_questions: currentTest.total_questions, time_taken_minutes: timeTaken
       });
-
+      if (error) throw error;
+      setTestResults({ score, total: currentTest.total_questions, percentage: Math.round((score / currentTest.total_questions) * 100), timeTaken, questions: currentTest.questions, userAnswers: answers });
       setShowResults(true);
       fetchAttempts();
       showToast(`Test completed! Score: ${score}/${currentTest.total_questions}`, 'success');
-    } catch (error) {
-      console.error('Error saving test attempt:', error);
-      showToast('Failed to save test results', 'error');
-    }
+    } catch (error) { showToast('Failed to save test results', 'error'); }
   };
 
   const formatTime = (seconds: number) => {
@@ -292,89 +198,75 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
   };
 
   const getScoreColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-neo-secondary';
-    if (percentage >= 60) return 'text-neo-bg';
-    return 'text-neo-accent';
+    if (percentage >= 80) return 'text-[#34D399]';
+    if (percentage >= 60) return 'text-[#00D1FF]';
+    return 'text-[#F472B6]';
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 space-y-8 text-slate-100">
-        <div className="w-20 h-20 border border-white/10 border-t-neo-accent animate-spin" />
-        <h3 className="text-2xl font-black uppercase tracking-tighter italic">LOADING_CHAMBERS...</h3>
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <div className="w-10 h-10 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
+        <p className="text-sm font-bold text-[#64748B]">Loading tests...</p>
       </div>
     );
   }
 
   if (showResults && testResults) {
     return (
-      <div className="p-10 space-y-10 bg-slate-950 min-h-full">
+      <div className="p-6 space-y-6">
         {/* Results Header */}
-        <div className="bg-slate-800 border border-white/10 p-12 text-center shadow-neo rotate-1">
-          <div className="bg-neo-secondary border border-white/10 p-6 rounded-2xl mb-8 inline-block shadow-neo -rotate-12">
-            <Trophy className="h-20 w-20 text-slate-100 stroke-[3px]" />
+        <div className="neo-card text-center py-10">
+          <div className="w-20 h-20 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[20px] flex items-center justify-center mx-auto mb-6">
+            <Trophy className="h-10 w-10 text-[#34D399]" />
           </div>
-          <h3 className="text-5xl font-black text-slate-100 mb-10 uppercase tracking-tighter italic leading-none">EXAM_SEQUENCE_COMPLETE</h3>
+          <h3 className="text-2xl font-extrabold text-[#0A192F] mb-8 tracking-tight">Test Complete!</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div className="bg-slate-800 border border-white/10 p-6 shadow-neo">
-              <p className={`text-6xl font-black ${getScoreColor(testResults.percentage)} italic`}>
-                {testResults.score}/{testResults.total}
-              </p>
-              <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2">TOTAL_SCORE</p>
-            </div>
-            <div className="bg-slate-800 border border-white/10 p-6 shadow-neo rotate-2">
-              <p className="text-6xl font-black text-neo-accent italic">{testResults.percentage}%</p>
-              <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2">ACCURACY_INDEX</p>
-            </div>
-            <div className="bg-slate-800 border border-white/10 p-6 shadow-neo -rotate-2">
-              <p className="text-6xl font-black text-neo-muted italic">{testResults.timeTaken}M</p>
-              <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2">TIME_EXPENDED</p>
-            </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Score', value: `${testResults.score}/${testResults.total}`, color: getScoreColor(testResults.percentage) },
+              { label: 'Accuracy', value: `${testResults.percentage}%`, color: getScoreColor(testResults.percentage) },
+              { label: 'Time', value: `${testResults.timeTaken}m`, color: 'text-[#64748B]' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-[#F8FAFF] rounded-[16px] border-2 border-[#0A192F]/5 p-4">
+                <p className={`text-3xl font-extrabold ${stat.color} tracking-tight`}>{stat.value}</p>
+                <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest mt-1">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Question Review */}
-        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo">
-          <h4 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 border-b-4 border-white/10 pb-4">RETROSPECTIVE_ANALYSIS</h4>
-          <div className="space-y-8 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
+        <div className="neo-card">
+          <h4 className="text-lg font-extrabold text-[#0A192F] mb-6 tracking-tight">Review Answers</h4>
+          <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2">
             {testResults.questions.map((question: Question, index: number) => {
               const userAnswer = testResults.userAnswers[index];
               const isCorrect = userAnswer === question.correct_answer;
-
               return (
-                <div key={index} className={`p-8 border border-white/10 shadow-neo ${isCorrect ? 'bg-neo-secondary/30' : 'bg-neo-accent/10'}`}>
-                  <div className="flex items-start gap-6">
-                    <div className={`p-2 border border-white/10 ${isCorrect ? 'bg-neo-secondary' : 'bg-neo-accent'} -rotate-12`}>
-                      {isCorrect ? <CheckCircle className="h-6 w-6 text-slate-100 stroke-[4px]" /> : <X className="h-6 w-6 text-white stroke-[4px]" />}
+                <div key={index} className={`rounded-[16px] border-2 p-5 ${isCorrect ? 'bg-[#34D399]/5 border-[#34D399]/20' : 'bg-[#F472B6]/5 border-[#F472B6]/20'}`}>
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isCorrect ? 'bg-[#34D399]/10' : 'bg-[#F472B6]/10'}`}>
+                      {isCorrect ? <CheckCircle className={`h-5 w-5 text-[#34D399]`} /> : <X className={`h-5 w-5 text-[#F472B6]`} />}
                     </div>
-                    <div className="flex-grow">
-                      <p className="text-xl font-black text-slate-100 uppercase tracking-tight italic mb-6 leading-tight">{question.question}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {question.options.map((option, optionIndex) => (
-                          <div key={optionIndex} className={`p-4 border border-white/10 font-black uppercase text-xs tracking-widest ${optionIndex === question.correct_answer
-                            ? 'bg-neo-secondary'
-                            : optionIndex === userAnswer && !isCorrect
-                              ? 'bg-neo-accent text-white'
-                              : 'bg-slate-800 text-slate-100/40'
-                            }`}>
-                            {String.fromCharCode(65 + optionIndex)}. {option}
-                          </div>
-                        ))}
+                    <p className="font-semibold text-[#0A192F] text-sm leading-relaxed">{question.question}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 ml-11">
+                    {question.options.map((option, optionIndex) => (
+                      <div key={optionIndex} className={`px-3 py-2 rounded-[10px] text-sm font-medium ${optionIndex === question.correct_answer ? 'bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30' : optionIndex === userAnswer && !isCorrect ? 'bg-[#F472B6]/15 text-[#F472B6] border border-[#F472B6]/30' : 'text-[#64748B]'}`}>
+                        <span className="font-bold mr-2">{String.fromCharCode(65 + optionIndex)}.</span>{option}
                       </div>
-
-                      {/* AI Explanation Gate */}
-                      <div className="mt-8 pt-8 border-t-4 border-white/10/10">
-                        <FeatureGate fallback="blur" featureName="AI Logic Breakdown">
-                          <div className="bg-slate-800 border border-white/10 p-6 relative">
-                            <div className="absolute -top-3 left-4 bg-slate-900 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-widest">AI_LOGIC_CORE</div>
-                            <p className="font-bold text-sm leading-relaxed text-slate-100/80">
-                              {question.explanation || "Detailed neural analysis reveals the logical pathway to the correct answer involves identifying key constraints in the problem statement..."}
-                            </p>
-                          </div>
-                        </FeatureGate>
+                    ))}
+                  </div>
+                  <div className="mt-4 ml-11">
+                    <FeatureGate fallback="blur" featureName="AI Logic Breakdown">
+                      <div className="bg-[#F8FAFF] rounded-[12px] p-4 border-2 border-[#0A192F]/5">
+                        <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Explanation</p>
+                        <p className="text-sm font-medium text-[#0A192F] leading-relaxed">
+                          {question.explanation || "Detailed analysis reveals the logical pathway to the correct answer involves identifying key constraints in the problem statement."}
+                        </p>
                       </div>
-                    </div>
+                    </FeatureGate>
                   </div>
                 </div>
               );
@@ -382,21 +274,12 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8">
-          <button
-            onClick={() => {
-              setShowResults(false);
-              setCurrentTest(null);
-            }}
-            className="flex-1 bg-slate-900 text-white py-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo"
-          >
-            TERMINATE_SESSION
+        <div className="flex gap-4">
+          <button onClick={() => { setShowResults(false); setCurrentTest(null); }} className="flex-1 py-3 rounded-[12px] border-2 border-[#0A192F]/10 text-[#64748B] font-bold hover:border-[#0A192F]/20 transition-colors">
+            Back to Tests
           </button>
-          <button
-            onClick={() => startTest(currentTest!)}
-            className="flex-1 bg-slate-800 text-slate-100 py-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-secondary hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo"
-          >
-            REBOOT_SEQUENCE
+          <button onClick={() => startTest(currentTest!)} className="flex-1 neo-button py-3">
+            Retake Test
           </button>
         </div>
       </div>
@@ -405,104 +288,62 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
 
   if (currentTest && isActive) {
     const question = currentTest.questions[currentQuestion];
-
     return (
-      <div className="p-10 space-y-12 bg-slate-800 border-l-8 border-white/10 min-h-full">
+      <div className="p-6 space-y-6">
         {/* Test Header */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-10">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">{currentTest.title.toUpperCase()}</h3>
-            <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mt-3">DEPLOYED_INDEX: {currentQuestion + 1} / {currentTest.total_questions}</p>
+            <h3 className="text-lg font-extrabold text-[#0A192F] tracking-tight">{currentTest.title}</h3>
+            <p className="text-xs font-medium text-[#64748B]">Question {currentQuestion + 1} of {currentTest.total_questions}</p>
           </div>
-          <div className="flex items-center gap-6">
-            <div className={`
-                px-8 py-4 border border-white/10 font-black text-4xl italic tabular-nums shadow-neo rotate-2
-                ${timeLeft < 300 ? 'bg-neo-accent text-white' : 'bg-neo-secondary'}
-            `}>
-              <Clock className="h-8 w-8 inline mr-3 stroke-[4px]" />
-              {formatTime(timeLeft)}
-            </div>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-[12px] border-2 font-bold text-sm ${timeLeft < 300 ? 'bg-[#F472B6]/10 border-[#F472B6]/20 text-[#F472B6]' : 'bg-[#00D1FF]/10 border-[#00D1FF]/20 text-[#00D1FF]'}`}>
+            <Clock className="h-4 w-4" /> {formatTime(timeLeft)}
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-900/5 border border-white/10 h-8 relative overflow-hidden">
-          <div
-            className="bg-neo-accent h-full transition-all duration-300 border-r-4 border-white/10 shadow-neo"
-            style={{ width: `${((currentQuestion + 1) / currentTest.total_questions) * 100}%` }}
-          ></div>
+        <div className="h-2 w-full bg-[#0A192F]/5 rounded-full overflow-hidden">
+          <div className="bg-[#00D1FF] h-full rounded-full transition-all" style={{ width: `${((currentQuestion + 1) / currentTest.total_questions) * 100}%` }} />
         </div>
 
         {/* Question */}
-        <div className="bg-slate-800 border border-white/10 p-12 shadow-neo -rotate-1 relative">
-          <div className="absolute -top-6 left-10 bg-slate-900 text-white px-6 py-2 font-black uppercase text-xs tracking-[0.3em] rotate-1">
-            QUERY_PACKET_{currentQuestion + 1}
-          </div>
-          <h4 className="text-3xl font-black text-slate-100 mb-12 uppercase tracking-tight italic leading-snug">{question.question}</h4>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="neo-card">
+          <p className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-4">Question {currentQuestion + 1}</p>
+          <h4 className="text-lg font-semibold text-[#0A192F] mb-6 leading-relaxed">{question.question}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {question.options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => selectAnswer(index)}
-                className={`
-                    w-full text-left p-8 border border-white/10 font-black uppercase tracking-tighter italic text-xl transition-all duration-200 
-                    ${answers[currentQuestion] === index
-                    ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1'
-                    : 'bg-slate-800 shadow-neo hover:bg-slate-900 hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo'
-                  }
-                `}
+                className={`w-full text-left p-4 rounded-[14px] border-2 font-medium text-sm transition-all ${answers[currentQuestion] === index ? 'bg-[#00D1FF]/10 border-[#00D1FF] text-[#0A192F]' : 'bg-[#F8FAFF] border-[#0A192F]/5 text-[#64748B] hover:border-[#00D1FF]/30 hover:text-[#0A192F]'}`}
               >
-                <span className="inline-block bg-slate-900 text-white px-3 py-1 mr-4 -rotate-12 border border-white/10">{String.fromCharCode(65 + index)}</span>
-                {option}
+                <span className="font-bold text-[#00D1FF] mr-3">{String.fromCharCode(65 + index)}.</span>{option}
               </button>
             ))}
           </div>
         </div>
 
+        {/* Question Nav Dots */}
+        <div className="flex flex-wrap gap-2 justify-center">
+          {Array.from({ length: currentTest.total_questions }, (_, i) => (
+            <button key={i} onClick={() => setCurrentQuestion(i)} className={`w-8 h-8 rounded-full text-xs font-bold transition-all ${i === currentQuestion ? 'bg-[#00D1FF] text-white' : answers[i] !== -1 ? 'bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/30' : 'bg-[#F8FAFF] border-2 border-[#0A192F]/10 text-[#64748B]'}`}>
+              {i + 1}
+            </button>
+          ))}
+        </div>
+
         {/* Navigation */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-t-4 border-white/10 pt-10">
-          <button
-            onClick={previousQuestion}
-            disabled={currentQuestion === 0}
-            className="w-full md:w-auto bg-slate-800 border border-white/10 px-10 py-4 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-muted disabled:opacity-20 transition-all shadow-neo"
-          >
-            REVERT_INPUT
+        <div className="flex gap-4">
+          <button onClick={previousQuestion} disabled={currentQuestion === 0} className="flex-1 py-3 rounded-[12px] border-2 border-[#0A192F]/10 text-[#64748B] font-bold flex items-center justify-center gap-2 hover:border-[#0A192F]/20 disabled:opacity-30 transition-colors">
+            <ChevronLeft className="h-4 w-4" /> Previous
           </button>
-
-          <div className="flex gap-3 flex-wrap justify-center max-w-[50%]">
-            {Array.from({ length: currentTest.total_questions }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentQuestion(i)}
-                className={`
-                    w-10 h-10 border border-white/10 font-black text-sm flex items-center justify-center transition-all
-                    ${i === currentQuestion
-                    ? 'bg-slate-900 text-white shadow-neo -translate-y-1'
-                    : answers[i] !== -1
-                      ? 'bg-neo-secondary shadow-none'
-                      : 'bg-slate-800 hover:bg-slate-900 shadow-neo'
-                  }
-                `}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
           {currentQuestion === currentTest.total_questions - 1 ? (
-            <button
-              onClick={submitTest}
-              className="w-full md:w-auto bg-slate-900 text-white px-10 py-4 border border-white/10 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo"
-            >
-              FINAL_UPLOAD
+            <button onClick={submitTest} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
+              <Zap className="h-4 w-4" /> Submit Test
             </button>
           ) : (
-            <button
-              onClick={nextQuestion}
-              className="w-full md:w-auto bg-slate-900 text-white px-10 py-4 border border-white/10 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo"
-            >
-              COMMIT_NEXT
+            <button onClick={nextQuestion} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
+              Next <ChevronRight className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -513,115 +354,78 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
   const selectedPlanData = availablePlans.find(plan => plan.id === (selectedPlan || planId));
 
   return (
-    <div className="p-10 space-y-12 relative bg-slate-950 min-h-full">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-6">
-        <div className="bg-neo-secondary border border-white/10 p-4 shadow-neo rotate-3">
-          <FileText className="h-10 w-10 text-slate-100 stroke-[3px]" />
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[16px] flex items-center justify-center">
+          <FileText className="h-6 w-6 text-[#34D399]" />
         </div>
         <div>
-          <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">TEST_CHAMBER</h3>
-          <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: VALIDATION_INTERFACE</p>
+          <h2 className="text-xl font-extrabold text-[#0A192F] tracking-tight">Practice Tests</h2>
+          <p className="text-xs font-medium text-[#64748B]">Test your knowledge with timed exams</p>
         </div>
       </div>
 
-      {/* Plan Selection and Generation */}
-      <div className="bg-slate-800 border border-white/10 p-10 shadow-neo rotate-1">
-        <h4 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 border-b-4 border-white/10 pb-4">GENERATE_EXAM_PACKET</h4>
+      {/* Generate Section */}
+      <div className="neo-card space-y-5">
+        <h4 className="text-base font-extrabold text-[#0A192F] tracking-tight">Generate New Test</h4>
 
-        <div className="space-y-10">
-          {!planId && availablePlans.length > 0 && (
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-slate-100 uppercase tracking-[0.2em] italic">SOURCE_PLAN</label>
-              <select
-                value={selectedPlan}
-                onChange={(e) => setSelectedPlan(e.target.value)}
-                className="w-full bg-slate-800 border border-white/10 px-6 py-4 font-black text-xl italic focus:bg-neo-secondary outline-none transition-all shadow-neo"
-              >
-                <option value="">SELECT SOURCE...</option>
-                {availablePlans.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.subject.toUpperCase()} - CLASS_{plan.class}
-                  </option>
-                ))}
-              </select>
+        {!planId && availablePlans.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Study Plan</label>
+            <select
+              value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)}
+              className="w-full px-4 py-3 rounded-[12px] border-2 border-[#0A192F]/10 font-medium text-[#0A192F] bg-white focus:outline-none focus:border-[#34D399]/40"
+            >
+              <option value="">Select a plan...</option>
+              {availablePlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.subject} - Class {plan.class}</option>)}
+            </select>
+          </div>
+        )}
+
+        {selectedPlanData && (
+          <div className="bg-[#34D399]/5 rounded-[14px] border-2 border-[#34D399]/15 p-4">
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div><p className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1">Subject</p><p className="font-bold text-[#0A192F]">{selectedPlanData.subject}</p></div>
+              <div><p className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1">Class</p><p className="font-bold text-[#0A192F]">{selectedPlanData.class}</p></div>
+              <div><p className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1">Chapters</p><p className="font-bold text-[#0A192F] truncate">{selectedPlanData.chapters}</p></div>
             </div>
-          )}
+          </div>
+        )}
 
-          {selectedPlanData && (
-            <div className="bg-neo-secondary/10 border border-white/10 p-6 -rotate-1">
-              <h5 className="font-black text-slate-100 uppercase tracking-widest text-xs mb-4">PACKET_PARAMETERS</h5>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-[10px] font-black uppercase tracking-widest">
-                <div className="flex flex-col gap-1">
-                  <span className="text-slate-100/40 italic">SUBJECT:</span>
-                  <span className="text-slate-100 text-lg font-black italic">{selectedPlanData.subject}</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-slate-100/40 italic">CLASS:</span>
-                  <span className="text-slate-100 text-lg font-black italic">{selectedPlanData.class}</span>
-                </div>
-                <div className="col-span-2 md:col-span-1 flex flex-col gap-1">
-                  <span className="text-slate-100/40 italic">CONSTRAINTS:</span>
-                  <span className="text-slate-100 text-lg font-black italic truncate">{selectedPlanData.chapters}</span>
-                </div>
-              </div>
-            </div>
+        <button onClick={generateTest} disabled={isGenerating || (!selectedPlan && !planId)} className="neo-button w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50">
+          {isGenerating ? (
+            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generating...</>
+          ) : (
+            <><Target className="h-4 w-4" /> Generate Test (20 Questions · 30 min)</>
           )}
-
-          <button
-            onClick={generateTest}
-            disabled={isGenerating || (!selectedPlan && !planId)}
-            className="w-full bg-slate-900 text-white py-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo disabled:opacity-50 flex items-center justify-center gap-6"
-          >
-            {isGenerating ? (
-              <>
-                <div className="w-8 h-8 border border-white/30 border-t-white rounded-full animate-spin"></div>
-                PROCESSING_PACKET...
-              </>
-            ) : (
-              <>
-                <Target className="h-10 w-10 stroke-[4px]" />
-                COMPILED_TEST (20Q / 30M)
-              </>
-            )}
-          </button>
-        </div>
+        </button>
       </div>
 
       {/* Available Tests */}
       {tests.length === 0 ? (
-        <div className="bg-slate-800 border border-white/10 p-20 text-center shadow-neo rotate-1">
-          <FileText className="h-20 w-20 text-slate-100/10 mx-auto mb-8" />
-          <h4 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic mb-4">CHAMBER_EMPTY</h4>
-          <p className="text-slate-100 font-bold uppercase tracking-widest text-sm mb-10 leading-relaxed">NO ACTIVE TEST PACKETS FOUND. INITIALIZE GENERATION PROTOCOL.</p>
+        <div className="neo-card text-center py-12">
+          <FileText className="h-14 w-14 text-[#0A192F]/10 mx-auto mb-4" />
+          <h4 className="text-base font-extrabold text-[#0A192F] mb-2">No tests yet</h4>
+          <p className="text-sm font-medium text-[#64748B]">Generate your first practice test above</p>
         </div>
       ) : (
         <div>
-          <h4 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic mb-10 border-b-4 border-white/10 pb-4">ACTIVE_CHAMBERS</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {tests.map((test, idx) => (
-              <div key={test.id} className={`
-                bg-slate-800 border border-white/10 p-8 shadow-neo transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo
-                ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}
-              `}>
-                <h4 className="text-3xl font-black text-slate-100 mb-2 uppercase tracking-tight italic leading-none">{test.title}</h4>
-                <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mb-8 italic">{test.subject}</p>
-
-                <div className="grid grid-cols-2 gap-4 mb-10">
-                  <div className="bg-slate-900 p-3 border border-white/10 flex items-center gap-3 font-black uppercase text-[10px] tracking-widest">
-                    <Target className="h-5 w-5 stroke-[3px]" /> {test.total_questions} NODES
+          <h4 className="text-base font-extrabold text-[#0A192F] mb-4 tracking-tight">Available Tests</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tests.map((test) => (
+              <div key={test.id} className="neo-card hover:-translate-y-1 transition-all">
+                <h4 className="text-base font-extrabold text-[#0A192F] mb-1 tracking-tight">{test.title}</h4>
+                <p className="text-xs font-medium text-[#64748B] mb-4">{test.subject}</p>
+                <div className="flex gap-3 mb-5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] bg-[#F8FAFF] rounded-[8px] px-3 py-1.5 border border-[#0A192F]/5">
+                    <Target className="h-3.5 w-3.5" /> {test.total_questions} questions
                   </div>
-                  <div className="bg-slate-900 p-3 border border-white/10 flex items-center gap-3 font-black uppercase text-[10px] tracking-widest">
-                    <Clock className="h-5 w-5 stroke-[3px]" /> {test.duration_minutes} MINS
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] bg-[#F8FAFF] rounded-[8px] px-3 py-1.5 border border-[#0A192F]/5">
+                    <Clock className="h-3.5 w-3.5" /> {test.duration_minutes} min
                   </div>
                 </div>
-
-                <button
-                  onClick={() => startTest(test)}
-                  className="w-full bg-slate-900 text-white py-4 border border-white/10 font-black uppercase italic tracking-tighter text-2xl hover:bg-neo-accent transition-all shadow-neo"
-                >
-                  INITIALIZE_CHAMBER
-                </button>
+                <button onClick={() => startTest(test)} className="w-full neo-button py-2.5 text-sm">Start Test</button>
               </div>
             ))}
           </div>
@@ -630,32 +434,25 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
 
       {/* Recent Attempts */}
       {attempts.length > 0 && (
-        <div className="bg-slate-800 border border-white/10 p-10 shadow-neo">
-          <h4 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 border-b-4 border-white/10 pb-4">MISSION_LOG</h4>
-          <div className="space-y-6">
-            {attempts.slice(0, 5).map((attempt, idx) => (
-              <div key={attempt.id} className={`
-                flex flex-col md:flex-row items-center justify-between p-6 border border-white/10 transition-all hover:bg-slate-900/50
-                ${idx % 2 === 0 ? '-rotate-[0.5deg]' : 'rotate-[0.5deg]'}
-              `}>
-                <div className="flex items-center gap-8 mb-4 md:mb-0">
-                  <div className="bg-slate-900 text-white p-3 border border-white/10">
-                    <FileText className="h-6 w-6 stroke-[3px]" />
+        <div className="neo-card">
+          <h4 className="text-base font-extrabold text-[#0A192F] mb-5 tracking-tight">Recent Attempts</h4>
+          <div className="space-y-3">
+            {attempts.slice(0, 5).map((attempt) => (
+              <div key={attempt.id} className="flex items-center justify-between p-4 bg-[#F8FAFF] rounded-[14px] border-2 border-[#0A192F]/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-white rounded-[10px] border border-[#0A192F]/5 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-[#64748B]" />
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-slate-100 uppercase italic leading-none">
-                      SCORE: <span className={getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}>{attempt.score}/{attempt.total_questions}</span>
-                    </p>
-                    <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2">{new Date(attempt.completed_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-bold text-[#0A192F]">{attempt.score}/{attempt.total_questions} correct</p>
+                    <p className="text-xs font-medium text-[#64748B]">{new Date(attempt.completed_at).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <div className="text-right flex items-center gap-10">
-                  <div className="flex flex-col items-end">
-                    <p className={`text-4xl font-black italic leading-none ${getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}`}>
-                      {Math.round((attempt.score / attempt.total_questions) * 100)}%
-                    </p>
-                    <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2">{attempt.time_taken_minutes}M EXPENDED</p>
-                  </div>
+                <div className="text-right">
+                  <p className={`text-xl font-extrabold ${getScoreColor(Math.round((attempt.score / attempt.total_questions) * 100))}`}>
+                    {Math.round((attempt.score / attempt.total_questions) * 100)}%
+                  </p>
+                  <p className="text-xs font-medium text-[#64748B]">{attempt.time_taken_minutes}m</p>
                 </div>
               </div>
             ))}

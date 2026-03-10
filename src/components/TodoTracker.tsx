@@ -24,7 +24,6 @@ export function TodoTracker() {
     const addTodo = (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!inputValue.trim()) return;
-
         const newTodo: Todo = {
             id: crypto.randomUUID(),
             text: inputValue.trim(),
@@ -32,7 +31,6 @@ export function TodoTracker() {
             category,
             createdAt: Date.now(),
         };
-
         setTodos([newTodo, ...todos]);
         setInputValue('');
     };
@@ -46,120 +44,118 @@ export function TodoTracker() {
     };
 
     const categories = [
-        { id: 'urgent' as const, label: 'Urgent', color: 'text-red-400', bg: 'bg-red-400/10' },
-        { id: 'regular' as const, label: 'Regular', color: 'text-neon-blue', bg: 'bg-neon-blue/10' },
-        { id: 'backlog' as const, label: 'Backlog', color: 'text-gray-400', bg: 'bg-slate-800/5' },
+        { id: 'urgent' as const, label: 'Urgent', activeColor: 'bg-red-500/10 border-red-500/30 text-red-500', dotColor: 'bg-red-400' },
+        { id: 'regular' as const, label: 'Regular', activeColor: 'bg-[#00D1FF]/10 border-[#00D1FF]/30 text-[#00D1FF]', dotColor: 'bg-[#00D1FF]' },
+        { id: 'backlog' as const, label: 'Backlog', activeColor: 'bg-[#64748B]/10 border-[#64748B]/30 text-[#64748B]', dotColor: 'bg-[#64748B]' },
     ];
 
+    const getCategoryBadge = (cat: Todo['category']) => {
+        const map = { urgent: 'bg-red-50 text-red-500 border border-red-100', regular: 'bg-[#00D1FF]/10 text-[#00D1FF] border border-[#00D1FF]/20', backlog: 'bg-[#F8FAFF] text-[#64748B] border border-[#0A192F]/10' };
+        return map[cat];
+    };
+
+    const pending = todos.filter(t => !t.completed).length;
+    const done = todos.filter(t => t.completed).length;
+
     return (
-        <div className="p-10 text-slate-100 max-w-3xl mx-auto min-h-full bg-slate-900/20">
-            <div className="flex items-center gap-6 mb-12">
-                <div className="w-16 h-16 bg-neo-accent border border-white/10 flex items-center justify-center shadow-neo -rotate-6">
-                    <ListTodo className="text-white w-8 h-8 stroke-[3px]" />
+        <div className="p-6 max-w-2xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[16px] flex items-center justify-center">
+                    <ListTodo className="w-6 h-6 text-[#00D1FF]" />
                 </div>
-                <div>
-                    <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none">STUDY TASKS</h2>
-                    <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-[0.2em] mt-2 italic">PROTOCOL: ORGANIZATION_SEQUENCE</p>
+                <div className="flex-1">
+                    <h2 className="text-xl font-extrabold text-[#0A192F] tracking-tight">Study Tasks</h2>
+                    <p className="text-xs font-medium text-[#64748B]">{pending} pending · {done} completed</p>
                 </div>
             </div>
 
-            <form onSubmit={addTodo} className="space-y-6 mb-12">
-                <div className="flex flex-col md:flex-row gap-4">
+            {/* Add Task Form */}
+            <form onSubmit={addTodo} className="neo-card space-y-4">
+                <div className="flex gap-3">
                     <input
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="DEFINE NEW OBJECTIVE..."
-                        className="flex-1 bg-slate-800 border border-white/10 px-6 py-4 font-black uppercase tracking-tight italic text-lg focus:bg-neo-secondary outline-none transition-all placeholder:text-slate-100/20 shadow-neo"
+                        placeholder="Add a new task..."
+                        className="flex-1 px-4 py-3 rounded-[12px] border-2 border-[#0A192F]/10 text-[#0A192F] font-medium placeholder-[#64748B]/40 focus:outline-none focus:border-[#00D1FF]/40 bg-white"
                     />
                     <button
                         type="submit"
-                        className="bg-slate-900 text-white px-10 py-4 border border-white/10 font-black uppercase italic tracking-tighter text-xl hover:bg-neo-accent hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo flex items-center justify-center gap-3"
+                        className="neo-button px-5 flex items-center gap-2"
                     >
-                        <Plus className="w-6 h-6 stroke-[4px]" />
-                        ADD
+                        <Plus className="w-4 h-4" /> Add
                     </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
+                <div className="flex gap-2">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             type="button"
                             onClick={() => setCategory(cat.id)}
-                            className={`
-                                px-6 py-2 border border-white/10 font-black uppercase text-[10px] tracking-widest transition-all 
-                                ${category === cat.id
-                                    ? `bg-neo-secondary shadow-neo -translate-y-1`
-                                    : 'bg-slate-800 hover:bg-neo-muted hover:shadow-neo'
-                                }
-                            `}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border-2 font-bold text-xs transition-all ${category === cat.id ? cat.activeColor : 'bg-[#F8FAFF] border-[#0A192F]/10 text-[#64748B] hover:border-[#0A192F]/20'}`}
                         >
+                            <div className={`w-1.5 h-1.5 rounded-full ${cat.dotColor}`} />
                             {cat.label}
                         </button>
                     ))}
                 </div>
             </form>
 
-            <div className="space-y-6">
+            {/* Todo List */}
+            <div className="space-y-3">
                 {todos.length === 0 ? (
-                    <div className="text-center py-20 bg-slate-800 border border-dashed border-white/10/10 rotate-1">
-                        <Target className="w-16 h-16 text-slate-100/10 mx-auto mb-6" />
-                        <p className="font-black text-slate-100/20 uppercase tracking-[0.3em] text-sm">NO ACTIVE TARGETS FOUND</p>
+                    <div className="text-center py-14 neo-card">
+                        <Target className="w-12 h-12 text-[#0A192F]/10 mx-auto mb-4" />
+                        <p className="font-bold text-[#64748B]">No tasks yet</p>
+                        <p className="text-sm text-[#64748B]/60 mt-1">Add your first study task above</p>
                     </div>
                 ) : (
-                    todos.sort((a, b) => {
-                        if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                        return b.createdAt - a.createdAt;
-                    }).map((todo, idx) => (
-                        <div
-                            key={todo.id}
-                            className={`
-                                group flex items-center gap-6 p-6 border border-white/10 transition-all duration-200 
-                                ${todo.completed
-                                    ? 'bg-neo-muted/30 border-white/10/20 opacity-50 shadow-none'
-                                    : 'bg-slate-800 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo'
-                                }
-                                ${idx % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}
-                            `}
-                        >
-                            <button
-                                onClick={() => toggleTodo(todo.id)}
-                                className={`
-                                    w-10 h-10 border border-white/10 flex items-center justify-center transition-all
-                                    ${todo.completed ? 'bg-neo-secondary' : 'bg-slate-800 hover:bg-neo-muted'}
-                                `}
+                    todos
+                        .sort((a, b) => {
+                            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                            return b.createdAt - a.createdAt;
+                        })
+                        .map((todo) => (
+                            <div
+                                key={todo.id}
+                                className={`group flex items-center gap-4 p-4 rounded-[16px] border-2 transition-all ${todo.completed ? 'bg-[#F8FAFF] border-[#0A192F]/5 opacity-60' : 'bg-white border-[#0A192F]/8 hover:border-[#00D1FF]/20 hover:-translate-y-0.5 shadow-sm'}`}
                             >
-                                {todo.completed ? <CheckCircle2 className="w-6 h-6 stroke-[4px]" /> : <Circle className="w-6 h-6 stroke-[3px]" />}
-                            </button>
+                                <button
+                                    onClick={() => toggleTodo(todo.id)}
+                                    className="shrink-0 transition-colors"
+                                >
+                                    {todo.completed
+                                        ? <CheckCircle2 className="w-5 h-5 text-[#34D399]" />
+                                        : <Circle className="w-5 h-5 text-[#0A192F]/20 hover:text-[#00D1FF]" />
+                                    }
+                                </button>
 
-                            <div className="flex-1 min-w-0">
-                                <p className={`text-xl font-black uppercase tracking-tight italic transition-all ${todo.completed ? 'line-through text-slate-100/40' : 'text-slate-100'}`}>
-                                    {todo.text}
-                                </p>
-                                <div className="flex items-center gap-4 mt-2">
-                                    <div className={`px-2 py-0.5 border border-white/10 font-black uppercase text-[8px] tracking-widest ${todo.category === 'urgent' ? 'bg-neo-accent text-white' :
-                                        todo.category === 'regular' ? 'bg-neo-secondary' : 'bg-neo-muted'
-                                        }`}>
-                                        {todo.category}
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-semibold transition-all ${todo.completed ? 'line-through text-[#64748B]' : 'text-[#0A192F]'}`}>
+                                        {todo.text}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getCategoryBadge(todo.category)}`}>
+                                            {todo.category}
+                                        </span>
+                                        <span className="text-[10px] text-[#64748B]/60">
+                                            {new Date(todo.createdAt).toLocaleDateString()}
+                                        </span>
                                     </div>
-                                    <span className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest italic">
-                                        TIMESTAMP: {new Date(todo.createdAt).toLocaleDateString()}
-                                    </span>
                                 </div>
-                            </div>
 
-                            <button
-                                onClick={() => deleteTodo(todo.id)}
-                                className="p-3 border border-white/10 bg-slate-800 hover:bg-neo-accent hover:text-white transition-all active:shadow-none shadow-neo"
-                            >
-                                <Trash2 className="w-5 h-5 stroke-[3px]" />
-                            </button>
-                        </div>
-                    ))
+                                <button
+                                    onClick={() => deleteTodo(todo.id)}
+                                    className="shrink-0 p-2 rounded-[8px] text-[#64748B] hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))
                 )}
             </div>
         </div>
     );
-
 }

@@ -79,103 +79,124 @@ export function PomodoroTimer() {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const progress = (timeLeft / (
-        mode === 'work' ? settings.work * 60 :
-            mode === 'shortBreak' ? settings.shortBreak * 60 : settings.longBreak * 60
-    )) * 100;
+    const totalSeconds = mode === 'work' ? settings.work * 60 : mode === 'shortBreak' ? settings.shortBreak * 60 : settings.longBreak * 60;
+    const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
+
+    const modeColors = {
+        work: { accent: '#00D1FF', bg: 'bg-[#00D1FF]/10', border: 'border-[#00D1FF]/20', text: 'text-[#00D1FF]', bar: 'bg-[#00D1FF]' },
+        shortBreak: { accent: '#34D399', bg: 'bg-[#34D399]/10', border: 'border-[#34D399]/20', text: 'text-[#34D399]', bar: 'bg-[#34D399]' },
+        longBreak: { accent: '#F472B6', bg: 'bg-[#F472B6]/10', border: 'border-[#F472B6]/20', text: 'text-[#F472B6]', bar: 'bg-[#F472B6]' },
+    };
+    const colors = modeColors[mode];
 
     return (
-        <div className="p-10 text-slate-100 max-w-3xl mx-auto bg-slate-800 border-r-8 border-white/10 min-h-full">
-            <div className="flex justify-between items-center mb-12">
-                <h2 className="text-3xl font-black flex items-center gap-4 uppercase tracking-tighter italic">
-                    <div className={`p-2 border border-white/10 shadow-neo ${mode === 'work' ? 'bg-neo-accent text-white' : 'bg-neo-secondary text-slate-100'}`}>
-                        {mode === 'work' ? <Brain className="w-8 h-8 stroke-[3px]" /> : <Coffee className="w-8 h-8 stroke-[3px]" />}
+        <div className="p-6 max-w-2xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 ${colors.bg} border ${colors.border} rounded-[16px] flex items-center justify-center`}>
+                        {mode === 'work'
+                            ? <Brain className={`w-6 h-6 ${colors.text}`} />
+                            : <Coffee className={`w-6 h-6 ${colors.text}`} />
+                        }
                     </div>
-                    {mode === 'work' ? 'DEEP FOCUS' : mode === 'shortBreak' ? 'SHORT BREAK' : 'LONG BREAK'}
-                </h2>
-                <div className="flex gap-4">
+                    <div>
+                        <h2 className="text-xl font-extrabold text-[#0A192F] tracking-tight">
+                            {mode === 'work' ? 'Deep Focus' : mode === 'shortBreak' ? 'Short Break' : 'Long Break'}
+                        </h2>
+                        <p className="text-xs font-medium text-[#64748B]">
+                            {isActive ? 'Timer running...' : 'Ready to start'}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
                     <button
                         onClick={() => setIsMuted(!isMuted)}
-                        className="p-3 border border-white/10 bg-slate-800 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-neo transition-all"
+                        className="w-10 h-10 rounded-[10px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors"
                     >
-                        {isMuted ? <VolumeX className="w-6 h-6 stroke-[3px]" /> : <Volume2 className="w-6 h-6 stroke-[3px]" />}
+                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </button>
                     <button
                         onClick={() => setShowSettings(!showSettings)}
-                        className="p-3 border border-white/10 bg-neo-muted shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-neo transition-all"
+                        className={`w-10 h-10 rounded-[10px] border-2 flex items-center justify-center transition-colors ${showSettings ? `${colors.bg} ${colors.border} ${colors.text}` : 'border-[#0A192F]/10 text-[#64748B] hover:border-[#0A192F]/20'}`}
                     >
-                        <Settings className="w-6 h-6 stroke-[3px]" />
+                        <Settings className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
-            <div className="relative flex flex-col items-center mb-16">
-                {/* Massive Timer Box */}
-                <div className={`
-                    w-full py-16 px-8 border border-white/10 shadow-neo text-center relative overflow-hidden
-                    ${mode === 'work' ? 'bg-slate-800' : 'bg-slate-900'}
-                `}>
-                    <div className="relative z-10">
-                        <span className="text-9xl md:text-[10rem] font-black tracking-tighter italic tabular-nums leading-none">
+            {/* Mode Tabs */}
+            <div className="flex gap-2 bg-[#F8FAFF] rounded-[14px] p-1.5 border-2 border-[#0A192F]/5">
+                {(['work', 'shortBreak', 'longBreak'] as const).map((m) => (
+                    <button
+                        key={m}
+                        onClick={() => { setMode(m); setIsActive(false); setTimeLeft(m === 'work' ? settings.work * 60 : m === 'shortBreak' ? settings.shortBreak * 60 : settings.longBreak * 60); }}
+                        className={`flex-1 py-2 rounded-[10px] text-xs font-bold transition-all ${mode === m ? `bg-white shadow-sm text-[#0A192F] border border-[#0A192F]/5` : 'text-[#64748B] hover:text-[#0A192F]'}`}
+                    >
+                        {m === 'work' ? 'Focus' : m === 'shortBreak' ? 'Short Break' : 'Long Break'}
+                    </button>
+                ))}
+            </div>
+
+            {/* Timer Display */}
+            <div className={`neo-card text-center py-10 ${colors.bg} border-2 ${colors.border}`}>
+                {/* Progress Ring */}
+                <div className="relative inline-flex items-center justify-center mb-6">
+                    <svg className="w-48 h-48 -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(10,25,47,0.05)" strokeWidth="8" />
+                        <circle
+                            cx="60" cy="60" r="54" fill="none"
+                            stroke={colors.accent} strokeWidth="8"
+                            strokeLinecap="round"
+                            strokeDasharray={`${2 * Math.PI * 54}`}
+                            strokeDashoffset={`${2 * Math.PI * 54 * (1 - progress / 100)}`}
+                            className="transition-all duration-1000"
+                        />
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                        <span className={`text-5xl font-extrabold ${colors.text} tracking-tight tabular-nums`}>
                             {formatTime(timeLeft)}
                         </span>
-                        <div className="mt-4 flex flex-col items-center gap-2">
-                            <div className="bg-slate-900 text-white px-4 py-1 font-black uppercase text-sm tracking-[0.2em] -rotate-1 shadow-neo">
-                                SESSION #{sessionCount + 1}
-                            </div>
-                            <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2 italic">
-                                STATUS: {isActive ? 'ACTIVE_TRANSMISSION' : 'WAITING_FOR_COMMAND'}
-                            </p>
-                        </div>
+                        <span className="text-xs font-bold text-[#64748B] mt-1 uppercase tracking-wider">
+                            Session #{sessionCount + 1}
+                        </span>
                     </div>
+                </div>
 
-                    {/* Industrial Progress Bar */}
-                    <div className="absolute bottom-0 left-0 w-full h-6 bg-slate-900/5 border-t-4 border-white/10">
-                        <div
-                            className={`h-full transition-all duration-1000 border-r-4 border-white/10 ${mode === 'work' ? 'bg-neo-accent' : 'bg-neo-secondary'}`}
-                            style={{ width: `${100 - progress}%` }}
-                        />
-                    </div>
+                {/* Controls */}
+                <div className="flex justify-center gap-4">
+                    <button
+                        onClick={toggleTimer}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all hover:-translate-y-1 ${isActive ? 'bg-[#0A192F]/10 text-[#0A192F]' : `${colors.bg.replace('/10', '')} text-white`} border-2 ${colors.border}`}
+                        style={!isActive ? { backgroundColor: colors.accent } : {}}
+                    >
+                        {isActive
+                            ? <Pause className="w-7 h-7 fill-current" />
+                            : <Play className="w-7 h-7 fill-white text-white ml-1" />
+                        }
+                    </button>
+                    <button
+                        onClick={resetTimer}
+                        className="w-16 h-16 rounded-full bg-[#F8FAFF] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 hover:-translate-y-1 transition-all group"
+                    >
+                        <RotateCcw className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
+                    </button>
                 </div>
             </div>
 
-            <div className="flex justify-center gap-10 mb-16">
-                <button
-                    onClick={toggleTimer}
-                    className={`
-                        group w-28 h-28 border border-white/10 flex items-center justify-center transition-all duration-200 
-                        shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo
-                        active:translate-x-0 active:translate-y-0 active:shadow-none
-                        ${isActive ? 'bg-neo-muted rotate-3' : 'bg-neo-accent -rotate-3'}
-                    `}
-                >
-                    {isActive
-                        ? <Pause className="w-12 h-12 fill-black stroke-black stroke-[3px]" />
-                        : <Play className="w-12 h-12 fill-white text-white ml-2 stroke-[3px]" />
-                    }
-                </button>
-                <button
-                    onClick={resetTimer}
-                    className="w-28 h-28 border border-white/10 bg-slate-800 flex items-center justify-center shadow-neo hover:bg-neo-secondary hover:rotate-12 transition-all group active:shadow-none active:translate-x-2 active:translate-y-2"
-                >
-                    <RotateCcw className="w-12 h-12 stroke-[4px] group-hover:rotate-180 transition-transform duration-500" />
-                </button>
-            </div>
-
+            {/* Settings Panel */}
             {showSettings && (
-                <div className="bg-slate-900 border border-white/10 p-8 shadow-neo mb-12 relative animate-in slide-in-from-top-4">
-                    <div className="absolute -top-4 left-6 bg-slate-900 text-white px-4 py-1 font-black uppercase text-xs tracking-widest">
-                        SYSTEM_CONFIG
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                <div className="neo-card space-y-4">
+                    <h3 className="text-base font-extrabold text-[#0A192F] tracking-tight">Timer Settings</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                            { label: 'FOCUS INTERVAL', key: 'work', value: settings.work },
-                            { label: 'SHORT INTERMISSION', key: 'shortBreak', value: settings.shortBreak },
-                            { label: 'LONG INTERMISSION', key: 'longBreak', value: settings.longBreak },
-                            { label: 'SESSION CYCLE', key: 'sessionsUntilLongBreak', value: settings.sessionsUntilLongBreak }
+                            { label: 'Focus Duration (min)', key: 'work', value: settings.work },
+                            { label: 'Short Break (min)', key: 'shortBreak', value: settings.shortBreak },
+                            { label: 'Long Break (min)', key: 'longBreak', value: settings.longBreak },
+                            { label: 'Sessions Until Long Break', key: 'sessionsUntilLongBreak', value: settings.sessionsUntilLongBreak }
                         ].map((item) => (
-                            <div key={item.key}>
-                                <label className="block text-[10px] font-black text-slate-100 uppercase tracking-widest mb-2">{item.label}</label>
+                            <div key={item.key} className="space-y-1.5">
+                                <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">{item.label}</label>
                                 <input
                                     type="number"
                                     value={item.value}
@@ -184,7 +205,7 @@ export function PomodoroTimer() {
                                         setSettings({ ...settings, [item.key]: val });
                                         if (mode === item.key) setTimeLeft(val * 60);
                                     }}
-                                    className="w-full bg-slate-800 border border-white/10 px-4 py-3 font-black text-xl italic focus:bg-neo-secondary outline-none transition-colors shadow-neo"
+                                    className="w-full px-4 py-2.5 rounded-[10px] border-2 border-[#0A192F]/10 text-[#0A192F] font-bold focus:outline-none focus:border-[#00D1FF]/40"
                                 />
                             </div>
                         ))}
@@ -192,22 +213,19 @@ export function PomodoroTimer() {
                 </div>
             )}
 
-            {/* Industrial Stats Grid */}
-            <div className="grid grid-cols-3 gap-6">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
                 {[
-                    { label: 'SESSIONS', value: sessionCount, color: 'bg-neo-accent', text: 'text-white' },
-                    { label: 'FOCUS_MINS', value: `${sessionCount * settings.work}M`, color: 'bg-neo-secondary' },
-                    { label: 'DEEP_HOURS', value: `${Math.floor((sessionCount * settings.work) / 60)}H`, color: 'bg-neo-muted' }
+                    { label: 'Sessions', value: String(sessionCount), color: 'text-[#00D1FF]', bg: 'bg-[#00D1FF]/10 border-[#00D1FF]/20' },
+                    { label: 'Focus Time', value: `${sessionCount * settings.work}m`, color: 'text-[#34D399]', bg: 'bg-[#34D399]/10 border-[#34D399]/20' },
+                    { label: 'Hours', value: `${Math.floor((sessionCount * settings.work) / 60)}h`, color: 'text-[#F472B6]', bg: 'bg-[#F472B6]/10 border-[#F472B6]/20' }
                 ].map((stat, idx) => (
-                    <div key={idx} className="bg-slate-800 border border-white/10 p-4 text-center shadow-neo">
-                        <div className={`inline-block px-3 py-1 border border-white/10 ${stat.color} ${stat.text || 'text-slate-100'} font-black text-xl italic mb-1 mb-2`}>
-                            {stat.value}
-                        </div>
-                        <div className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest">{stat.label}</div>
+                    <div key={idx} className={`rounded-[16px] border-2 p-4 text-center ${stat.bg}`}>
+                        <p className={`text-2xl font-extrabold ${stat.color} tracking-tight`}>{stat.value}</p>
+                        <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest mt-1">{stat.label}</p>
                     </div>
                 ))}
             </div>
         </div>
     );
-
 }

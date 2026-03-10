@@ -1,4 +1,4 @@
-import { Zap, Crown, Check, Star } from 'lucide-react';
+import { Zap, Crown, Check, Star, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePayment } from '../hooks/usePayment';
 
@@ -9,93 +9,100 @@ export function SubscriptionPage() {
     const features = [
         { name: "AI Study Plans", free: "1 / month", pro: "Unlimited + Detailed" },
         { name: "Flashcards", free: "20 / deck", pro: "Unlimited + From PDF" },
-        { name: "Practice Tests", free: "1 / week (text)", pro: "Visual + AI Explanations" },
-        { name: "Lectures", free: "Audio Summaries", pro: "HD Neural Video Lectures" },
+        { name: "Practice Tests", free: "1 / week", pro: "Visual + AI Explanations" },
+        { name: "Lectures", free: "Audio Summaries", pro: "HD Video Lectures" },
         { name: "Voices", free: "Standard", pro: "Ultra-Realistic Neural" },
-        { name: "Social Groups", free: "Join Only", pro: "Create & Manage Private Groups" },
+        { name: "Social Groups", free: "Join Only", pro: "Create & Manage Groups" },
         { name: "Analytics", free: "Basic Stats", pro: "Deep Learning Insights" },
     ];
 
+    const faqs = [
+        { q: "Freemium model?", a: "Free core access forever. Upgrade to Pro for unlimited modules." },
+        { q: "Refund policy?", a: "Access remains active until cycle expiration. Cancel anytime." },
+        { q: "Data persistence?", a: "Your history is safe. Downgrading freezes Pro data but never deletes it." },
+        { q: "Support?", a: "Direct developer channel open for Pro subscribers. 24h resolution target." },
+    ];
+
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12 font-sans relative overflow-hidden bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]">
-            {/* Background Ambience */}
-            <div className="absolute top-20 left-20 w-32 h-32 bg-neo-secondary border border-white/10 rounded-full shadow-neo -z-10 animate-pulse" />
-            <div className="absolute bottom-40 right-40 w-48 h-48 bg-neo-accent border border-white/10 rotate-12 shadow-neo -z-10 animate-bounce" />
+        <div className="pb-20 animate-fade-in">
+            {/* Soft bg orbs */}
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-[#00D1FF]/5 rounded-full blur-[120px] pointer-events-none -z-10" />
+            <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-[#F472B6]/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-            <div className="max-w-6xl mx-auto relative z-10">
-                <header className="text-center mb-20 space-y-6">
-                    <div className="inline-flex items-center gap-4 px-6 py-2 border border-white/10 bg-slate-800 shadow-neo -rotate-1">
-                        <Crown className="w-6 h-6 text-yellow-500 stroke-[3px]" />
-                        <span className="text-sm font-black tracking-[0.2em] uppercase italic">LEVEL_UP_YOUR_NEURAL_PROCESSING</span>
+            <div className="max-w-5xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-16 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#F472B6]/10 text-[#F472B6] rounded-full font-bold text-sm border border-[#F472B6]/20">
+                        <Crown className="w-4 h-4" />
+                        <span>Unlock your full potential</span>
                     </div>
-                    <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter uppercase leading-none">
-                        UPGRADE_TO_<span className="text-neo-accent underline decoration-8 decoration-black">PRO</span>
+                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">
+                        Upgrade to <span className="text-[#00D1FF]">Premium</span>
                     </h1>
-                    <p className="text-xl font-bold uppercase tracking-widest text-slate-100/40 max-w-2xl mx-auto italic">
-                        BYPASS_CORE_LIMITATIONS. ACCESS_ALL_NEURAL_MODULES_WITHOUT_RESTRICTION.
+                    <p className="text-xl font-medium text-[#64748B] max-w-2xl mx-auto leading-relaxed">
+                        Remove limits. Access all AI modules. Score higher.
                     </p>
-                </header>
+                </div>
 
-                <div className="grid md:grid-cols-2 gap-10 mb-20">
+                {/* Pricing Cards */}
+                <div className="grid md:grid-cols-2 gap-8 mb-16">
                     {/* Free Plan */}
-                    <div className="bg-slate-800 border border-white/10 p-10 relative shadow-neo -rotate-1 group hover:rotate-0 transition-all transform w-full">
-                        <h3 className="text-3xl font-black uppercase italic mb-2 tracking-tighter flex items-center gap-4">
-                            NEURO_FREE
-                        </h3>
-
-                        <div className="text-6xl font-black mb-2 text-slate-100 italic">
-                            $0
-                            <span className="text-lg text-slate-100/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span>
+                    <div className="neo-card">
+                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1">Free</h3>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-5xl font-extrabold text-[#0A192F]">$0</span>
+                            <span className="text-[#64748B] font-medium mb-2">/mo</span>
                         </div>
-
-                        <p className="font-black text-slate-100/40 uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-white/10/10 pb-4">
-                            FREE_CORE_ACCESS. BASIC_LIMITS_APPLY.
+                        <p className="text-[#64748B] font-medium text-sm mb-8 pb-6 border-b border-[#0A192F]/5">
+                            Core access with basic limits.
                         </p>
 
-                        <ul className="space-y-6 mb-12">
+                        <ul className="space-y-4 mb-8">
                             {features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
-                                    <div className="w-6 h-6 border border-white/10 bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-neo">
-                                        <Check className="w-4 h-4 text-slate-100 stroke-[4px]" />
+                                <li key={i} className="flex items-start gap-3">
+                                    <div className="w-5 h-5 rounded-full bg-[#0A192F]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Check className="w-3 h-3 text-[#0A192F] stroke-[3px]" />
                                     </div>
-                                    <span className="text-slate-100/60">{f.name}: </span>
-                                    <span className="text-slate-100">{f.free}</span>
+                                    <span className="text-sm font-medium text-[#64748B]">
+                                        <span className="text-[#0A192F] font-bold">{f.name}:</span> {f.free}
+                                    </span>
                                 </li>
                             ))}
                         </ul>
 
-                        <div className="bg-slate-900 border border-white/10 p-4 shadow-neo text-[10px] font-black uppercase tracking-widest text-slate-100/40">
-                            FREE_LIMITS: 1_STUDY_PLAN/MO · 1_SUBJECT_ONLY · 20_FLASHCARDS/DECK · 1_PRACTICE_TEST/WEEK · PLAN_LENGTH_MAX_30_DAYS
+                        <div className="bg-slate-50 rounded-[16px] p-4 border border-[#0A192F]/5">
+                            <p className="text-xs font-bold text-[#64748B] leading-relaxed">
+                                1 plan/mo · 1 subject · 20 flashcards/deck · 1 practice test/week · Max 30-day plans
+                            </p>
                         </div>
                     </div>
 
                     {/* Pro Plan */}
-                    <div className="bg-slate-800 border border-white/10 p-10 relative shadow-neo rotate-1 group hover:rotate-0 transition-all transform w-full">
-                        <div className="absolute -top-6 -right-6 bg-neo-accent text-white px-6 py-3 border border-white/10 font-black text-xs uppercase tracking-[0.2em] -rotate-3 group-hover:rotate-0 transition-all shadow-neo">
-                            SYSTEM_RECOMMENDED
+                    <div className="neo-card relative border-2 border-[#00D1FF]/30 shadow-float-cyan">
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-[#00D1FF] text-[#0A192F] rounded-full font-extrabold text-xs shadow-float-cyan">
+                            Recommended
                         </div>
 
-                        <h3 className="text-3xl font-black uppercase italic mb-2 tracking-tighter flex items-center gap-4">
-                            NEURO_PRO <Crown className="w-8 h-8 text-yellow-500 stroke-[3px]" />
+                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1 flex items-center gap-2">
+                            Premium <Crown className="w-5 h-5 text-[#F472B6]" />
                         </h3>
-
-                        <div className="text-6xl font-black mb-2 text-slate-100 italic">
-                            $15.99
-                            <span className="text-lg text-slate-100/40 font-black uppercase tracking-widest not-italic ml-2">/MO</span>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-5xl font-extrabold text-[#0A192F]">$15.99</span>
+                            <span className="text-[#64748B] font-medium mb-2">/mo</span>
                         </div>
-
-                        <p className="font-black text-neo-accent uppercase text-xs tracking-widest mb-10 h-12 leading-tight italic border-b-2 border-neo-accent/20 pb-4">
-                            FULL_PROTOCOL_ACCESS. FREEMIUM_BASE_INCLUDED. UPGRADE_ANYTIME.
+                        <p className="text-[#00D1FF] font-bold text-sm mb-8 pb-6 border-b border-[#00D1FF]/20">
+                            Full access. Upgrade or cancel anytime.
                         </p>
 
-                        <ul className="space-y-6 mb-12">
+                        <ul className="space-y-4 mb-8">
                             {features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
-                                    <div className="w-6 h-6 border border-white/10 bg-neo-secondary flex items-center justify-center flex-shrink-0 shadow-neo">
-                                        <Check className="w-4 h-4 text-slate-100 stroke-[4px]" />
+                                <li key={i} className="flex items-start gap-3">
+                                    <div className="w-5 h-5 rounded-full bg-[#00D1FF]/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Check className="w-3 h-3 text-[#00D1FF] stroke-[3px]" />
                                     </div>
-                                    <span className="text-slate-100/60">{f.name}: </span>
-                                    <span className="text-slate-100">{f.pro}</span>
+                                    <span className="text-sm font-medium text-[#64748B]">
+                                        <span className="text-[#0A192F] font-bold">{f.name}:</span> {f.pro}
+                                    </span>
                                 </li>
                             ))}
                         </ul>
@@ -103,48 +110,35 @@ export function SubscriptionPage() {
                         <button
                             onClick={() => initiatePayment()}
                             disabled={isLoadingPayment || isPremium}
-                            className={`w-full py-6 border border-white/10 text-white font-black uppercase italic text-2xl shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-4 ${isPremium ? 'bg-neo-accent' : 'bg-slate-900'}`}
+                            className="neo-button w-full py-4 text-base shadow-float-cyan"
                         >
-                            {isLoadingPayment ? 'PROCESSING...' : isPremium ? 'LICENSE_VERIFIED' : 'UPGRADE_TO_PRO'}
-                            {!isLoadingPayment && !isPremium && <Zap className="w-8 h-8 text-neon-yellow animate-bounce" />}
-                            {isPremium && <Star className="w-8 h-8 text-yellow-500 fill-yellow-500 animate-pulse" />}
+                            {isLoadingPayment ? 'Processing...' : isPremium ? 'You\'re Premium' : 'Upgrade to Premium'}
+                            {!isLoadingPayment && !isPremium && <Zap className="w-5 h-5 stroke-[2.5px]" />}
+                            {isPremium && <Star className="w-5 h-5 fill-current" />}
                         </button>
-                        <p className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-100/30 mt-6 italic">FREE BASE TIER. UPGRADE OR CANCEL ANYTIME.</p>
+                        <p className="text-center text-xs font-medium text-[#64748B] mt-4">Free base tier. Upgrade or cancel anytime.</p>
                     </div>
                 </div>
 
-                {/* FAQ Section */}
-                <div className="mt-40 max-w-4xl mx-auto space-y-12">
-                    <h3 className="text-4xl font-black uppercase italic text-center tracking-tighter flex items-center justify-center gap-6">
-                        <div className="w-12 h-1 border-t-8 border-white/10" />
-                        CORE_QUERIES
-                        <div className="w-12 h-1 border-t-8 border-white/10" />
-                    </h3>
-
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo -rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-white/10/10 pb-2">FREEMIUM_MODEL?</h4>
-                            <p className="font-bold text-sm text-slate-100/50 uppercase tracking-tight leading-tight">FREE CORE ACCESS FOREVER. UPGRADE TO PRO FOR UNLIMITED MODULES.</p>
+                {/* FAQ */}
+                <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm border border-[#00D1FF]/20 mb-4">
+                            <Sparkles className="w-4 h-4" />
+                            <span>Common Questions</span>
                         </div>
-                        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-white/10/10 pb-2">REFUND_POLICY?</h4>
-                            <p className="font-bold text-sm text-slate-100/50 uppercase tracking-tight leading-tight">ACCESS_REMAINS_ACTIVE_UNTIL_CYCLE_EXPIRATION. SUBSCRIPTIONS_CAN_BE_TERMINATED_ANYTIME.</p>
-                        </div>
-                        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-white/10/10 pb-2">DATA_PERSISTENCE?</h4>
-                            <p className="font-bold text-sm text-slate-100/50 uppercase tracking-tight leading-tight">YOUR_NEURAL_HISTORY_IS_SAFE. DOWNGRADING_FREEZES_PRO_DATA_BUT_NEVER_DELETES.</p>
-                        </div>
-                        <div className="bg-slate-800 border border-white/10 p-8 shadow-neo -rotate-1">
-                            <h4 className="font-black text-lg mb-4 uppercase italic border-b-2 border-white/10/10 pb-2">SUPPORT_TICKET?</h4>
-                            <p className="font-bold text-sm text-slate-100/50 uppercase tracking-tight leading-tight">DIRECT_DEVELOPER_CHANNEL_OPEN_FOR_PRO_SUBSCRIBERS. 24H_RESOLUTION_TARGET.</p>
-                        </div>
+                        <h2 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">Got questions?</h2>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-5">
+                        {faqs.map((faq, i) => (
+                            <div key={i} className="bg-white rounded-[24px] p-6 border-2 border-[#0A192F]/5 hover:border-[#00D1FF]/20 hover:shadow-float-cyan transition-all">
+                                <h4 className="font-extrabold text-[#0A192F] mb-2 tracking-tight">{faq.q}</h4>
+                                <p className="font-medium text-sm text-[#64748B] leading-relaxed">{faq.a}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
-
-            <footer className="mt-40 text-center pb-20">
-                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-100/20 italic">ANTIGRAVITY_STUDY_CORE_V3_LICENSED_2026</p>
-            </footer>
         </div>
     );
 }

@@ -119,65 +119,56 @@ export function CreatePlan() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6 space-y-12 text-slate-100">
-      {/* Neo-Brutalist Header */}
-      <div className="relative">
-        <div className="sticker bg-neo-secondary mb-4 text-sm inline-block px-3 py-1 border border-white/10 rotate-1">AI_GENERATOR_v5.0</div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none">
-              NEW <span className="text-stroke-neo text-slate-100">PLAN</span>
-            </h1>
-            <p className="text-xl font-bold text-slate-100/60 mt-4 max-w-xl">
-              Map your path to the 1600. Expert scaling, adaptive timeline, and rigor-first scheduling.
-            </p>
-          </div>
-          <div className="flex gap-4">
-             <div className="bg-slate-800 border border-white/10 p-4 shadow-neo rotate-2">
-                <Target className="h-6 w-6 text-neo-accent" />
-             </div>
-             <div className="bg-slate-800 border border-white/10 p-4 shadow-neo -rotate-2">
-                <Zap className="h-6 w-6 text-neo-secondary" />
-             </div>
-          </div>
+    <div className="max-w-6xl mx-auto py-12 px-6 space-y-10 animate-fade-in">
+      {/* Header */}
+      <div className="mb-10 flex items-center gap-4">
+        <div className="w-14 h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[20px] flex items-center justify-center shadow-float-cyan">
+          <Brain className="h-7 w-7 text-[#00D1FF] stroke-[2.5px]" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">Create Study Plan</h1>
+          <p className="text-[#64748B] font-medium">AI-powered personalized study schedule</p>
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="neo-card bg-red-500/10 border-red-500 p-6 flex items-center gap-4">
-          <AlertCircle className="h-8 w-8 text-red-500 flex-shrink-0" />
-          <div>
-            <h3 className="font-black uppercase text-sm italic">Generation Error</h3>
-            <p className="font-bold text-red-900/70">{error}</p>
-          </div>
+        <div className="bg-red-50 border-2 border-red-200 rounded-[24px] p-6 flex items-center gap-4">
+          <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
+          <p className="font-medium text-red-700">{error}</p>
         </div>
       )}
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
-        {!studyPlan ? (
-          <div className="neo-card bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo">
-            <div className="flex items-center gap-3 mb-10 border-b-4 border-white/10 pb-4">
-               <Sparkles className="h-6 w-6 text-neo-accent" />
-               <span className="font-black uppercase tracking-widest text-sm italic">Input_Parameters</span>
-            </div>
-            <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
+      {!studyPlan ? (
+        <div className="neo-card">
+          <div className="flex items-center gap-3 mb-8 pb-6 border-b border-[#0A192F]/5">
+            <Sparkles className="h-5 w-5 text-[#00D1FF]" />
+            <span className="font-bold text-[#64748B] text-sm">Fill in the details below to generate your plan</span>
           </div>
-        ) : (
-          <div className="space-y-12">
-            <div className="neo-card bg-neo-secondary/10 border border-white/10 p-6 flex justify-between items-center">
-               <div className="font-black italic text-2xl uppercase tracking-tighter">Plan Generated Successfully</div>
-               <button onClick={handleCreateNew} className="neo-button-white px-6 py-2 text-xs">CREATE ANOTHER</button>
+          <StudyPlanForm onSubmit={handleFormSubmit} loading={loading} initialData={initialDataFromParams} />
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="neo-card flex justify-between items-center">
+            <div className="font-extrabold text-xl text-[#0A192F] tracking-tight flex items-center gap-2">
+              <Target className="h-5 w-5 text-[#34D399]" />
+              Plan Generated Successfully
             </div>
-            <StudyPlanDisplay
-              plan={studyPlan}
-              formData={formData!}
-              onReset={handleCreateNew}
-            />
+            <button
+              onClick={handleCreateNew}
+              className="px-5 py-2 rounded-full bg-[#0A192F] text-white font-bold text-sm hover:-translate-y-0.5 active:scale-95 transition-all"
+            >
+              Create Another
+            </button>
           </div>
-        )}
-      </div>
+          <StudyPlanDisplay
+            plan={studyPlan}
+            formData={formData!}
+            onReset={handleCreateNew}
+          />
+        </div>
+      )}
     </div>
   );
 }

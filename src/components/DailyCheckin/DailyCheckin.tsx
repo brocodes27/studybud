@@ -274,40 +274,39 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
     const levelInfo = calculateLevel(checkinState.totalXp);
 
     return (
-        <div className="min-h-screen bg-slate-950 p-4 md:p-10 selection:bg-primary/30">
+        <div className="pb-20 animate-fade-in">
             <div className="max-w-6xl mx-auto">
                 {/* Header with XP and Streak */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-md">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                                NEURAL_CORE // {getGreeting()}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-full">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#00D1FF] animate-pulse" />
+                            <span className="text-xs font-bold text-[#00D1FF]">
+                                {getGreeting()}
                             </span>
                         </div>
-                        <h1 className="text-6xl font-black italic tracking-tighter uppercase text-white leading-none">
-                            Daily <span className="text-primary">Intel</span>
+                        <h1 className="text-4xl font-extrabold tracking-tight text-[#0A192F] leading-none">
+                            Daily <span className="text-[#00D1FF]">Intel</span>
                         </h1>
+                        <p className="text-[#64748B] font-medium">Your personalized daily practice question</p>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-4 bg-card-dark border border-white/5 px-8 py-4 rounded-2xl shadow-2xl relative group overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-neo-accent opacity-50" />
-                            <Flame className="w-8 h-8 text-neo-accent group-hover:scale-110 transition-transform" />
+                        <div className="neo-card flex items-center gap-4 px-6 py-4 shadow-float-pink">
+                            <Flame className="w-7 h-7 text-[#F472B6]" />
                             <div>
-                                <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">STREAK</div>
-                                <div className="font-black text-3xl text-white tabular-nums leading-none">
-                                    {checkinState.streak} <span className="text-xs italic text-slate-500 font-bold ml-1 uppercase">Days</span>
+                                <div className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Streak</div>
+                                <div className="font-extrabold text-2xl text-[#0A192F] tabular-nums leading-none">
+                                    {checkinState.streak} <span className="text-sm text-[#64748B] font-medium">days</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 bg-card-dark border border-white/5 px-8 py-4 rounded-2xl shadow-2xl relative group overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-50" />
-                            <div className="text-4xl group-hover:scale-110 transition-transform cursor-default">{levelInfo.badge}</div>
+                        <div className="neo-card flex items-center gap-4 px-6 py-4 shadow-float-cyan">
+                            <div className="text-3xl">{levelInfo.badge}</div>
                             <div>
-                                <div className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">LEVEL {levelInfo.level}</div>
-                                <div className="font-black text-2xl italic uppercase text-white tracking-tight leading-none">{levelInfo.name}</div>
+                                <div className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Level {levelInfo.level}</div>
+                                <div className="font-extrabold text-lg text-[#0A192F] tracking-tight leading-none">{levelInfo.name}</div>
                             </div>
                         </div>
                     </div>
@@ -320,10 +319,10 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="flex flex-col items-center justify-center py-40 bg-slate-900/50 border border-white/5 rounded-3xl backdrop-blur-md"
+                            className="flex flex-col items-center justify-center py-32 bg-[#F8FAFF] border-2 border-[#0A192F]/5 rounded-[32px]"
                         >
-                            <div className="w-20 h-20 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-10" />
-                            <p className="font-black uppercase tracking-[0.4em] text-slate-500 text-sm">Synchronizing_Systems...</p>
+                            <div className="w-12 h-12 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin mb-6" />
+                            <p className="font-bold text-[#64748B] text-sm">Loading your daily question...</p>
                         </motion.div>
                     )}
 
@@ -333,47 +332,42 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="bg-card-dark border border-white/5 rounded-3xl shadow-2xl overflow-hidden shadow-primary/5"
+                            className="neo-card overflow-hidden shadow-float-cyan"
                         >
-                            <div className="bg-slate-900 px-10 py-8 border-b border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-lg">
-                                        <Brain className="w-8 h-8" />
+                            <div className="bg-[#F8FAFF] px-8 py-6 border-b border-[#0A192F]/5 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[14px] flex items-center justify-center text-[#00D1FF]">
+                                        <Brain className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h2 className="text-3xl font-black uppercase tracking-tighter italic text-white leading-none mb-2">Daily Power Up</h2>
-                                        <div className="flex items-center gap-3">
-                                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded border border-primary/20">{question.domain}</span>
-                                            <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">{question.subdomain}</span>
+                                        <h2 className="text-xl font-extrabold text-[#0A192F] tracking-tight leading-none mb-1">Daily Power Up</h2>
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 bg-[#00D1FF]/10 text-[#00D1FF] text-xs font-bold rounded-full border border-[#00D1FF]/20">{question.domain}</span>
+                                            <span className="text-xs text-[#64748B] font-medium">{question.subdomain}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-primary font-black text-3xl tabular-nums">+{isCorrect === null ? '60' : isCorrect ? '60' : '40'} <span className="text-sm italic opacity-50">XP</span></div>
+                                    <div className="text-[#00D1FF] font-extrabold text-2xl tabular-nums">+{isCorrect === null ? '60' : isCorrect ? '60' : '40'} <span className="text-sm text-[#64748B] font-medium">XP</span></div>
                                 </div>
                             </div>
 
-                            <div className="p-10 md:p-16">
-                                <div className="relative mb-16">
-                                    <div className="absolute -left-8 top-0 w-1 h-full bg-primary rounded-full shadow-lg shadow-primary/20" />
-                                    <p className="text-4xl font-bold tracking-tight leading-[1.15] text-white italic drop-shadow-sm">"{question.question}"</p>
+                            <div className="p-8 md:p-12">
+                                <div className="relative mb-10 pl-5 border-l-4 border-[#00D1FF]">
+                                    <p className="text-2xl font-semibold text-[#0A192F] leading-relaxed">{question.question}</p>
                                 </div>
 
-                                <div className="grid md:grid-cols-2 gap-8">
+                                <div className="grid md:grid-cols-2 gap-4">
                                     {question.options.map((option, index) => {
-                                        let bgClass = 'bg-slate-900 hover:bg-slate-800 hover:scale-[1.02] border-white/5';
-                                        let textClass = 'text-slate-300';
+                                        let classes = 'bg-[#F8FAFF] border-2 border-[#0A192F]/5 hover:border-[#00D1FF]/30 hover:scale-[1.01] text-[#0A192F]';
 
                                         if (selectedAnswer !== null) {
                                             if (index === question.correctIndex) {
-                                                bgClass = 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20';
-                                                textClass = 'text-emerald-400';
+                                                classes = 'bg-[#34D399]/10 border-2 border-[#34D399]/40 text-[#34D399]';
                                             } else if (index === selectedAnswer && !isCorrect) {
-                                                bgClass = 'bg-rose-500/10 border-rose-500/30 ring-1 ring-rose-500/20';
-                                                textClass = 'text-rose-400';
+                                                classes = 'bg-red-50 border-2 border-red-300 text-red-500';
                                             } else {
-                                                bgClass = 'bg-slate-900 opacity-30 border-white/5';
-                                                textClass = 'text-slate-600';
+                                                classes = 'bg-[#F8FAFF] border-2 border-[#0A192F]/5 opacity-40 text-[#64748B]';
                                             }
                                         }
 
@@ -382,14 +376,14 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                                 key={index}
                                                 onClick={() => handleAnswerSelect(index)}
                                                 disabled={selectedAnswer !== null}
-                                                className={`w-full p-8 border rounded-2xl ${bgClass} ${textClass} text-left font-bold text-xl transition-all shadow-xl disabled:cursor-not-allowed flex items-center justify-between group`}
+                                                className={`w-full p-5 rounded-[16px] ${classes} text-left font-medium text-base transition-all disabled:cursor-not-allowed flex items-center justify-between`}
                                             >
-                                                <span className="leading-tight">{option}</span>
+                                                <span className="leading-snug">{option}</span>
                                                 {selectedAnswer !== null && index === question.correctIndex && (
-                                                    <Check className="w-8 h-8 shrink-0 text-emerald-400 stroke-[4px]" />
+                                                    <Check className="w-6 h-6 shrink-0 text-[#34D399] stroke-[3px]" />
                                                 )}
                                                 {selectedAnswer === index && !isCorrect && (
-                                                    <X className="w-8 h-8 shrink-0 text-rose-400 stroke-[4px]" />
+                                                    <X className="w-6 h-6 shrink-0 text-red-500 stroke-[3px]" />
                                                 )}
                                             </button>
                                         );
@@ -400,15 +394,15 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                     <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="mt-16 p-10 bg-slate-900 border border-white/5 rounded-3xl shadow-inner shadow-black/20"
+                                        className="mt-8 p-6 bg-[#F8FAFF] border-2 border-[#0A192F]/5 rounded-[20px]"
                                     >
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="p-2 bg-primary/10 rounded-lg">
-                                                <Sparkles className="w-6 h-6 text-primary" />
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="p-1.5 bg-[#00D1FF]/10 rounded-lg">
+                                                <Sparkles className="w-4 h-4 text-[#00D1FF]" />
                                             </div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Atlas_Neural_Insight</p>
+                                            <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Atlas Insight</p>
                                         </div>
-                                        <p className="text-2xl font-medium leading-relaxed italic text-slate-300">"{question.explanation}"</p>
+                                        <p className="text-base font-medium leading-relaxed text-[#0A192F]">{question.explanation}</p>
                                     </motion.div>
                                 )}
                             </div>
@@ -421,52 +415,49 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-card-dark border border-white/5 rounded-[3rem] p-16 md:p-24 text-center shadow-2xl relative overflow-hidden"
+                            className="neo-card text-center py-16 shadow-float-cyan"
                         >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-
                             <motion.div
                                 initial={{ scale: 0, rotate: -20 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 transition={{ type: 'spring', damping: 10, delay: 0.2 }}
-                                className={`w-40 h-40 mx-auto mb-12 rounded-3xl flex items-center justify-center ${isCorrect ? 'bg-emerald-500/20 text-emerald-500' : 'bg-primary/20 text-primary'
-                                    } shadow-2xl border border-white/5`}
+                                className={`w-24 h-24 mx-auto mb-8 rounded-[24px] flex items-center justify-center ${isCorrect ? 'bg-[#34D399]/10 text-[#34D399]' : 'bg-[#00D1FF]/10 text-[#00D1FF]'} shadow-float-cyan`}
                             >
                                 {isCorrect ? (
-                                    <Trophy size={80} strokeWidth={1.5} />
+                                    <Trophy size={48} strokeWidth={1.5} />
                                 ) : (
-                                    <Target size={80} strokeWidth={1.5} />
+                                    <Target size={48} strokeWidth={1.5} />
                                 )}
                             </motion.div>
 
-                            <h2 className="text-6xl font-black uppercase italic mb-6 tracking-tighter text-white">
-                                {isCorrect ? 'Nailed it!' : 'Stabilized'}
+                            <h2 className="text-4xl font-extrabold text-[#0A192F] tracking-tight mb-3">
+                                {isCorrect ? 'Nailed it!' : 'Good try!'}
                             </h2>
-                            <p className="text-slate-500 font-bold mb-16 text-2xl uppercase tracking-[0.2em] leading-tight">
+                            <p className="text-[#64748B] font-medium mb-10 text-lg leading-relaxed max-w-md mx-auto">
                                 {isCorrect
-                                    ? "Neural mastery spiking. Logic gaps plugged."
-                                    : "Data acquired. Analyzing errors for recalibration."}
+                                    ? "Great work! Keep building that streak."
+                                    : "Every mistake is a learning opportunity. Keep going!"}
                             </p>
 
-                            <div className="flex flex-col md:flex-row justify-center gap-8 mb-16">
-                                <div className="bg-primary/10 border border-primary/20 p-8 rounded-3xl shadow-xl flex-1">
-                                    <Zap className="w-10 h-10 mx-auto mb-4 text-primary" />
-                                    <div className="text-5xl font-black text-white tabular-nums">+{checkinResult.xpEarned}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mt-2">XP Earned</div>
+                            <div className="flex flex-col md:flex-row justify-center gap-5 mb-10 max-w-sm mx-auto">
+                                <div className="neo-card flex-1 text-center py-5 shadow-float-cyan">
+                                    <Zap className="w-7 h-7 mx-auto mb-2 text-[#00D1FF]" />
+                                    <div className="text-3xl font-extrabold text-[#0A192F] tabular-nums">+{checkinResult.xpEarned}</div>
+                                    <div className="text-xs font-bold text-[#64748B] mt-1">XP Earned</div>
                                 </div>
 
-                                <div className="bg-neo-accent/10 border border-neo-accent/20 p-8 rounded-3xl shadow-xl flex-1">
-                                    <Flame className="w-10 h-10 mx-auto mb-4 text-neo-accent" />
-                                    <div className="text-5xl font-black text-white tabular-nums">{checkinResult.streak}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-neo-accent mt-2">Day Streak</div>
+                                <div className="neo-card flex-1 text-center py-5 shadow-float-pink">
+                                    <Flame className="w-7 h-7 mx-auto mb-2 text-[#F472B6]" />
+                                    <div className="text-3xl font-extrabold text-[#0A192F] tabular-nums">{checkinResult.streak}</div>
+                                    <div className="text-xs font-bold text-[#64748B] mt-1">Day Streak</div>
                                 </div>
                             </div>
 
                             <button
                                 onClick={handleContinue}
-                                className="bg-primary hover:bg-blue-600 text-white px-16 py-6 rounded-2xl font-black uppercase tracking-[0.3em] text-xl shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-6 mx-auto"
+                                className="neo-button px-10 py-4 text-base mx-auto flex items-center gap-3"
                             >
-                                MISSION CONTROL <ArrowRight size={28} strokeWidth={3} />
+                                Continue <ArrowRight size={20} strokeWidth={2.5} />
                             </button>
                         </motion.div>
                     )}
@@ -476,120 +467,113 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                             key="mission"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="space-y-16"
+                            className="space-y-10"
                         >
-                            <div className="grid lg:grid-cols-3 gap-12">
-                                <div className="lg:col-span-2 space-y-10">
+                            <div className="grid lg:grid-cols-3 gap-8">
+                                <div className="lg:col-span-2 space-y-6">
                                     {todayMission && (
-                                        <div className="bg-card-dark border border-white/10 glass rounded-3xl shadow-2xl relative group overflow-hidden">
-                                            <div className="absolute top-0 right-0 bg-primary/20 text-primary px-8 py-3 rounded-bl-3xl border-l border-b border-primary/30 font-black italic tracking-widest uppercase text-xs">
-                                                Day {todayMission.dayNumber} Protocol
-                                            </div>
-                                            <div className="p-12">
-                                                <div className="flex items-center gap-6 mb-12">
-                                                    <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-lg">
-                                                        <Target className="w-10 h-10" />
+                                        <div className="neo-card shadow-float-cyan">
+                                            <div className="flex items-start justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[14px] flex items-center justify-center text-[#00D1FF]">
+                                                        <Target className="w-6 h-6" />
                                                     </div>
                                                     <div>
-                                                        <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mb-2">PRIMARY TARGET</h2>
-                                                        <h3 className="text-5xl font-black uppercase italic tracking-tighter text-white leading-none">{todayMission.plan.subject}</h3>
+                                                        <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest mb-0.5">Today's Focus</p>
+                                                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">{todayMission.plan.subject}</h3>
                                                     </div>
                                                 </div>
+                                                <span className="px-3 py-1 rounded-full bg-[#00D1FF]/10 border border-[#00D1FF]/20 text-[#00D1FF] text-xs font-bold">Day {todayMission.dayNumber}</span>
+                                            </div>
 
-                                                <div className="bg-slate-900 border border-white/5 p-10 rounded-2xl mb-12 relative shadow-inner">
-                                                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 opacity-40">
-                                                        <div className="w-1 h-1 rounded-full bg-primary" />
-                                                        <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-500">Unit_Focus</span>
-                                                    </div>
-                                                    <h4 className="text-3xl font-black text-white italic uppercase mb-2">{todayMission.task?.topic || 'General Practice'}</h4>
-                                                    <p className="font-bold text-slate-500 leading-relaxed uppercase text-sm tracking-wide">{todayMission.task?.description}</p>
-                                                </div>
+                                            <div className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-6 rounded-[16px] mb-6">
+                                                <h4 className="text-lg font-extrabold text-[#0A192F] tracking-tight mb-1">{todayMission.task?.topic || 'General Practice'}</h4>
+                                                <p className="font-medium text-[#64748B] text-sm leading-relaxed">{todayMission.task?.description}</p>
+                                            </div>
 
-                                                <div className="grid sm:grid-cols-2 gap-8">
-                                                    <Link
-                                                        to="/atlas"
-                                                        className="bg-primary hover:bg-blue-600 text-white p-8 rounded-2xl font-black uppercase italic text-2xl text-center shadow-xl shadow-primary/10 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-6"
-                                                    >
-                                                        <Brain className="w-10 h-10" /> Launch Atlas
-                                                    </Link>
-                                                    <Link
-                                                        to="/sat-simulator"
-                                                        className="bg-slate-800 hover:bg-slate-700 text-white p-8 rounded-2xl font-black uppercase italic text-2xl text-center border border-white/5 shadow-xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-6"
-                                                    >
-                                                        <Activity className="w-10 h-10 text-primary" /> Simulator
-                                                    </Link>
-                                                </div>
+                                            <div className="grid sm:grid-cols-2 gap-4">
+                                                <Link
+                                                    to="/atlas"
+                                                    className="neo-button py-4 text-base flex items-center justify-center gap-3"
+                                                >
+                                                    <Brain className="w-5 h-5" /> Launch Atlas
+                                                </Link>
+                                                <Link
+                                                    to="/sat-simulator"
+                                                    className="py-4 rounded-[16px] border-2 border-[#0A192F]/10 text-[#0A192F] font-bold text-base text-center hover:border-[#00D1FF]/30 hover:text-[#00D1FF] transition-all flex items-center justify-center gap-3"
+                                                >
+                                                    <Activity className="w-5 h-5" /> Simulator
+                                                </Link>
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 p-10 rounded-3xl shadow-xl">
-                                        <div className="flex items-center gap-4 mb-10">
-                                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                                <Zap className="w-7 h-7" />
+                                    <div className="neo-card">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[12px] flex items-center justify-center text-[#00D1FF]">
+                                                <Zap className="w-5 h-5" />
                                             </div>
-                                            <h3 className="text-3xl font-black uppercase tracking-tighter italic text-white leading-none">Neural Ingestion</h3>
+                                            <h3 className="text-lg font-extrabold text-[#0A192F] tracking-tight">Study Your Own Way</h3>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-3 gap-4">
                                             {[
-                                                { type: 'pdf', icon: FileUp, label: 'PDF Source' },
-                                                { type: 'link', icon: Globe, label: 'Web Data' },
-                                                { type: 'youtube', icon: Youtube, label: 'Video Feed', color: 'text-rose-500' },
+                                                { type: 'pdf', icon: FileUp, label: 'PDF' },
+                                                { type: 'link', icon: Globe, label: 'Web Link' },
+                                                { type: 'youtube', icon: Youtube, label: 'YouTube', color: 'text-red-500' },
                                             ].map((item) => (
                                                 <button
                                                     key={item.type}
                                                     onClick={() => handleMagicIngest(item.type)}
-                                                    className="bg-slate-800 border border-white/5 p-8 rounded-2xl flex flex-col items-center gap-4 hover:bg-slate-700 hover:border-primary/20 transition-all shadow-lg group"
+                                                    className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 rounded-[16px] p-5 flex flex-col items-center gap-3 hover:border-[#00D1FF]/30 hover:bg-[#00D1FF]/5 transition-all group"
                                                 >
-                                                    <item.icon className={`w-12 h-12 ${item.color || 'text-slate-400'} group-hover:scale-110 transition-transform`} />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-white transition-colors">{item.label}</span>
+                                                    <item.icon className={`w-8 h-8 ${item.color || 'text-[#64748B]'} group-hover:scale-110 transition-transform`} />
+                                                    <span className="text-xs font-bold text-[#64748B] group-hover:text-[#0A192F] transition-colors">{item.label}</span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-10">
-                                    <div className="bg-slate-900/60 border border-white/5 p-8 rounded-3xl shadow-xl">
-                                        <div className="flex items-center gap-4 mb-8 px-2">
-                                            <Activity className="w-6 h-6 text-primary" />
-                                            <h4 className="text-xl font-black uppercase tracking-tighter italic text-white">Neural activity</h4>
+                                <div className="space-y-6">
+                                    <div className="neo-card">
+                                        <div className="flex items-center gap-3 mb-5">
+                                            <Activity className="w-5 h-5 text-[#00D1FF]" />
+                                            <h4 className="text-base font-extrabold text-[#0A192F] tracking-tight">Activity Map</h4>
                                         </div>
-                                        <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5 shadow-inner">
+                                        <div className="bg-[#F8FAFF] rounded-[16px] border-2 border-[#0A192F]/5 p-3">
                                             <MasteryHeatmap />
                                         </div>
                                     </div>
 
-                                    <div className="bg-slate-900 border border-white/5 p-10 rounded-3xl shadow-2xl relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-amber-500/30" />
-                                        <div className="flex items-center gap-4 mb-8 px-2">
-                                            <AlertCircle className="w-7 h-7 text-amber-500" />
-                                            <h4 className="text-2xl font-black uppercase italic tracking-tighter text-white">Neural Gaps</h4>
+                                    <div className="neo-card border-l-4 border-amber-400">
+                                        <div className="flex items-center gap-3 mb-5">
+                                            <AlertCircle className="w-5 h-5 text-amber-500" />
+                                            <h4 className="text-base font-extrabold text-[#0A192F] tracking-tight">Knowledge Gaps</h4>
                                         </div>
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                             {logicGaps.length > 0 ? logicGaps.map((gap, i) => (
                                                 <div
                                                     key={i}
-                                                    className="bg-slate-800/40 border border-white/5 p-6 rounded-2xl group hover:border-primary/50 transition-all cursor-pointer shadow-lg"
+                                                    className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-4 rounded-[14px] group hover:border-amber-200 transition-all cursor-pointer"
                                                     onClick={() => handlePlugGap(gap)}
                                                 >
-                                                    <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex justify-between items-start mb-2">
                                                         <div className="flex-1 min-w-0">
-                                                            <div className="text-[10px] font-black tracking-widest text-primary uppercase mb-1">{gap.domain}</div>
-                                                            <h5 className="font-black uppercase text-base text-white truncate italic">{gap.subdomain}</h5>
+                                                            <div className="text-xs font-bold text-[#00D1FF] uppercase tracking-widest mb-0.5">{gap.domain}</div>
+                                                            <h5 className="font-extrabold text-sm text-[#0A192F] truncate">{gap.subdomain}</h5>
                                                         </div>
-                                                        <div className="text-right pl-4">
-                                                            <div className="text-3xl font-black text-amber-500 leading-none mb-1">{gap.mastery_score}%</div>
-                                                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Mastery</div>
+                                                        <div className="text-right pl-3">
+                                                            <div className="text-xl font-extrabold text-amber-500 leading-none">{gap.mastery_score}%</div>
+                                                            <div className="text-[10px] font-bold text-[#64748B]">Mastery</div>
                                                         </div>
                                                     </div>
-                                                    <div className="pt-4 border-t border-white/5 flex items-center gap-3 text-[10px] font-black text-primary group-hover:translate-x-2 transition-transform uppercase tracking-widest">
-                                                        Plug Gap with Atlas <ChevronRight size={14} strokeWidth={3} />
+                                                    <div className="pt-2 border-t border-[#0A192F]/5 flex items-center gap-2 text-xs font-bold text-[#00D1FF] group-hover:translate-x-1 transition-transform">
+                                                        Plug with Atlas <ChevronRight size={12} strokeWidth={3} />
                                                     </div>
                                                 </div>
                                             )) : (
-                                                <div className="text-slate-600 font-black uppercase text-center py-12 border-2 border-dashed border-white/5 rounded-2xl opacity-40">
-                                                    No_Gaps_MAPPED_YET
+                                                <div className="text-center py-8 text-[#64748B] font-medium text-sm border-2 border-dashed border-[#0A192F]/5 rounded-[14px]">
+                                                    No gaps detected yet
                                                 </div>
                                             )}
                                         </div>
@@ -597,22 +581,22 @@ Make it appropriate difficulty for SAT prep. Include any formulas in plain text.
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 pt-16 border-t border-white/5">
+                            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pt-8 border-t border-[#0A192F]/5">
                                 {[
                                     { label: 'Curriculum', icon: List, href: '/curriculum' },
-                                    { label: 'Video Vault', icon: Youtube, href: '/videos' },
+                                    { label: 'Videos', icon: Youtube, href: '/videos' },
                                     { label: 'Feynman', icon: Sparkles, href: '/feynman' },
                                     { label: 'Roadmaps', icon: Activity, href: '/roadmaps' },
-                                    { label: 'Social Deck', icon: LayoutDashboard, href: '/social' },
-                                    { label: 'SYOW Feed', icon: Monitor, href: '/syow' },
+                                    { label: 'Social', icon: LayoutDashboard, href: '/social' },
+                                    { label: 'SYOW', icon: Monitor, href: '/syow' },
                                 ].map((action) => (
                                     <Link
                                         key={action.label}
                                         to={action.href}
-                                        className="bg-slate-900 border border-white/5 p-8 rounded-2xl text-center shadow-lg hover:bg-slate-800 hover:border-primary/20 transition-all hover:-translate-y-1 group"
+                                        className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-5 rounded-[16px] text-center hover:border-[#00D1FF]/30 hover:bg-[#00D1FF]/5 transition-all hover:-translate-y-1 group"
                                     >
-                                        <action.icon className="w-10 h-10 mb-4 mx-auto text-slate-500 group-hover:text-primary transition-colors" />
-                                        <span className="font-black uppercase text-[10px] tracking-widest text-slate-500 group-hover:text-white transition-colors">{action.label}</span>
+                                        <action.icon className="w-7 h-7 mb-2 mx-auto text-[#64748B] group-hover:text-[#00D1FF] transition-colors" />
+                                        <span className="text-xs font-bold text-[#64748B] group-hover:text-[#0A192F] transition-colors">{action.label}</span>
                                     </Link>
                                 ))}
                             </div>

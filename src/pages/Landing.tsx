@@ -25,7 +25,7 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-neo-accent selection:text-slate-100">
+    <div className="min-h-screen bg-white">
       <LandingHeader />
       <LandingHero />
       <LandingBenefits />

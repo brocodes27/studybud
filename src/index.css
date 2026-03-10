@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,68 +6,40 @@
 
 @layer base {
   :root {
-    /* Exact Deep Focus Design Tokens */
-    --neo-bg: #0F172A;
-    --neo-ink: #F8FAFC;
-    --neo-accent: #00EAFF;
-    --neo-secondary: #1E293B;
-    --neo-muted: #94A3B8;
+    --neo-bg: #FFFFFF;
+    --neo-ink: #0A192F;
+    --neo-accent: #00D1FF;
+    --neo-secondary: #112240;
+    --neo-muted: #64748B;
     --neo-white: #FFFFFF;
 
-    --background-dark: #0F172A;
-    --card-dark: #0f172a;
-    /* Lighter than background (slate-900) */
-    --border-dark: #334155;
-    --primary-color: #00EAFF;
+    --background-dark: #FFFFFF;
+    --card-dark: #FFFFFF;
+    --border-dark: rgba(10, 25, 47, 0.1);
+    --primary-color: #00D1FF;
 
-    /* Premium Softer Shadows */
-    --shadow-neo-sm: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-neo: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-neo-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-
-    --radius-neo: 12px;
+    --radius-neo: 24px;
+    --radius-pill: 9999px;
   }
 
-  /* Force Global Background */
   html,
   body,
   #root {
-    background-color: #0F172A !important;
-    color: #F8FAFC !important;
+    background-color: #FFFFFF !important;
+    color: #0A192F !important;
   }
 }
 
-/* Universal Contrast Fixing Layer */
 * {
   @apply transition-colors duration-200;
-  border-color: rgba(255, 255, 255, 0.08);
-  /* Transparent subtle borders */
+  border-color: rgba(10, 25, 47, 0.1);
 }
 
 body {
   background-color: var(--neo-bg) !important;
   color: var(--neo-ink) !important;
-  @apply font-sans antialiased text-[15px] selection:bg-blue-500/30 selection:text-white;
-  font-family: 'Inter', sans-serif !important;
-}
-
-/* Force visibility on any hardcoded white/black themes */
-.bg-white,
-.bg-slate-50,
-.bg-gray-50 {
-  background-color: var(--neo-secondary) !important;
-}
-
-.text-black,
-.text-gray-900,
-.text-slate-900 {
-  color: var(--neo-ink) !important;
-}
-
-.text-gray-600,
-.text-slate-600,
-.text-slate-500 {
-  color: var(--neo-muted) !important;
+  @apply antialiased text-[16px] selection:bg-[#00D1FF]/30 selection:text-[#0A192F];
+  font-family: 'Bricolage Grotesque', 'Quicksand', sans-serif !important;
 }
 
 /* Headings Unification */
@@ -77,64 +49,65 @@ h3,
 h4,
 h5,
 h6 {
-  @apply font-bold tracking-tight text-white;
+  @apply font-extrabold tracking-tight text-[#0A192F];
 }
-
 
 /* Redefining Component Classes for Productivity */
 .neo-border {
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(10, 25, 47, 0.1) !important;
   border-radius: var(--radius-neo) !important;
 }
 
 .neo-card {
-  background-color: var(--neo-secondary) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  border-radius: var(--radius-neo) !important;
-  @apply p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+  background-color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 40px !important;
+  @apply p-6 transition-all duration-300 hover:-translate-y-2;
+  box-shadow: 0 16px 32px -8px rgba(0, 209, 255, 0.15);
 }
 
 .neo-button {
   background-color: var(--neo-accent) !important;
-  color: white !important;
-  border-radius: var(--radius-neo) !important;
-  @apply px-4 py-2 font-semibold shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2;
+  color: #0A192F !important;
+  border-radius: var(--radius-pill) !important;
+  @apply px-6 py-3 font-bold active:scale-95 transition-all flex items-center justify-center gap-2;
   border: none !important;
+  box-shadow: 0 8px 16px -4px rgba(0, 209, 255, 0.4);
+}
+
+.neo-button:hover {
+  box-shadow: 0 12px 20px -4px rgba(0, 209, 255, 0.6);
+  transform: translateY(-2px);
 }
 
 .neo-button-secondary {
   @apply neo-button;
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(10, 25, 47, 0.05) !important;
   color: var(--neo-ink) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-shadow: none !important;
 }
 
 .neo-button-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(10, 25, 47, 0.1) !important;
+  box-shadow: none !important;
 }
 
 .neo-input {
-  background-color: #0B1120 !important;
-  color: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: #F8FAFC !important;
+  color: #0A192F !important;
+  border: 2px solid rgba(10, 25, 47, 0.1) !important;
   border-radius: var(--radius-neo) !important;
-  @apply px-4 py-2 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all placeholder:text-slate-500;
+  @apply px-4 py-3 focus:ring-4 focus:ring-[#00D1FF]/40 focus:border-[#00D1FF] outline-none transition-all placeholder:text-slate-400 font-medium;
 }
 
-/* Special Case Overrides for visibility */
-.border-black,
-.border-slate-900 {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
+/* Special Case Overrides */
 .bg-black {
-  background-color: #070B14 !important;
+  background-color: #0A192F !important;
 }
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
-  @apply w-1.5 h-1.5;
+  @apply w-2 h-2;
 }
 
 ::-webkit-scrollbar-track {
@@ -142,7 +115,7 @@ h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-700 rounded-full hover:bg-slate-600;
+  @apply bg-[#00D1FF]/50 rounded-full hover:bg-[#00D1FF];
 }
 
 /* Animation Utilities */
@@ -162,31 +135,43 @@ h6 {
   }
 }
 
-/* High Fidelity Stitch Utilities */
+/* High Fidelity Utilities */
 .glass {
-  background: rgba(30, 41, 59, 0.7) !important;
-  backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
 }
 
 .timer-pulse {
-  box-shadow: 0 0 15px rgba(54, 128, 247, 0.3);
+  animation: pulse-cyan 2s infinite;
+}
+
+@keyframes pulse-cyan {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 209, 255, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 209, 255, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 209, 255, 0);
+  }
 }
 
 .shadow-neo {
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 16px 32px -8px rgba(0, 209, 255, 0.3);
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* Marquee */
+.marquee-container {
+  overflow: hidden;
+  width: 100%;
 }
 
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 10px;
+.marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 25s linear infinite;
 }

@@ -201,221 +201,200 @@ export function StudyPlans() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="loading-spinner w-12 h-12"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-12 animate-fade-in pb-20">
+    <div className="space-y-10 animate-fade-in pb-20">
       {/* Header */}
-      <div className="text-center mb-16 relative">
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none whitespace-nowrap overflow-hidden w-full">
-          <span className="text-[120px] font-black uppercase tracking-[0.2em] text-slate-100 italic leading-none select-none">SCHEDULES</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[20px] flex items-center justify-center shadow-float-cyan">
+            <BookOpen className="h-7 w-7 text-[#00D1FF] stroke-[2.5px]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">My Study Plans</h1>
+            <p className="text-[#64748B] font-medium">Manage your learning roadmaps</p>
+          </div>
         </div>
-        <h1 className="text-6xl md:text-8xl font-black text-slate-100 mb-6 tracking-tighter uppercase italic relative z-10">
-          MY <span className="text-neo-accent stroke-text">STUDY PLANS</span>
-        </h1>
-        <p className="text-slate-100 font-bold text-xl uppercase tracking-widest bg-neo-secondary border border-white/10 px-6 py-2 inline-block -rotate-1 shadow-neo">
-          MANAGE YOUR MENTAL BLUEPRINTS
-        </p>
+        <Link to="/create">
+          <button className="neo-button flex items-center gap-2 px-6 py-3 text-sm">
+            <Plus className="w-4 h-4 stroke-[3px]" /> New Plan
+          </button>
+        </Link>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {[
-          { label: 'TOTAL PLANS', value: studyPlans.length, icon: BookOpen, color: 'bg-neo-muted' },
-          { label: 'ACTIVE PLANS', value: studyPlans.filter(p => new Date(p.exam_date) > new Date()).length, icon: Target, color: 'bg-neo-secondary' },
-          { label: 'THIS WEEK', value: studyPlans.filter(p => { const d = differenceInDays(new Date(p.exam_date), new Date()); return d <= 7 && d >= 0; }).length, icon: AlertCircle, color: 'bg-neo-accent', text: 'text-white' },
-          { label: 'COMPLETED', value: studyPlans.filter(p => new Date(p.exam_date) < new Date()).length, icon: TrendingUp, color: 'bg-slate-800' }
+          { label: 'Total Plans', value: studyPlans.length, icon: BookOpen, color: 'text-[#00D1FF]', bg: 'bg-[#00D1FF]/10 border-[#00D1FF]/20' },
+          { label: 'Active', value: studyPlans.filter(p => new Date(p.exam_date) > new Date()).length, icon: Target, color: 'text-[#34D399]', bg: 'bg-[#34D399]/10 border-[#34D399]/20' },
+          { label: 'This Week', value: studyPlans.filter(p => { const d = differenceInDays(new Date(p.exam_date), new Date()); return d <= 7 && d >= 0; }).length, icon: AlertCircle, color: 'text-[#F472B6]', bg: 'bg-[#F472B6]/10 border-[#F472B6]/20' },
+          { label: 'Completed', value: studyPlans.filter(p => new Date(p.exam_date) < new Date()).length, icon: TrendingUp, color: 'text-[#64748B]', bg: 'bg-slate-100 border-[#0A192F]/5' }
         ].map((stat, index) => (
-          <div key={index} className="bg-slate-800 border border-white/10 p-6 shadow-neo rotate-1 hover:rotate-0 transition-transform">
-            <div className="flex items-center gap-5">
-              <div className={`w-14 h-14 border border-white/10 ${stat.color} ${stat.text || 'text-slate-100'} flex items-center justify-center shadow-neo`}>
-                <stat.icon className="w-8 h-8 stroke-[3px]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest">{stat.label}</p>
-                <p className="text-3xl font-black text-slate-100 tracking-tighter italic leading-none mt-1">{stat.value.toString().padStart(2, '0')}</p>
-              </div>
+          <div key={index} className="neo-card flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${stat.bg}`}>
+              <stat.icon className={`w-6 h-6 ${stat.color} stroke-[2.5px]`} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest">{stat.label}</p>
+              <p className="text-2xl font-extrabold text-[#0A192F] tracking-tight leading-none mt-0.5">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Create New Plan Button */}
-      <div className="flex justify-center mb-16">
-        <Link to="/create">
-          <button className="bg-slate-900 text-white px-12 py-6 text-xl font-black uppercase tracking-widest border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] active:scale-95 transition-all flex items-center gap-4">
-            <Plus className="w-8 h-8 stroke-[4px]" />
-            NEW BLUEPRINT
-          </button>
-        </Link>
-      </div>
-
       {/* Study Plans Grid */}
       {studyPlans.length === 0 ? (
-        <div className="text-center py-24 bg-slate-800 border border-white/10 shadow-neo -rotate-1">
-          <div className="w-32 h-32 bg-neo-muted border border-white/10 flex items-center justify-center mx-auto mb-10 shadow-neo rotate-12">
-            <BookOpen className="w-16 h-16 text-slate-100 stroke-[3px]" />
+        <div className="neo-card text-center py-20">
+          <div className="w-20 h-20 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[20px] flex items-center justify-center mx-auto mb-6 shadow-float-cyan">
+            <BookOpen className="w-10 h-10 text-[#00D1FF] stroke-[2px]" />
           </div>
-          <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter mb-6">EMPTY ARCHIVE</h3>
-          <p className="text-slate-100/60 font-bold mb-12 text-xl max-w-md mx-auto leading-snug">NO STUDY PLANS DETECTED. INITIALIZE YOUR FIRST LEARNING SEQUENCE.</p>
+          <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-3">No study plans yet</h3>
+          <p className="text-[#64748B] font-medium mb-8 max-w-md mx-auto">Create your first AI-powered study plan to get started on your learning journey.</p>
           <Link to="/create">
-            <button className="bg-neo-accent text-white px-10 py-5 font-black uppercase tracking-widest border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all">
-              INITIALIZE PLAN
-            </button>
+            <button className="neo-button px-8 py-3">Create First Plan</button>
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {studyPlans.map((plan, idx) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {studyPlans.map((plan) => {
             const progress = getPlanProgress(plan);
             const status = getPlanStatus(plan);
             const daysUntil = differenceInDays(new Date(plan.exam_date), new Date());
-            const rotation = idx % 2 === 0 ? 'rotate-1' : '-rotate-1';
 
             return (
-              <div key={plan.id} className={`bg-slate-800 border border-white/10 p-8 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all group ${rotation}`}>
-                <div className="relative z-10">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="flex-1 min-w-0 pr-4">
-                      {editingPlanId === plan.id ? (
-                        <div className="flex flex-col gap-4">
-                          <input
-                            value={newPlanName}
-                            onChange={(e) => setNewPlanName(e.target.value)}
-                            className="w-full bg-slate-900 border border-white/10 p-3 font-black uppercase text-sm focus:outline-none focus:shadow-neo"
-                            placeholder="PLAN NAME..."
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => updatePlanName(plan.id)}
-                              className="flex-1 bg-neo-accent text-white border border-white/10 p-2 font-black uppercase text-[10px] shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-                            >
-                              SAVE
-                            </button>
-                            <button
-                              onClick={cancelEditing}
-                              className="flex-1 bg-slate-800 border border-white/10 p-2 font-black uppercase text-[10px] shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-                            >
-                              CANCEL
-                            </button>
-                          </div>
+              <div key={plan.id} className="neo-card hover:-translate-y-1 transition-all group">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex-1 min-w-0 pr-3">
+                    {editingPlanId === plan.id ? (
+                      <div className="flex flex-col gap-3">
+                        <input
+                          value={newPlanName}
+                          onChange={(e) => setNewPlanName(e.target.value)}
+                          className="neo-input w-full p-2 text-sm"
+                          placeholder="Plan name..."
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updatePlanName(plan.id)}
+                            className="flex-1 neo-button py-1.5 text-xs"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="flex-1 px-3 py-1.5 rounded-[10px] border-2 border-[#0A192F]/10 text-[#64748B] font-bold text-xs hover:border-[#0A192F]/20 transition-all"
+                          >
+                            Cancel
+                          </button>
                         </div>
-                      ) : (
-                        <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tight italic leading-tight group-hover:text-neo-accent transition-colors truncate">
-                          {plan.plan_name || `${plan.subject} MISSION`}
-                        </h3>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => startEditing(plan)}
-                        className="p-2 border border-white/10 bg-slate-800 shadow-neo hover:bg-neo-secondary active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
-                      >
-                        <Pencil className="w-4 h-4 text-slate-100 stroke-[3px]" />
-                      </button>
-                      <button
-                        onClick={() => deletePlan(plan.id)}
-                        className="p-2 border border-white/10 bg-slate-800 shadow-neo hover:bg-red-500 hover:text-white active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
-                      >
-                        <Trash2 className="w-4 h-4 stroke-[3px]" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Plan Details */}
-                  <div className="space-y-4 mb-8">
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
-                      <div className="bg-neo-muted p-1 border border-white/10"><BookOpen className="w-3 h-3 text-slate-100 stroke-[3px]" /></div>
-                      {plan.subject}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
-                      <div className="bg-neo-accent p-1 border border-white/10"><Calendar className="w-3 h-3 text-white stroke-[3px]" /></div>
-                      EXAM: {format(new Date(plan.exam_date), 'MMM dd, yyyy')}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-100/60">
-                      <div className="bg-neo-secondary p-1 border border-white/10"><Clock className="w-3 h-3 text-slate-100 stroke-[3px]" /></div>
-                      {plan.plan.daily_schedule.length} STUDY SESSIONS
-                    </div>
-
-                    {/* Upcoming preview */}
-                    {(() => {
-                      const upcoming = getUpcoming(plan);
-                      return (
-                        <div className="mt-8 p-5 bg-slate-900 border border-white/10 shadow-neo rotate-1">
-                          <div className="text-[10px] font-black text-slate-100/40 mb-4 uppercase tracking-[0.2em] border-b-2 border-white/10 pb-2">NEXT STEPS</div>
-                          {upcoming.length > 0 ? (
-                            <ul className="space-y-3">
-                              {upcoming.map((d) => (
-                                <li key={`${plan.id}-${d.date}-${d.topic}`} className="flex flex-col gap-1">
-                                  <span className="font-black text-neo-accent text-[9px] uppercase tracking-tighter italic">
-                                    {format(new Date(`${d.date}T00:00:00`), 'dd MMMM')}
-                                  </span>
-                                  <span className="text-xs font-black text-slate-100 uppercase tracking-tight leading-tight truncate">{d.topic}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="text-xs font-black text-slate-100/20 italic uppercase tracking-widest py-2">NO DATA DETECTED</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-8">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest mb-3">
-                      <span>MISSION PROGRESS</span>
-                      <span className="bg-neo-accent text-white px-2 py-0.5 border border-white/10">{Math.round(progress)}%</span>
-                    </div>
-                    <div className="w-full bg-slate-900/10 border border-white/10 h-8 relative overflow-hidden">
-                      <div
-                        className="h-full bg-neo-secondary border-r-4 border-white/10 transition-all duration-700 ease-out"
-                        style={{ width: `${progress}%` }}
-                      >
-                        {progress > 10 && (
-                          <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-                            <span className="text-[8px] font-black uppercase tracking-[0.5em] whitespace-nowrap">EXTRACTING DATA...</span>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div className="flex items-center justify-between mb-8 pt-4 border-t-2 border-white/10/10">
-                    <div className={`px-4 py-2 border border-white/10 font-black uppercase tracking-widest text-[9px] shadow-neo ${status.color === 'success' ? 'bg-neo-secondary' :
-                      status.color === 'warning' ? 'bg-neo-accent text-white' :
-                        status.color === 'primary' ? 'bg-neo-muted' :
-                          'bg-slate-800'
-                      }`}>
-                      {status.text}
-                    </div>
-                    {daysUntil >= 0 && (
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-100/40 italic">
-                        {daysUntil === 0 ? 'D-DAY' : `T-MINUS ${daysUntil} DAYS`}
-                      </div>
+                    ) : (
+                      <h3 className="text-lg font-extrabold text-[#0A192F] tracking-tight leading-tight group-hover:text-[#00D1FF] transition-colors truncate">
+                        {plan.plan_name || `${plan.subject} Plan`}
+                      </h3>
                     )}
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4">
-                    <Link to={`/study/${plan.id}`} className="flex-1">
-                      <button className="w-full py-4 bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-3">
-                        <Eye className="w-4 h-4 stroke-[3px]" /> VIEW
-                      </button>
-                    </Link>
-                    <Link to={`/study/${plan.id}`} className="flex-1">
-                      <button className="w-full py-4 bg-slate-800 text-slate-100 font-black uppercase tracking-widest text-[10px] border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all">
-                        DEPLOY STUDY
-                      </button>
-                    </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEditing(plan)}
+                      className="p-2 rounded-[10px] border-2 border-[#0A192F]/5 text-[#64748B] hover:border-[#00D1FF]/20 hover:text-[#00D1FF] transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5 stroke-[2.5px]" />
+                    </button>
+                    <button
+                      onClick={() => deletePlan(plan.id)}
+                      className="p-2 rounded-[10px] border-2 border-[#0A192F]/5 text-[#64748B] hover:border-red-200 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 stroke-[2.5px]" />
+                    </button>
                   </div>
+                </div>
+
+                {/* Plan Details */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-[#64748B] font-medium">
+                    <BookOpen className="w-4 h-4 text-[#00D1FF] stroke-[2.5px]" />
+                    {plan.subject}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-[#64748B] font-medium">
+                    <Calendar className="w-4 h-4 text-[#F472B6] stroke-[2.5px]" />
+                    Exam: {format(new Date(plan.exam_date), 'MMM dd, yyyy')}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-[#64748B] font-medium">
+                    <Clock className="w-4 h-4 text-[#34D399] stroke-[2.5px]" />
+                    {plan.plan.daily_schedule.length} study sessions
+                  </div>
+                </div>
+
+                {/* Upcoming preview */}
+                {(() => {
+                  const upcoming = getUpcoming(plan);
+                  return upcoming.length > 0 ? (
+                    <div className="mb-6 p-4 bg-[#F8FAFF] rounded-[16px] border-2 border-[#0A192F]/5">
+                      <p className="text-xs font-bold text-[#64748B] uppercase tracking-widest mb-3">Upcoming</p>
+                      <ul className="space-y-2">
+                        {upcoming.map((d) => (
+                          <li key={`${plan.id}-${d.date}-${d.topic}`} className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold text-[#00D1FF] uppercase tracking-widest">
+                              {format(new Date(`${d.date}T00:00:00`), 'dd MMM')}
+                            </span>
+                            <span className="text-xs font-medium text-[#0A192F] truncate">{d.topic}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Progress Bar */}
+                <div className="mb-5">
+                  <div className="flex items-center justify-between text-xs font-bold text-[#64748B] mb-2">
+                    <span>Progress</span>
+                    <span className="text-[#00D1FF] font-extrabold">{Math.round(progress)}%</span>
+                  </div>
+                  <div className="w-full bg-[#F8FAFF] rounded-full h-2 overflow-hidden border border-[#0A192F]/5">
+                    <div
+                      className="h-full bg-[#00D1FF] rounded-full transition-all duration-700"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status & Countdown */}
+                <div className="flex items-center justify-between mb-5 pt-4 border-t border-[#0A192F]/5">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    status.color === 'success' ? 'bg-[#34D399]/10 text-[#34D399]' :
+                    status.color === 'warning' ? 'bg-[#F472B6]/10 text-[#F472B6]' :
+                    status.color === 'primary' ? 'bg-[#00D1FF]/10 text-[#00D1FF]' :
+                    'bg-slate-100 text-[#64748B]'
+                  }`}>
+                    {status.text}
+                  </span>
+                  {daysUntil >= 0 && (
+                    <span className="text-xs font-bold text-[#64748B]">
+                      {daysUntil === 0 ? 'Today!' : `${daysUntil} days left`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Link to={`/study/${plan.id}`} className="flex-1">
+                    <button className="w-full py-3 rounded-[14px] bg-[#0A192F] text-white font-bold text-sm hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2">
+                      <Eye className="w-4 h-4 stroke-[2.5px]" /> View Plan
+                    </button>
+                  </Link>
+                  <Link to={`/study/${plan.id}`} className="flex-1">
+                    <button className="w-full py-3 rounded-[14px] border-2 border-[#00D1FF]/20 text-[#00D1FF] font-bold text-sm hover:bg-[#00D1FF]/5 transition-all">
+                      Study Now
+                    </button>
+                  </Link>
                 </div>
               </div>
             );

@@ -23,7 +23,6 @@ export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Data State
   const [role] = useState<'student' | 'teacher'>('student');
   const [fullName, setFullName] = useState<string>(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
   const [targetExam, setTargetExam] = useState<string>('sat');
@@ -51,7 +50,6 @@ export default function Onboarding() {
     try {
       setLoading(true);
 
-      // 1. Update Profile
       const profilePayload = {
         id: user.id,
         role,
@@ -62,7 +60,6 @@ export default function Onboarding() {
       const { error: profileError } = await supabase.from('user_profiles').upsert(profilePayload);
       if (profileError) throw profileError;
 
-      // 2. Save Study Goals (if student)
       if (role === 'student') {
         const goalPayload = {
           user_id: user.id,
@@ -78,7 +75,6 @@ export default function Onboarding() {
         if (goalError) throw goalError;
       }
 
-      // Initialize gamification
       await supabase.from('user_gamification').upsert({
         user_id: user.id,
         total_xp: 0,
@@ -99,25 +95,23 @@ export default function Onboarding() {
   const prevStep = () => setStep(s => s - 1);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 md:p-8 font-sans selection:bg-neo-accent selection:text-slate-100">
-      {/* Background patterns */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
-        style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }} />
+    <div className="min-h-screen bg-[#F8FAFF] flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#00D1FF]/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#F472B6]/10 rounded-full blur-[100px]" />
+      </div>
 
-      <div className="w-full max-w-2xl relative">
-        {/* Progress Bar */}
-        <div className="mb-12 flex items-center justify-between px-2">
+      <div className="w-full max-w-xl relative z-10">
+        {/* Progress Steps */}
+        <div className="mb-10 flex items-center justify-between px-2">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center flex-1 last:flex-none">
-              <div className={`
-                        w-10 h-10 border border-white/10 font-black flex items-center justify-center transition-all duration-500
-                        ${step >= i ? 'bg-neo-accent shadow-neo' : 'bg-slate-800 text-slate-100/20'}
-                        ${step === i ? 'scale-110 -rotate-3' : 'rotate-0'}
-                    `}>
-                {i}
+              <div className={`w-10 h-10 rounded-full font-bold flex items-center justify-center text-sm transition-all duration-300 border-2 ${step >= i ? 'bg-[#00D1FF] border-[#00D1FF] text-white shadow-float-cyan' : 'bg-white border-[#0A192F]/10 text-[#64748B]'} ${step === i ? 'scale-110' : ''}`}>
+                {step > i ? <Check className="w-4 h-4" /> : i}
               </div>
               {i < 4 && (
-                <div className={`h-1 flex-1 mx-2 transition-all duration-500 ${step > i ? 'bg-slate-900' : 'bg-slate-900/10'}`} />
+                <div className={`h-1 flex-1 mx-2 rounded-full transition-all duration-500 ${step > i ? 'bg-[#00D1FF]/30' : 'bg-[#0A192F]/5'}`} />
               )}
             </div>
           ))}
@@ -131,92 +125,97 @@ export default function Onboarding() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo rotate-1"
+              className="neo-card"
             >
               <div className="flex items-center gap-4 mb-8">
-                <div className="bg-neo-secondary border border-white/10 p-3 -rotate-12">
-                  <User className="w-8 h-8 font-black" />
+                <div className="w-14 h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[18px] flex items-center justify-center shadow-float-cyan">
+                  <User className="w-7 h-7 text-[#00D1FF]" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">WHO ARE YOU?</h1>
-                  <p className="text-xs font-black text-slate-100/40 uppercase tracking-widest mt-2">IDENTITY SETTINGS</p>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Who are you?</h1>
+                  <p className="text-xs font-medium text-[#64748B] mt-1">Let's set up your profile</p>
                 </div>
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] mb-3 opacity-40">Your Full Name</label>
+                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Your Full Name</label>
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-slate-900 border border-white/10 p-5 font-black text-2xl italic focus:bg-neo-secondary outline-none transition-all shadow-none focus:shadow-neo"
-                    placeholder="ENTER NAME..."
+                    className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-lg focus:outline-none focus:border-[#00D1FF]/40 bg-white placeholder-[#64748B]/40"
+                    placeholder="Enter your name..."
                   />
                 </div>
 
-                <div>
-                  <div className="p-8 border border-white/10 bg-neo-accent flex flex-col items-center gap-4 transition-all">
-                    <GraduationCap className="w-12 h-12" />
-                    <span className="font-black text-xl italic uppercase">STUDENT IDENTITY</span>
-                    <p className="text-[10px] font-bold text-center opacity-40 leading-tight">Your profile is being configured for peak learning performance</p>
+                <div className="p-5 bg-[#00D1FF]/5 rounded-[16px] border-2 border-[#00D1FF]/15 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[12px] flex items-center justify-center">
+                    <GraduationCap className="w-6 h-6 text-[#00D1FF]" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-[#0A192F] tracking-tight">Student Account</p>
+                    <p className="text-xs font-medium text-[#64748B]">Profile configured for peak learning performance</p>
                   </div>
                 </div>
 
                 <button
                   onClick={nextStep}
                   disabled={!role || !fullName}
-                  className="w-full bg-slate-900 text-white p-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo active:translate-x-0 active:translate-y-0 active:shadow-none transition-all shadow-neo disabled:opacity-20 flex items-center justify-center gap-4"
+                  className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
                 >
-                  NEXT <ChevronRight className="w-8 h-8" />
+                  Next <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: EXAM SELECTION (Only for students) */}
+          {/* STEP 2: EXAM SELECTION */}
           {step === 2 && (
             <motion.div
               key="step2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo -rotate-1"
+              className="neo-card"
             >
-              <>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="bg-neo-accent border border-white/10 p-3 rotate-6">
-                    <Target className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">TARGET EXAM</h1>
-                    <p className="text-xs font-black text-slate-100/40 uppercase tracking-widest mt-2">WHAT ARE WE CONQUERING?</p>
-                  </div>
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-[18px] flex items-center justify-center">
+                  <Target className="w-7 h-7 text-[#F472B6]" />
                 </div>
+                <div>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Target Exam</h1>
+                  <p className="text-xs font-medium text-[#64748B] mt-1">What are we preparing for?</p>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar mb-8">
-                  {examTypes.map((exam) => (
-                    <button
-                      key={exam.code}
-                      onClick={() => setTargetExam(exam.code)}
-                      className={`
-                          p-6 border border-white/10 text-left flex items-center justify-between transition-all
-                          ${targetExam === exam.code ? 'bg-neo-secondary shadow-none translate-x-1 translate-y-1' : 'bg-slate-900/50 hover:bg-slate-900 shadow-neo'}
-                        `}
-                    >
-                      <div>
-                        <span className="font-black text-2xl italic uppercase">{exam.name}</span>
-                        <p className="text-[10px] font-bold opacity-40 uppercase max-w-[80%]">{exam.description || 'CONCENTRATE YOUR FOCUS'}</p>
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 mb-6">
+                {examTypes.map((exam) => (
+                  <button
+                    key={exam.code}
+                    onClick={() => setTargetExam(exam.code)}
+                    className={`w-full p-4 rounded-[16px] border-2 text-left flex items-center justify-between transition-all ${targetExam === exam.code ? 'bg-[#00D1FF]/10 border-[#00D1FF] shadow-float-cyan' : 'bg-[#F8FAFF] border-[#0A192F]/5 hover:border-[#00D1FF]/30'}`}
+                  >
+                    <div>
+                      <span className="font-extrabold text-[#0A192F] tracking-tight">{exam.name}</span>
+                      {exam.description && <p className="text-xs font-medium text-[#64748B] mt-0.5">{exam.description}</p>}
+                    </div>
+                    {targetExam === exam.code && (
+                      <div className="w-7 h-7 bg-[#00D1FF] rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
                       </div>
-                      {targetExam === exam.code && <div className="bg-slate-900 text-white p-2 rotate-12"><Check className="w-6 h-6" /></div>}
-                    </button>
-                  ))}
-                </div>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-                <div className="flex gap-4">
-                  <button onClick={prevStep} className="bg-slate-800 border border-white/10 p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
-                  <button onClick={nextStep} className="flex-1 bg-slate-900 text-white p-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent shadow-neo transition-all flex items-center justify-center gap-4">CONTINUE</button>
-                </div>
-              </>
+              <div className="flex gap-3">
+                <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
+                  Continue <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -227,52 +226,52 @@ export default function Onboarding() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo rotate-1"
+              className="neo-card"
             >
-              <div className="flex items-center gap-4 mb-10">
-                <div className="bg-neo-muted border border-white/10 p-3 -rotate-6">
-                  <Sparkles className="w-8 h-8" />
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[18px] flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-[#34D399]" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">THE MISSION</h1>
-                  <p className="text-xs font-black text-slate-100/40 uppercase tracking-widest mt-2">GOALS & INTENSITY</p>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Your Mission</h1>
+                  <p className="text-xs font-medium text-[#64748B] mt-1">Goals and study intensity</p>
                 </div>
               </div>
 
-              <div className="space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40">
-                      <Target className="w-4 h-4" /> Target Score
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                      <Target className="w-3.5 h-3.5" /> Target Score
                     </label>
                     <div className="relative">
                       <input
                         type="number"
                         value={targetScore}
                         onChange={(e) => setTargetScore(parseInt(e.target.value))}
-                        className="w-full bg-slate-900 border border-white/10 p-5 font-black text-4xl italic outline-none shadow-none focus:shadow-neo transition-all"
+                        className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-extrabold text-2xl focus:outline-none focus:border-[#34D399]/40 bg-white"
                       />
-                      <div className="absolute right-4 bottom-4 text-[10px] font-black opacity-30">/ {selectedExamData?.total_score_max || 'MAX'}</div>
+                      <div className="absolute right-4 bottom-3 text-xs font-medium text-[#64748B]">/ {selectedExamData?.total_score_max || '—'}</div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40">
-                      <Calendar className="w-4 h-4" /> Exam Date
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                      <Calendar className="w-3.5 h-3.5" /> Exam Date
                     </label>
                     <input
                       type="date"
                       value={examDate}
                       onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 p-5 font-black text-xl italic outline-none shadow-none focus:shadow-neo transition-all"
+                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold focus:outline-none focus:border-[#34D399]/40 bg-white"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-40">
-                    <span className="flex items-center gap-2"><Clock className="w-4 h-4" /> Weekly Practice Intensity</span>
-                    <span className="text-slate-100 italic font-black text-lg">{hoursPerWeek} HOURS / WEEK</span>
+                  <label className="flex items-center justify-between text-xs font-bold text-[#64748B] uppercase tracking-wider mb-3">
+                    <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Weekly Practice</span>
+                    <span className="text-[#0A192F] font-extrabold">{hoursPerWeek} hrs/week</span>
                   </label>
                   <input
                     type="range"
@@ -280,114 +279,112 @@ export default function Onboarding() {
                     max="40"
                     value={hoursPerWeek}
                     onChange={(e) => setHoursPerWeek(parseInt(e.target.value))}
-                    className="w-full h-4 bg-slate-900 border border-white/10 accent-neo-accent cursor-pointer"
+                    className="w-full h-2 rounded-full accent-[#00D1FF] cursor-pointer"
                   />
-                  <div className="flex justify-between text-[8px] font-black mt-2 opacity-30 uppercase tracking-widest">
+                  <div className="flex justify-between text-[10px] font-medium text-[#64748B] mt-2">
                     <span>Casual</span>
                     <span>Dedicated</span>
-                    <span>Absolute Beast</span>
+                    <span>All-in</span>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <button onClick={prevStep} className="bg-slate-800 border border-white/10 p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
-                  <button onClick={nextStep} className="flex-1 bg-slate-900 text-white p-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-accent shadow-neo transition-all flex items-center justify-center gap-4">FINAL STEP</button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: WEAK AREAS & FINISH */}
-          {step === 4 && role === 'student' && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo -rotate-1"
-            >
-              <div className="flex items-center gap-4 mb-10">
-                <div className="bg-neo-secondary border border-white/10 p-3 rotate-12">
-                  <Brain className="w-8 h-8" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">PRE-DIAGNOSIS</h1>
-                  <p className="text-xs font-black text-slate-100/40 uppercase tracking-widest mt-2">WHERE DO WE START?</p>
-                </div>
-              </div>
-
-              <div className="space-y-8">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-40">SELECT YOUR STRUGGLE (OPTIONAL)</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {['Algebra', 'Geometry', 'Trig', 'Reading', 'Writing', 'Data Analysis', 'Calculus', 'Vocabulary'].map((area) => (
-                      <button
-                        key={area}
-                        onClick={() => {
-                          setWeakAreas(areas =>
-                            areas.includes(area) ? areas.filter(a => a !== area) : [...areas, area]
-                          );
-                        }}
-                        className={`
-                                        p-4 border border-white/10 font-black text-xs uppercase tracking-tight transition-all
-                                        ${weakAreas.includes(area) ? 'bg-neo-accent shadow-none translate-x-0.5 translate-y-0.5' : 'bg-slate-800 shadow-neo hover:bg-slate-900'}
-                                    `}
-                      >
-                        {area}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-white/10 p-6">
-                  <h5 className="font-black uppercase text-xs mb-3 flex items-center gap-2"><Shield className="w-4 h-4" /> THE ATLAS PROMISE</h5>
-                  <p className="text-xs font-bold leading-relaxed opacity-60">I will architect a plan that converts these weaknesses into high-performance metrics. Your streak starts today.</p>
-                </div>
-
-                <div className="flex gap-4">
-                  <button onClick={prevStep} className="bg-slate-800 border border-white/10 p-6 font-black uppercase"><ChevronLeft className="w-8 h-8" /></button>
-                  <button
-                    onClick={nextStep}
-                    className="flex-1 bg-neo-accent text-slate-100 p-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-neo-ink hover:text-white shadow-neo transition-all flex items-center justify-center gap-4 group"
-                  >
-                    CONTINUE
-                    <ChevronRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
+                <div className="flex gap-3">
+                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
+                    Final Step <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 5: TRIAL & PAYMENT */}
+          {/* STEP 4: WEAK AREAS */}
+          {step === 4 && role === 'student' && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="neo-card"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 bg-[#0A192F]/5 border border-[#0A192F]/10 rounded-[18px] flex items-center justify-center">
+                  <Brain className="w-7 h-7 text-[#0A192F]" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Where to focus?</h1>
+                  <p className="text-xs font-medium text-[#64748B] mt-1">Select your weak areas (optional)</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-2">
+                  {['Algebra', 'Geometry', 'Trig', 'Reading', 'Writing', 'Data Analysis', 'Calculus', 'Vocabulary'].map((area) => (
+                    <button
+                      key={area}
+                      onClick={() => setWeakAreas(areas => areas.includes(area) ? areas.filter(a => a !== area) : [...areas, area])}
+                      className={`p-3.5 rounded-[12px] border-2 font-semibold text-sm transition-all flex items-center gap-2 ${weakAreas.includes(area) ? 'bg-[#00D1FF]/10 border-[#00D1FF] text-[#00D1FF]' : 'bg-[#F8FAFF] border-[#0A192F]/5 text-[#64748B] hover:border-[#00D1FF]/30'}`}
+                    >
+                      {weakAreas.includes(area) && <Check className="w-4 h-4 shrink-0" />}
+                      {area}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-[#F8FAFF] rounded-[16px] border-2 border-[#0A192F]/5 p-5">
+                  <h5 className="font-bold text-[#0A192F] text-sm mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-[#34D399]" /> Our Promise
+                  </h5>
+                  <p className="text-sm font-medium text-[#64748B] leading-relaxed">We'll build a personalized plan that converts your weak areas into strengths. Your journey starts today.</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextStep}
+                    className="flex-1 neo-button py-3 flex items-center justify-center gap-2 group"
+                  >
+                    Continue
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 5: TRIAL */}
           {step === 5 && (
             <motion.div
               key="step5"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="bg-slate-800 border border-white/10 p-8 md:p-12 shadow-neo rotate-1"
+              className="neo-card"
             >
               <div className="flex items-center gap-4 mb-8">
-                <div className="bg-neo-secondary border border-white/10 p-3 -rotate-12">
-                  <Crown className="w-8 h-8 text-slate-100" />
+                <div className="w-14 h-14 bg-[#FBBF24]/10 border border-[#FBBF24]/20 rounded-[18px] flex items-center justify-center">
+                  <Crown className="w-7 h-7 text-[#FBBF24]" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black uppercase italic tracking-tighter leading-none">START YOUR TRIAL</h1>
-                  <p className="text-xs font-black text-slate-100/40 uppercase tracking-widest mt-2">7 DAYS FREE ACCESS</p>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Start Your Trial</h1>
+                  <p className="text-xs font-bold text-[#34D399] mt-1">7 Days Free Access</p>
                 </div>
               </div>
 
-              <div className="space-y-8">
-                <div className="bg-slate-900 border border-white/10 p-8 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-slate-900 text-white px-4 py-1 font-black text-[10px] uppercase rotate-45 translate-x-4 translate-y-2">LIMITED</div>
-                  <h3 className="text-2xl font-black uppercase italic mb-2 tracking-tighter">7-DAY FREE NEURO TRIAL</h3>
-                  <p className="text-sm font-bold opacity-60 leading-tight mb-6">Experience full neural augmentation, smart plans, and college roadmaps free for 7 days. Then just $5/mo.</p>
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-[#00D1FF]/5 to-[#F472B6]/5 rounded-[20px] border-2 border-[#00D1FF]/15 p-6">
+                  <h3 className="text-lg font-extrabold text-[#0A192F] mb-2 tracking-tight">7-Day Free Trial</h3>
+                  <p className="text-sm font-medium text-[#64748B] mb-5">Experience full AI-powered learning, smart plans, and college roadmaps free for 7 days. Then just $5/mo.</p>
 
                   <ul className="space-y-3">
-                    {['Full AI Strategy', 'US College Roadmaps', 'Unlimited Mock Exams'].map(f => (
-                      <li key={f} className="flex items-center gap-3 text-xs font-black uppercase tracking-tight">
-                        <div className="w-4 h-4 bg-neo-accent border border-white/10 flex items-center justify-center">
-                          <Check className="w-3 h-3" />
+                    {['Full AI Strategy Engine', 'US College Roadmaps', 'Unlimited Mock Exams'].map(f => (
+                      <li key={f} className="flex items-center gap-3 text-sm font-medium text-[#0A192F]">
+                        <div className="w-5 h-5 bg-[#34D399]/10 border border-[#34D399]/30 rounded-full flex items-center justify-center shrink-0">
+                          <Check className="w-3 h-3 text-[#34D399]" />
                         </div>
                         {f}
                       </li>
@@ -395,20 +392,20 @@ export default function Onboarding() {
                   </ul>
                 </div>
 
-                <div className="space-y-4">
-                  <button
-                    onClick={saveOnboarding}
-                    disabled={loading}
-                    className="w-full bg-neo-accent text-slate-100 p-6 border border-white/10 font-black uppercase italic tracking-tighter text-3xl hover:bg-slate-900 hover:text-white shadow-neo transition-all flex items-center justify-center gap-4 group"
-                  >
-                    {loading ? 'INITIALIZING...' : 'COMPLETE ONBOARDING'}
-                    <ChevronRight className="w-8 h-8 group-hover:translate-x-2 transition-transform" />
-                  </button>
+                <button
+                  onClick={saveOnboarding}
+                  disabled={loading}
+                  className="neo-button w-full py-4 flex items-center justify-center gap-2 group disabled:opacity-50 text-base"
+                >
+                  {loading ? 'Setting up...' : 'Complete Onboarding'}
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
 
-                  <p className="text-center text-[10px] font-bold opacity-30 uppercase tracking-widest">YOU WON'T BE CHARGED FOR 7 DAYS</p>
-                </div>
+                <p className="text-center text-xs font-medium text-[#64748B]">You won't be charged for 7 days</p>
 
-                <button onClick={prevStep} className="w-full text-slate-100/40 font-black uppercase text-[10px] tracking-widest hover:text-slate-100 transition-colors">BACK TO MISSION</button>
+                <button onClick={prevStep} className="w-full text-[#64748B] font-medium text-sm hover:text-[#0A192F] transition-colors">
+                  Back
+                </button>
               </div>
             </motion.div>
           )}

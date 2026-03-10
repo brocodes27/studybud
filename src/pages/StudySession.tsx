@@ -86,7 +86,7 @@ export function StudySession() {
       setStudyPlan(data);
     } catch (error) {
       console.error('Error fetching study plan:', error);
-      showToast('SESSION_READ_ERROR', 'error');
+      showToast('Failed to load session', 'error');
       navigate('/dashboard');
     } finally {
       setLoading(false);
@@ -139,14 +139,14 @@ export function StudySession() {
       setStudyTime(0);
       setNotes('');
 
-      showToast('LOG_SUCCESS: SESSION_RECORDED', 'success');
+      showToast('Session recorded successfully', 'success');
 
       if (currentDay < studyPlan.plan.daily_schedule.length - 1) {
         setCurrentDay(currentDay + 1);
       }
     } catch (error) {
       console.error('Error completing task:', error);
-      showToast('UPLOAD_CRITICAL: LOG_FAILURE', 'error');
+      showToast('Failed to save session', 'error');
     }
   };
 
@@ -171,9 +171,9 @@ export function StudySession() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="w-16 h-16 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        <h2 className="text-xl font-black text-slate-500 uppercase tracking-[0.3em] mt-8">Initializing Focus Mode...</h2>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <div className="w-12 h-12 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin"></div>
+        <p className="text-sm font-bold text-[#64748B]">Loading session...</p>
       </div>
     );
   }
@@ -184,20 +184,20 @@ export function StudySession() {
   const isCompleted = completedTasks.has(currentTask.day);
 
   return (
-    <div className="fixed inset-0 bg-background-dark text-slate-100 font-sans flex flex-col overflow-hidden z-[50]">
+    <div className="fixed inset-0 bg-white font-sans flex flex-col overflow-hidden z-[50]">
       {/* Top Navigation Bar */}
-      <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-white/5 backdrop-blur-md z-50 shrink-0">
+      <header className="h-16 border-b border-[#0A192F]/5 flex items-center justify-between px-8 bg-white shadow-sm z-50 shrink-0">
         <div className="flex items-center gap-3 w-1/3">
-          <BookOpen className="text-primary h-5 w-5" />
-          <h2 className="text-xs font-black tracking-widest uppercase text-slate-500 truncate max-w-[200px]">
+          <BookOpen className="text-[#00D1FF] h-5 w-5 stroke-[2.5px]" />
+          <h2 className="text-sm font-bold text-[#64748B] truncate max-w-[200px]">
             {studyPlan.subject} – Day {currentTask.day}
           </h2>
         </div>
 
         <div className="flex justify-center w-1/3">
-          <div className="bg-primary/10 border border-primary/20 px-6 py-1.5 rounded-full flex items-center gap-3 timer-pulse transition-all">
-            <Timer className={`h-4 w-4 text-primary ${isStudying ? 'animate-pulse' : ''}`} />
-            <span className="text-primary font-black text-xl tabular-nums leading-none -mb-0.5">
+          <div className="bg-[#00D1FF]/10 border border-[#00D1FF]/20 px-6 py-1.5 rounded-full flex items-center gap-3 transition-all shadow-float-cyan">
+            <Timer className={`h-4 w-4 text-[#00D1FF] ${isStudying ? 'animate-pulse' : ''}`} />
+            <span className="text-[#00D1FF] font-extrabold text-xl tabular-nums leading-none">
               {formatTime(studyTime)}
             </span>
           </div>
@@ -206,7 +206,7 @@ export function StudySession() {
         <div className="flex justify-end w-1/3 gap-4">
           <Link
             to="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all group"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-[#64748B] hover:text-[#0A192F] transition-all group"
           >
             <Layout className="h-4 w-4 group-hover:scale-110 transition-transform" />
             Dashboard
@@ -217,38 +217,38 @@ export function StudySession() {
       {/* Main Workspace */}
       <main className="flex flex-1 overflow-hidden">
         {/* Reading Area (65%) */}
-        <section className="w-[65%] overflow-y-auto custom-scrollbar bg-background-dark relative">
+        <section className="w-[65%] overflow-y-auto custom-scrollbar bg-white relative">
           <div className="max-w-3xl mx-auto py-16 px-12">
             <article className="space-y-10">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-primary font-black tracking-[0.4em] text-[10px] uppercase">Core Concept</span>
+                  <span className="text-[#00D1FF] font-bold tracking-[0.2em] text-xs uppercase">Core Concept</span>
                   {isCompleted && (
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 rounded">
-                      Secured
+                    <span className="px-2 py-0.5 bg-[#34D399]/10 text-[#34D399] text-xs font-bold border border-[#34D399]/20 rounded-full">
+                      Completed
                     </span>
                   )}
                 </div>
-                <h1 className="text-6xl font-black tracking-tighter leading-tight italic uppercase drop-shadow-sm">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-[#0A192F]">
                   {currentTask.topic}
                 </h1>
               </div>
 
-              <div className="prose prose-invert max-w-none text-xl leading-relaxed text-slate-400 space-y-8 font-medium">
-                <div className="bg-primary/5 border-l-4 border-primary p-8 rounded-r-2xl italic text-2xl text-slate-200 shadow-xl shadow-black/5">
-                  "{currentTask.description}"
+              <div className="space-y-8">
+                <div className="bg-[#00D1FF]/5 border-l-4 border-[#00D1FF] p-8 rounded-r-2xl text-xl text-[#0A192F] leading-relaxed font-medium">
+                  {currentTask.description}
                 </div>
 
                 {currentTask.practice_questions && currentTask.practice_questions.length > 0 && (
-                  <div className="space-y-6 pt-6">
-                    <h3 className="text-xs font-black text-primary uppercase tracking-[0.3em]">Session Checkpoints</h3>
-                    <div className="grid gap-4">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Practice Questions</h3>
+                    <div className="grid gap-3">
                       {currentTask.practice_questions.map((q, idx) => (
-                        <div key={idx} className="bg-white/5 border border-white/5 p-6 rounded-2xl flex items-start gap-4 hover:border-primary/30 transition-all cursor-default group">
-                          <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <div key={idx} className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-5 rounded-[16px] flex items-start gap-4 hover:border-[#00D1FF]/20 transition-all">
+                          <div className="w-6 h-6 rounded-full bg-[#00D1FF]/10 flex items-center justify-center text-xs font-extrabold text-[#00D1FF] shrink-0 mt-0.5">
                             {idx + 1}
                           </div>
-                          <p className="text-lg font-bold text-slate-300 uppercase italic tracking-tight">{q}</p>
+                          <p className="text-base font-medium text-[#0A192F] leading-snug">{q}</p>
                         </div>
                       ))}
                     </div>
@@ -257,43 +257,43 @@ export function StudySession() {
               </div>
 
               {/* Action Area */}
-              <div className="pt-16 flex flex-col items-center gap-6">
+              <div className="pt-12 flex flex-col items-center gap-6">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setIsStudying(!isStudying)}
-                    className={`flex items-center gap-3 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-lg transition-all shadow-xl ${isStudying
-                        ? 'bg-amber-500 text-white shadow-amber-500/20'
-                        : 'bg-primary text-white shadow-primary/25 hover:scale-105 active:scale-95'
+                    className={`flex items-center gap-3 px-8 py-4 rounded-[16px] font-bold text-base transition-all shadow-lg ${isStudying
+                        ? 'bg-amber-500 text-white shadow-amber-500/20 hover:-translate-y-0.5'
+                        : 'bg-[#00D1FF] text-[#0A192F] shadow-float-cyan hover:-translate-y-0.5 active:scale-95'
                       }`}
                   >
-                    {isStudying ? <><Pause className="fill-white" /> Pause Focus</> : <><Play className="fill-white" /> Start Focus</>}
+                    {isStudying ? <><Pause className="h-5 w-5 fill-white" /> Pause Focus</> : <><Play className="h-5 w-5 fill-[#0A192F]" /> Start Focus</>}
                   </button>
 
                   <button
                     onClick={completeTask}
-                    className="flex items-center gap-3 bg-slate-800 hover:bg-slate-700 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-lg transition-all shadow-xl border border-white/5 hover:translate-y-[-2px]"
+                    className="flex items-center gap-3 bg-[#0A192F] text-white px-8 py-4 rounded-[16px] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95"
                   >
-                    <CheckCircle className="h-6 w-6 stroke-[3]" />
-                    Complete
+                    <CheckCircle className="h-5 w-5 stroke-[2.5px]" />
+                    Mark Complete
                   </button>
                 </div>
 
-                <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.5em] mt-4">Deep Focus Engaged</p>
+                <p className="text-xs font-medium text-[#64748B]">Timer tracks your focus time automatically</p>
               </div>
 
               {/* Footer Nav */}
-              <nav className="mt-24 pt-8 border-t border-white/5 flex justify-between items-center opacity-40 hover:opacity-100 transition-opacity">
+              <nav className="mt-20 pt-8 border-t border-[#0A192F]/5 flex justify-between items-center">
                 <button
                   onClick={() => setCurrentDay(Math.max(0, currentDay - 1))}
                   disabled={currentDay === 0}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary disabled:opacity-0 transition-all"
+                  className="flex items-center gap-2 text-sm font-bold text-[#64748B] hover:text-[#0A192F] disabled:opacity-0 transition-all"
                 >
                   <ChevronLeft className="h-4 w-4" /> Previous
                 </button>
                 <button
                   onClick={() => setCurrentDay(Math.min(studyPlan.plan.daily_schedule.length - 1, currentDay + 1))}
                   disabled={currentDay === studyPlan.plan.daily_schedule.length - 1}
-                  className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary disabled:opacity-0 transition-all"
+                  className="flex items-center gap-2 text-sm font-bold text-[#64748B] hover:text-[#0A192F] disabled:opacity-0 transition-all"
                 >
                   Next <ChevronRight className="h-4 w-4" />
                 </button>
@@ -303,26 +303,26 @@ export function StudySession() {
         </section>
 
         {/* AI Sidebar (35%) */}
-        <aside className="w-[35%] bg-card-dark border-l border-white/5 flex flex-col shadow-2xl z-40">
+        <aside className="w-[35%] bg-[#F8FAFF] border-l border-[#0A192F]/5 flex flex-col shadow-lg z-40">
           {/* AI Header */}
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div className="p-5 border-b border-[#0A192F]/5 flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <Bot size={22} strokeWidth={2.5} />
+              <div className="w-10 h-10 rounded-full bg-[#00D1FF]/10 border border-[#00D1FF]/20 flex items-center justify-center text-[#00D1FF] shadow-float-cyan">
+                <Bot size={20} strokeWidth={2.5} />
               </div>
               <div>
-                <h3 className="font-black uppercase tracking-tighter text-white">Atlas</h3>
+                <h3 className="font-extrabold text-[#0A192F] tracking-tight">Atlas</h3>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Analysis</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse"></div>
+                  <p className="text-xs font-medium text-[#64748B]">Ready to help</p>
                 </div>
               </div>
             </div>
-            <Zap className="h-4 w-4 text-primary opacity-20" />
+            <Zap className="h-4 w-4 text-[#00D1FF] opacity-50" />
           </div>
 
           {/* Chat History */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-900/20">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
             {messages.map((m, i) => (
               <motion.div
                 initial={{ opacity: 0, x: m.role === 'user' ? 20 : -20 }}
@@ -330,28 +330,28 @@ export function StudySession() {
                 key={i}
                 className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] p-5 rounded-2xl text-sm leading-relaxed shadow-lg ${m.role === 'user'
-                    ? 'bg-primary text-white rounded-tr-none'
-                    : 'bg-slate-800 text-slate-200 rounded-tl-none border border-white/5'
+                <div className={`max-w-[85%] p-4 rounded-[16px] text-sm leading-relaxed ${m.role === 'user'
+                    ? 'bg-[#00D1FF] text-[#0A192F] rounded-tr-none font-medium'
+                    : 'bg-white text-[#0A192F] rounded-tl-none border-2 border-[#0A192F]/5 font-medium'
                   }`}>
-                  <p className={m.role === 'user' ? 'font-bold italic' : 'font-medium'}>{m.content}</p>
+                  {m.content}
                 </div>
               </motion.div>
             ))}
           </div>
 
           {/* AI Input */}
-          <div className="p-6 bg-slate-900 border-t border-white/5 space-y-5">
+          <div className="p-5 bg-white border-t border-[#0A192F]/5 space-y-4">
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setChatInput("Summarize Faraday's Law")}
-                className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/20 transition-all"
+                onClick={() => setChatInput("Summarize this topic")}
+                className="px-3 py-1.5 rounded-full bg-[#00D1FF]/10 border border-[#00D1FF]/20 text-xs font-bold text-[#00D1FF] hover:bg-[#00D1FF]/20 transition-all"
               >
                 Summarize
               </button>
               <button
                 onClick={() => setChatInput("Give me a practice problem")}
-                className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/20 transition-all"
+                className="px-3 py-1.5 rounded-full bg-[#00D1FF]/10 border border-[#00D1FF]/20 text-xs font-bold text-[#00D1FF] hover:bg-[#00D1FF]/20 transition-all"
               >
                 Practice
               </button>
@@ -362,18 +362,17 @@ export function StudySession() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="w-full bg-slate-950/50 border border-white/10 rounded-2xl py-5 pl-6 pr-14 text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-600 transition-all shadow-inner"
+                className="w-full bg-[#F8FAFF] border-2 border-[#0A192F]/10 rounded-[14px] py-4 pl-5 pr-14 text-sm font-medium focus:ring-0 focus:border-[#00D1FF] placeholder:text-[#64748B]/50 transition-all"
                 placeholder="Ask Atlas anything..."
                 type="text"
               />
               <button
                 onClick={handleSendMessage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-primary rounded-xl text-white hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-[#00D1FF] rounded-[10px] text-[#0A192F] hover:scale-105 active:scale-95 transition-all shadow-float-cyan"
               >
-                <Send size={18} strokeWidth={3} />
+                <Send size={16} strokeWidth={2.5} />
               </button>
             </div>
-            <p className="text-[10px] text-center text-slate-600 uppercase tracking-[0.4em] font-black">AI Study Terminal</p>
           </div>
         </aside>
       </main>

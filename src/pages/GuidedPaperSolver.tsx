@@ -103,26 +103,27 @@ export function GuidedPaperSolver() {
     // View: List of Papers
     if (!selectedPaper) {
         return (
-            <div className="min-h-screen text-white p-6 md:p-12 max-w-7xl mx-auto">
-                <header className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500 mb-4">
-                        Guided Paper Solver
-                    </h1>
-                    <p className="text-gray-400 text-lg max-w-2xl">
-                        Upload your exam papers. Our AI extracts questions and helps you solve them with progressive hints. No direct answers—just pure learning.
-                    </p>
-                </header>
+            <div className="pb-20 animate-fade-in max-w-7xl mx-auto">
+                <div className="mb-10 flex items-center gap-4">
+                    <div className="w-14 h-14 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[20px] flex items-center justify-center">
+                        <FileText className="h-7 w-7 text-[#34D399] stroke-[2px]" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">Guided Paper Solver</h1>
+                        <p className="text-[#64748B] font-medium">Upload exam papers. AI extracts questions and guides you with progressive hints.</p>
+                    </div>
+                </div>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
-                        <Loader2 className="w-12 h-12 text-teal-400 animate-spin" />
+                        <Loader2 className="w-10 h-10 text-[#00D1FF] animate-spin" />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Upload Card */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="group cursor-pointer border border-dashed border-gray-700 bg-gray-900/50 rounded-3xl h-64 flex flex-col items-center justify-center p-6 hover:border-teal-500/50 hover:bg-teal-900/10 transition-all duration-300 relative overflow-hidden"
+                            className="group cursor-pointer border-2 border-dashed border-[#0A192F]/10 bg-[#F8FAFF] rounded-[24px] h-64 flex flex-col items-center justify-center p-6 hover:border-[#00D1FF]/40 hover:bg-[#00D1FF]/5 transition-all duration-300"
                         >
                             <input
                                 type="file"
@@ -132,24 +133,19 @@ export function GuidedPaperSolver() {
                                 onChange={handleFileUpload}
                             />
                             {uploading ? (
-                                <div className="flex flex-col items-center z-10">
-                                    <Loader2 className="w-12 h-12 text-teal-400 animate-spin mb-4" />
-                                    <span className="text-teal-400 font-medium">Extracting Questions...</span>
+                                <div className="flex flex-col items-center">
+                                    <Loader2 className="w-10 h-10 text-[#00D1FF] animate-spin mb-4" />
+                                    <span className="text-[#00D1FF] font-bold text-sm">Extracting questions...</span>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="w-16 h-16 bg-gray-800 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-teal-500/20 group-hover:scale-110 transition-all">
-                                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-teal-400" />
+                                    <div className="w-14 h-14 bg-white border-2 border-[#0A192F]/5 rounded-[16px] flex items-center justify-center mb-4 group-hover:border-[#00D1FF]/30 group-hover:scale-110 transition-all shadow-float-cyan">
+                                        <Upload className="w-7 h-7 text-[#64748B] group-hover:text-[#00D1FF]" />
                                     </div>
-                                    <div className="text-center z-10">
-                                        <h3 className="text-xl font-bold text-gray-200 group-hover:text-white">Upload Paper</h3>
-                                        <p className="text-sm text-gray-500 mt-2">PDF or Image</p>
-                                    </div>
+                                    <h3 className="text-lg font-extrabold text-[#0A192F] group-hover:text-[#00D1FF] transition-colors">Upload Paper</h3>
+                                    <p className="text-sm text-[#64748B] mt-1 font-medium">PDF or Image</p>
                                 </>
                             )}
-
-                            {/* Background Glow */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
 
                         {/* Paper List */}
@@ -159,29 +155,29 @@ export function GuidedPaperSolver() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 onClick={() => paper.status === 'ready' && setSelectedPaper(paper)}
-                                className={`relative bg-gray-900/80 backdrop-blur-sm border border-gray-800 rounded-3xl p-6 flex flex-col justify-between h-64 group transition-all duration-300 ${paper.status === 'ready' ? 'hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer' : 'opacity-70'}`}
+                                className={`neo-card flex flex-col justify-between h-64 group transition-all duration-300 ${paper.status === 'ready' ? 'hover:-translate-y-1 hover:shadow-float-cyan cursor-pointer' : 'opacity-60'}`}
                             >
                                 <div>
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`p-3 rounded-xl ${paper.status === 'ready' ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                            <FileText className="w-6 h-6" />
+                                        <div className={`p-3 rounded-[12px] ${paper.status === 'ready' ? 'bg-[#00D1FF]/10 text-[#00D1FF]' : 'bg-amber-50 text-amber-500'}`}>
+                                            <FileText className="w-5 h-5" />
                                         </div>
                                         {paper.status === 'processing' && (
-                                            <span className="text-xs font-mono px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 flex items-center gap-1">
+                                            <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 flex items-center gap-1">
                                                 <Loader2 className="w-3 h-3 animate-spin" /> Processing
                                             </span>
                                         )}
                                         {paper.status === 'ready' && (
-                                            <span className="text-xs font-mono px-2 py-1 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                                            <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#34D399]/10 text-[#34D399] border border-[#34D399]/20">
                                                 Ready
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2 line-clamp-2">{paper.title}</h3>
-                                    <p className="text-sm text-gray-500">{new Date(paper.created_at).toLocaleDateString()}</p>
+                                    <h3 className="text-lg font-extrabold text-[#0A192F] mb-2 line-clamp-2">{paper.title}</h3>
+                                    <p className="text-sm text-[#64748B] font-medium">{new Date(paper.created_at).toLocaleDateString()}</p>
                                 </div>
 
-                                <div className="flex items-center text-sm text-gray-400 group-hover:text-blue-400 transition-colors">
+                                <div className="flex items-center text-sm font-bold text-[#64748B] group-hover:text-[#00D1FF] transition-colors">
                                     <span>{paper.status === 'ready' ? 'Start Solving' : 'Please wait...'}</span>
                                     <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                                 </div>
@@ -195,32 +191,32 @@ export function GuidedPaperSolver() {
 
     // View: Solver Interface
     return (
-        <div className="min-h-screen bg-slate-900/90 text-white flex flex-col md:flex-row">
-            {/* Sidebar / Back */}
-            <div className="w-full md:w-80 border-r border-gray-800 p-6 flex flex-col bg-gray-900/50 backdrop-blur-xl h-screen sticky top-0">
+        <div className="flex flex-col md:flex-row min-h-[calc(100vh-8rem)] bg-white rounded-[32px] border-2 border-[#0A192F]/5 overflow-hidden shadow-float-cyan">
+            {/* Sidebar */}
+            <div className="w-full md:w-72 border-r border-[#0A192F]/5 p-6 flex flex-col bg-[#F8FAFF] md:h-[calc(100vh-8rem)] sticky top-0">
                 <button
                     onClick={() => setSelectedPaper(null)}
-                    className="flex items-center text-gray-400 hover:text-white mb-8 transition-colors"
+                    className="flex items-center text-[#64748B] hover:text-[#0A192F] mb-6 transition-colors font-bold text-sm"
                 >
-                    <ChevronLeft className="w-5 h-5 mr-1" /> Back to Papers
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Back to Papers
                 </button>
 
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-white mb-2">{selectedPaper.title}</h2>
-                    <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                <div className="mb-6">
+                    <h2 className="text-lg font-extrabold text-[#0A192F] tracking-tight mb-3">{selectedPaper.title}</h2>
+                    <div className="h-2 w-full bg-[#0A192F]/5 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-teal-400 to-blue-500"
+                            className="h-full bg-[#00D1FF] rounded-full transition-all"
                             style={{ width: `${(Object.values(attempts).filter(a => a.is_solved).length / questions.length) * 100}%` }}
                         />
                     </div>
-                    <p className="text-xs text-gray-500 mt-2 flex justify-between">
+                    <p className="text-xs text-[#64748B] font-medium mt-2 flex justify-between">
                         <span>Progress</span>
                         <span>{Object.values(attempts).filter(a => a.is_solved).length} / {questions.length} Solved</span>
                     </p>
                 </div>
 
                 {/* Question Nav */}
-                <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto space-y-2">
                     {questions.map((q) => {
                         const isSolved = attempts[q.id]?.is_solved;
                         const isWIP = attempts[q.id]?.current_hint_level > 0 && !isSolved;
@@ -229,10 +225,10 @@ export function GuidedPaperSolver() {
                             <a
                                 key={q.id}
                                 href={`#q-${q.id}`}
-                                className={`block p-3 rounded-xl border transition-all ${isSolved ? 'bg-green-500/10 border-green-500/30 text-green-400' : isWIP ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-800'}`}
+                                className={`block p-3 rounded-[12px] border-2 transition-all font-medium text-sm ${isSolved ? 'bg-[#34D399]/10 border-[#34D399]/20 text-[#34D399]' : isWIP ? 'bg-[#00D1FF]/10 border-[#00D1FF]/20 text-[#00D1FF]' : 'bg-white border-[#0A192F]/5 text-[#64748B] hover:border-[#0A192F]/10'}`}
                             >
                                 <div className="flex justify-between items-center">
-                                    <span className="font-mono text-sm">Question {q.question_number}</span>
+                                    <span>Question {q.question_number}</span>
                                     {isSolved && <CheckCircle className="w-4 h-4" />}
                                     {isWIP && <Clock className="w-4 h-4" />}
                                 </div>
@@ -243,8 +239,8 @@ export function GuidedPaperSolver() {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 p-6 md:p-12 overflow-y-auto max-h-screen custom-scrollbar">
-                <div className="max-w-4xl mx-auto space-y-12 pb-24">
+            <div className="flex-1 p-6 md:p-10 overflow-y-auto">
+                <div className="max-w-3xl mx-auto space-y-8 pb-16">
                     {questions.map((q) => (
                         <QuestionSolver
                             key={q.id}
@@ -317,46 +313,44 @@ function QuestionSolver({ question, attempt, onHintUpdate }: { question: GuidedQ
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-gray-900 border border-gray-800 rounded-3xl p-8 relative overflow-hidden"
+            className="neo-card"
         >
-            <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-gray-700 to-transparent" />
-
-            <div className="mb-6 flex justify-between items-start">
-                <span className="font-mono text-teal-500 font-bold text-lg bg-teal-500/10 px-4 py-1 rounded-full border border-teal-500/20">
+            <div className="mb-5 flex justify-between items-start">
+                <span className="font-bold text-[#00D1FF] text-sm bg-[#00D1FF]/10 px-4 py-1 rounded-full border border-[#00D1FF]/20">
                     Q{question.question_number}
                 </span>
                 {isSolved ? (
-                    <span className="flex items-center text-green-400 font-bold bg-green-500/10 px-4 py-1 rounded-full border border-green-500/20">
-                        <CheckCircle className="w-5 h-5 mr-2" /> Solved
+                    <span className="flex items-center text-[#34D399] font-bold bg-[#34D399]/10 px-4 py-1 rounded-full border border-[#34D399]/20 text-sm">
+                        <CheckCircle className="w-4 h-4 mr-1.5" /> Solved
                     </span>
                 ) : (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                         {[1, 2, 3].map(i => (
-                            <div key={i} className={`w-3 h-3 rounded-full ${i <= hintsUsed ? 'bg-amber-400 shadow-lg shadow-amber-400/50' : 'bg-gray-700'}`} />
+                            <div key={i} className={`w-2.5 h-2.5 rounded-full ${i <= hintsUsed ? 'bg-amber-400' : 'bg-[#0A192F]/10'}`} />
                         ))}
                     </div>
                 )}
             </div>
 
-            <h3 className="text-2xl font-medium text-white mb-8 leading-relaxed">
+            <h3 className="text-xl font-semibold text-[#0A192F] mb-6 leading-relaxed">
                 {question.question_text}
             </h3>
 
             {/* Hints Section */}
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 mb-6">
                 <AnimatePresence>
                     {hints.map((hint, idx) => (
                         <motion.div
                             key={idx}
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="bg-gray-800/50 rounded-2xl p-6 border-l-4 border-amber-500"
+                            className="bg-amber-50 rounded-[16px] p-5 border-l-4 border-amber-400"
                         >
-                            <h4 className="flex items-center text-amber-500 font-bold mb-2">
+                            <h4 className="flex items-center text-amber-600 font-bold mb-2 text-sm">
                                 <Sparkles className="w-4 h-4 mr-2" />
                                 {idx === 0 ? "Conceptual Hint" : idx === 1 ? "Approach Hint" : "Reasoning Hint"}
                             </h4>
-                            <p className="text-gray-300">{hint}</p>
+                            <p className="text-[#0A192F] font-medium text-sm leading-relaxed">{hint}</p>
                         </motion.div>
                     ))}
                 </AnimatePresence>
@@ -364,24 +358,23 @@ function QuestionSolver({ question, attempt, onHintUpdate }: { question: GuidedQ
 
             {/* Controls */}
             {!isSolved && (
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-3">
                     {hintsUsed < 3 ? (
                         <button
                             onClick={handleUnlockHint}
                             disabled={loadingHint}
-                            className="btn-primary flex items-center gap-2"
+                            className="neo-button flex items-center gap-2 px-5 py-2.5 text-sm"
                         >
                             {loadingHint ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
                             {loadingHint ? 'Thinking...' : `Get Hint (${hintsUsed + 1}/3)`}
                         </button>
                     ) : (
-                        <span className="text-gray-500 italic flex items-center">
-                            <Lock className="w-4 h-4 mr-2" /> No more hints available. You got this!
+                        <span className="text-[#64748B] italic flex items-center text-sm font-medium">
+                            <Lock className="w-4 h-4 mr-2" /> No more hints. You got this!
                         </span>
                     )}
 
-                    {/* Placeholder for "Submit" or "Mark Solved" */}
-                    <button className="px-6 py-3 rounded-xl border border-gray-700 hover:bg-gray-800 text-gray-300 font-medium transition-colors ml-auto">
+                    <button className="px-5 py-2.5 rounded-[12px] border-2 border-[#0A192F]/10 hover:border-[#0A192F]/20 text-[#64748B] font-medium text-sm transition-colors ml-auto">
                         Submit Answer
                     </button>
                 </div>

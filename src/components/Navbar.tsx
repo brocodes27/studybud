@@ -13,7 +13,6 @@ import {
   Crown,
   Brain,
   Video,
-  Users,
   HelpCircle,
   FileText,
   Mic,
@@ -23,19 +22,18 @@ import {
 import { getUserGamification, calculateLevel } from '../lib/gamification';
 
 const navLinks = [
-  { href: '/', label: 'HOME', icon: Brain, color: 'text-primary' },
-  { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'text-blue-400' },
-  { href: '/syow', label: 'SYOW', icon: Zap, color: 'text-amber-400' },
-  { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'text-indigo-400' },
-  { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'text-emerald-400' },
-  { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'text-slate-400' },
-  { href: '/guided-paper', label: 'SOLVER', icon: HelpCircle, color: 'text-sky-400' },
-  { href: '/feynman', label: 'FEYNMAN', icon: Mic, color: 'text-rose-400' },
-  { href: '/tools', label: 'TOOLS', icon: Wrench, color: 'text-slate-400' },
-  { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'text-violet-400' },
-  { href: '/social', label: 'SOCIAL HUB', icon: Users, color: 'text-blue-400' },
-  { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'text-amber-400' },
-  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'text-primary' },
+  { href: '/', label: 'HOME', icon: Brain, color: 'text-white' },
+  { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'text-white' },
+  { href: '/syow', label: 'SYOW', icon: Zap, color: 'text-white' },
+  { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'text-white' },
+  { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'text-white' },
+  { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'text-white' },
+  { href: '/guided-paper', label: 'SOLVER', icon: HelpCircle, color: 'text-white' },
+  { href: '/feynman', label: 'FEYNMAN', icon: Mic, color: 'text-white' },
+  { href: '/tools', label: 'TOOLS', icon: Wrench, color: 'text-white' },
+  { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'text-white' },
+  { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'text-white' },
+  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'text-white' },
 ];
 
 const Navbar = () => {
@@ -93,24 +91,20 @@ const Navbar = () => {
       <NavLink
         to={link.href}
         onClick={onClick}
-        className={`relative group flex items-center px-4 py-3 my-1 transition-all duration-200 rounded-xl
+        className={`relative group flex items-center px-5 py-3.5 my-1.5 transition-all duration-300 rounded-full
           ${isActive
-            ? 'bg-primary/10 border border-primary/20 text-white shadow-lg'
-            : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+            ? 'bg-primary text-secondary shadow-float-cyan font-bold scale-105'
+            : 'text-slate-400 hover:text-white hover:bg-white/10 font-medium'
           }
         `}
       >
-        <div className={`flex items-center justify-center w-5 h-5 ${isActive ? 'scale-110' : 'group-hover:scale-110 text-slate-500'} transition-transform`}>
-          <link.icon className={`w-5 h-5 stroke-[2px] ${isActive ? link.color : ''}`} />
+        <div className={`flex items-center justify-center w-5 h-5 ${isActive ? 'scale-110 text-secondary' : 'group-hover:scale-110 text-slate-300'} transition-transform`}>
+          <link.icon className={`w-5 h-5 stroke-[2.5px] ${isActive ? 'text-secondary' : ''}`} />
         </div>
 
-        <span className={`ml-4 font-black text-[10px] tracking-[0.1em] uppercase whitespace-nowrap ${isActive ? 'text-white' : ''}`}>
+        <span className={`ml-4 text-[13px] tracking-wide whitespace-nowrap ${isActive ? 'text-secondary' : ''}`}>
           {link.label}
         </span>
-
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
-        )}
       </NavLink>
     );
   };
@@ -120,102 +114,102 @@ const Navbar = () => {
       <div className="md:hidden fixed top-4 right-4 z-[100]">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-3 bg-primary text-white rounded-xl shadow-lg ring-1 ring-primary/20"
+          className="p-3 bg-primary text-secondary rounded-full shadow-float-cyan"
         >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {isMobileMenuOpen ? <X className="w-6 h-6 stroke-[3px]" /> : <Menu className="w-6 h-6 stroke-[3px]" />}
         </button>
       </div>
 
       <aside
-        className="hidden md:flex fixed left-0 top-0 h-screen bg-card-dark border-r border-white/5 transition-all duration-300 z-40 flex-col w-64 shadow-2xl"
+        className="hidden md:flex fixed left-0 top-0 h-screen bg-secondary border-r border-[#112240] transition-all duration-300 z-40 flex-col w-64 shadow-2xl rounded-r-[40px]"
       >
-        <div className="h-20 flex items-center px-6 border-b border-white/5">
+        <div className="h-24 flex items-center px-8 border-b border-white/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center">
-              <span className="text-sm font-black text-primary">EF</span>
+            <div className="w-12 h-12 bg-primary text-secondary rounded-full flex items-center justify-center shadow-float-cyan font-extrabold text-lg">
+              EF
             </div>
             <div>
-              <h1 className="text-lg font-black text-white leading-none uppercase tracking-tighter italic">StudyBud</h1>
-              <p className="text-[8px] font-black tracking-[0.3em] text-slate-500 uppercase mt-1">ElevenFolks</p>
+              <h1 className="text-xl font-extrabold text-white leading-none tracking-tight">Elevenfolks</h1>
+              <p className="text-[10px] font-bold text-primary uppercase mt-1">Student App</p>
             </div>
           </div>
         </div>
 
         {/* Gamification Stats */}
         {gamificationData && (
-          <div className="flex flex-col gap-3 px-6 py-5 border-b border-white/5 bg-slate-900/40">
+          <div className="flex flex-col gap-3 px-8 py-6 border-b border-white/5 bg-[#112240]/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-neo-accent" />
-                <span className="text-sm font-black text-white">{gamificationData.streak} DAYS</span>
+                <Flame className="w-5 h-5 text-accent" />
+                <span className="text-sm font-bold text-white">{gamificationData.streak} DAYS</span>
               </div>
               <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" />
-                <span className="text-sm font-black text-white">{gamificationData.totalXp} XP</span>
+                <Zap className="w-5 h-5 text-primary" />
+                <span className="text-sm font-bold text-white">{gamificationData.totalXp} XP</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg">
-              <span className="text-lg">{gamificationData.badge}</span>
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Level {gamificationData.level} Learner</span>
+            <div className="flex items-center gap-3 px-4 py-2 bg-primary/20 rounded-full mt-2">
+              <span className="text-xl">{gamificationData.badge}</span>
+              <span className="text-xs font-bold uppercase tracking-wide text-primary">Level {gamificationData.level} Learner</span>
             </div>
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto custom-scrollbar p-4 py-6 space-y-1">
+        <nav className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-2">
           {navLinks.map((link) => (
             <NavItem key={link.href} link={link} />
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/5 bg-slate-900/60 backdrop-blur-sm">
-          <div className="flex items-center gap-3 mb-4 px-2">
+        <div className="p-6 border-t border-white/5 bg-[#112240]/80 rounded-br-[40px]">
+          <div className="flex items-center gap-4 mb-4">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center text-white font-black">
+              <div className="w-12 h-12 rounded-full bg-primary text-secondary flex items-center justify-center font-extrabold text-lg shadow-float-cyan">
                 {user?.email?.[0].toUpperCase()}
               </div>
               {isPremium && (
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[8px] border border-card-dark">
-                  <Crown size={8} fill="white" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-playful-gold text-secondary rounded-full flex items-center justify-center shadow-md">
+                  <Crown size={10} strokeWidth={3} />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black text-white truncate uppercase tracking-tight">
+              <p className="text-sm font-bold text-white truncate">
                 {user?.user_metadata?.full_name || 'STUDENT'}
               </p>
-              <p className="text-[9px] font-bold text-slate-500 truncate">{user?.email}</p>
+              <p className="text-xs font-medium text-slate-400 truncate">{user?.email}</p>
             </div>
           </div>
 
           <button
             onClick={handleSignOut}
-            className="flex items-center justify-center w-full p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white font-black uppercase tracking-widest text-[9px] transition-all gap-2 border border-white/5 shadow-lg shadow-black/20"
+            className="flex items-center justify-center w-full p-3.5 rounded-full bg-white/10 hover:bg-accent text-white font-bold transition-all gap-2"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-5 h-5 stroke-[2.5px]" />
             Sign Out
           </button>
         </div>
       </aside>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-slate-950 overflow-y-auto no-scrollbar">
+        <div className="md:hidden fixed inset-0 z-[100] bg-secondary overflow-y-auto no-scrollbar">
           <div className="flex flex-col min-h-screen p-6">
-            <div className="flex items-center justify-between mb-8 border-b-4 border-white/10 pb-6">
+            <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-neo-accent border border-white/10 shadow-neo flex items-center justify-center shrink-0">
-                  <span className="text-xl font-black text-slate-900">EF</span>
+                <div className="w-12 h-12 bg-primary text-secondary rounded-full flex items-center justify-center shadow-float-cyan font-extrabold text-xl">
+                  EF
                 </div>
-                <h1 className="text-2xl font-black text-slate-100 uppercase">StudyBud</h1>
+                <h1 className="text-2xl font-extrabold text-white tracking-tight">Elevenfolks</h1>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 bg-slate-800 border border-white/10 shadow-neo"
+                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6 stroke-[3px]" />
               </button>
             </div>
 
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 px-2">
               {navLinks.map((link) => (
                 <NavItem
                   key={link.href}
@@ -225,13 +219,13 @@ const Navbar = () => {
               ))}
             </div>
 
-            <div className="mt-8 pt-8 border-t-4 border-white/10 pb-6 text-slate-100">
+            <div className="mt-8 pt-6 border-t border-white/10 px-2 pb-6">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-4 p-4 border border-white/10 bg-slate-800 hover:bg-red-400 font-black uppercase tracking-widest text-sm"
+                className="w-full flex items-center justify-center gap-3 p-4 rounded-full bg-white/10 hover:bg-accent text-white font-bold text-base transition-colors"
               >
                 <LogOut className="w-5 h-5 stroke-[3px]" />
-                SIGN OUT
+                Sign Out
               </button>
             </div>
           </div>

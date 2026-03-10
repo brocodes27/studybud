@@ -52,28 +52,28 @@ type SubjectVisual = {
 
 const subjectVisuals: Record<string, SubjectVisual> = {
     math: {
-        color: 'bg-neo-secondary',
-        icon: <Calculator className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-[#00D1FF]/10',
+        icon: <Calculator className="w-7 h-7 text-[#00D1FF] stroke-[2.5px]" />
     },
     physics: {
-        color: 'bg-neo-accent',
-        icon: <Atom className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-[#F472B6]/10',
+        icon: <Atom className="w-7 h-7 text-[#F472B6] stroke-[2.5px]" />
     },
     chemistry: {
-        color: 'bg-slate-800',
-        icon: <FlaskConical className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-amber-50',
+        icon: <FlaskConical className="w-7 h-7 text-amber-500 stroke-[2.5px]" />
     },
     biology: {
-        color: 'bg-neo-muted',
-        icon: <Sparkles className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-[#34D399]/10',
+        icon: <Sparkles className="w-7 h-7 text-[#34D399] stroke-[2.5px]" />
     },
     geography: {
-        color: 'bg-neo-secondary',
-        icon: <Globe2 className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-[#00D1FF]/10',
+        icon: <Globe2 className="w-7 h-7 text-[#00D1FF] stroke-[2.5px]" />
     },
     general: {
-        color: 'bg-slate-800',
-        icon: <Sparkles className="w-8 h-8 stroke-[3px]" />
+        color: 'bg-slate-100',
+        icon: <Sparkles className="w-7 h-7 text-[#64748B] stroke-[2.5px]" />
     }
 };
 
@@ -203,7 +203,7 @@ export const VideoLessons = () => {
     };
 
     const getQuestionTypeBadge = (type: string) => (
-        <span className="text-[10px] font-black uppercase tracking-widest border border-white/10 px-2 py-0.5 bg-slate-800 shadow-neo">
+        <span className="text-[10px] font-bold uppercase tracking-widest border border-[#0A192F]/10 px-2 py-0.5 rounded-full bg-[#F8FAFF] text-[#64748B]">
             {type}
         </span>
     );
@@ -285,14 +285,16 @@ export const VideoLessons = () => {
     };
 
     return (
-        <div className="space-y-12 animate-fade-in relative min-h-screen pb-20">
+        <div className="space-y-10 animate-fade-in relative pb-20">
             {showLectureLock && !isPremium && (
-                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl p-8 text-center">
-                    <h3 className="text-4xl font-black text-neo-accent uppercase tracking-tighter italic mb-4">PRO_ONLY</h3>
-                    <p className="text-white/60 mb-8 max-w-md">Neural video lectures are Pro-only. Upgrade to unlock unlimited HD lectures.</p>
-                    <div className="flex gap-4">
-                        <button onClick={() => setShowLectureLock(false)} className="px-8 py-3 bg-slate-800 text-slate-100 font-black uppercase italic tracking-widest">OK</button>
-                        <button onClick={() => window.location.href = '/subscription'} className="px-8 py-3 bg-neo-accent text-slate-100 font-black uppercase italic tracking-widest">UPGRADE</button>
+                <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl p-8 text-center">
+                    <div className="neo-card max-w-md w-full">
+                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-3">Premium Feature</h3>
+                        <p className="text-[#64748B] font-medium mb-6">HD video lectures are available for Premium subscribers. Upgrade to unlock unlimited lectures.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowLectureLock(false)} className="flex-1 px-6 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#64748B] font-bold hover:border-[#0A192F]/20 transition-all">Cancel</button>
+                            <button onClick={() => window.location.href = '/subscription'} className="flex-1 neo-button py-3">Upgrade</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -319,15 +321,15 @@ export const VideoLessons = () => {
             {playingLesson && renderMode === 'remotion' && (
                 <>
                     {isPreparing ? (
-                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl">
-                            <div className="relative mb-12">
-                                <div className="w-40 h-40 border border-white/5 border-t-[#4D96FF] animate-spin rounded-full" />
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl">
+                            <div className="relative mb-10">
+                                <div className="w-20 h-20 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] animate-spin rounded-full" />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <Sparkles className="text-white w-12 h-12 stroke-[2px] animate-pulse" />
+                                    <Sparkles className="text-[#00D1FF] w-8 h-8 stroke-[2px] animate-pulse" />
                                 </div>
                             </div>
-                            <h3 className="text-4xl font-black text-white uppercase tracking-tighter italic mb-4">ENGINEERING_LECTURE</h3>
-                            <p className="text-white/40 font-black uppercase tracking-widest text-sm mb-12 italic">CORE: REMOTION_REACT_V4</p>
+                            <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-2">Generating Lecture</h3>
+                            <p className="text-[#64748B] font-medium">Preparing your personalized video lesson...</p>
                         </div>
                     ) : remotionConfig ? (
                         <RemotionPlayer
@@ -335,23 +337,25 @@ export const VideoLessons = () => {
                             onClose={() => { setPlayingLesson(null); setRenderMode(null); setRemotionConfig(null); }}
                         />
                     ) : generationError && (
-                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-xl p-8 text-center">
-                            <h3 className="text-4xl font-black text-red-500 uppercase tracking-tighter italic mb-4">GENERATION_FAILED</h3>
-                            <p className="text-white/60 mb-8 max-w-md">{generationError}</p>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => {
-                                        if (playingLesson) {
-                                            const lesson = lessons.find(l => l.topic === playingLesson.topic && l.subject === playingLesson.subject);
-                                            if (lesson) return handlePlayPremium(lesson);
-                                        }
-                                        setGenerationError(null);
-                                    }}
-                                    className="px-8 py-3 bg-neo-accent text-slate-100 font-black uppercase italic tracking-widest"
-                                >
-                                    REGENERATE
-                                </button>
-                                <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="px-8 py-3 bg-slate-800 text-slate-100 font-black uppercase italic tracking-widest">Abort Process</button>
+                        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/95 backdrop-blur-xl p-8 text-center">
+                            <div className="neo-card max-w-md w-full">
+                                <h3 className="text-xl font-extrabold text-red-500 tracking-tight mb-3">Generation Failed</h3>
+                                <p className="text-[#64748B] font-medium mb-6">{generationError}</p>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            if (playingLesson) {
+                                                const lesson = lessons.find(l => l.topic === playingLesson.topic && l.subject === playingLesson.subject);
+                                                if (lesson) return handlePlayPremium(lesson);
+                                            }
+                                            setGenerationError(null);
+                                        }}
+                                        className="flex-1 neo-button py-3"
+                                    >
+                                        Try Again
+                                    </button>
+                                    <button onClick={() => { setPlayingLesson(null); setRenderMode(null); setGenerationError(null); }} className="flex-1 px-6 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#64748B] font-bold hover:border-[#0A192F]/20 transition-all">Cancel</button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -359,55 +363,52 @@ export const VideoLessons = () => {
             )}
 
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b-8 border-white/10 pb-10">
-                <div className="flex items-center gap-6">
-                    <div className="bg-neo-accent border border-white/10 p-5 shadow-neo rotate-3">
-                        <Video className="h-10 w-10 text-white stroke-[3px]" />
-                    </div>
-                    <div>
-                        <h1 className="text-5xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">
-                            {viewMode === 'plans' ? 'VIDEO_ARCHIVE' :
-                                viewMode === 'chapters' ? 'CHAPTER_INDEX' : 'TOPIC_NODES'}
-                        </h1>
-                        <p className="text-slate-100/40 font-black uppercase tracking-widest text-sm mt-3 flex items-center gap-3">
-                            {viewMode !== 'plans' && (
-                                <button
-                                    onClick={() => {
-                                        if (viewMode === 'lessons') { setViewMode('chapters'); setSelectedChapter(null); }
-                                        else { setViewMode('plans'); setSelectedPlan(null); }
-                                    }}
-                                    className="flex items-center gap-2 hover:text-slate-100 transition-colors"
-                                >
-                                    <ChevronLeft className="w-5 h-5 stroke-[3px]" /> REVERT
-                                </button>
-                            )}
-                            {viewMode === 'plans' ? 'PROTOCOL: KNOWLEDGE_RETRIEVAL_V1' :
-                                viewMode === 'chapters' ? `PLAN: ${selectedPlan?.name.toUpperCase()}` :
-                                    `SECTION: ${selectedChapter?.toUpperCase()}`}
+            <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-[20px] flex items-center justify-center shadow-float-pink">
+                    <Video className="h-7 w-7 text-[#F472B6] stroke-[2.5px]" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-extrabold text-[#0A192F] tracking-tight">
+                        {viewMode === 'plans' ? 'Video Lessons' : viewMode === 'chapters' ? selectedPlan?.name : selectedChapter}
+                    </h1>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {viewMode !== 'plans' && (
+                            <button
+                                onClick={() => {
+                                    if (viewMode === 'lessons') { setViewMode('chapters'); setSelectedChapter(null); }
+                                    else { setViewMode('plans'); setSelectedPlan(null); }
+                                }}
+                                className="flex items-center gap-1 text-sm font-bold text-[#00D1FF] hover:underline"
+                            >
+                                <ChevronLeft className="w-4 h-4" /> Back
+                            </button>
+                        )}
+                        <p className="text-[#64748B] font-medium text-sm">
+                            {viewMode === 'plans' ? 'Your study plans' : viewMode === 'chapters' ? `${selectedPlan?.subject}` : `${selectedPlan?.name}`}
                         </p>
                     </div>
                 </div>
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center h-96 space-y-8">
-                    <div className="w-24 h-24 border border-white/10 border-t-neo-accent animate-spin" />
-                    <h3 className="text-3xl font-black text-slate-100 uppercase tracking-tighter italic">LOADING_ARCHIVES...</h3>
+                <div className="flex flex-col items-center justify-center h-64 gap-4">
+                    <div className="w-10 h-10 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] animate-spin rounded-full" />
+                    <p className="text-sm font-bold text-[#64748B]">Loading lessons...</p>
                 </div>
             ) : (
-                <div className="space-y-16">
+                <div>
                     {/* PLANS VIEW */}
                     {viewMode === 'plans' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {plans.length === 0 ? (
-                                <div className="col-span-full bg-slate-800 border border-white/10 p-20 shadow-neo text-center rotate-1">
-                                    <div className="w-24 h-24 bg-neo-muted border border-white/10 flex items-center justify-center mx-auto mb-10 shadow-neo">
-                                        <AlertCircle className="w-12 h-12 text-slate-100 stroke-[3px]" />
+                                <div className="col-span-full neo-card text-center py-16">
+                                    <div className="w-16 h-16 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[18px] flex items-center justify-center mx-auto mb-5 shadow-float-cyan">
+                                        <AlertCircle className="w-8 h-8 text-[#00D1FF] stroke-[2px]" />
                                     </div>
-                                    <h3 className="text-4xl font-black text-slate-100 uppercase tracking-tighter mb-4">NO_PLANS_DETECTED</h3>
-                                    <p className="text-slate-100/60 font-bold uppercase tracking-widest text-sm">INITIALIZE A STUDY SEQUENCE TO GENERATE VISUAL ASSETS.</p>
+                                    <h3 className="text-xl font-extrabold text-[#0A192F] tracking-tight mb-2">No study plans yet</h3>
+                                    <p className="text-[#64748B] font-medium">Create a study plan first to generate video lessons.</p>
                                 </div>
-                            ) : plans.map((plan, idx) => (
+                            ) : plans.map((plan) => (
                                 <div
                                     key={plan.id}
                                     onClick={() => {
@@ -416,20 +417,20 @@ export const VideoLessons = () => {
                                         if (planChapters.length === 1) { setSelectedChapter(planChapters[0]); setViewMode('lessons'); }
                                         else { setViewMode('chapters'); }
                                     }}
-                                    className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo cursor-pointer transition-all group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
+                                    className="neo-card hover:-translate-y-1 hover:shadow-float-cyan cursor-pointer transition-all group"
                                 >
-                                    <div className="flex items-center gap-6 mb-8">
-                                        <div className="w-16 h-16 border border-white/10 bg-neo-secondary flex items-center justify-center shadow-neo group-hover:rotate-12 transition-transform">
-                                            <BookOpen className="w-8 h-8 text-slate-100 stroke-[3px]" />
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="w-12 h-12 border border-[#00D1FF]/20 bg-[#00D1FF]/10 rounded-[14px] flex items-center justify-center shadow-float-cyan group-hover:scale-110 transition-transform">
+                                            <BookOpen className="w-6 h-6 text-[#00D1FF] stroke-[2.5px]" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic leading-none">{plan.name}</h3>
-                                            <span className="text-[10px] font-black text-slate-100/40 uppercase tracking-widest mt-2 block">{plan.subject}</span>
+                                            <h3 className="text-lg font-extrabold text-[#0A192F] tracking-tight leading-none">{plan.name}</h3>
+                                            <span className="text-xs font-medium text-[#64748B] mt-0.5 block">{plan.subject}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-white/10/10">
-                                        <span className="bg-slate-900 text-white px-3 py-1 -rotate-2">{plan.lessonCount} NODES</span>
-                                        <span className="text-neo-accent group-hover:translate-x-2 transition-transform italic">ACCESS_DIR »</span>
+                                    <div className="flex items-center justify-between text-sm pt-4 border-t border-[#0A192F]/5">
+                                        <span className="px-2.5 py-1 rounded-full bg-[#F8FAFF] border border-[#0A192F]/5 text-[#64748B] font-bold text-xs">{plan.lessonCount} lessons</span>
+                                        <span className="text-[#00D1FF] font-bold group-hover:translate-x-1 transition-transform text-sm">Open →</span>
                                     </div>
                                 </div>
                             ))}
@@ -438,24 +439,22 @@ export const VideoLessons = () => {
 
                     {/* CHAPTERS VIEW */}
                     {viewMode === 'chapters' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                            {chapters.map((chapter, idx) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {chapters.map((chapter) => (
                                 <div
                                     key={chapter.name}
                                     onClick={() => { setSelectedChapter(chapter.name); setViewMode('lessons'); }}
-                                    className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-neo cursor-pointer transition-all group ${idx % 2 === 0 ? '-rotate-1' : 'rotate-1'}`}
+                                    className="neo-card hover:-translate-y-1 hover:shadow-float-cyan cursor-pointer transition-all group"
                                 >
-                                    <div className="flex items-center gap-6 mb-8">
-                                        <div className="w-16 h-16 border border-white/10 bg-slate-900 flex items-center justify-center shadow-neo group-hover:-rotate-12 transition-transform">
-                                            <Video className="w-8 h-8 text-slate-100 stroke-[3px]" />
+                                    <div className="flex items-center gap-4 mb-5">
+                                        <div className="w-12 h-12 border border-[#F472B6]/20 bg-[#F472B6]/10 rounded-[14px] flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <Video className="w-6 h-6 text-[#F472B6] stroke-[2.5px]" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic leading-none line-clamp-1">{chapter.name}</h3>
-                                        </div>
+                                        <h3 className="text-lg font-extrabold text-[#0A192F] tracking-tight line-clamp-2 leading-tight">{chapter.name}</h3>
                                     </div>
-                                    <div className="flex items-center justify-between font-black uppercase tracking-widest text-xs pt-6 border-t-4 border-white/10/10">
-                                        <span className="bg-slate-900 text-white px-3 py-1 rotate-1">{chapter.lessonCount} TOPICS</span>
-                                        <span className="text-neo-bg group-hover:translate-x-2 transition-transform italic">SCAN_FLOW »</span>
+                                    <div className="flex items-center justify-between text-sm pt-4 border-t border-[#0A192F]/5">
+                                        <span className="px-2.5 py-1 rounded-full bg-[#F8FAFF] border border-[#0A192F]/5 text-[#64748B] font-bold text-xs">{chapter.lessonCount} topics</span>
+                                        <span className="text-[#00D1FF] font-bold group-hover:translate-x-1 transition-transform text-sm">Open →</span>
                                     </div>
                                 </div>
                             ))}
@@ -464,69 +463,64 @@ export const VideoLessons = () => {
 
                     {/* LESSONS VIEW */}
                     {viewMode === 'lessons' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {currentLessons.map((lesson, idx) => {
                                 const visual = getSubjectVisual(lesson.subject);
                                 const cleanTopic = getCleanTopic(lesson.topic).toLowerCase();
                                 const isGenerating = generations[cleanTopic]?.status === 'processing' || generations[cleanTopic]?.status === 'pending';
 
                                 return (
-                                    <div key={`${lesson.plan_id}-${idx}`} className={`bg-slate-800 border-6 border-white/10 p-8 shadow-neo transition-all flex flex-col h-full group ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
-                                        {/* Card Header Illustration */}
-                                        <div className="relative mb-8 h-40 border border-white/10 bg-slate-900 overflow-hidden shadow-neo">
-                                            <div className={`absolute inset-0 opacity-20 ${visual.color}`} />
-                                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 2px, transparent 2px)', backgroundSize: '20px 20px' }} />
-                                            <div className="relative flex h-full items-center justify-center p-6 text-center flex-col gap-4">
-                                                <div className={`w-16 h-16 border border-white/10 ${visual.color} flex items-center justify-center shadow-neo rotate-12 group-hover:rotate-0 transition-transform`}>
-                                                    {visual.icon}
-                                                </div>
-                                                <p className="text-white font-black uppercase tracking-widest text-[10px] italic">NODE_{idx.toString().padStart(3, '0')}</p>
+                                    <div key={`${lesson.plan_id}-${idx}`} className="neo-card flex flex-col h-full group hover:-translate-y-1 transition-all">
+                                        {/* Card Illustration */}
+                                        <div className={`relative mb-5 h-32 ${visual.color} rounded-[16px] overflow-hidden flex items-center justify-center border border-[#0A192F]/5`}>
+                                            <div className="w-14 h-14 bg-white/80 rounded-[14px] flex items-center justify-center shadow-sm">
+                                                {visual.icon}
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-start mb-6 gap-3 flex-wrap">
-                                            <div className="flex items-baseline gap-2">
-                                                <span className="text-[10px] font-black text-slate-100/40 uppercase italic">{format(new Date(lesson.date), 'MMM dd')}</span>
-                                                <span className="text-xs font-black text-neo-accent uppercase tracking-tighter italic">{lesson.subject}</span>
+                                        <div className="flex justify-between items-start mb-3 gap-2 flex-wrap">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-[#64748B]">{format(new Date(lesson.date), 'MMM dd')}</span>
+                                                <span className="text-xs font-bold text-[#00D1FF]">{lesson.subject}</span>
                                             </div>
                                             {getQuestionTypeBadge(lesson.question_type)}
                                         </div>
 
-                                        <h3 className="text-2xl font-black text-slate-100 mb-4 uppercase tracking-tighter italic leading-none line-clamp-2 min-h-[3rem] group-hover:text-neo-accent transition-colors">
+                                        <h3 className="text-base font-extrabold text-[#0A192F] mb-2 tracking-tight leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-[#00D1FF] transition-colors">
                                             {lesson.topic}
                                         </h3>
 
-                                        <p className="text-sm font-bold text-slate-100/60 uppercase tracking-widest line-clamp-3 mb-10 flex-grow leading-tight italic">
+                                        <p className="text-xs font-medium text-[#64748B] line-clamp-3 mb-6 flex-grow leading-relaxed">
                                             {lesson.description}
                                         </p>
 
-                                        <div className="flex flex-col gap-4 mt-auto">
+                                        <div className="flex flex-col gap-3 mt-auto">
                                             <button
                                                 onClick={() => {
                                                     setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
                                                     setRenderMode('classic');
                                                 }}
-                                                className="w-full py-4 border border-white/10 bg-slate-800 font-black uppercase italic tracking-tighter text-xl hover:bg-slate-900 transition-all shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] flex items-center justify-center gap-3"
+                                                className="w-full py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-bold text-sm hover:border-[#00D1FF]/30 hover:text-[#00D1FF] transition-all flex items-center justify-center gap-2"
                                             >
-                                                <BookOpen className="w-5 h-5 stroke-[3px]" />
-                                                CLASSIC_VIEW
+                                                <BookOpen className="w-4 h-4 stroke-[2.5px]" />
+                                                Classic View
                                             </button>
                                             <button
                                                 onClick={() => handlePlayPremium(lesson)}
-                                                className={`w-full py-5 border border-white/10 font-black uppercase italic tracking-tighter text-2xl transition-all shadow-neo active:shadow-none active:translate-x-[4px] active:translate-y-[4px] flex items-center justify-center gap-4 ${isGenerating
-                                                    ? 'bg-slate-900 text-slate-100 animate-pulse'
-                                                    : 'bg-slate-900 text-white hover:bg-neo-accent hover:text-slate-100'
+                                                className={`w-full py-3 rounded-[14px] font-bold text-sm transition-all flex items-center justify-center gap-2 ${isGenerating
+                                                    ? 'bg-[#00D1FF]/10 text-[#00D1FF] border-2 border-[#00D1FF]/20 animate-pulse'
+                                                    : 'neo-button'
                                                     }`}
                                             >
                                                 {isGenerating ? (
                                                     <>
-                                                        <Loader2 className="w-6 h-6 animate-spin stroke-[4px]" />
-                                                        <span>SYNCING_{generations[cleanTopic]?.progress || 0}%</span>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <span>Generating {generations[cleanTopic]?.progress || 0}%</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Sparkles className="w-6 h-6 stroke-[3px]" />
-                                                        <span>PREMIUM_SYNC</span>
+                                                        <Sparkles className="w-4 h-4 stroke-[2.5px]" />
+                                                        <span>Premium Lecture</span>
                                                     </>
                                                 )}
                                             </button>

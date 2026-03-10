@@ -1,66 +1,69 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
-import { ArrowRight, Sparkles, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function LandingCTA() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end start'],
-  });
-  const translateY = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const rotate = useTransform(scrollYProgress, [0, 1], [0, 45]);
-
   return (
-    <section ref={sectionRef} className="py-32 bg-slate-950 relative border-t-8 border-white/10 overflow-hidden">
-      {/* Halftone Overlay */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '25px 25px' }} />
+    <section className="py-32 bg-[#0A192F] relative overflow-hidden">
+      {/* Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00D1FF]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#F472B6]/10 rounded-full blur-[80px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="relative text-center max-w-4xl mx-auto">
-          <motion.div
-            style={{ translateY, rotate }}
-            className="absolute -left-20 -top-20 hidden md:flex w-32 h-32 bg-neo-accent border border-white/10 items-center justify-center shadow-neo"
-          >
-            <Sparkles className="w-16 h-16 text-slate-100 stroke-[2.5px]" />
-          </motion.div>
+      <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm mb-8 border border-[#00D1FF]/20"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Start for free, no credit card needed</span>
+        </motion.div>
 
-          <motion.div
-            style={{ translateY: useTransform(scrollYProgress, [0, 1], [-100, 100]), rotate: useTransform(scrollYProgress, [0, 1], [0, -45]) }}
-            className="absolute -right-20 -bottom-20 hidden md:flex w-32 h-32 bg-neo-secondary border border-white/10 items-center justify-center shadow-neo"
-          >
-            <Zap className="w-16 h-16 text-slate-100 stroke-[2.5px]" />
-          </motion.div>
+        <motion.h2
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight mb-6"
+        >
+          Ready to transform <br />
+          <span className="text-[#00D1FF]">your productivity?</span>
+        </motion.h2>
 
-          <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-slate-100 leading-none italic">
-            READY TO <span className="text-neo-accent" style={{ WebkitTextStroke: '2px black' }}>TRANSFORM</span> <br />
-            YOUR PRODUCTIVITY?
-          </h2>
-          <p className="text-slate-100/70 mt-8 text-2xl font-bold max-w-2xl mx-auto italic leading-tight">
-            Join thousands of students already using <span className="underline decoration-neo-secondary decoration-8">ElevenFolks</span> to achieve more.
-          </p>
-        </div>
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="text-slate-400 text-xl font-medium max-w-2xl mx-auto mb-10 leading-relaxed"
+        >
+          Join thousands of students already using Elevenfolks to achieve more, stress less, and score higher.
+        </motion.p>
 
-        <div className="flex flex-col sm:flex-row gap-6 mt-16 justify-center">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col sm:flex-row gap-4 justify-center"
+        >
           <button
-            className="neo-button bg-neo-accent text-slate-100 text-2xl py-6 px-12"
+            className="neo-button text-lg px-10 py-4 shadow-[0_8px_24px_rgba(0,209,255,0.4)]"
             onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            GET STARTED FOR FREE
-            <ArrowRight className="h-8 w-8 stroke-[3.5px]" />
+            Get Started Free
+            <ArrowRight className="w-5 h-5 ml-1 stroke-[3px]" />
           </button>
           <button
-            className="neo-button-muted border border-white/10 text-2xl py-6 px-12"
+            className="px-10 py-4 rounded-full border-2 border-white/20 text-white font-bold text-lg hover:border-[#00D1FF]/50 hover:text-[#00D1FF] transition-all"
             onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            LEARN MORE
+            See Features
           </button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
 
 export default LandingCTA;
-

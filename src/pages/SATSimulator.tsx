@@ -4,12 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import AIService from '../lib/aiService';
 import {
   Flag, Timer, ChevronRight, ChevronLeft, CheckCircle2,
-  Target, ShieldCheck, PenTool, Sparkles, Trophy, ArrowRight, Gauge, Activity
+  Target, PenTool, Sparkles, Trophy, ArrowRight, Gauge, Activity, ShieldCheck
 } from 'lucide-react';
 
 /**
  * OFFICIAL DIGITAL SAT SPECIFICATIONS (2024-2025)
- * UI Optimized for Content Density (Standard Font Sizes)
  */
 
 interface SATQuestion {
@@ -88,7 +87,7 @@ export default function SATSimulator() {
     setFlags({});
     setCurrentIdx(0);
 
-    const prompt = `You are a Digital SAT expert. 
+    const prompt = `You are a Digital SAT expert.
     Generate EXACTLY ${spec.questionsPerPart} questions for Digital SAT ${targetSection.toUpperCase()} Section, Part ${targetPart}.
     Difficulty Track: ${difficultyFocus}
 
@@ -163,9 +162,7 @@ export default function SATSimulator() {
     setResults({ rwScore: rw, mathScore: math, total });
     setStep('results');
 
-    // 1. Persistence & Gamification Sync
     try {
-      // Award XP for completion (200 XP for full practice test)
       await supabase.rpc('award_xp', {
         p_user_id: user.id,
         p_amount: 200,
@@ -174,7 +171,6 @@ export default function SATSimulator() {
         p_source_id: crypto.randomUUID()
       });
 
-      // Update Subject Mastery for all attempted domains
       const domainStats: Record<string, { attempted: number, correct: number }> = {};
       questions.forEach(q => {
         if (!domainStats[q.domain]) domainStats[q.domain] = { attempted: 0, correct: 0 };
@@ -184,15 +180,13 @@ export default function SATSimulator() {
 
       for (const [domain, stats] of Object.entries(domainStats)) {
         const masteryScore = stats.correct / stats.attempted;
-
-        // Upsert mastery using the composite unique key
         await supabase
           .from('user_subject_mastery')
           .upsert({
             user_id: user.id,
             exam_type: 'sat',
             domain: domain,
-            subdomain: '', // Future: map specific question subdomains
+            subdomain: '',
             questions_attempted: stats.attempted,
             questions_correct: stats.correct,
             mastery_score: masteryScore,
@@ -202,7 +196,6 @@ export default function SATSimulator() {
           });
       }
 
-      // Record Activity
       await supabase.from('user_activity_log').insert({
         user_id: user.id,
         activity_date: new Date().toISOString().split('T')[0],
@@ -224,90 +217,102 @@ export default function SATSimulator() {
     }
   };
 
+  // ─── INTRO ────────────────────────────────────────────────────────────────
   if (step === 'intro') {
     return (
-      <div className="max-w-6xl mx-auto py-16 px-6 space-y-20 text-white">
-        {/* Hero Section */}
+      <div className="max-w-6xl mx-auto py-16 px-6 space-y-20">
+        {/* Hero */}
         <div className="flex flex-col md:flex-row gap-12 items-start md:items-center">
           <div className="flex-1 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-2 border border-primary/20 rounded-lg">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <span className="font-black tracking-[0.3em] uppercase text-[10px] text-slate-500">Atlas_Neural_Engine v4.0</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm border border-[#00D1FF]/20">
+              <Sparkles className="w-4 h-4" />
+              <span>Official Digital SAT Engine</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none uppercase">
-              SAT <span className="text-primary">Test</span>
+            <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight leading-none text-[#0A192F]">
+              Ready to <br />
+              <span className="text-[#00D1FF] relative inline-block">
+                simulate?
+                <svg className="absolute -bottom-2 left-0 w-full h-4 text-[#F472B6]" viewBox="0 0 100 20" preserveAspectRatio="none">
+                  <path d="M0 10 Q 50 20 100 10" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+                </svg>
+              </span>
             </h1>
-            <p className="text-xl font-medium text-slate-400 max-w-xl leading-relaxed">
-              Precision adaptive testing calibrated for elite university track. 1600_PROTOCOL_ACTIVE.
+            <p className="text-xl font-medium text-[#64748B] max-w-xl leading-relaxed">
+              Precision adaptive testing calibrated to the exact difficulty curve of the official exam.
             </p>
           </div>
 
           <div className="w-full md:w-80 space-y-4">
-            <button onClick={() => { setSection('rw'); setPart(1); generatePartQuestions('rw', 1); }}
-              className="w-full bg-primary hover:bg-blue-600 text-white py-6 rounded-2xl text-2xl font-black italic group flex items-center justify-center gap-4 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95">
-              Launch Test <ArrowRight className="h-7 w-7 group-hover:translate-x-2 transition-transform" />
+            <button
+              onClick={() => { setSection('rw'); setPart(1); generatePartQuestions('rw', 1); }}
+              className="w-full px-8 py-6 rounded-full bg-[#0A192F] text-white text-xl font-extrabold flex items-center justify-center gap-4 transition-all shadow-[0_12px_24px_rgba(10,25,47,0.25)] hover:scale-105 active:scale-95"
+            >
+              Launch Test <ArrowRight className="h-6 w-6 stroke-[3px]" />
             </button>
-            <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 px-4 py-2 rounded-full text-center">
-              <span className="text-[10px] font-black tracking-[0.2em] text-cyan-500 uppercase">Neural_Syllabus_Lock: ACTIVE</span>
+            <div className="bg-slate-50 border border-slate-200 px-4 py-3 rounded-full text-center">
+              <span className="text-xs font-extrabold tracking-widest text-[#00D1FF] uppercase">Adaptive Difficulty: Active</span>
             </div>
           </div>
         </div>
 
         {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Gauge className="h-9 w-9 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-slate-50 p-10 rounded-[32px] border-4 border-transparent hover:border-[#00D1FF]/20 hover:bg-white hover:shadow-float-cyan transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D1FF]/5 rounded-full blur-[40px]" />
+            <div className="w-16 h-16 bg-[#00D1FF]/10 text-[#00D1FF] rounded-[20px] flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-[#00D1FF]/20">
+              <Gauge className="h-8 w-8 stroke-[2.5px]" />
             </div>
-            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Adaptive Track</h3>
-            <p className="font-medium text-slate-400 leading-relaxed italic">Part 2 scaling based on Part 1 accuracy. Elite performance detection included.</p>
+            <h3 className="text-xl font-extrabold text-[#0A192F] mb-3 tracking-tight">Adaptive Track</h3>
+            <p className="font-medium text-[#64748B] leading-relaxed">Part 2 scaling based on your Part 1 accuracy. Routed to the exact difficulty you need.</p>
           </div>
 
-          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
-            <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ShieldCheck className="h-9 w-9 text-emerald-500" />
+          <div className="bg-slate-50 p-10 rounded-[32px] border-4 border-transparent hover:border-[#34D399]/20 hover:bg-white hover:shadow-float-mint transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#34D399]/5 rounded-full blur-[40px]" />
+            <div className="w-16 h-16 bg-[#34D399]/10 text-[#34D399] rounded-[20px] flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-[#34D399]/20">
+              <ShieldCheck className="h-8 w-8 stroke-[2.5px]" />
             </div>
-            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Strict Rigor</h3>
-            <p className="font-medium text-slate-400 leading-relaxed italic">Official 2024 domains. Harder distractors. Professional-grade passages.</p>
+            <h3 className="text-xl font-extrabold text-[#0A192F] mb-3 tracking-tight">Strict Rigor</h3>
+            <p className="font-medium text-[#64748B] leading-relaxed">Official College Board domains only. Professionally graded passages and balanced answer choices.</p>
           </div>
 
-          <div className="bg-card-dark p-10 rounded-3xl border border-white/5 shadow-2xl space-y-6 group hover:border-primary/20 transition-all">
-            <div className="w-16 h-16 bg-neo-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Trophy className="h-9 w-9 text-neo-accent" />
+          <div className="bg-slate-50 p-10 rounded-[32px] border-4 border-transparent hover:border-[#F472B6]/20 hover:bg-white hover:shadow-float-pink transition-all group relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#F472B6]/5 rounded-full blur-[40px]" />
+            <div className="w-16 h-16 bg-[#F472B6]/10 text-[#F472B6] rounded-[20px] flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-[#F472B6]/20">
+              <Trophy className="h-8 w-8 stroke-[2.5px]" />
             </div>
-            <h3 className="text-3xl font-black italic uppercase italic text-white leading-tight">Score Matrix</h3>
-            <p className="font-medium text-slate-400 leading-relaxed italic">Advanced statistical modeling to estimate your scaled score (1600 scale).</p>
+            <h3 className="text-xl font-extrabold text-[#0A192F] mb-3 tracking-tight">Score Matrix</h3>
+            <p className="font-medium text-[#64748B] leading-relaxed">Statistical modeling to estimate your true scaled score on the 1600 grading scale.</p>
           </div>
         </div>
 
         {/* Requirements Box */}
-        <div className="bg-slate-900 border border-white/5 p-12 rounded-[2rem] shadow-2xl flex flex-col md:flex-row gap-12 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <div className="flex-1 space-y-6">
-            <h4 className="text-3xl font-black uppercase italic tracking-tighter text-white">The Protocol</h4>
-            <ul className="space-y-4 font-bold text-lg text-slate-300">
-              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-                <span>READING_WRITING: 64 MINS / 54 Qs</span>
+        <div className="bg-[#0A192F] p-10 lg:p-14 rounded-[40px] shadow-2xl flex flex-col md:flex-row gap-12 relative overflow-hidden items-center">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#00D1FF] rounded-full blur-[120px] opacity-20 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#F472B6] rounded-full blur-[120px] opacity-15 pointer-events-none" />
+
+          <div className="flex-1 space-y-6 relative z-10">
+            <h4 className="text-2xl font-extrabold tracking-tight text-white">Test Structure</h4>
+            <ul className="space-y-3 font-bold text-lg text-slate-300">
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                <CheckCircle2 className="h-5 w-5 text-[#00D1FF] shrink-0" />
+                <span>Reading & Writing — 64 mins / 54 questions</span>
               </li>
-              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-                <span>MATHEMATICS: 70 MINS / 44 Qs</span>
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                <CheckCircle2 className="h-5 w-5 text-[#F472B6] shrink-0" />
+                <span>Mathematics — 70 mins / 44 questions</span>
               </li>
-              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-                <span>CALCULATOR: ALWAYS_ACTIVE</span>
+              <li className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                <CheckCircle2 className="h-5 w-5 text-[#34D399] shrink-0" />
+                <span>Built-in calculator always active</span>
               </li>
             </ul>
           </div>
-          <div className="md:w-64 flex items-center justify-center">
-            <div className="w-52 h-52 bg-slate-950 border border-white/10 rounded-full flex flex-col items-center justify-center text-center p-8 shadow-inner relative group cursor-default">
-              <div className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-20" />
-              <Target className="h-10 w-10 mb-2 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Mission_Target</span>
-              <span className="text-5xl font-black italic text-white tracking-tighter">1550+</span>
+
+          <div className="md:w-64 flex justify-center relative z-10">
+            <div className="w-48 h-48 bg-white rounded-full flex flex-col items-center justify-center text-center p-6 shadow-2xl hover:rotate-6 transition-transform">
+              <Target className="h-10 w-10 mb-2 text-[#00D1FF] stroke-[2.5px]" />
+              <span className="text-xs font-extrabold uppercase tracking-widest text-[#64748B]">Target Score</span>
+              <span className="text-4xl font-extrabold text-[#0A192F] tracking-tighter mt-1">1550+</span>
             </div>
           </div>
         </div>
@@ -315,114 +320,121 @@ export default function SATSimulator() {
     );
   }
 
+  // ─── LOADING ──────────────────────────────────────────────────────────────
   if (step === 'loading') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
-        <div className="w-20 h-20 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-10 shadow-lg shadow-primary/10" />
-        <h2 className="text-3xl font-black italic text-white uppercase tracking-tighter text-center leading-none">
-          Building Part {part}...<br />
-          <span className="text-sm font-black tracking-[0.4em] text-slate-500 mt-4 block">Injecting_Expert_Domains</span>
-        </h2>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm border border-[#00D1FF]/20">
+          <Sparkles className="w-4 h-4" />
+          <span>Generating Part {part} Questions</span>
+        </div>
+        <p className="text-[#64748B] font-medium">Calibrating adaptive difficulty...</p>
       </div>
     );
   }
 
+  // ─── BREAK ────────────────────────────────────────────────────────────────
   if (step === 'break') {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center space-y-10 text-white p-6">
-        <div className="w-32 h-32 bg-primary/20 border border-primary/30 rounded-[2rem] flex items-center justify-center mx-auto rotate-12 shadow-2xl relative">
-          <div className="absolute inset-0 bg-primary opacity-20 blur-2xl rounded-full" />
-          <PenTool className="h-16 w-16 text-primary relative z-10" />
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-center space-y-8 px-6">
+        <div className="w-24 h-24 bg-[#34D399]/10 rounded-[32px] flex items-center justify-center border border-[#34D399]/20 shadow-float-mint">
+          <PenTool className="h-12 w-12 text-[#34D399] stroke-[2px]" />
         </div>
-        <div className="space-y-4">
-          <h2 className="text-6xl font-black italic uppercase tracking-tighter leading-none">Reading Done</h2>
-          <p className="font-bold text-2xl text-slate-500 uppercase tracking-widest">Neural fatigue detected. Stabilizing for Mathematics.</p>
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#34D399]/10 text-[#34D399] rounded-full font-bold text-sm border border-[#34D399]/20">
+            Section Complete
+          </div>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-[#0A192F] tracking-tight">Reading & Writing done.</h2>
+          <p className="text-[#64748B] font-medium text-lg max-w-md mx-auto">Take a short break. Next up: the Math section.</p>
         </div>
-        <button onClick={() => { setSection('math'); setPart(1); generatePartQuestions('math', 1); }}
-          className="bg-primary hover:bg-blue-600 text-white px-20 py-8 rounded-2xl text-3xl font-black italic group flex items-center gap-6 mx-auto shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
-          Start Math <ArrowRight className="h-10 w-10 group-hover:translate-x-2 transition-transform" />
+        <button
+          onClick={() => { setSection('math'); setPart(1); generatePartQuestions('math', 1); }}
+          className="neo-button text-lg px-10 py-4 shadow-[0_8px_24px_rgba(0,209,255,0.4)]"
+        >
+          Start Math Section <ArrowRight className="w-5 h-5 stroke-[2.5px]" />
         </button>
       </div>
     );
   }
 
+  // ─── RESULTS ──────────────────────────────────────────────────────────────
   if (step === 'results') {
     return (
-      <div className="max-w-4xl mx-auto py-24 text-center space-y-16 text-white px-6">
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-md mb-4">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">
-              Protocol_1600_Complete
-            </span>
+      <div className="max-w-4xl mx-auto py-16 px-6 space-y-10">
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#34D399]/10 text-[#34D399] rounded-full font-bold text-sm border border-[#34D399]/20">
+            <CheckCircle2 className="w-4 h-4" />
+            Test Complete
           </div>
-          <h1 className="text-8xl font-black italic uppercase tracking-tighter leading-none">Test Result</h1>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">Your Results</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="bg-card-dark p-16 rounded-[3rem] border border-white/5 shadow-2xl space-y-10 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-cyan-500" />
-            <div className="text-[10px] font-black text-slate-500 tracking-[0.4em] uppercase italic">Estimated Scaled Score</div>
-            <div className="text-[10rem] font-black italic text-white tabular-nums leading-none drop-shadow-2xl group-hover:scale-105 transition-transform duration-700">{results?.total}</div>
-
-            <div className="grid grid-cols-2 gap-8 mt-12">
-              <div className="p-8 bg-slate-900 border border-white/5 rounded-3xl shadow-inner">
-                <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">RW SECTION</div>
-                <div className="text-4xl font-black italic text-white">{results?.rwScore}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Score Card */}
+          <div className="neo-card text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#00D1FF] to-[#34D399] rounded-t-[40px]" />
+            <p className="text-sm font-bold uppercase tracking-widest text-[#64748B] mb-2 mt-2">Estimated Scaled Score</p>
+            <p className="text-[8rem] font-extrabold text-[#0A192F] leading-none tracking-tighter tabular-nums">{results?.total}</p>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="bg-[#00D1FF]/10 rounded-[20px] p-5 border border-[#00D1FF]/20">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#64748B] mb-1">Reading & Writing</p>
+                <p className="text-3xl font-extrabold text-[#0A192F]">{results?.rwScore}</p>
               </div>
-              <div className="p-8 bg-slate-900 border border-white/5 rounded-3xl shadow-inner">
-                <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest mb-2">MATH SECTION</div>
-                <div className="text-4xl font-black italic text-white">{results?.mathScore}</div>
+              <div className="bg-[#F472B6]/10 rounded-[20px] p-5 border border-[#F472B6]/20">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#64748B] mb-1">Math</p>
+                <p className="text-3xl font-extrabold text-[#0A192F]">{results?.mathScore}</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div className="bg-slate-900 border border-white/5 p-10 rounded-[2.5rem] shadow-2xl text-left relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-              <h3 className="text-2xl font-black uppercase italic mb-8 flex items-center gap-4 text-white">
-                <Trophy className="h-8 w-8 text-amber-500" /> Persistence Log
-              </h3>
-              <ul className="space-y-6">
-                <li className="flex justify-between items-center border-b border-white/5 pb-4">
-                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">XP Earned</span>
-                  <span className="font-black text-2xl text-primary">+200 XP</span>
+          {/* Stats & Actions */}
+          <div className="space-y-6">
+            <div className="neo-card">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-[#F472B6]/10 rounded-full flex items-center justify-center">
+                  <Trophy className="h-5 w-5 text-[#F472B6] stroke-[2.5px]" />
+                </div>
+                <h3 className="text-xl font-extrabold text-[#0A192F] tracking-tight">Session Summary</h3>
+              </div>
+              <ul className="space-y-4">
+                <li className="flex justify-between items-center border-b border-[#0A192F]/5 pb-3">
+                  <span className="font-bold text-sm text-[#64748B] uppercase tracking-widest">XP Earned</span>
+                  <span className="font-extrabold text-xl text-[#00D1FF]">+200 XP</span>
                 </li>
-                <li className="flex justify-between items-center border-b border-white/5 pb-4">
-                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">Knowledge Map</span>
-                  <span className="font-black text-xl text-white">8 Domains Mapped</span>
+                <li className="flex justify-between items-center border-b border-[#0A192F]/5 pb-3">
+                  <span className="font-bold text-sm text-[#64748B] uppercase tracking-widest">Domains Mapped</span>
+                  <span className="font-extrabold text-lg text-[#0A192F]">8 Domains</span>
                 </li>
-                <li className="flex justify-between items-center pb-2">
-                  <span className="font-black uppercase text-xs tracking-widest text-slate-500">Neural Insights</span>
-                  <span className="bg-slate-800 text-slate-400 px-3 py-1 rounded-md italic text-[10px] font-black uppercase tracking-widest animate-pulse">Processing...</span>
+                <li className="flex justify-between items-center pb-1">
+                  <span className="font-bold text-sm text-[#64748B] uppercase tracking-widest">Insights</span>
+                  <span className="px-3 py-1 bg-[#00D1FF]/10 text-[#00D1FF] text-xs font-bold rounded-full animate-pulse">Processing...</span>
                 </li>
               </ul>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              <button
-                onClick={() => window.location.href = '/progress'}
-                className="bg-primary hover:bg-blue-600 text-white py-8 rounded-2xl text-2xl font-black italic uppercase flex items-center justify-center gap-6 shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:scale-95 group"
-              >
-                Deep Progress <Target className="h-8 w-8 group-hover:rotate-45 transition-transform" />
-              </button>
-              <button
-                onClick={() => setStep('intro')}
-                className="bg-slate-900 border border-white/5 text-slate-500 py-5 rounded-xl font-black uppercase tracking-[0.3em] text-xs hover:bg-slate-800 hover:text-white transition-all"
-              >
-                Restart_Simulation
-              </button>
-            </div>
+            <button
+              onClick={() => window.location.href = '/progress'}
+              className="neo-button w-full py-4 text-base shadow-float-cyan"
+            >
+              View Full Progress <ArrowRight className="h-5 w-5 stroke-[2.5px]" />
+            </button>
+            <button
+              onClick={() => setStep('intro')}
+              className="w-full py-3 rounded-full border-2 border-[#0A192F]/10 text-[#64748B] font-bold text-sm hover:border-[#00D1FF]/40 hover:text-[#0A192F] transition-all"
+            >
+              Retake Test
+            </button>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-sm border border-white/5 p-12 rounded-[2.5rem] shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-rose-500/50" />
-          <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-600 mb-8">Neural_Weakness_Detected</p>
-          <div className="flex flex-wrap justify-center gap-6">
+        {/* Weak Areas */}
+        <div className="bg-[#F472B6]/5 border border-[#F472B6]/20 p-8 rounded-[32px]">
+          <p className="text-sm font-bold uppercase tracking-widest text-[#F472B6] mb-4">Areas to Focus On</p>
+          <div className="flex flex-wrap gap-3">
             {SECTION_SPECS.math.domains.slice(0, 2).map((d, i) => (
-              <div key={i} className="px-6 py-3 bg-rose-500/10 border border-rose-500/20 rounded-xl font-black uppercase text-xs italic text-rose-500 shadow-lg">
-                CRITICAL: {d}
+              <div key={i} className="px-5 py-2.5 bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-full font-bold text-sm text-[#F472B6]">
+                {d}
               </div>
             ))}
           </div>
@@ -431,97 +443,113 @@ export default function SATSimulator() {
     );
   }
 
+  // ─── TESTING ──────────────────────────────────────────────────────────────
   const q = questions[currentIdx];
   return (
-    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden text-white selection:bg-primary/30">
-      <header className="flex justify-between items-center bg-slate-900 px-6 py-4 border-b border-white/5 z-20 shadow-2xl">
-        <div className="flex items-center gap-6">
-          <div className="w-10 h-10 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary">
-            <Activity className="w-6 h-6" />
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
+      {/* Header */}
+      <header className="flex justify-between items-center bg-white px-6 py-4 border-b-2 border-[#0A192F]/5 z-20 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-full flex items-center justify-center text-[#00D1FF]">
+            <Activity className="w-5 h-5 stroke-[2.5px]" />
           </div>
           <div>
-            <h1 className="font-black italic text-xl leading-none uppercase tracking-tighter">SAT Simulator</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{section} SECTION</span>
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">// PART {part}</span>
+            <h1 className="font-extrabold text-lg leading-none text-[#0A192F] tracking-tight">SAT Simulator</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs font-bold text-[#00D1FF] uppercase tracking-widest">{section === 'rw' ? 'Reading & Writing' : 'Math'}</span>
+              <span className="text-xs font-bold text-[#64748B]">· Part {part}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-4 bg-slate-950 px-6 py-2 rounded-2xl border border-white/5 shadow-inner">
-          <Timer className="w-5 h-5 text-primary" />
-          <span className="font-black text-2xl tabular-nums text-white tracking-tight">{formatTime(timeLeft)}</span>
+        <div className="flex items-center gap-3 bg-slate-50 px-5 py-2.5 rounded-full border-2 border-[#0A192F]/5">
+          <Timer className="w-4 h-4 text-[#00D1FF] stroke-[2.5px]" />
+          <span className="font-extrabold text-xl tabular-nums text-[#0A192F] tracking-tight">{formatTime(timeLeft)}</span>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Compact Navigator */}
-        <div className="w-20 lg:w-64 bg-card-dark border-r border-white/5 overflow-y-auto p-4 space-y-2 hidden sm:block shadow-2xl">
-          <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600 mb-6 px-2">Navigation_Map</div>
+        {/* Question Navigator */}
+        <div className="w-20 lg:w-60 bg-slate-50 border-r-2 border-[#0A192F]/5 overflow-y-auto p-4 space-y-2 hidden sm:block">
+          <div className="text-xs font-bold uppercase tracking-widest text-[#64748B] mb-4 px-2">Questions</div>
           {questions.map((_, i) => (
             <button
               key={`${part}-${i}`}
               onClick={() => setCurrentIdx(i)}
-              className={`w-full p-4 rounded-xl border font-black text-sm text-left transition-all relative group overflow-hidden ${currentIdx === i
-                ? 'bg-primary/10 border-primary/30 text-white shadow-lg shadow-primary/5'
-                : 'bg-slate-900/40 border-white/5 text-slate-500 hover:text-white hover:bg-slate-800'
-                } ${answers[questions[i].id] !== undefined ? 'opacity-100' : 'opacity-40'}`}
+              className={`w-full p-3 rounded-[16px] border-2 font-bold text-sm text-left transition-all relative overflow-hidden ${
+                currentIdx === i
+                  ? 'bg-white border-[#00D1FF] text-[#0A192F] shadow-float-cyan'
+                  : 'bg-white border-transparent text-[#64748B] hover:text-[#0A192F] hover:border-[#0A192F]/10'
+              } ${answers[questions[i].id] !== undefined ? 'opacity-100' : 'opacity-50'}`}
             >
-              <span className="relative z-10"><span className="hidden lg:inline">Unit_</span>{i + 1}</span>
+              <span className="relative z-10"><span className="hidden lg:inline">Q</span>{i + 1}</span>
               {flags[questions[i].id] && (
-                <div className="absolute top-0 right-0 p-1">
-                  <Flag className="h-2.5 w-2.5 fill-rose-500 text-rose-500" />
+                <div className="absolute top-1.5 right-1.5">
+                  <Flag className="h-3 w-3 fill-[#F472B6] text-[#F472B6]" />
                 </div>
               )}
               {currentIdx === i && (
-                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#00D1FF] rounded-l-[16px]" />
               )}
             </button>
           ))}
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-20 bg-slate-950/30">
-          <div className="max-w-5xl mx-auto space-y-12">
-            <div className="flex justify-between items-end border-b border-white/5 pb-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 lg:p-16 bg-white">
+          <div className="max-w-5xl mx-auto space-y-10">
+            <div className="flex justify-between items-end border-b-2 border-[#0A192F]/5 pb-6">
               <div>
-                <div className="text-[10px] font-black uppercase text-slate-600 tracking-[0.4em] mb-2 leading-none">ANALYSIS_NODE_{currentIdx + 1}</div>
-                <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter leading-none">{q?.domain}</h2>
+                <div className="text-xs font-bold uppercase text-[#64748B] tracking-widest mb-1">Question {currentIdx + 1} of {questions.length}</div>
+                <h2 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">{q?.domain}</h2>
               </div>
               <button
                 onClick={() => setFlags(f => ({ ...f, [q.id]: !f[q.id] }))}
-                className={`flex items-center gap-3 px-6 py-3 rounded-xl border transition-all font-black uppercase text-[10px] tracking-widest ${flags[q.id] ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-slate-900 border-white/5 text-slate-500 hover:text-white'}`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 transition-all font-bold text-sm ${
+                  flags[q.id]
+                    ? 'bg-[#F472B6]/10 border-[#F472B6]/30 text-[#F472B6]'
+                    : 'bg-slate-50 border-[#0A192F]/10 text-[#64748B] hover:text-[#0A192F]'
+                }`}
               >
-                <Flag className={`h-4 w-4 ${flags[q.id] ? 'fill-rose-500' : ''}`} /> {flags[q.id] ? 'FLAGGED' : 'FLAG ITEM'}
+                <Flag className={`h-4 w-4 ${flags[q.id] ? 'fill-[#F472B6]' : ''}`} />
+                {flags[q.id] ? 'Flagged' : 'Flag'}
               </button>
             </div>
 
             {/* Two Column Layout for RW Passage */}
-            <div className={`grid grid-cols-1 ${q?.passage ? 'lg:grid-cols-2' : ''} gap-16`}>
+            <div className={`grid grid-cols-1 ${q?.passage ? 'lg:grid-cols-2' : ''} gap-10`}>
               {q?.passage && (
-                <div className="p-10 bg-card-dark border border-white/5 rounded-[2rem] text-lg leading-relaxed font-medium italic text-slate-300 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 left-0 w-2 h-full bg-primary/20" />
-                  <div className="text-[10px] font-black uppercase mb-8 text-primary tracking-[0.4em] opacity-60">Source_Passage</div>
-                  {q.passage}
+                <div className="p-8 bg-slate-50 border-2 border-[#0A192F]/5 rounded-[32px] text-lg leading-relaxed font-medium text-[#0A192F] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1.5 h-full bg-[#00D1FF]/40 rounded-l-[32px]" />
+                  <div className="text-xs font-bold uppercase mb-4 text-[#00D1FF] tracking-widest pl-2">Passage</div>
+                  <p className="pl-2">{q.passage}</p>
                 </div>
               )}
 
-              <div className="space-y-12">
-                <div className="relative">
-                  <div className="absolute -left-8 top-0 w-1.5 h-full bg-primary rounded-full shadow-lg shadow-primary/20" />
-                  <h3 className="text-3xl font-bold text-white leading-tight italic drop-shadow-sm">"{q?.question}"</h3>
+              <div className="space-y-8">
+                <div className="relative pl-5">
+                  <div className="absolute left-0 top-0 w-1.5 h-full bg-[#00D1FF] rounded-full" />
+                  <h3 className="text-2xl font-bold text-[#0A192F] leading-snug">"{q?.question}"</h3>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                   {q?.options.map((opt, i) => (
-                    <button key={i} onClick={() => setAnswers(prev => ({ ...prev, [q.id]: i }))}
-                      className={`text-left p-6 rounded-2xl border transition-all flex items-center gap-6 group relative overflow-hidden ${answers[q.id] === i
-                        ? 'bg-primary border-primary shadow-xl shadow-primary/20 scale-[1.02]'
-                        : 'bg-slate-900 border-white/5 hover:bg-slate-800 hover:border-primary/30 shadow-lg'
-                        }`}>
-                      <span className={`w-10 h-10 shrink-0 rounded-xl border flex items-center justify-center text-sm font-black transition-all ${answers[q.id] === i ? 'bg-white text-primary border-white' : 'bg-slate-950 border-white/5 text-slate-600 group-hover:text-white'}`}>
+                    <button
+                      key={i}
+                      onClick={() => setAnswers(prev => ({ ...prev, [q.id]: i }))}
+                      className={`text-left p-5 rounded-[20px] border-2 transition-all flex items-center gap-4 ${
+                        answers[q.id] === i
+                          ? 'bg-[#00D1FF]/10 border-[#00D1FF] shadow-float-cyan scale-[1.01]'
+                          : 'bg-white border-[#0A192F]/8 hover:bg-slate-50 hover:border-[#00D1FF]/40'
+                      }`}
+                    >
+                      <span className={`w-9 h-9 shrink-0 rounded-full border-2 flex items-center justify-center text-sm font-extrabold transition-all ${
+                        answers[q.id] === i
+                          ? 'bg-[#00D1FF] border-[#00D1FF] text-[#0A192F]'
+                          : 'border-[#0A192F]/20 text-[#64748B]'
+                      }`}>
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className={`flex-1 font-bold text-lg ${answers[q.id] === i ? 'text-white' : 'text-slate-300'}`}>{opt}</span>
+                      <span className={`flex-1 font-medium text-base ${answers[q.id] === i ? 'text-[#0A192F] font-bold' : 'text-[#0A192F]'}`}>{opt}</span>
                     </button>
                   ))}
                 </div>
@@ -531,21 +559,31 @@ export default function SATSimulator() {
         </div>
       </div>
 
-      <footer className="bg-slate-900 border-t border-white/5 p-6 flex justify-between items-center z-20 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
-        <button onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
-          className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-xl border border-white/5 font-black flex items-center gap-4 group text-xs disabled:opacity-20 transition-all active:scale-95" disabled={currentIdx === 0}>
-          <ChevronLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" /> PREVIOUS
+      {/* Footer */}
+      <footer className="bg-white border-t-2 border-[#0A192F]/5 px-6 py-4 flex justify-between items-center z-20">
+        <button
+          onClick={() => setCurrentIdx(prev => Math.max(0, prev - 1))}
+          disabled={currentIdx === 0}
+          className="flex items-center gap-2 px-6 py-3 rounded-full border-2 border-[#0A192F]/10 font-bold text-sm text-[#64748B] hover:text-[#0A192F] hover:border-[#0A192F]/20 disabled:opacity-30 transition-all active:scale-95"
+        >
+          <ChevronLeft className="h-4 w-4" /> Previous
         </button>
 
-        <div className="hidden sm:flex gap-1.5 px-4 py-2 bg-slate-950 border border-white/5 rounded-full shadow-inner">
+        <div className="hidden sm:flex gap-1.5 px-4 py-2 bg-slate-50 border-2 border-[#0A192F]/5 rounded-full">
           {questions.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full border border-white/10 transition-all ${answers[questions[i].id] !== undefined ? 'bg-primary' : 'bg-slate-800'}`} />
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-all ${answers[questions[i].id] !== undefined ? 'bg-[#00D1FF]' : 'bg-[#0A192F]/15'}`}
+            />
           ))}
         </div>
 
-        <button onClick={handleNext} className="bg-primary hover:bg-blue-600 text-white px-12 py-4 rounded-xl font-black text-sm italic group uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-4">
-          {currentIdx === questions.length - 1 ? 'Terminate Part' : 'Next Node'}
-          <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+        <button
+          onClick={handleNext}
+          className="neo-button px-8 py-3 text-sm shadow-float-cyan"
+        >
+          {currentIdx === questions.length - 1 ? 'Submit Part' : 'Next Question'}
+          <ChevronRight className="h-4 w-4 stroke-[3px]" />
         </button>
       </footer>
     </div>

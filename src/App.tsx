@@ -86,12 +86,12 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 blur-[120px] rounded-full translate-y-1/2" />
-        <div className="relative z-10 w-24 h-24 border-2 border-primary/20 border-t-primary rounded-full animate-spin shadow-2xl shadow-primary/20" />
-        <div className="mt-16 text-center space-y-4 relative z-10">
-          <h2 className="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">Atlas</h2>
-          <p className="text-slate-500 font-black uppercase tracking-[0.4em] text-xs">Initializing_Neural_Matrix_v4.0</p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#00D1FF]/5 blur-[120px] rounded-full translate-y-1/2" />
+        <div className="relative z-10 w-16 h-16 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
+        <div className="mt-10 text-center space-y-3 relative z-10">
+          <h2 className="text-4xl font-extrabold tracking-tight text-[#0A192F]">Elevenfolks</h2>
+          <p className="text-[#64748B] font-medium text-sm">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -101,43 +101,43 @@ function AppContent() {
   if (!onboardingCompleted) return <Onboarding />;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/30 selection:text-white">
+    <div className="min-h-screen bg-white text-[#0A192F] selection:bg-[#00D1FF]/30 selection:text-[#0A192F]">
       <div className="relative z-10">
         {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
 
         <div className={!isFullscreen ? "md:pl-[var(--sidebar-width,20rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]" : ""}>
           {!isFullscreen && !isOnline && (
-            <div className="bg-rose-500/10 border-b border-rose-500/20 text-rose-500 text-center py-3 text-[10px] font-black uppercase tracking-[0.3em] backdrop-blur-xl">
-              ⚠️ Offline_Mode_Active // Limited_Sync
+            <div className="bg-[#F472B6]/10 border-b border-[#F472B6]/20 text-[#F472B6] text-center py-3 text-xs font-bold uppercase tracking-widest">
+              You're offline — syncing is limited
             </div>
           )}
 
           {!isFullscreen && isPremium === false && showSubscribeBanner && (
             <div className="w-full flex justify-center sticky top-6 z-50 pointer-events-none">
-              <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-slate-900/80 backdrop-blur-2xl border border-white/10 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] shadow-2xl shadow-black/50 overflow-hidden group gap-4 sm:gap-6">
-                <div className="absolute top-0 left-0 w-full h-1 sm:w-2 sm:h-full bg-primary" />
-                <div className="flex items-center gap-6">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 border border-primary/20 rounded-xl sm:rounded-2xl flex items-center justify-center text-primary shadow-inner shrink-0">
-                    <Crown className="w-6 h-6 sm:w-8 sm:h-8 drop-shadow-lg" />
+              <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-white/90 backdrop-blur-2xl border-2 border-[#0A192F]/10 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-float-cyan overflow-hidden group gap-4 sm:gap-6">
+                <div className="absolute top-0 left-0 w-full h-1 sm:w-1.5 sm:h-full bg-[#00D1FF]" />
+                <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[16px] flex items-center justify-center text-[#00D1FF] shrink-0">
+                    <Crown className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   <div className="space-y-1 text-center sm:text-left">
-                    <span className="font-black uppercase tracking-tighter text-lg sm:text-2xl italic leading-none block">Level Up to Premium</span>
-                    <span className="text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Unlock Advanced AI Models & Global Analytics</span>
+                    <span className="font-extrabold text-lg sm:text-xl text-[#0A192F] leading-none block tracking-tight">Level Up to Premium</span>
+                    <span className="text-xs font-medium text-[#64748B] block">Unlock advanced AI models & global analytics</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-center">
                   <button
                     onClick={handleSubscribeClick}
                     disabled={isLoadingPayment}
-                    className="flex-1 sm:flex-none bg-primary hover:bg-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-black uppercase text-xs sm:text-sm tracking-widest shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95"
+                    className="flex-1 sm:flex-none neo-button px-6 sm:px-8 py-3 text-sm"
                   >
-                    {isLoadingPayment ? 'WAIT...' : 'SUBSCRIBE'}
+                    {isLoadingPayment ? 'Processing...' : 'Subscribe'}
                   </button>
                   <button
                     onClick={() => setShowSubscribeBanner(false)}
-                    className="p-2 sm:p-3 text-slate-600 hover:text-white transition-colors"
+                    className="p-2 sm:p-3 text-[#64748B] hover:text-[#0A192F] transition-colors"
                   >
-                    <X className="w-5 h-5 sm:w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
