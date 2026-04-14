@@ -65,8 +65,8 @@ const FeynmanBoard = () => {
       try {
         await vapi.start({
           model: {
-            provider: "google",
-            model: "gemini-1.5-flash",
+            provider: "openai",
+            model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",
@@ -83,10 +83,6 @@ const FeynmanBoard = () => {
                 Interact as if you are a strict but helpful tutor.`
               }
             ]
-          },
-          voice: {
-            provider: "11labs",
-            voiceId: "burt" // A deep, premium male voice
           }
         });
       } catch (err) {

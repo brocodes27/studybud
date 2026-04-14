@@ -175,3 +175,201 @@ h6 {
   white-space: nowrap;
   animation: marquee 25s linear infinite;
 }
+
+/* ==========================================
+   Global Tour / Onboarding Hint Popups
+   ========================================== */
+
+/* Scroll lock while tour is active */
+body.tour-no-scroll {
+  overflow: hidden !important;
+}
+
+/* Full-screen overlay with radial cutout via inline style */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  pointer-events: auto;
+  transition: background 0.3s ease;
+}
+
+/* Highlight ring around the target element */
+.tour-highlight {
+  pointer-events: none;
+  z-index: 1000000;
+  border: 2px solid rgba(0, 209, 255, 0.6);
+  box-shadow:
+    0 0 0 4px rgba(0, 209, 255, 0.15),
+    0 0 24px rgba(0, 209, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Pulse ring inside the highlight */
+.tour-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid rgba(0, 209, 255, 0.4);
+  animation: tour-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes tour-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+/* Coachmark bubble */
+.tour-bubble {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(0, 209, 255, 0.2);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 209, 255, 0.1);
+  animation: tour-bubble-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  max-width: 340px;
+}
+
+@keyframes tour-bubble-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tour-bubble-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0A192F;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.tour-bubble-content {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748B;
+  line-height: 1.55;
+  margin-bottom: 16px;
+}
+
+/* Footer with step indicator and actions */
+.tour-bubble-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tour-step-indicator {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #00D1FF;
+  background: rgba(0, 209, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour-spacer {
+  width: 2px;
+}
+
+/* Tour buttons */
+.tour-btn {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(10, 25, 47, 0.1);
+  background: #FFFFFF;
+  color: #0A192F;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tour-btn:hover {
+  background: #F1F5F9;
+  border-color: rgba(10, 25, 47, 0.2);
+}
+
+.tour-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tour-btn.primary {
+  background: #00D1FF;
+  color: #0A192F;
+  border-color: transparent;
+  box-shadow: 0 4px 12px -2px rgba(0, 209, 255, 0.4);
+}
+
+.tour-btn.primary:hover {
+  box-shadow: 0 6px 16px -2px rgba(0, 209, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.tour-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: #94A3B8;
+  padding: 6px 10px;
+}
+
+.tour-btn.ghost:hover {
+  color: #0A192F;
+  background: rgba(10, 25, 47, 0.05);
+}
+
+/* Arrow pointing from bubble to target */
+.tour-arrow {
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(0, 209, 255, 0.2);
+  transform: rotate(45deg);
+}
+
+.tour-arrow-right {
+  border-right: none;
+  border-top: none;
+}
+
+.tour-arrow-left {
+  border-left: none;
+  border-bottom: none;
+}
+
+.tour-arrow-bottom {
+  border-top: none;
+  border-right: none;
+}
+
+.tour-arrow-top {
+  border-bottom: none;
+  border-left: none;
+}
