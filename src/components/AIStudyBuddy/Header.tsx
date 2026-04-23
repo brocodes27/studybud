@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, Trash2, Mic, MicOff } from 'lucide-react';
+import { Sparkles, Trash2, Mic, MicOff } from 'lucide-react';
 
 interface HeaderProps {
     title?: string;
@@ -11,37 +11,30 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-    title = 'ATLAS AI',
+    title = 'ATLAS',
     onClear,
     onToggleVoice,
     isVoiceActive = false,
 }) => {
 
     return (
-        <div className="flex items-center gap-4 p-4 border-b border-white/5 bg-transparent text-white relative z-30 transition-all">
-            <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <Brain className="h-6 w-6 text-white" />
+        <div className="flex items-center justify-between px-6 py-3 bg-[#F8FAF9] border-b border-slate-100 transition-all">
+            {/* Left: Brand Mark */}
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-white" />
                 </div>
+                <span className="text-sm font-semibold text-slate-800 tracking-tight">{title}</span>
+                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">Pro</span>
             </div>
 
-            <div className="flex-1">
-                <h2 className="text-xl font-bold text-white tracking-tight">
-                    {title}
-                </h2>
-                <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-medium text-slate-400">AI Study Buddy</span>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-[10px] font-medium text-blue-400">Active</span>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2">
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1.5">
                 {onToggleVoice && (
                     <button
                         type="button"
                         onClick={onToggleVoice}
-                        className={`p-1.5 border border-white/10 shadow-neo transition-all hover:translate-x-[-0.5px] hover:translate-y-[-0.5px] ${isVoiceActive ? 'bg-neo-secondary text-slate-100' : 'bg-slate-800/10 text-white/60'}`}
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${isVoiceActive ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
                         title={isVoiceActive ? "Disable Hands-free Voice" : "Enable Hands-free Voice"}
                     >
                         {isVoiceActive ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
@@ -52,14 +45,13 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                         type="button"
                         onClick={onClear}
-                        className="p-1.5 bg-slate-800 text-slate-100 border border-white/10 shadow-neo hover:bg-neo-accent hover:text-white active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all"
+                        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
                         title="Clear Chat"
                     >
-                        <Trash2 className="h-4 w-4 stroke-[2.5px]" />
+                        <Trash2 className="h-4 w-4" />
                     </button>
                 )}
             </div>
         </div>
     );
 };
-

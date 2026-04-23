@@ -108,9 +108,13 @@ export const VideoLessons = () => {
     const [viewMode, setViewMode] = useState<'plans' | 'chapters' | 'lessons'>('plans');
     const [selectedPlan, setSelectedPlan] = useState<PlanFolder | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-    const [renderMode, setRenderMode] = useState<'classic' | 'premium' | 'remotion' | null>(null);
+    const [renderMode, setRenderMode] = useState<'classic' | 'premium' | 'remotion' | 'youtube' | null>(null);
     const [remotionConfig, setRemotionConfig] = useState<LectureConfig | null>(null);
     const [generations, setGenerations] = useState<Record<string, any>>({});
+    
+    // YouTube state
+    const [youtubeRecommendations, setYoutubeRecommendations] = useState<any[]>([]);
+    const [isFetchingYoutube, setIsFetchingYoutube] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -284,6 +288,39 @@ export const VideoLessons = () => {
         }
     };
 
+    const handlePlayYoutube = async (lesson: Lesson) => {
+        setPlayingLesson({ topic: lesson.topic, subject: lesson.subject });
+        setRenderMode('youtube');
+        setIsFetchingYoutube(true);
+        setYoutubeRecommendations([]);
+        setGenerationError(null);
+
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/recommend-videos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionData?.session?.access_token}`
+                },
+                body: JSON.stringify({
+                    query_text: `${lesson.subject} ${lesson.topic} ${lesson.description}`,
+                    limit: 3
+                })
+            });
+            const data = await response.json();
+            if (data.recommendations) {
+                setYoutubeRecommendations(data.recommendations);
+            } else {
+                setGenerationError("No YouTube videos found matching this topic.");
+            }
+        } catch(e) {
+            setGenerationError("Failed to fetch YouTube recommendations.");
+        } finally {
+            setIsFetchingYoutube(false);
+        }
+    };
+
     return (
         <div className="space-y-10 animate-fade-in relative pb-20">
             {showLectureLock && !isPremium && (
@@ -360,6 +397,56 @@ export const VideoLessons = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {playingLesson && renderMode === 'youtube' && (
+                <div className="fixed inset-0 z-[110] flex flex-col pt-10 px-8 pb-8 bg-[#0A192F]/95 backdrop-blur-xl overflow-y-auto">
+                    <div className="max-w-4xl w-full mx-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 className="text-2xl font-extrabold text-white">YouTube Integration</h3>
+                                <p className="text-white/60">Semantic search for: <span className="text-[#00D1FF] font-bold">{playingLesson.topic}</span></p>
+                            </div>
+                            <button onClick={() => { setPlayingLesson(null); setRenderMode(null); }} className="px-5 py-2.5 border-2 border-white/20 text-white font-bold rounded-[14px] hover:bg-white/10 transition-colors">Close</button>
+                        </div>
+
+                        {generationError && (
+                            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-[14px] text-red-200 font-medium mb-6">
+                                {generationError}
+                            </div>
+                        )}
+
+                        {isFetchingYoutube ? (
+                            <div className="flex flex-col items-center justify-center p-20 bg-white/5 rounded-[20px] border border-white/10">
+                                <Loader2 className="w-10 h-10 animate-spin text-[#00D1FF] mb-4" />
+                                <p className="text-white/80 font-bold text-lg">Searching Semantic Vector Graph...</p>
+                                <p className="text-white/50 font-medium text-sm mt-1">Retrieving the most mathematically relevant videos for this concept.</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-4">
+                                {youtubeRecommendations.map((vid: any) => (
+                                    <a key={vid.id} href={`https://youtube.com/watch?v=${vid.video_id}`} target="_blank" rel="noopener noreferrer" className="flex flex-col sm:flex-row items-start gap-5 p-4 rounded-[16px] bg-white/5 border border-white/10 hover:bg-white/10 hover:-translate-y-1 transition-all group">
+                                        <div className="aspect-video w-full sm:w-56 shrink-0 bg-black rounded-[12px] overflow-hidden relative shadow-lg">
+                                            {vid.thumbnail_url ? <img src={vid.thumbnail_url} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" /> : <Video className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/20 w-8 h-8"/>}
+                                        </div>
+                                        <div className="flex-grow py-1">
+                                            <h4 className="text-lg font-extrabold text-white mb-2 line-clamp-2 leading-tight">{vid.title}</h4>
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[6px] text-xs font-bold text-[#34D399] mb-4">
+                                                <Sparkles className="w-3 h-3" />
+                                                Semantic Match: {(vid.similarity * 100).toFixed(1)}%
+                                            </div>
+                                            <div>
+                                                <button className="px-4 py-2 bg-[#0A192F] text-white border-2 border-white/10 rounded-[10px] text-xs font-bold hover:bg-white/10 transition-colors shadow-float">
+                                                    Watch on YouTube
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
 
             {/* Header Section */}
@@ -523,6 +610,13 @@ export const VideoLessons = () => {
                                                         <span>Premium Lecture</span>
                                                     </>
                                                 )}
+                                            </button>
+                                            <button
+                                                onClick={() => handlePlayYoutube(lesson)}
+                                                className="w-full py-3 rounded-[14px] border-2 border-[#F472B6]/10 bg-[#F472B6]/5 text-[#F472B6] font-bold text-sm hover:border-[#F472B6]/30 hover:bg-[#F472B6]/10 transition-all flex items-center justify-center gap-2 mt-1"
+                                            >
+                                                <Video className="w-4 h-4 stroke-[2.5px]" />
+                                                YouTube Resources
                                             </button>
                                         </div>
                                     </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Navbar from './components/Navbar';
+import { ManusSidebar } from './components/ManusSidebar';
 import TeacherNavbar from './components/TeacherNavbar';
-import { Dashboard } from './pages/Dashboard';
+import ManusHome from './pages/ManusHome';
 import { CreatePlan } from './pages/CreatePlan';
 import { StudyPlans } from './pages/StudyPlans';
 import { Progress } from './pages/Progress';
@@ -47,6 +47,7 @@ import FeynmanBoard from './pages/FeynmanBoard';
 import { DailyCheckin } from './components/DailyCheckin';
 import { SubscriptionPage } from './components/SubscriptionPage';
 import SYOW from './pages/SYOW';
+import MyProfileDashboard from './pages/MyProfileDashboard';
 
 function AppContent() {
   const { user, role, loading, isPremium, onboardingCompleted } = useAuth();
@@ -54,6 +55,7 @@ function AppContent() {
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
   const location = useLocation();
+  const isImmersive = location.pathname === '/ai-buddy' || location.pathname === '/atlas';
 
   const isFullscreen = (() => {
     try {
@@ -101,18 +103,18 @@ function AppContent() {
   if (!onboardingCompleted) return <Onboarding />;
 
   return (
-    <div className="min-h-screen bg-white text-[#0A192F] selection:bg-[#00D1FF]/30 selection:text-[#0A192F]">
+    <div className={`min-h-screen text-[#0A192F] selection:bg-[#00D1FF]/30 selection:text-[#0A192F] ${isImmersive ? 'bg-[#F8FAF9]' : 'bg-white'}`}>
       <div className="relative z-10">
-        {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <Navbar />)}
+        {!isFullscreen && (role === 'teacher' ? <TeacherNavbar /> : <ManusSidebar />)}
 
-        <div className={!isFullscreen ? "md:pl-[var(--sidebar-width,20rem)] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]" : ""}>
+        <div className={!isFullscreen && role !== 'teacher' ? `md:pl-14 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isImmersive ? 'h-screen overflow-hidden' : ''}` : !isFullscreen ? "md:pl-[var(--sidebar-width,20rem)] transition-all duration-500" : ""}>
           {!isFullscreen && !isOnline && (
             <div className="bg-[#F472B6]/10 border-b border-[#F472B6]/20 text-[#F472B6] text-center py-3 text-xs font-bold uppercase tracking-widest">
               You're offline — syncing is limited
             </div>
           )}
 
-          {!isFullscreen && isPremium === false && showSubscribeBanner && (
+          {!isFullscreen && !isImmersive && isPremium === false && showSubscribeBanner && (
             <div className="w-full flex justify-center sticky top-6 z-50 pointer-events-none">
               <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-white/90 backdrop-blur-2xl border-2 border-[#0A192F]/10 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-float-cyan overflow-hidden group gap-4 sm:gap-6">
                 <div className="absolute top-0 left-0 w-full h-1 sm:w-1.5 sm:h-full bg-[#00D1FF]" />
@@ -144,11 +146,11 @@ function AppContent() {
             </div>
           )}
 
-          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : "w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 transition-all"}>
+          <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : `w-full mx-auto px-0 py-0 transition-all ${isImmersive ? 'h-full' : ''}`}>
             <Routes>
               {/* Daily Experience - New Primary Flow */}
-              <Route path="/" element={<DailyCheckin />} />
-              <Route path="/daily" element={<DailyCheckin />} />
+              <Route path="/" element={<ManusHome />} />
+              <Route path="/daily" element={<ManusHome />} />
               <Route path="/atlas" element={<AtlasWorkspace />} />
               <Route path="/syow" element={<SYOW />} />
 
@@ -170,8 +172,8 @@ function AppContent() {
 
               {/* Progress & Analytics */}
               <Route path="/progress" element={<Progress />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/analytics" element={<Dashboard />} />
+              <Route path="/dashboard" element={<ManusHome />} />
+              <Route path="/analytics" element={<ManusHome />} />
 
               {/* College Prep */}
               <Route path="/roadmaps" element={<CollegeRoadmaps />} />
@@ -190,6 +192,7 @@ function AppContent() {
 
               {/* Account */}
               <Route path="/profile" element={<Profile />} />
+              <Route path="/my-profile" element={<MyProfileDashboard />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/pricing" element={<SubscriptionPage />} />
               <Route path="/subscription" element={<SubscriptionPage />} />

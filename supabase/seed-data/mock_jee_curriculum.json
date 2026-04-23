@@ -1,0 +1,81 @@
+{
+  "name": "JEE Mains + Advanced 2026 — Comprehensive Batch",
+  "institute_name": "Ranjan Sir Academy",
+  "program": "JEE",
+  "year_level": "12",
+  "description": "Complete 52-week JEE preparation program covering Physics, Chemistry, and Mathematics with weekly phase tests, major tests, and full syllabus mocks.",
+  "total_weeks": 52,
+  "weekly_schedule": {
+    "monday": [
+      { "subject": "Physics", "topic": "Mechanics / Electrodynamics", "duration_min": 120 },
+      { "subject": "Chemistry", "topic": "Physical / Organic", "duration_min": 120 }
+    ],
+    "tuesday": [
+      { "subject": "Mathematics", "topic": "Calculus / Algebra", "duration_min": 120 },
+      { "subject": "Physics", "topic": "Problem Solving Session", "duration_min": 120 }
+    ],
+    "wednesday": [
+      { "subject": "Chemistry", "topic": "Organic / Inorganic", "duration_min": 120 },
+      { "subject": "Mathematics", "topic": "Coordinate Geometry / Trigonometry", "duration_min": 120 }
+    ],
+    "thursday": [
+      { "subject": "Physics", "topic": "Modern Physics / Optics", "duration_min": 120 },
+      { "subject": "Chemistry", "topic": "Physical Chemistry Numericals", "duration_min": 120 }
+    ],
+    "friday": [
+      { "subject": "Mathematics", "topic": "Advanced Problems / Previous Year", "duration_min": 120 },
+      { "subject": "Physics", "topic": "Concept Revision / Doubt Clearing", "duration_min": 120 }
+    ],
+    "saturday": [
+      { "subject": "Mock Test", "topic": "Full Syllabus / Sectional Test", "duration_min": 180 }
+    ],
+    "sunday": [
+      { "subject": "Revision", "topic": "Weak Areas / Backlog Clearing", "duration_min": 120 }
+    ]
+  },
+  "syllabus_map": {
+    "Physics": {
+      "mechanics": ["Kinematics", "Laws of Motion", "Work, Energy & Power", "Rotational Motion", "Gravitation"],
+      "electrodynamics": ["Electrostatics", "Current Electricity", "Magnetic Effects", "EMI & AC"],
+      "waves_optics": ["Oscillations", "Waves", "Ray Optics", "Wave Optics"],
+      "modern_physics": ["Dual Nature", "Atoms", "Nuclei", "Semiconductors"],
+      "thermodynamics": ["Thermal Properties", "Thermodynamics", "Kinetic Theory"]
+    },
+    "Chemistry": {
+      "physical": ["Mole Concept", "Atomic Structure", "Chemical Bonding", "Thermodynamics", "Equilibrium", "Electrochemistry", "Chemical Kinetics"],
+      "organic": ["Basic Concepts", "Hydrocarbons", "Halogen Derivatives", "Alcohols & Ethers", "Aldehydes & Ketones", "Carboxylic Acids", "Nitrogen Compounds", "Biomolecules"],
+      "inorganic": ["Periodic Table", "s-block", "p-block", "d & f-block", "Coordination Compounds", "Environmental Chemistry"]
+    },
+    "Mathematics": {
+      "algebra": ["Complex Numbers", "Quadratic Equations", "Permutations & Combinations", "Binomial Theorem", "Sequences & Series", "Matrices & Determinants"],
+      "calculus": ["Functions", "Limits & Continuity", "Differentiation", "Application of Derivatives", "Integration", "Differential Equations"],
+      "coordinate_geometry": ["Straight Lines", "Circles", "Parabola", "Ellipse", "Hyperbola", "3D Geometry"],
+      "trigonometry": ["Trigonometric Ratios", "Identities", "Equations", "Inverse Trigonometry"],
+      "probability_statistics": ["Probability", "Statistics", "Mathematical Reasoning"]
+    }
+  },
+  "test_calendar": [
+    { "week": 2, "name": "Phase Test 1 — Mechanics", "type": "phase_test", "syllabus": "Kinematics, Laws of Motion, Work Energy Power", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 4, "name": "Phase Test 2 — Electrostatics & Organic Basics", "type": "phase_test", "syllabus": "Electrostatics, Current Electricity, Hydrocarbons, Basic Organic Concepts", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 6, "name": "Phase Test 3 — Calculus & Chemical Bonding", "type": "phase_test", "syllabus": "Differentiation, Integration, Chemical Bonding, Atomic Structure", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 8, "name": "Major Test 1 — First 8 Weeks", "type": "major_test", "syllabus": "Full Mechanics, Electrostatics, Organic Basics, Calculus Basics, Chemical Bonding", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 10, "name": "Phase Test 4 — Magnetism & Alcohols", "type": "phase_test", "syllabus": "Magnetic Effects, EMI Basics, Alcohols & Ethers, Halogen Derivatives", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 12, "name": "Phase Test 5 — Coordinate Geometry & Equilibrium", "type": "phase_test", "syllabus": "Circles, Parabola, Chemical Equilibrium, Ionic Equilibrium", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 14, "name": "Phase Test 6 — Waves & Aldehydes", "type": "phase_test", "syllabus": "Oscillations, Waves, Aldehydes & Ketones, Carboxylic Acids", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 16, "name": "Major Test 2 — First 16 Weeks", "type": "major_test", "syllabus": "Full Electrodynamics, Organic Chemistry (Basics to Acids), Coordinate Geometry, Calculus", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 18, "name": "Phase Test 7 — Optics & Electrochemistry", "type": "phase_test", "syllabus": "Ray Optics, Wave Optics, Electrochemistry, Chemical Kinetics", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 20, "name": "Phase Test 8 — 3D Geometry & p-block", "type": "phase_test", "syllabus": "3D Geometry, Vectors, p-block Elements, d-block Elements", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 22, "name": "Phase Test 9 — Modern Physics & Biomolecules", "type": "phase_test", "syllabus": "Dual Nature, Atoms, Nuclei, Biomolecules, Polymers", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 24, "name": "Major Test 3 — Half Syllabus", "type": "major_test", "syllabus": "Full Physics except Semiconductors, Full Organic + Physical, Full Mathematics except Probability", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 26, "name": "Mock JEE Mains 1", "type": "mock_jee", "syllabus": "Complete JEE Mains Syllabus", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 28, "name": "Mock JEE Mains 2", "type": "mock_jee", "syllabus": "Complete JEE Mains Syllabus", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 30, "name": "Mock JEE Mains 3", "type": "mock_jee", "syllabus": "Complete JEE Mains Syllabus", "duration_minutes": 180, "total_marks": 300, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 32, "name": "Mock JEE Advanced 1", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 34, "name": "Mock JEE Advanced 2", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 36, "name": "Mock JEE Advanced 3", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 40, "name": "Final Major Test — Full Syllabus", "type": "major_test", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 44, "name": "Pre-JEE Mock 1", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 48, "name": "Pre-JEE Mock 2", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] },
+    { "week": 51, "name": "Final Mock — JEE Pattern", "type": "mock_jee", "syllabus": "Complete JEE Advanced Syllabus", "duration_minutes": 180, "total_marks": 360, "subjects": ["Physics", "Chemistry", "Mathematics"] }
+  ]
+}

@@ -1,0 +1,410 @@
+[
+  {
+    "subject": "Physics",
+    "topic": "Physics and Measurement",
+    "subtopic": "Units of measurement, Dimensions of physical quantities, errors in measurement",
+    "difficulty_tier": 1,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "understand"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Kinematics",
+    "subtopic": "Motion in a straight line, uniform and non-uniform motion, relative velocity, Projectile motion",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Laws of Motion",
+    "subtopic": "Newton's laws, Momentum, Static and kinetic friction, Circular motion",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Work, Energy and Power",
+    "subtopic": "Work-Energy theorem, Conservative and non-conservative forces, Collisions",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Rotational Motion",
+    "subtopic": "Center of mass, Moment of inertia, Angular momentum, Rolling motion",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Gravitation",
+    "subtopic": "Kepler's laws, Universal law of gravitation, Escape velocity, Satellites",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Properties of Solids and Liquids",
+    "subtopic": "Elastic behavior, Hooke's Law, Fluid pressure, Bernoulli's principle, Surface tension, Viscosity",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "understand"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Thermodynamics",
+    "subtopic": "First law of thermodynamics, Isothermal and adiabatic processes, Second law",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Kinetic Theory of Gases",
+    "subtopic": "Ideal gas equation, RMS speed, Degrees of freedom, Law of equipartition of energy",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Oscillations and Waves",
+    "subtopic": "SHM, Energy in SHM, Wave motion, Superposition of waves, Doppler effect",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Electrostatics",
+    "subtopic": "Coulomb's Law, Electric field, Gauss's law, Potential, Capacitance",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Current Electricity",
+    "subtopic": "Ohm's Law, Kirchhoff's laws, Wheatstone bridge, Potentiometer",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Magnetic Effects of Current and Magnetism",
+    "subtopic": "Biot-Savart law, Ampere's law, Force on moving charge, Earth's magnetism",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Electromagnetic Induction and Alternating Currents",
+    "subtopic": "Faraday's laws, Lenz's Law, Self and mutual inductance, AC circuits, LCR series circuit",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Electromagnetic Waves",
+    "subtopic": "Displacement current, EM wave characteristics, EM spectrum",
+    "difficulty_tier": 1,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "remember"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Optics",
+    "subtopic": "Reflection, Refraction, Total internal reflection, Lenses, Wave optics, Interference, Diffraction",
+    "difficulty_tier": 5,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Dual Nature of Matter and Radiation",
+    "subtopic": "Photoelectric effect, Einstein's photoelectric equation, de Broglie relation",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "understand"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Atoms and Nuclei",
+    "subtopic": "Bohr model, Hydrogen spectrum, Composition of nucleus, Radioactivity",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Physics",
+    "topic": "Electronic Devices",
+    "subtopic": "Semiconductors, p-n junction, diodes, Logic gates",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Some Basic Concepts in Chemistry",
+    "subtopic": "Matter, Atomic and molecular masses, Mole concept, Stoichiometry",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Atomic Structure",
+    "subtopic": "Bohr model, Quantum mechanical model, Orbitals, Electronic configuration",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Chemical Bonding and Molecular Structure",
+    "subtopic": "Ionic and covalent bonds, VSEPR theory, Valence bond theory, Molecular orbital theory",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Chemical Thermodynamics",
+    "subtopic": "First law, Enthalpy, Hess's law, Second law, Entropy, Gibbs energy",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Solutions",
+    "subtopic": "Concentration terms, Raoult's law, Colligative properties",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Equilibrium",
+    "subtopic": "Dynamic equilibrium, Le Chatelier's principle, Acids and bases, pH, Buffer solutions, Solubility product",
+    "difficulty_tier": 5,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Redox Reactions and Electrochemistry",
+    "subtopic": "Oxidation number, Nernst equation, Kohlrausch's law, Electrolysis",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Chemical Kinetics",
+    "subtopic": "Rate of reaction, Order and molecularity, Arrhenius equation",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Classification of Elements and Periodicity",
+    "subtopic": "Modern periodic law, Periodic trends (atomic radii, ionization enthalpy, electron gain enthalpy)",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "understand"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "p-Block Elements",
+    "subtopic": "Group 13 to Group 18 elements, Important compounds, Properties",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "remember"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "d- and f- Block Elements",
+    "subtopic": "Transition elements, Lanthanoids, Actinoids",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "remember"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Coordination Compounds",
+    "subtopic": "Werner's theory, IUPAC nomenclature, Isomerism, Crystal field theory",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Some Basic Principles of Organic Chemistry",
+    "subtopic": "IUPAC nomenclature, Electronic displacements, Reactive intermediates, Isomerism",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Hydrocarbons",
+    "subtopic": "Alkanes, Alkenes, Alkynes, Aromatic hydrocarbons",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Organic Compounds Containing Halogens",
+    "subtopic": "Haloalkanes and Haloarenes, SN1 and SN2 mechanisms",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Organic Compounds Containing Oxygen",
+    "subtopic": "Alcohols, Phenols, Ethers, Aldehydes, Ketones, Carboxylic acids",
+    "difficulty_tier": 5,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Organic Compounds Containing Nitrogen",
+    "subtopic": "Amines, Diazonium salts",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Chemistry",
+    "topic": "Biomolecules",
+    "subtopic": "Carbohydrates, Proteins, Vitamins, Nucleic acids",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "remember"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Sets, Relations and Functions",
+    "subtopic": "Sets, Types of relations, Equivalance relations, One-one and onto functions",
+    "difficulty_tier": 2,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "understand"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Complex Numbers and Quadratic Equations",
+    "subtopic": "Algebra of complex numbers, Argand diagram, Roots of quadratic equations, Nature of roots",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Matrices and Determinants",
+    "subtopic": "Types of matrices, Matrix operations, Determinants, Adjoint and inverse, System of linear equations",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Permutations and Combinations",
+    "subtopic": "Fundamental principle of counting, Factorial n, Permutations, Combinations",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Binomial Theorem and its Simple Applications",
+    "subtopic": "Binomial theorem for positive integral index, General and middle terms",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Sequence and Series",
+    "subtopic": "AP, GP, Relationship between AM and GM",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Limit, Continuity and Differentiability",
+    "subtopic": "Limits, Continuity, Differentiation, Rolle's and Lagrange's theorems, Tangents and normals, Maxima and minima",
+    "difficulty_tier": 5,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Integral Calculus",
+    "subtopic": "Indefinite integrals, Definite integrals, Properties of definite integrals, Area under curves",
+    "difficulty_tier": 5,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "evaluate"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Differential Equations",
+    "subtopic": "Order and degree, Formation, Solution of ODEs, Linear differential equations",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Coordinate Geometry",
+    "subtopic": "Straight lines, Circles, Parabola, Ellipse, Hyperbola",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "analyze"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Three Dimensional Geometry",
+    "subtopic": "Direction cosines and ratios, Line and plane equations, Distance between point and plane",
+    "difficulty_tier": 4,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Vector Algebra",
+    "subtopic": "Vectors, Scalar and vector products, Scalar triple product",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Statistics and Probability",
+    "subtopic": "Mean, variance and standard deviation, Conditional probability, Bayes theorem, Binomial distribution",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  },
+  {
+    "subject": "Mathematics",
+    "topic": "Trigonometry",
+    "subtopic": "Trigonometric identities, Inverse trigonometric functions",
+    "difficulty_tier": 3,
+    "exam_types": ["JEE Mains", "CBSE"],
+    "bloom_level": "apply"
+  }
+]

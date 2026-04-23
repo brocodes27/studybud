@@ -1,3 +1,5 @@
+import { KnowledgeTracingService } from "../lib/knowledgeTracing";
+
 import { useState, useEffect } from 'react';
 import { FileText, Clock, CheckCircle, X, Trophy, Target, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -174,7 +176,24 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     if (!currentTest) return;
     setIsActive(false);
     let correct = 0;
-    currentTest.questions.forEach((question, index) => { if (answers[index] === question.correct_answer) correct++; });
+    
+    // Log interactions to BKT engine (fire and forget to not block UI)
+    currentTest.questions.forEach((question, index) => { 
+      const isCorrect = answers[index] === question.correct_answer;
+      if (isCorrect) correct++; 
+      
+      // Attempt BKT logging if we have a KC assigned to this question (some might be legacy)
+      // Usually the DB returns kc_id if it's there. For now, we simulate using subject/topic mapping later
+      // if kc_id is not directly on the question object. We'll pass question id for the edge function to map.
+      KnowledgeTracingService.logInteraction(
+        question.id, // edge function can resolve to kc_id if it's a UUID
+        isCorrect,
+        Math.floor(((currentTest.duration_minutes * 60) - timeLeft) * 1000 / currentTest.total_questions), // very rough average time
+        'practice_test',
+        { test_id: currentTest.id, question_index: index }
+      ).catch(console.error);
+    });
+
     const score = correct;
     const timeTaken = Math.ceil((currentTest.duration_minutes * 60 - timeLeft) / 60);
 

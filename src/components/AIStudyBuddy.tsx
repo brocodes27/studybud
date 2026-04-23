@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
 import AIService from '../lib/aiService';
 import { useChatSkills } from '../skills/useChatSkills';
-import { Header } from './AIStudyBuddy/Header';
-import { ContextPanel } from './AIStudyBuddy/ContextPanel';
 import { MessageList } from './AIStudyBuddy/MessageList';
-import { SuggestedQuestions } from './AIStudyBuddy/SuggestedQuestions';
 import { ChatInput } from './AIStudyBuddy/ChatInput';
 import { VoiceVisualizer } from './AIStudyBuddy/VoiceVisualizer';
-import { SkillLauncher } from './AIStudyBuddy/SkillLauncher';
+import { DailyPrescriptionDashboard } from './AIStudyBuddy/DailyPrescriptionDashboard';
+import { TestResultUploader } from './AIStudyBuddy/TestResultUploader';
+import { MemorySnapshot } from './AIStudyBuddy/MemorySnapshot';
+import { SuggestedQuestions } from './AIStudyBuddy/SuggestedQuestions';
+import { Zap, Brain, Upload, Target, Flame, BookOpen, ChevronRight, ChevronDown, Layers } from 'lucide-react';
 import Vapi from '@vapi-ai/web';
 
 const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY || '');
@@ -23,6 +23,7 @@ interface Message {
   timestamp: Date;
   subject?: string;
   topic?: string;
+  isSystemAlert?: boolean;
 }
 
 interface StudyPlan {
@@ -41,12 +42,42 @@ interface StudyPlan {
   };
 }
 
+interface ActiveRoadmap {
+  id: string;
+  institute_name: string;
+  program: string;
+  current_week: number;
+}
+
+interface ActivePrescription {
+  id: string;
+  tasks: Array<{
+    type: string;
+    subject: string;
+    topic?: string;
+    title?: string;
+    duration_min?: number;
+    estimated_minutes?: number;
+    completed?: boolean;
+    details?: string;
+    description?: string;
+    difficulty?: string;
+  }>;
+  implementation_intentions: Array<{
+    trigger: string;
+    action: string;
+    duration_min?: number;
+    completed?: boolean;
+  }>;
+  total_estimated_minutes: number;
+}
+
 const ATLAS_SYSTEM_PROMPT = `You are **ATLAS**, a "Production-Ready" AI Mentor and the engine of this learning workspace. 
 Your goal is to transform notes and questions into clear, exam-usable explanations, practice problems, and visual aids.
 
 ### CORE OPERATING PRINCIPLES (Feynman-2 Logic):
 1. **The "Simulated Pupil":** When explaining a concept, act as a tutor who asks the student to teach *you*. Identify jargon and logical gaps. Force the student to simplify.
-2. **Memory & Personalization:** You have access to the student's **STUDY CONTEXT** (Class, Subject, Plan, and Progress). Use this to recall what they know and reference backlogs.
+2. **Memory & Personalization:** You have access to the student's **STUDY CONTEXT** (Class, Subject, Plan, and Progress) AND their **BEHAVIORAL PROFILE** (study patterns, subject affinity, focus windows, emotional trends, recent wins/struggles). Use both to tailor your tone, pacing, and examples. If the student is weak in Physics, lead with simpler analogies. If they have a short attention span, keep responses under 150 words unless asked for depth.
 3. **Visual Thinking:** For STEM topics, describe concepts visually. Use whiteboard-style logic.
 4. **STEM Mastery:** Use the "Solve" methodology: Concept, Step-by-Step, Verification.
 
@@ -94,7 +125,14 @@ export function AIStudyBuddy({
   const [isRecording, setIsRecording] = useState(false);
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [activeRoadmap, setActiveRoadmap] = useState<ActiveRoadmap | null>(null);
+  const [studentRoadmaps, setStudentRoadmaps] = useState<ActiveRoadmap[]>([]);
+  const [activePrescription, setActivePrescription] = useState<ActivePrescription | null>(null);
+  const [activeSprint, setActiveSprint] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showMemorySnapshot, setShowMemorySnapshot] = useState(false);
   const [notes, setNotes] = useState<string>('');
+  const [showTestUploader, setShowTestUploader] = useState(false);
 
   // Sync internal notes with external props if provided
   useEffect(() => {
@@ -210,34 +248,88 @@ export function AIStudyBuddy({
 
 
   const getCurrentStudyContext = () => {
-    if (isolateContext || !selectedPlan) return '';
+    if (isolateContext) return '';
+
+    let contextString = `SYSTEM PERSONA: You are "ATLAS", the student's AI neural mentor and partner. You are supportive, friendly, and authoritative when needed. You manage the student's academic roadmap, daily prescriptions, homework, and test preparation. You evaluate mock tests and give feedback.\n\nCurrent Study Context:\n`;
+
+    if (activeRoadmap) {
+      contextString += `- Enrolled Program: ${activeRoadmap.institute_name} (${activeRoadmap.program}, Week ${activeRoadmap.current_week})\n`;
+    }
+    
+    if (activeSprint) {
+      contextString += `- **CURRENT STATUS**: Student is currently in a Correction Sprint following a mock test. Sprint Name: ${activeSprint.sprint_name}. Post-test mode is ACTIVE. Prioritize resolving the weak topics from the sprint over generic progression.\n`;
+    }
+
+    if (activePrescription && activePrescription.tasks?.length > 0) {
+      const completed = activePrescription.tasks.filter((t: any) => t.completed).length;
+      const total = activePrescription.tasks.length;
+      contextString += `- Today's Prescription (${completed}/${total} done): ${activePrescription.tasks.map(t => `${t.type} on ${t.title || t.topic} (${t.estimated_minutes || t.duration_min}m)`).join(', ')}\n`;
+    }
+
+    // Inject behavioral profile for deeply personalized mentoring
+    if (userProfile) {
+      contextString += `\n--- STUDENT BEHAVIORAL PROFILE (What Atlas Knows) ---\n`;
+      if (userProfile.study_patterns) {
+        const p = userProfile.study_patterns;
+        contextString += `- Study Patterns: Peak focus ${p.peak_focus_time || 'unknown'}, avg session ${p.avg_session_min || '?'} min, preferred style ${p.preferred_learning_style || 'balanced'}`;
+        if (p.consistency_score !== undefined) contextString += `, consistency ${Math.round(p.consistency_score * 100)}%`;
+        if (p.engagement_trend) contextString += `, trend: ${p.engagement_trend}`;
+        contextString += `\n`;
+      }
+      if (userProfile.subject_affinity) {
+        const a = userProfile.subject_affinity;
+        contextString += `- Subject Affinity: Strongest ${a.strongest_subject || 'N/A'}, weakest ${a.weakest_subject || 'N/A'}`;
+        if (a.topic_mastery) {
+          const mastered = Object.entries(a.topic_mastery).filter(([_, v]) => (v as number) > 0.7).map(([k]) => k).slice(0, 3);
+          if (mastered.length) contextString += `, mastered topics: ${mastered.join(', ')}`;
+        }
+        contextString += `\n`;
+      }
+      if (userProfile.focus_fatigue) {
+        const f = userProfile.focus_fatigue;
+        contextString += `- Focus & Fatigue: Attention span ~${f.attention_span_min || '?'} min, fatigue threshold ~${f.fatigue_threshold_min || '?'} min`;
+        if (f.optimal_break_interval) contextString += `, break every ${f.optimal_break_interval} min`;
+        if (f.streak_days !== undefined) contextString += `, current streak ${f.streak_days} days`;
+        contextString += `\n`;
+      }
+      if (userProfile.behavioral_signals) {
+        const b = userProfile.behavioral_signals;
+        const signals: string[] = [];
+        if (b.risk_flags?.length) signals.push(`risks: ${b.risk_flags.join(', ')}`);
+        if (b.emotional_trend) signals.push(`mood: ${b.emotional_trend}`);
+        if (b.last_interaction_type) signals.push(`last interaction: ${b.last_interaction_type}`);
+        if (signals.length) contextString += `- Behavioral Signals: ${signals.join('; ')}\n`;
+      }
+      if (userProfile.memory_snapshot) {
+        const m = userProfile.memory_snapshot;
+        if (m.recent_struggles?.length) contextString += `- Recent Struggles: ${m.recent_struggles.slice(0, 3).join(', ')}\n`;
+        if (m.recent_wins?.length) contextString += `- Recent Wins: ${m.recent_wins.slice(0, 3).join(', ')}\n`;
+        if (m.open_loops?.length) contextString += `- Open Loops: ${m.open_loops.slice(0, 3).join(', ')}\n`;
+      }
+      contextString += `---\n\n`;
+    }
 
     const plan = studyPlans.find(p => p.id === selectedPlan);
-    if (!plan) return '';
+    if (plan) {
+      // Determine current study day based on plan created_at; fallback to first day
+      const today = new Date();
+      let dayNumber = 1;
+      if (plan && (plan as any).created_at) {
+        const created = new Date((plan as any).created_at);
+        dayNumber = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        if (dayNumber < 1) dayNumber = 1;
+      }
+      const currentDay = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
 
-    // Determine current study day based on plan created_at; fallback to first day
-    const today = new Date();
-    let dayNumber = 1;
-    if (plan && (plan as any).created_at) {
-      const created = new Date((plan as any).created_at);
-      dayNumber = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      if (dayNumber < 1) dayNumber = 1;
+      contextString += `- Legacy Study Plan: Class ${plan.class}, Subject ${plan.subject}\n`;
+      contextString += `- Today's Topic: ${currentDay?.topic || 'General'}\n`;
+      contextString += `- Chapters in Syllabus: ${plan.chapters}\n`;
     }
-    const currentDay = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
 
-    return `
- SYSTEM PERSONA: You are "ATLAS", the student's AI neural mentor and partner. You are supportive, friendly, and authoritative when needed. You manage the student's one-year academic plan, daily study schedule, homework, and test preparation. You check for backlogs and offer to reschedule if the student missed days. You evaluate their mock tests and give feedback.
+    if (notes) contextString += `- Personal Notes & School Context: ${notes}\n`;
+    if (homework) contextString += `- Today's Homework context: ${homework}\n`;
 
- Current Study Context:
- - Student Class: ${plan.class}
- - Subject: ${plan.subject}
- - Today's Topic: ${currentDay?.topic || 'General'}
- - Study Description: ${currentDay?.description || 'No specific description'}
- - Chapters in Syllabus: ${plan.chapters}
- - Exam Date: ${plan.exam_date || 'Not set'}
- ${notes ? `- Personal Notes & School Context: ${notes}` : ''}
- ${homework ? `- Today's Homework context: ${homework}` : ''}
- `;
+    return contextString;
   };
 
   const toggleVapiSession = async (initialMessage?: string) => {
@@ -319,12 +411,79 @@ export function AIStudyBuddy({
         .order('created_at', { ascending: false });
       if (error) throw error;
       setStudyPlans(data || []);
+
+      // Fetch all student roadmaps + active one
+      const { data: allRoadmaps } = await supabase
+        .from('student_roadmaps')
+        .select('id, institute_name, program, current_week, is_active')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      const rmList = (allRoadmaps || []).map(r => ({ id: r.id, institute_name: r.institute_name, program: r.program, current_week: r.current_week }));
+      setStudentRoadmaps(rmList);
+      const activeRm = (allRoadmaps || []).find(r => r.is_active);
+      if (activeRm) {
+        setActiveRoadmap({ id: activeRm.id, institute_name: activeRm.institute_name, program: activeRm.program, current_week: activeRm.current_week });
+        // fetch today's prescription
+        const todayStr = new Date().toISOString().split('T')[0];
+        const { data: presData } = await supabase
+           .from('daily_prescriptions')
+           .select('id, tasks, implementation_intentions, total_estimated_minutes')
+           .eq('roadmap_id', activeRm.id)
+           .eq('prescription_date', todayStr)
+           .maybeSingle();   
+        if (presData) {
+           setActivePrescription(presData);
+        }
+        
+        // Also fetch any active correction sprints
+        const { data: sprintData } = await supabase
+           .from('correction_sprints')
+           .select('*')
+           .eq('roadmap_id', activeRm.id)
+           .eq('user_id', session.user.id)
+           .eq('status', 'active')
+           .order('created_at', { ascending: false })
+           .limit(1)
+           .maybeSingle();
+        if (sprintData) {
+           setActiveSprint(sprintData);
+        }
+      }
+      
+      // Fetch behavioral profile for memory transparency
+      const { data: profile } = await supabase
+         .from('student_behavioral_profiles')
+         .select('*')
+         .eq('user_id', session.user.id)
+         .maybeSingle();
+      if (profile) setUserProfile(profile);
+
     } catch (error) {
-      console.error('Error fetching study plans:', error);
+      console.error('Error fetching study plans/roadmaps:', error);
     }
   };
 
   // (fetch triggered below on session.user.id change)
+
+  // Switch active curriculum/roadmap
+  const switchRoadmap = async (roadmapId: string) => {
+    if (!session?.user?.id) return;
+    try {
+      setIsLoading(true);
+      // Deactivate all, then activate selected
+      await supabase.from('student_roadmaps').update({ is_active: false }).eq('user_id', session.user.id);
+      await supabase.from('student_roadmaps').update({ is_active: true }).eq('id', roadmapId);
+      await refreshStudyPlans();
+      const selected = studentRoadmaps.find(r => r.id === roadmapId);
+      if (selected) {
+        addAssistant(`Switched to **${selected.institute_name}** (${selected.program}, Week ${selected.current_week}). Ready when you are! 💪`);
+      }
+    } catch (e) {
+      showToast('Failed to switch curriculum', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Skills engine (plugin-style flows)
   const skillsEngine = useChatSkills({
@@ -735,18 +894,18 @@ export function AIStudyBuddy({
   }, []);
 
   const getWelcomeText = () => {
-    const defaultText = `👋 Hello! I am **ATLAS**, your AI Neural Mentor and Learning Partner.
+    if (activePrescription && activePrescription.tasks?.length > 0) {
+      const firstTask = activePrescription.tasks[0];
+      return `Hey! I'm **Atlas**, your mentor.\n\nI see you have an active study prescription for today. Your first task is **${firstTask.title || firstTask.topic || firstTask.type.replace('_', ' ')}**. Shall we get started?`;
+    }
     
-**How was your day? What are we mastering today?**
+    if (activeRoadmap) {
+      return `Hey! I'm **Atlas**, your mentor.\n\nYou are synced to the **${activeRoadmap.institute_name}** curriculum (Week ${activeRoadmap.current_week}). Did you have class today? Say "Log my class" if you'd like to generate tonight's prescription!`;
+    }
 
-I am here to support you in your entire academic journey, from daily planning to board exams.
-
-I already know your class, syllabus, and exam dates from your plan. I can help you with:
-- 📅 **Daily Study Plans**: tailored to your schedule
-- 📝 **Homework & Tests**: I'll evaluate your mock tests and help with homework
-- 🔄 **Backlogs**: Missed a few days? No problem, I'll update your plan.
-
-What shall we tackle today?`;
+    const plan = studyPlans.find(p => p.id === selectedPlan);
+    const subjectHint = plan ? ` Your **${plan.subject}** plan is active.` : '';
+    const defaultText = `Hey! I'm **Atlas**, your study mentor.${subjectHint}\n\nWhat would you like to work on today?`;
     return welcomeContent || defaultText;
   };
 
@@ -877,10 +1036,71 @@ What shall we tackle today?`;
     return () => window.removeEventListener('trigger-atlas-reschedule', handler);
   }, [studyPlans, selectedPlan]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // NOTE: Auto-scroll is handled inside MessageList (it owns the scroll container)
+  // to avoid scrollIntoView fighting with flex layout and moving the input bar.
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // PROACTIVE BACKLOG DETECTION
+  // On load, compare the student's plan schedule vs. their actual completions.
+  // If they've missed days, Atlas will automatically inform them.
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const [backlogChecked, setBacklogChecked] = useState(false);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (backlogChecked || !selectedPlan || !session?.user?.id || studyPlans.length === 0) return;
+    const plan = studyPlans.find(p => p.id === selectedPlan);
+    if (!plan || !plan.created_at) return;
+
+    const checkBacklog = async () => {
+      try {
+        const created = new Date(plan.created_at!);
+        const dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        if (dayNumber <= 1) { setBacklogChecked(true); return; }
+
+        // Check how many days were completed
+        const { data, error } = await supabase
+          .from('task_completions')
+          .select('day_number')
+          .eq('user_id', session.user.id)
+          .eq('plan_id', plan.id);
+
+        if (error) { setBacklogChecked(true); return; }
+
+        const completedDays = new Set((data || []).map(d => d.day_number));
+        // Count how many expected days are missing (from day 1 to yesterday)
+        let missedDays = 0;
+        const yesterday = dayNumber - 1;
+        for (let d = 1; d <= yesterday; d++) {
+          if (!completedDays.has(d)) missedDays++;
+        }
+
+        if (missedDays > 0) {
+          // Get today's topic from the schedule
+          const todayEntry = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
+
+          const backlogMessage: Message = {
+            id: 'backlog-alert-' + Date.now(),
+            content: `⚡ **Hey, I noticed you missed ${missedDays} day${missedDays > 1 ? 's' : ''} in your ${plan.subject} plan.**\n\nDon't worry — that's completely normal. I can **automatically reschedule** your remaining curriculum to keep you on track.\n\nFor now, let's pick up with **${todayEntry?.topic || 'today\'s topic'}**.\n\nJust say **"Reschedule my plan"** and I'll handle it, or we can dive right into studying. What would you prefer?`,
+            role: 'assistant',
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => {
+            // Only inject if there's no existing backlog alert
+            if (prev.some(m => m.id.startsWith('backlog-alert-'))) return prev;
+            return [...prev, backlogMessage];
+          });
+        }
+        setBacklogChecked(true);
+      } catch (e) {
+        console.error('Backlog detection failed:', e);
+        setBacklogChecked(true);
+      }
+    };
+
+    // Small delay to let the welcome message render first
+    const timer = setTimeout(checkBacklog, 1500);
+    return () => clearTimeout(timer);
+  }, [selectedPlan, session?.user?.id, studyPlans, backlogChecked]);
 
 
 
@@ -1071,32 +1291,72 @@ What shall we tackle today?`;
         return;
       }
 
-      let context = getCurrentStudyContext();
-      if (!context || context.trim() === '') {
-        context = 'General study context.';
+      // [PHASE 4]: Local Escalation Sentiment Check
+      const escalationWords = ["can't do this", "give up", "too hard", "depressed", "failing everything", "i quit", "burnout", "burnt out", "overwhelmed"];
+      const isDistress = escalationWords.some(w => finalContent.toLowerCase().includes(w));
+      
+      let finalContext = getCurrentStudyContext();
+      if (!finalContext || finalContext.trim() === '') {
+        finalContext = 'General study context.';
       }
-      const convHistory = buildConversationContext(newMessageList);
-      // Removed unused subject/class bindings
-      const finalContext = [context, extraContext, convHistory].filter(Boolean).join('\n\n');
 
-      const fullPrompt = `${finalContext}\n\nStudent Question: ${finalContent}`;
+      if (isDistress) {
+         // Push a system interruption before Atlas replies
+         const systemAlert: Message = { 
+           id: `sys-${Date.now()}`, 
+           content: "⚠️ **ACADEMIC HEALTH ALERT**: Atlas has flagged heightened distress. Escaping standard syllabus flow and entering 'Counselor/Reset Mode'.", 
+           role: 'assistant', 
+           isSystemAlert: true,
+           timestamp: new Date() 
+         };
+         setMessages(prev => [...prev, systemAlert]);
+         
+         // Update context to force empathetic mentor
+         finalContext += `\n\n[EMERGENCY DIRECTIVE]: The student has expressed strong burnout or distress. STOP academic pushing. Shift immediately to a highly empathetic counselor persona. Acknowledge their feelings, suggest a lightweight reset, and do NOT give new homework or rigorous tasks until they recover.`;
+         
+         // Optimistically update DB
+         if (session?.user?.id) {
+           supabase.from('student_behavioral_profiles').upsert({ user_id: session.user.id, escalation_level: 'high' }, { onConflict: 'user_id' }).then();
+         }
+      }
 
-      // Use AIService directly to avoid 500 errors from unconfigured edge function
-      const responseText = await AIService.getInstance().generateChatCompletion(
-        fullPrompt,
-        ATLAS_SYSTEM_PROMPT
+      // Convert local message array to the format expected by the edge function
+      // (Just taking the last 10 messages for context)
+      const formattedHistory = newMessageList.slice(-10).filter(m => m.id !== userMessage.id).map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      // Call the NDCF Empathetic Edge Function
+      const { response: responseText, emotion_detected, pedagogical_mode } = await AIService.getInstance().generateEmpatheticChat(
+        finalContent,
+        session?.user?.id ? `${session.user.id}_${Date.now().toString().slice(0,6)}` : 'guest_session', 
+        formattedHistory,
+        finalContext + (extraContext ? `\n\n${extraContext}` : ''),
+        true // Enable full multi-agent orchestration
       );
 
+      // Extract Agentic Navigation Commands for the OS layer
+      let finalCleanResponse = responseText;
+      let navigateAction: string | null = null;
+      
+      const actionMatch = finalCleanResponse.match(/\[ACTION:NAVIGATE_([A-Z_]+)\]/);
+      if (actionMatch) {
+        navigateAction = actionMatch[1];
+        finalCleanResponse = finalCleanResponse.replace(actionMatch[0], '').trim();
+      }
+
       // Check for "Journal Sync" signal from ATLAS
-      if (responseText.includes("### JOURNAL_APPEND:")) {
-        const noteToAppend = responseText.split("### JOURNAL_APPEND:")[1].trim();
+      if (finalCleanResponse.includes("### JOURNAL_APPEND:")) {
+        const noteToAppend = finalCleanResponse.split("### JOURNAL_APPEND:")[1].trim();
         // Dispatch custom event to Atlas workspace
         window.dispatchEvent(new CustomEvent('append-study-note', { detail: noteToAppend }));
+        finalCleanResponse = finalCleanResponse.split("### JOURNAL_APPEND:")[0].trim();
       }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: responseText,
+        content: finalCleanResponse,
         role: 'assistant',
         timestamp: new Date(),
         subject: studyPlans.find(p => p.id === selectedPlan)?.subject,
@@ -1114,6 +1374,18 @@ What shall we tackle today?`;
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Execute the workspace transition after rendering the message
+      if (navigateAction) {
+        setTimeout(() => {
+            try {
+                if (navigateAction === 'VIDEOS') window.location.assign('/videos');
+                else if (navigateAction === 'TEST' || navigateAction === 'PRACTICE') window.location.assign('/sat-simulator');
+                else if (navigateAction === 'ATLAS') window.location.assign('/atlas');
+                else if (navigateAction === 'PLANS') window.location.assign('/plans');
+            } catch(e) {}
+        }, 1200);
+      }
 
     } catch (error) {
 
@@ -1210,9 +1482,43 @@ What shall we tackle today?`;
   };
 
   const getSuggestedQuestions = () => {
+    // Roadmap-aware suggestions first
+    if (activeSprint) {
+      const firstTopic = activeSprint.sprint_tasks?.[0]?.topic || 'my first weak topic';
+      return [
+        `Walk me through ${firstTopic} step by step`,
+        `Why did I get ${firstTopic} wrong on the test?`,
+        `Give me 3 practice questions on ${firstTopic}`,
+        `Explain the concept behind ${firstTopic} like I'm in Class 8`,
+        `What are common mistakes in ${firstTopic}?`,
+      ];
+    }
+    if (activePrescription && activePrescription.tasks?.length > 0) {
+      const incomplete = activePrescription.tasks.filter((t: any) => !t.completed);
+      const nextTask = incomplete[0];
+      if (nextTask) {
+        return [
+          `Help me start ${nextTask.type} on ${nextTask.title || nextTask.topic}`,
+          `Explain ${nextTask.title || nextTask.topic} — I have ${nextTask.estimated_minutes || nextTask.duration_min} min`,
+          `Quiz me on ${nextTask.title || nextTask.topic} before I attempt it`,
+          `Break down ${nextTask.title || nextTask.topic} into smaller chunks`,
+          `What prerequisites do I need for ${nextTask.title || nextTask.topic}?`,
+        ];
+      }
+    }
+    if (activeRoadmap) {
+      return [
+        `What should I focus on in Week ${activeRoadmap.current_week}?`,
+        `Give me 5 JEE-level problems for this week`,
+        `Log my class session for today`,
+        `When is my next scheduled test?`,
+        `Summarize the key concepts from Week ${activeRoadmap.current_week}`,
+      ];
+    }
+
+    // Legacy plan fallback
     const plan = studyPlans.find(p => p.id === selectedPlan);
     if (!plan) return [];
-
     let dayNumber = 1;
     if (plan.created_at) {
       const created = new Date(plan.created_at);
@@ -1220,7 +1526,6 @@ What shall we tackle today?`;
       if (dayNumber < 1) dayNumber = 1;
     }
     const todaysTopic = (plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0])?.topic || "today's topic";
-
     return [
       `Explain ${plan.subject} concepts in simple terms`,
       `Help me understand ${todaysTopic}`,
@@ -1228,7 +1533,6 @@ What shall we tackle today?`;
       `What are the key points to remember for ${plan.chapters.split(',')[0]?.trim()}`,
       `Give me a quick 3-question quiz on ${todaysTopic}`,
       `Summarize ${todaysTopic} in 5 bullet points`,
-      `Based on my plan, suggest a reshuffled focus for the next 7 days`
     ];
   };
 
@@ -1244,8 +1548,25 @@ What shall we tackle today?`;
     }
   };
 
+  // Determine if we're in the "fresh canvas" state (no real conversation yet)
+  const isEmptyState = messages.length === 0;
+
+  // Build today's context for suggestions
+  const getSuggestionContext = () => {
+    const plan = studyPlans.find(p => p.id === selectedPlan);
+    if (!plan) return { topic: "today's topic", subject: 'your subject' };
+    let dayNumber = 1;
+    if (plan.created_at) {
+      const created = new Date(plan.created_at);
+      dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (dayNumber < 1) dayNumber = 1;
+    }
+    const topic = (plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0])?.topic || "today's topic";
+    return { topic, subject: plan.subject };
+  };
+
   return (
-    <div className="flex flex-col h-full bg-slate-950 overflow-hidden border-r-4 border-white/10 relative">
+    <div className="flex flex-col h-full bg-[#FAF8F5] overflow-hidden relative font-sans">
 
       {/* Voice HUD Overlay */}
       <VoiceVisualizer
@@ -1257,247 +1578,150 @@ What shall we tackle today?`;
           setVoiceConversationActive(false);
         }}
       />
+      
+      {/* Memory Snapshot Modal */}
+      {showMemorySnapshot && (
+        <MemorySnapshot
+          initialProfile={userProfile}
+          onClose={() => setShowMemorySnapshot(false)}
+        />
+      )}
 
-      {/* Header */}
-      <Header
-        title={title}
-        subtitle={subtitle}
-        onClear={clearChat}
-        variant={variant}
-        isVoiceActive={voiceConversationActive}
-        onToggleVoice={toggleVapiSession}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Skills Sidebar */}
-        <div className="w-[300px] bg-slate-900/50 border-r border-white/5 overflow-y-auto hidden lg:block custom-scrollbar">
-          <SkillLauncher
-            onStartSkill={(id) => skillsEngine.startSkill(id)}
-            activeSkillId={skillsEngine.activeSkillId}
-          />
-        </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
-          {/* Memory: Notes + Study Plan Selector */}
-          {!isMentor && studyPlans.length > 0 && (
-            <ContextPanel
-              notes={notes}
-              setNotes={setNotes}
-              saveNotes={saveNotes}
-              homework={homework}
-              setHomework={saveHomeworkLocal}
-              selectedPlan={selectedPlan}
-              setSelectedPlan={setSelectedPlan}
-              studyPlans={studyPlans}
-              showContext={showContext}
-              setShowContext={setShowContext}
-            />
-          )}
-
-          {/* Today's Plan Summary and Quick Actions */}
-          {!hideMissionControl && storageNamespace !== 'atlas_core' && selectedPlan && (() => {
-            const plan = studyPlans.find(p => p.id === selectedPlan);
-            let dayNumber = 1;
-            if (plan?.created_at) {
-              const created = new Date(plan.created_at);
-              dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-              if (dayNumber < 1) dayNumber = 1;
-            }
-            const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
-            return (
-              <div className="mx-4 mt-6 bg-slate-800 border border-white/10 p-5 shadow-neo sticky top-0 z-20" data-tour="ranjan-today-panel">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-neo-accent border border-white/10 -rotate-6">
-                      <Brain className="h-5 w-5 text-white" strokeWidth={3} />
-                    </div>
-                    <h3 className="text-lg font-black uppercase tracking-tighter italic">TODAY'S MISSION</h3>
-                  </div>
-                  <button
-                    onClick={() => setShowTodayMission(!showTodayMission)}
-                    className="p-1 border border-white/10 hover:bg-slate-900/50 transition-colors"
-                    title={showTodayMission ? "Collapse" : "Expand"}
-                  >
-                    {showTodayMission ? (
-                      <ChevronUp className="h-4 w-4 stroke-[3px]" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 stroke-[3px]" />
-                    )}
-                  </button>
-                </div>
-
-                {showTodayMission && (
-                  <>
-                    <div className="space-y-3 mb-6">
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-neo-secondary border border-white/10 font-black uppercase text-[10px] tracking-widest">{plan?.subject}</span>
-                        <span className="px-3 py-1 bg-neo-muted border border-white/10 font-black uppercase text-[10px] tracking-widest text-slate-100">CLASS {plan?.class}</span>
-                      </div>
-                      <div className="p-3 bg-slate-900 border border-white/10">
-                        <p className="text-xs font-black uppercase tracking-tight mb-1 text-slate-100/40">TOPIC</p>
-                        <p className="text-md font-black uppercase tracking-tight italic">{today?.topic || 'GENERAL STUDY'}</p>
-                      </div>
-                      <p className="text-xs font-bold text-slate-100/70 leading-snug">{today?.description || 'No specific description'}</p>
-                    </div>
-
-                    <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
-                      <div className="inline-flex gap-3 pb-2">
-                        {[
-                          { label: "EXPLAIN TOPIC", tour: "atlas-explain", color: "bg-slate-800", text: `Explain ${today?.topic || 'today\'s topic'} in simple steps with a tiny example.` },
-                          { label: "FEYNMAN TUTOR", tour: "atlas-feynman", color: "bg-neo-accent text-white", text: `ATLAS, let's do a Feynman session on ${today?.topic || 'today\'s topic'}. Ask me to explain it simply and test my gaps.` },
-                          { label: "STEM SOLVER", tour: "atlas-solve", color: "bg-slate-800", text: `I have a tough problem/concept in ${plan?.subject}. Can you help me solve it using the Feynman step-by-step method?` },
-                          { label: "5 PRACTICES", tour: "atlas-practice", color: "bg-slate-800", text: `Give me 5 practice questions on ${today?.topic || 'today\'s topic'} with brief hints. Solutions on demand.` },
-                          { label: "DAILY MOCK TEST", tour: "atlas-quiz", color: "bg-slate-800", text: `Evaluate me. Give me a daily mock test on ${today?.topic || 'today\'s topic'} with 3 challenging questions. Grade my answers.` },
-                          { label: "5-BULLET SUMMARY", tour: "atlas-summary", color: "bg-slate-800", text: `Summarize ${today?.topic || 'today\'s topic'} in 5 bullet points for quick revision.` },
-                        ].map((btn) => (
-                          <button
-                            key={btn.label}
-                            onClick={() => sendMessage(btn.text)}
-                            className={`text-[10px] font-black uppercase tracking-widest ${btn.color} border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap`}
-                            data-tour={btn.tour}
-                          >
-                            {btn.label}
-                          </button>
-                        ))}
-
-                        <button
-                          onClick={() => skillsEngine.startSkill('dailyStudy')}
-                          className="text-[10px] font-black uppercase tracking-widest bg-neo-accent text-white border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
-                          data-tour="ranjan-start-study"
-                        >
-                          START STUDY
-                        </button>
-
-                        <button
-                          onClick={() => skillsEngine.startSkill('rescheduler')}
-                          className="text-[10px] font-black uppercase tracking-widest bg-neo-secondary border border-white/10 px-4 py-2 shadow-neo active:shadow-none active:translate-x-[2px] active:translate-y-[2px] transition-all whitespace-nowrap"
-                          data-tour="ranjan-rescheduler"
-                        >
-                          RESCHEDULE
-                        </button>
-
-                        <button
-                          onClick={toggleTodayCompletion}
-                          disabled={isTogglingCompletion}
-                          className={`text-[9px] font-black uppercase tracking-widest ${isTodayCompleted ? 'bg-neo-secondary text-slate-100' : 'bg-neo-muted text-slate-100'} border border-white/10 px-3 py-1.5 shadow-neo active:shadow-none active:translate-x-[1px] active:translate-y-[1px] transition-all whitespace-nowrap`}
-                          data-tour="ranjan-mark-done"
-                        >
-                          {isTodayCompleted ? '✓ COMPLETED' : 'MARK DONE'}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            )
-          })()}
-
-          {/* Mentor: lightweight quick chip for Reschedule */}
-          {!hideMissionControl && isMentor && selectedPlan !== '' && (() => {
-            const plan = studyPlans.find(p => p.id === selectedPlan);
-            let dayNumber = 1;
-            if (plan?.created_at) {
-              const created = new Date(plan.created_at);
-              dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-              if (dayNumber < 1) dayNumber = 1;
-            }
-            const today = (plan?.plan?.daily_schedule?.find(d => d.day === dayNumber) || plan?.plan?.daily_schedule?.[0]);
-            return (
-              <div className="px-4 pt-4 pb-2">
-                <div className="flex flex-wrap items-center gap-3 bg-slate-800 border border-white/10 p-3 shadow-neo">
-                  <div className="text-[10px] font-black uppercase tracking-tight">
-                    <span className="text-slate-100/40">TODAY:</span> {today?.topic || 'GENERAL'}
-                  </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <select
-                      value={selectedPlan}
-                      onChange={(e) => setSelectedPlan(e.target.value)}
-                      className="text-[9px] font-black uppercase bg-slate-900 border border-white/10 px-2 py-1 focus:outline-none"
-                      data-tour="ranjan-plan-select"
-                    >
-                      {studyPlans.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.subject} - CLASS {p.class}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      className="px-3 py-1 bg-neo-accent text-white border border-white/10 shadow-neo active:shadow-none active:translate-x-[0.5px] active:translate-y-[0.5px] text-[9px] font-black uppercase"
-                      onClick={() => {
-                        const plan = studyPlans.find(p => p.id === selectedPlan);
-                        if (plan) {
-                          setFlow({ name: 'reschedule', step: 0, data: { planId: plan.id } });
-                          addAssistant(`I see you want to reschedule your plan for **${plan.subject}**. \n\nHow many days have you missed? (e.g., "2 days")`);
-                        }
-                      }}
-                      data-tour="ranjan-quick-reschedule"
-                    >
-                      RESCHEDULE
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Messages */}
-          <MessageList
-            messages={messages}
-            isLoading={isLoading}
-            isMentor={isMentor}
-            title={title}
-            messagesEndRef={messagesEndRef}
-            formatTime={formatTime}
-          />
-
-          {/* One-off Progress Panel (rendered only when requested) */}
-          {progressPanel.visible && (
-            <div className="px-4 pb-2">
-              <div className="glass-card border border-white/10 rounded-xl p-4 backdrop-blur-md">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-white">Last 7 Days Progress</h3>
-                  <button
-                    className="text-xs text-gray-400 hover:text-white"
-                    onClick={() => setProgressPanel({ visible: false, loading: false, data: [] })}
-                  >
-                    Dismiss
-                  </button>
-                </div>
-                {progressPanel.loading ? (
-                  <div className="text-sm text-gray-400">Loading...</div>
-                ) : (
-                  <div className="space-y-2">
-                    {progressPanel.data.length === 0 && (
-                      <div className="text-sm text-gray-400">No data available.</div>
-                    )}
-                    {progressPanel.data.map((d, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <div className="w-24 text-xs text-gray-400">{d.date.slice(5)}</div>
-                        <div className="flex-1 bg-slate-800/5 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="h-2 bg-gradient-to-r from-neon-blue to-blue-500"
-                            style={{ width: `${(d.count / Math.max(1, ...progressPanel.data.map(x => x.count))) * 100}%` }}
-                          />
-                        </div>
-                        <div className="w-8 text-xs text-gray-300 text-right">{d.count}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+      {/* ──────────────────────────────────────────── */}
+      {/* EMPTY STATE: The Mentor's Welcome Canvas    */}
+      {/* Vertically + horizontally centered, like    */}
+      {/* ChatGPT / Manus empty state                 */}
+      {/* ──────────────────────────────────────────── */}
+      {isEmptyState ? (
+        <div className="flex-1 flex flex-col">
+          {/* Centered greeting area */}
+          <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-16">
+            {/* Subtle avatar */}
+            <div className="w-12 h-12 rounded-2xl bg-[#2D2A26] flex items-center justify-center mb-6 shadow-sm">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+              </svg>
             </div>
-          )}
 
-          {/* Suggested Questions */}
-          {!isMentor && selectedPlan && messages.length <= 1 && (
-            <SuggestedQuestions
-              questions={getSuggestedQuestions()}
-              onSelect={sendMessage}
-            />
-          )}
+            <h1 className="text-3xl md:text-4xl font-medium text-[#2D2A26] tracking-tight text-center mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              What shall we work on?
+            </h1>
+            <p className="text-sm text-[#8A8279] text-center max-w-md mb-10">
+              {(() => {
+                if (activeRoadmap && !activePrescription) return `Synced to ${activeRoadmap.institute_name} (Week ${activeRoadmap.current_week}). Log class to get daily prescriptions.`;
+                if (activePrescription) return `Tonight's AI-generated study prescription based on your roadmap and classes.`;
+                const plan = studyPlans.find(p => p.id === selectedPlan);
+                if (plan) return `Your ${plan.subject} plan is active. I know your syllabus, progress, and weak areas.`;
+                return "I'm Atlas, your JEE mentor. I track your curriculum, test you, and reschedule when you fall behind.";
+              })()}
+            </p>
 
-          {/* Input */}
+            {/* Dashboard / Suggestion cards / Upload UI */}
+            {(() => {
+               if (showTestUploader && activeRoadmap) {
+                 return (
+                   <TestResultUploader 
+                     roadmapId={activeRoadmap.id}
+                     onAnalysisComplete={(res, sprint) => {
+                       setShowTestUploader(false);
+                       setActiveSprint(sprint);
+                       addAssistant(`Excellent, I've analyzed your test results. Your main bottlenecks are: \n\n${res.weak_topics.map((t: any) => `- **${t.topic}**`).join('\n')}\n\nI have generated a Correction Sprint mapping our exact steps to fix these. Are you ready to start?`);
+                     }}
+                     onCancel={() => setShowTestUploader(false)}
+                   />
+                 );
+               }
+               if (activeSprint) {
+                 return (
+                   <div className="w-full max-w-2xl mx-auto space-y-4 px-4 bg-[#F5F0E8]/50 p-6 rounded-2xl border border-[#E8E2D9]/50">
+                     <h3 className="font-bold text-[#2D2A26] text-center">Correction Sprint: {activeSprint.sprint_name}</h3>
+                     <p className="text-sm text-center text-[#8A8279] mb-4 cursor-pointer hover:underline" onClick={() => sendMessage("Show me my correction sprint tasks")}>
+                       You are currently in Post-Test Correction Mode. We are pausing normal progression to fix test bottlenecks.
+                     </p>
+                     <div className="grid grid-cols-2 gap-3">
+                       <button onClick={() => sendMessage(`I'm ready. Let's tackle the first weak topic from my sprint: ${activeSprint.sprint_tasks?.[0]?.topic || ''}`)} className="p-3 bg-white border border-[#E8E2D9] rounded-xl text-center hover:shadow-md transition-shadow text-[#8B7355] text-sm font-semibold">
+                         Start Sprint Session
+                       </button>
+                       <button onClick={() => { setActiveSprint(null); supabase.from('correction_sprints').update({status:'completed'}).eq('id', activeSprint.id); }} className="p-3 bg-white border border-[#E8E2D9] rounded-xl text-center hover:bg-[#F5F0E8] transition-colors text-[#8A8279] text-sm font-medium">
+                         Mark Sprint Complete
+                       </button>
+                     </div>
+                   </div>
+                 );
+               }
+               if (activePrescription) {
+                 return (
+                   <DailyPrescriptionDashboard 
+                     prescriptionId={activePrescription.id}
+                     tasks={activePrescription.tasks}
+                     intentions={activePrescription.implementation_intentions}
+                     totalMinutes={activePrescription.total_estimated_minutes}
+                     onSendMessage={sendMessage}
+                     onTasksUpdated={(newTasks, newIntentions) => {
+                       setActivePrescription({ ...activePrescription, tasks: newTasks, implementation_intentions: newIntentions });
+                     }}
+                   />
+                 );
+               }
+               else if (activeRoadmap) {
+                 const cards = [
+                   { icon: '📝', label: 'Log today\'s classes', prompt: `Log my class session for today so we can generate the prescription` },
+                   { icon: '📅', label: 'View Roadmap', prompt: `What is coming up next week in the ${activeRoadmap.institute_name} schedule?` },
+                   { icon: '✍️', label: 'Practice problems', prompt: `Give me 5 JEE-level practice problems related to the current week` },
+                   { icon: '🎯', label: 'Upload test result', action: () => setShowTestUploader(true) },
+                 ];
+                 return (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
+                     {cards.map((card, i) => (
+                       <button
+                         key={i}
+                         onClick={() => card.action ? card.action() : sendMessage(card.prompt!)}
+                         className="flex items-start gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl text-left hover:border-[#8B7355]/30 hover:shadow-sm transition-all group"
+                       >
+                         <span className="text-lg mt-0.5">{card.icon}</span>
+                         <span className="text-[13px] font-medium text-[#8A8279] leading-snug group-hover:text-[#2D2A26]">{card.label}</span>
+                       </button>
+                     ))}
+
+                     {/* Memory Snapshot Card */}
+                     <button
+                         onClick={() => setShowMemorySnapshot(true)}
+                         className="flex items-start gap-3 p-4 bg-[#F5F0E8]/50 border border-[#E8E2D9] rounded-2xl text-left hover:border-[#8B7355]/30 hover:shadow-sm transition-all group col-span-1 md:col-span-2"
+                     >
+                         <span className="text-lg mt-0.5">🧠</span>
+                         <span className="text-[13px] font-medium text-[#8B7355] leading-snug">View what Atlas knows about you (Memory Snapshot)</span>
+                     </button>
+                   </div>
+                 );
+               } 
+               else if (selectedPlan) {
+                 const { topic, subject } = getSuggestionContext();
+                 const cards = [
+                   { icon: '📖', label: 'Explain today\'s topic', prompt: `Explain ${topic} in simple terms with examples` },
+                   { icon: '✍️', label: 'Practice problems', prompt: `Give me 5 JEE-level practice problems on ${topic}` },
+                   { icon: '🧠', label: 'Test my knowledge', prompt: `Quiz me on ${topic} — ask 3 conceptual questions and evaluate my answers` },
+                   { icon: '📅', label: 'Reschedule plan', prompt: `I've missed a few days on ${subject}. Can you reschedule my plan?` },
+                 ];
+                 return (
+                   <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+                     {cards.map((card, i) => (
+                       <button
+                         key={i}
+                         onClick={() => sendMessage(card.prompt)}
+                         className="flex items-start gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl text-left hover:border-[#8B7355]/30 hover:shadow-sm transition-all group"
+                       >
+                         <span className="text-lg mt-0.5">{card.icon}</span>
+                         <span className="text-[13px] font-medium text-[#8A8279] leading-snug group-hover:text-[#2D2A26]">{card.label}</span>
+                       </button>
+                     ))}
+                   </div>
+                 );
+               }
+               return null;
+            })()}
+          </div>
+
+          {/* Input at the bottom */}
           <ChatInput
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
@@ -1512,7 +1736,149 @@ What shall we tackle today?`;
             selectedImage={selectedImage}
           />
         </div>
-      </div>
+      ) : (
+        /* ──────────────────────────────────────────── */
+        /* CONVERSATION STATE: Scrolling messages       */
+        /* ──────────────────────────────────────────── */
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+          {/* Slim Context Awareness Bar */}
+          <div className="shrink-0 px-4 py-2 bg-white border-b border-[#E8E2D9] flex items-center gap-3 overflow-x-auto">
+            {/* Curriculum / Roadmap Selector */}
+            {studentRoadmaps.length > 0 || studyPlans.length > 0 ? (
+              <div className="relative group">
+                <button className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A8279] bg-[#F5F0E8] hover:bg-[#EDE8DE] px-2.5 py-1 rounded-full whitespace-nowrap transition-colors">
+                  {activeRoadmap ? (
+                    <><Target className="w-3 h-3 text-[#8B7355]" /> {activeRoadmap.institute_name} · W{activeRoadmap.current_week}</>
+                  ) : selectedPlan ? (
+                    <><Layers className="w-3 h-3 text-[#8B7355]" /> {studyPlans.find(p => p.id === selectedPlan)?.subject || 'Plan'}</>
+                  ) : (
+                    <><Layers className="w-3 h-3 text-[#B5AEA5]" /> Choose Curriculum</>
+                  )}
+                  <ChevronDown className="w-3 h-3 text-[#B5AEA5]" />
+                </button>
+                {/* Dropdown */}
+                <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-xl border border-[#E8E2D9] shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                  {studentRoadmaps.length > 0 && (
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-[#B5AEA5] uppercase tracking-wider bg-[#F5F0E8]">
+                      Curriculums
+                    </div>
+                  )}
+                  {studentRoadmaps.map((rm) => (
+                    <button
+                      key={rm.id}
+                      onClick={() => switchRoadmap(rm.id)}
+                      className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-[#F5F0E8] flex items-center gap-2 ${activeRoadmap?.id === rm.id ? 'bg-[#8B7355]/5 text-[#8B7355]' : 'text-[#2D2A26]'}`}
+                    >
+                      <Target className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{rm.institute_name} ({rm.program}) · W{rm.current_week}</span>
+                      {activeRoadmap?.id === rm.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#8B7355]" />}
+                    </button>
+                  ))}
+                  {studyPlans.length > 0 && (
+                    <div className="px-3 py-1.5 text-[10px] font-bold text-[#B5AEA5] uppercase tracking-wider bg-[#F5F0E8] border-t border-[#E8E2D9]">
+                      Legacy Plans
+                    </div>
+                  )}
+                  {studyPlans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() => { setSelectedPlan(plan.id); }}
+                      className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-[#F5F0E8] flex items-center gap-2 ${selectedPlan === plan.id ? 'bg-[#8B7355]/5 text-[#8B7355]' : 'text-[#2D2A26]'}`}
+                    >
+                      <Layers className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{plan.subject} — Class {plan.class}</span>
+                      {selectedPlan === plan.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#8B7355]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {activeSprint && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#B87B6B] bg-[#F5F0E8] px-2.5 py-1 rounded-full whitespace-nowrap">
+                <Flame className="w-3 h-3 text-[#B87B6B]" />
+                Sprint: {activeSprint.sprint_name}
+              </div>
+            )}
+            {activePrescription && activePrescription.tasks?.length > 0 && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B8E6B] bg-[#F5F0E8] px-2.5 py-1 rounded-full whitespace-nowrap">
+                <Zap className="w-3 h-3 text-[#6B8E6B]" />
+                {activePrescription.tasks.filter((t: any) => t.completed).length}/{activePrescription.tasks.length} tasks
+              </div>
+            )}
+            {userProfile?.subject_affinity?.strongest_subject && (
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#8A8279] bg-[#F5F0E8] px-2.5 py-1 rounded-full whitespace-nowrap">
+                <Brain className="w-3 h-3 text-[#8A8279]" />
+                Strong: {userProfile.subject_affinity.strongest_subject}
+              </div>
+            )}
+            {/* Quick inline actions */}
+            <div className="flex items-center gap-1.5 ml-auto">
+              <button
+                onClick={() => setShowMemorySnapshot(true)}
+                className="p-1.5 rounded-lg hover:bg-[#F5F0E8] text-[#B5AEA5] hover:text-[#8B7355] transition-colors"
+                title="Memory Snapshot"
+              >
+                <Brain className="w-3.5 h-3.5" />
+              </button>
+              {activeRoadmap && (
+                <>
+                  <button
+                    onClick={() => setShowTestUploader(true)}
+                    className="p-1.5 rounded-lg hover:bg-[#F5F0E8] text-[#B5AEA5] hover:text-[#B87B6B] transition-colors"
+                    title="Upload Test"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => sendMessage("Log my class session for today")}
+                    className="p-1.5 rounded-lg hover:bg-[#F5F0E8] text-[#B5AEA5] hover:text-[#6B8E6B] transition-colors"
+                    title="Log Class"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            isMentor={isMentor}
+            title={title}
+            messagesEndRef={messagesEndRef}
+            formatTime={formatTime}
+          />
+
+          {/* Contextual suggestion chips — persist into conversation */}
+          {getSuggestedQuestions().length > 0 && (
+            <div className="shrink-0 px-4 pt-2 pb-1">
+              <SuggestedQuestions
+                questions={getSuggestedQuestions().slice(0, 4)}
+                onSelect={(q) => sendMessage(q)}
+              />
+            </div>
+          )}
+
+          <div className="shrink-0">
+            <ChatInput
+              inputMessage={inputMessage}
+              setInputMessage={setInputMessage}
+              isLoading={isLoading}
+              isRecording={isRecording}
+              isListening={isListening}
+              isMentor={isMentor}
+              onSubmit={handleSubmit}
+              startVoiceRecording={startVoiceRecording}
+              stopVoiceRecording={stopVoiceRecording}
+              onImageSelect={setSelectedImage}
+              selectedImage={selectedImage}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

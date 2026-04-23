@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles } from 'lucide-react';
+import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { marked } from 'marked';
 
 const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Weaknesses', 'AI Insights', 'Notifications'];
@@ -47,6 +47,65 @@ const TeacherClassDashboard: React.FC = () => {
   const [mockGenError, setMockGenError] = useState('');
   const [mockPreview, setMockPreview] = useState<string>('');
   const [mockSuccessMsg, setMockSuccessMsg] = useState('');
+
+  // Class Session Logger state
+  const [sessionSubject, setSessionSubject] = useState('Physics');
+  const [sessionTopics, setSessionTopics] = useState('');
+  const [sessionHomework, setSessionHomework] = useState('');
+  const [sessionDuration, setSessionDuration] = useState(60);
+  const [loggingSession, setLoggingSession] = useState(false);
+  const [sessionLogError, setSessionLogError] = useState('');
+  const [sessionLogSuccess, setSessionLogSuccess] = useState('');
+
+  const handleLogClassSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !id) return;
+    if (!sessionTopics.trim()) {
+      setSessionLogError('Please enter the topics covered.');
+      return;
+    }
+    setSessionLogError('');
+    setSessionLogSuccess('');
+    setLoggingSession(true);
+    try {
+      const topicsArray = sessionTopics.split(',').map(t => t.trim()).filter(Boolean);
+      const { data: members } = await supabase.from('class_members').select('student_id').eq('class_id', id);
+      const studentIds = (members || []).map((m: any) => m.student_id).filter(Boolean);
+      if (studentIds.length === 0) {
+        setSessionLogError('No students enrolled in this class.');
+        setLoggingSession(false);
+        return;
+      }
+      const { data: roadmaps } = await supabase
+        .from('student_roadmaps')
+        .select('id, user_id')
+        .in('user_id', studentIds)
+        .eq('is_active', true);
+      const roadmapRows = (roadmaps || []).map((r: any) => ({
+        roadmap_id: r.id,
+        teacher_id: user.id,
+        session_date: new Date().toISOString().split('T')[0],
+        subject: sessionSubject,
+        topics_covered: topicsArray,
+        homework_assigned: sessionHomework || null,
+        duration_minutes: sessionDuration,
+      }));
+      if (roadmapRows.length === 0) {
+        setSessionLogError('No students have an active study roadmap. Ask them to complete onboarding first.');
+        setLoggingSession(false);
+        return;
+      }
+      const { error } = await supabase.from('class_sessions').insert(roadmapRows);
+      if (error) throw error;
+      setSessionLogSuccess(`Class logged for ${roadmapRows.length} student${roadmapRows.length > 1 ? 's' : ''}! Prescriptions will auto-regenerate.`);
+      setSessionTopics('');
+      setSessionHomework('');
+    } catch (err: any) {
+      setSessionLogError(err?.message || 'Failed to log class session.');
+    } finally {
+      setLoggingSession(false);
+    }
+  };
 
 
 
@@ -169,6 +228,32 @@ const TeacherClassDashboard: React.FC = () => {
       if (assignErr) throw new Error(assignErr.message);
 
       // Post an announcement summarizing the day
+      // Also log to class_sessions for each student's roadmap
+      const topicsArray = dailyTopics.split(',').map(t => t.trim()).filter(Boolean);
+      if (topicsArray.length > 0) {
+        const { data: members } = await supabase.from('class_members').select('student_id').eq('class_id', id);
+        const studentIds = (members || []).map((m: any) => m.student_id).filter(Boolean);
+        if (studentIds.length > 0) {
+          const { data: roadmaps } = await supabase
+            .from('student_roadmaps')
+            .select('id, user_id')
+            .in('user_id', studentIds)
+            .eq('is_active', true);
+          const roadmapRows = (roadmaps || []).map((r: any) => ({
+            roadmap_id: r.id,
+            teacher_id: user.id,
+            session_date: new Date().toISOString().split('T')[0],
+            subject: 'Mock Test Topics',
+            topics_covered: topicsArray,
+            homework_assigned: `Mock test on: ${dailyTopics}`,
+            duration_minutes: 0,
+          }));
+          if (roadmapRows.length > 0) {
+            await supabase.from('class_sessions').insert(roadmapRows);
+          }
+        }
+      }
+
       await supabase.from('class_announcements').insert({ class_id: id, message: `Taught today: ${dailyTopics}` });
 
       // Notify all students in this class
@@ -863,12 +948,81 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Daily Log & Mock Test Tab */}
         {tab === 'Daily Log & Mock Test' && (
-          <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
-            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-              <Brain className="h-8 w-8 text-slate-100 stroke-[3px]" />
-              DAILY_LOG_&_AI_MOCK_GEN
-            </h3>
-            <form onSubmit={handleGenerateDailyMockTest} className="space-y-6">
+          <div className="space-y-8">
+            {/* Class Session Logger */}
+            <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
+              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
+                <GraduationCap className="h-8 w-8 text-slate-100 stroke-[3px]" />
+                LOG_TODAY&apos;S_CLASS
+              </h3>
+              <form onSubmit={handleLogClassSession} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Subject</label>
+                    <select
+                      value={sessionSubject}
+                      onChange={(e) => setSessionSubject(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                    >
+                      {['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Duration (min)</label>
+                    <input
+                      type="number"
+                      min={15}
+                      max={180}
+                      value={sessionDuration}
+                      onChange={(e) => setSessionDuration(parseInt(e.target.value))}
+                      className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Topics Covered (comma-separated)</label>
+                  <textarea
+                    value={sessionTopics}
+                    onChange={(e) => setSessionTopics(e.target.value)}
+                    placeholder="E.G. Kinematics 1D, Equations of Motion, Graphical Analysis..."
+                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[100px]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Homework / DPP Assigned</label>
+                  <textarea
+                    value={sessionHomework}
+                    onChange={(e) => setSessionHomework(e.target.value)}
+                    placeholder="E.G. HC Verma Chap 3 Q1-15, DPP Sheet 7..."
+                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[80px]"
+                  />
+                </div>
+                {sessionLogError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{sessionLogError}</div>}
+                {sessionLogSuccess && <div className="bg-green-100 border border-white/10 text-green-900 font-bold p-4 uppercase flex items-center gap-2"><CheckCircle2 className="w-5 h-5" />{sessionLogSuccess}</div>}
+                <button
+                  type="submit"
+                  disabled={loggingSession}
+                  className="bg-neo-accent text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-white/10 hover:bg-slate-800 hover:text-slate-100 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+                >
+                  {loggingSession ? (
+                    <><Loader2 className="h-6 w-6 animate-spin stroke-[3px]" />LOGGING...</>
+                  ) : (
+                    <><GraduationCap className="h-6 w-6 stroke-[3px]" />LOG_CLASS_SESSION</>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Mock Test Generator */}
+            <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
+              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
+                <Brain className="h-8 w-8 text-slate-100 stroke-[3px]" />
+                AI_MOCK_TEST_GENERATOR
+              </h3>
+              <form onSubmit={handleGenerateDailyMockTest} className="space-y-6">
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TOPICS_COVERED_TODAY</label>
                 <textarea
@@ -922,6 +1076,7 @@ const TeacherClassDashboard: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
         )}
 
         {/* Student Responses Tab */}

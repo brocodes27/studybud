@@ -30,6 +30,13 @@ export const XP_REWARDS = {
     notes_saved: 15,
     study_plan_created: 75,
 
+    // Roadmap-synced task completion
+    prescription_task_complete: 40,
+    sprint_task_complete: 50,
+    assignment_complete: 30,
+    plan_task_complete: 25,
+    all_prescription_tasks_complete: 100,
+
     // Streaks
     streak_bonus_per_day: 10,
     streak_milestone_7: 100,

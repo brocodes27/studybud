@@ -17,24 +17,33 @@ import {
   FileText,
   Mic,
   Flame,
-  Zap
+  Zap,
+  ChevronRight
 } from 'lucide-react';
 import { getUserGamification, calculateLevel } from '../lib/gamification';
 
 const navLinks = [
-  { href: '/', label: 'HOME', icon: Brain, color: 'text-white' },
-  { href: '/atlas', label: 'ATLAS WORKSPACE', icon: LayoutDashboard, color: 'text-white' },
-  { href: '/syow', label: 'SYOW', icon: Zap, color: 'text-white' },
-  { href: '/sat-simulator', label: 'SAT TEST', icon: FileText, color: 'text-white' },
-  { href: '/create', label: 'NEW PLAN', icon: CalendarPlus, color: 'text-white' },
-  { href: '/plans', label: 'MY PLANS', icon: BookOpen, color: 'text-white' },
-  { href: '/guided-paper', label: 'SOLVER', icon: HelpCircle, color: 'text-white' },
-  { href: '/feynman', label: 'FEYNMAN', icon: Mic, color: 'text-white' },
-  { href: '/tools', label: 'TOOLS', icon: Wrench, color: 'text-white' },
-  { href: '/videos', label: 'VIDEO LESSONS', icon: Video, color: 'text-white' },
-  { href: '/progress', label: 'PROGRESS', icon: LineChart, color: 'text-white' },
-  { href: '/subscription', label: 'PREMIUM', icon: Crown, color: 'text-white' },
+  { href: '/', label: 'Home', icon: Brain, group: 'core' },
+  { href: '/atlas', label: 'Atlas Workspace', icon: LayoutDashboard, group: 'core' },
+  { href: '/syow', label: 'SYOW', icon: Zap, group: 'core' },
+  { href: '/sat-simulator', label: 'SAT Test', icon: FileText, group: 'practice' },
+  { href: '/guided-paper', label: 'Solver', icon: HelpCircle, group: 'practice' },
+  { href: '/feynman', label: 'Feynman', icon: Mic, group: 'practice' },
+  { href: '/create', label: 'New Plan', icon: CalendarPlus, group: 'study' },
+  { href: '/plans', label: 'My Plans', icon: BookOpen, group: 'study' },
+  { href: '/tools', label: 'Tools', icon: Wrench, group: 'study' },
+  { href: '/videos', label: 'Video Lessons', icon: Video, group: 'learn' },
+  { href: '/progress', label: 'Progress', icon: LineChart, group: 'learn' },
+  { href: '/subscription', label: 'Premium', icon: Crown, group: 'other' },
 ];
+
+const groupLabels: Record<string, string> = {
+  core: 'Core',
+  practice: 'Practice',
+  study: 'Study',
+  learn: 'Learn',
+  other: '',
+};
 
 const Navbar = () => {
   const { signOut, user, isPremium } = useAuth() as any;
@@ -46,12 +55,11 @@ const Navbar = () => {
     totalXp: number;
     level: number;
     badge: string;
+    progress: number;
   } | null>(null);
 
   useEffect(() => {
-    if (user?.id) {
-      loadGamification();
-    }
+    if (user?.id) loadGamification();
   }, [user?.id]);
 
   useEffect(() => {
@@ -68,6 +76,7 @@ const Navbar = () => {
           totalXp: data.total_xp,
           level: levelInfo.level,
           badge: levelInfo.badge,
+          progress: levelInfo.progress || ((data.total_xp % 500) / 500) * 100,
         });
       }
     } catch (error) {
@@ -84,132 +93,155 @@ const Navbar = () => {
     }
   };
 
-  const NavItem = ({ link, onClick }: { link: any, onClick?: () => void }) => {
+  // Group nav links
+  const groups = ['core', 'practice', 'study', 'learn', 'other'];
+  const grouped = groups.map(g => ({
+    key: g,
+    label: groupLabels[g],
+    links: navLinks.filter(l => l.group === g),
+  })).filter(g => g.links.length > 0);
+
+  const NavItem = ({ link, onClick }: { link: any; onClick?: () => void }) => {
     const isActive = location.pathname === link.href;
 
     return (
       <NavLink
         to={link.href}
         onClick={onClick}
-        className={`relative group flex items-center px-5 py-3.5 my-1.5 transition-all duration-300 rounded-full
+        className={`relative group flex items-center gap-3 px-3.5 py-2.5 transition-all duration-200 rounded-xl text-[13px]
           ${isActive
-            ? 'bg-primary text-secondary shadow-float-cyan font-bold scale-105'
-            : 'text-slate-400 hover:text-white hover:bg-white/10 font-medium'
+            ? 'bg-gradient-to-r from-[#00D1FF]/10 to-[#6366F1]/10 text-[#0A192F] font-bold'
+            : 'text-[#64748B] hover:text-[#0A192F] hover:bg-[#0A192F]/[0.03] font-medium'
           }
         `}
       >
-        <div className={`flex items-center justify-center w-5 h-5 ${isActive ? 'scale-110 text-secondary' : 'group-hover:scale-110 text-slate-300'} transition-transform`}>
-          <link.icon className={`w-5 h-5 stroke-[2.5px] ${isActive ? 'text-secondary' : ''}`} />
-        </div>
+        {/* Active indicator */}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-gradient-to-b from-[#00D1FF] to-[#6366F1]" />
+        )}
 
-        <span className={`ml-4 text-[13px] tracking-wide whitespace-nowrap ${isActive ? 'text-secondary' : ''}`}>
-          {link.label}
-        </span>
+        <link.icon className={`w-[18px] h-[18px] ${isActive ? 'text-[#6366F1]' : 'text-[#94A3B8] group-hover:text-[#64748B]'} transition-colors flex-shrink-0`} />
+        <span className="truncate">{link.label}</span>
       </NavLink>
     );
   };
 
   return (
     <>
+      {/* Mobile toggle */}
       <div className="md:hidden fixed top-4 right-4 z-[100]">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-3 bg-primary text-secondary rounded-full shadow-float-cyan"
+          className="p-2.5 rounded-xl shadow-neo-lg text-white"
+          style={{ background: 'linear-gradient(135deg, #00D1FF, #6366F1)' }}
         >
-          {isMobileMenuOpen ? <X className="w-6 h-6 stroke-[3px]" /> : <Menu className="w-6 h-6 stroke-[3px]" />}
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      <aside
-        className="hidden md:flex fixed left-0 top-0 h-screen bg-secondary border-r border-[#112240] transition-all duration-300 z-40 flex-col w-64 shadow-2xl rounded-r-[40px]"
-      >
-        <div className="h-24 flex items-center px-8 border-b border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary text-secondary rounded-full flex items-center justify-center shadow-float-cyan font-extrabold text-lg">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen bg-white/80 backdrop-blur-xl border-r border-[#0A192F]/[0.06] transition-all duration-300 z-40 flex-col w-64">
+        {/* Logo */}
+        <div className="h-16 flex items-center px-6 border-b border-[#0A192F]/[0.04]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-float-indigo"
+              style={{ background: 'linear-gradient(135deg, #00D1FF, #6366F1)' }}>
               EF
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-white leading-none tracking-tight">Elevenfolks</h1>
-              <p className="text-[10px] font-bold text-primary uppercase mt-1">Student App</p>
+              <h1 className="text-base font-extrabold text-[#0A192F] leading-none tracking-tight font-display">Elevenfolks</h1>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#6366F1] mt-0.5">Student</p>
             </div>
           </div>
         </div>
 
         {/* Gamification Stats */}
         {gamificationData && (
-          <div className="flex flex-col gap-3 px-8 py-6 border-b border-white/5 bg-[#112240]/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-accent" />
-                <span className="text-sm font-bold text-white">{gamificationData.streak} DAYS</span>
+          <div className="px-5 py-4 border-b border-[#0A192F]/[0.04]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F472B6]/[0.08] border border-[#F472B6]/10">
+                <Flame className="w-3.5 h-3.5 text-[#F472B6]" />
+                <span className="text-xs font-bold text-[#F472B6] tabular-nums">{gamificationData.streak}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-white">{gamificationData.totalXp} XP</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#00D1FF]/[0.08] border border-[#00D1FF]/10">
+                <Zap className="w-3.5 h-3.5 text-[#00D1FF]" />
+                <span className="text-xs font-bold text-[#00D1FF] tabular-nums">{gamificationData.totalXp}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2 bg-primary/20 rounded-full mt-2">
-              <span className="text-xl">{gamificationData.badge}</span>
-              <span className="text-xs font-bold uppercase tracking-wide text-primary">Level {gamificationData.level} Learner</span>
+            {/* XP Progress bar */}
+            <div className="flex items-center gap-2">
+              <span className="text-base">{gamificationData.badge}</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Level {gamificationData.level}</span>
+                </div>
+                <div className="w-full h-1.5 bg-[#0A192F]/[0.04] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${gamificationData.progress}%`,
+                      background: 'linear-gradient(90deg, #00D1FF, #6366F1)',
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-2">
-          {navLinks.map((link) => (
-            <NavItem key={link.href} link={link} />
+        {/* Nav links */}
+        <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          {grouped.map(group => (
+            <div key={group.key}>
+              {group.label && (
+                <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest px-3.5 mb-1.5">{group.label}</p>
+              )}
+              <div className="space-y-0.5">
+                {group.links.map((link) => (
+                  <NavItem key={link.href} link={link} />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <div className="p-6 border-t border-white/5 bg-[#112240]/80 rounded-br-[40px]">
-          <div className="flex items-center gap-4 mb-4">
+        {/* User profile */}
+        <div className="p-4 border-t border-[#0A192F]/[0.04]">
+          <div className="flex items-center gap-3 mb-3 px-1">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-primary text-secondary flex items-center justify-center font-extrabold text-lg shadow-float-cyan">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white"
+                style={{ background: 'linear-gradient(135deg, #00D1FF, #6366F1)' }}>
                 {user?.email?.[0].toUpperCase()}
               </div>
               {isPremium && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-playful-gold text-secondary rounded-full flex items-center justify-center shadow-md">
-                  <Crown size={10} strokeWidth={3} />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#F59E0B] text-white rounded-md flex items-center justify-center shadow-xs">
+                  <Crown size={8} strokeWidth={3} />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">
-                {user?.user_metadata?.full_name || 'STUDENT'}
+              <p className="text-sm font-bold text-[#0A192F] truncate leading-tight">
+                {user?.user_metadata?.full_name || 'Student'}
               </p>
-              <p className="text-xs font-medium text-slate-400 truncate">{user?.email}</p>
+              <p className="text-[11px] font-medium text-[#94A3B8] truncate">{user?.email}</p>
             </div>
           </div>
 
           <button
             onClick={handleSignOut}
-            className="flex items-center justify-center w-full p-3.5 rounded-full bg-white/10 hover:bg-accent text-white font-bold transition-all gap-2"
+            className="flex items-center justify-center w-full p-2.5 rounded-xl bg-[#0A192F]/[0.03] hover:bg-[#0A192F]/[0.06] text-[#64748B] hover:text-[#0A192F] font-semibold text-sm transition-all gap-2"
           >
-            <LogOut className="w-5 h-5 stroke-[2.5px]" />
+            <LogOut className="w-4 h-4" />
             Sign Out
           </button>
         </div>
       </aside>
 
+      {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-secondary overflow-y-auto no-scrollbar">
-          <div className="flex flex-col min-h-screen p-6">
-            <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary text-secondary rounded-full flex items-center justify-center shadow-float-cyan font-extrabold text-xl">
-                  EF
-                </div>
-                <h1 className="text-2xl font-extrabold text-white tracking-tight">Elevenfolks</h1>
-              </div>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 stroke-[3px]" />
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-3 px-2">
+        <div className="md:hidden fixed inset-0 z-[99] bg-white/95 backdrop-blur-xl overflow-y-auto">
+          <div className="flex flex-col min-h-screen p-6 pt-20">
+            <div className="flex-1 space-y-1">
               {navLinks.map((link) => (
                 <NavItem
                   key={link.href}
@@ -219,12 +251,12 @@ const Navbar = () => {
               ))}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-white/10 px-2 pb-6">
+            <div className="mt-6 pt-4 border-t border-[#0A192F]/[0.06]">
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-full bg-white/10 hover:bg-accent text-white font-bold text-base transition-colors"
+                className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl bg-[#0A192F]/[0.04] hover:bg-[#0A192F]/[0.08] text-[#0A192F] font-semibold text-sm transition-colors"
               >
-                <LogOut className="w-5 h-5 stroke-[3px]" />
+                <LogOut className="w-4 h-4" />
                 Sign Out
               </button>
             </div>

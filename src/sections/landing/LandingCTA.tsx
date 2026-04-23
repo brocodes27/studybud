@@ -3,63 +3,89 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function LandingCTA() {
   return (
-    <section className="py-32 bg-[#0A192F] relative overflow-hidden">
-      {/* Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00D1FF]/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#F472B6]/10 rounded-full blur-[80px] pointer-events-none" />
+    <section className="py-24 md:py-32 px-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[#F5F0E8]" />
 
-      <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+      {/* Subtle warm orbs */}
+      <motion.div
+        animate={{ x: [0, 40, 0], y: [0, -30, 0], scale: [1, 1.2, 1] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#C4A484]/[0.08] rounded-full blur-[120px]"
+      />
+      <motion.div
+        animate={{ x: [0, -30, 0], y: [0, 40, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#8B7355]/[0.06] rounded-full blur-[100px]"
+      />
+
+      <div className="max-w-3xl mx-auto text-center relative z-10">
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm mb-8 border border-[#00D1FF]/20"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-sm border border-[#2D2A26]/[0.08] text-[#8A8279] text-[11px] font-bold uppercase tracking-widest mb-8"
         >
-          <Sparkles className="w-4 h-4" />
-          <span>Start for free, no credit card needed</span>
+          <Sparkles className="w-3.5 h-3.5 text-[#8B7355]" />
+          Free forever tier available
         </motion.div>
 
         <motion.h2
           initial={{ y: 20, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight mb-6"
+          transition={{ delay: 0.05 }}
+          className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-[#2D2A26] leading-[1.1] mb-5"
+          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
         >
-          Ready to transform <br />
-          <span className="text-[#00D1FF]">your productivity?</span>
+          Ready to stop studying{' '}
+          <span className="text-[#8B7355]">in the dark?</span>
         </motion.h2>
 
         <motion.p
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
-          className="text-slate-400 text-xl font-medium max-w-2xl mx-auto mb-10 leading-relaxed"
+          transition={{ delay: 0.1 }}
+          className="text-[#8A8279] text-lg md:text-xl font-medium max-w-lg mx-auto mb-10 leading-relaxed"
         >
-          Join thousands of students already using Elevenfolks to achieve more, stress less, and score higher.
+          Join thousands of students who let AI handle the planning so they can focus on the learning.
         </motion.p>
 
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          transition={{ delay: 0.15 }}
+          className="flex flex-col sm:flex-row gap-3 justify-center"
         >
-          <button
-            className="neo-button text-lg px-10 py-4 shadow-[0_8px_24px_rgba(0,209,255,0.4)]"
-            onClick={() => document.getElementById('auth')?.scrollIntoView({ behavior: 'smooth' })}
+          <a
+            href="#auth"
+            className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-bold text-white bg-[#2D2A26] hover:bg-[#3D3833] transition-all duration-300 hover:-translate-y-[2px] shadow-lg"
           >
-            Get Started Free
-            <ArrowRight className="w-5 h-5 ml-1 stroke-[3px]" />
-          </button>
-          <button
-            className="px-10 py-4 rounded-full border-2 border-white/20 text-white font-bold text-lg hover:border-[#00D1FF]/50 hover:text-[#00D1FF] transition-all"
-            onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+            Start for free
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </a>
+          <a
+            href="#features"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-[#2D2A26]/70 border border-[#2D2A26]/[0.12] hover:border-[#2D2A26]/20 hover:text-[#2D2A26] hover:bg-white/50 transition-all"
           >
-            See Features
-          </button>
+            Explore features
+          </a>
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 12, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-6 text-[11px] font-semibold text-[#8A8279]/60 uppercase tracking-widest"
+        >
+          {['No credit card', 'Cancel anytime', 'GDPR compliant'].map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-[#6B8E6B]/60" />
+              {t}
+            </span>
+          ))}
         </motion.div>
       </div>
     </section>

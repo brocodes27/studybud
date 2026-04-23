@@ -4,6 +4,7 @@ import LandingHeader from '../sections/landing/LandingHeader';
 import LandingHero from '../sections/landing/LandingHero';
 import LandingBenefits from '../sections/landing/LandingBenefits';
 import LandingFeatures from '../sections/landing/LandingFeatures';
+import LandingCurriculum from '../sections/landing/LandingCurriculum';
 import LandingCTA from '../sections/landing/LandingCTA';
 import LandingAuth from '../sections/landing/LandingAuth';
 import LandingTestimonials from '../sections/landing/LandingTestimonials';
@@ -14,8 +15,8 @@ const Landing: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="w-16 h-16 border border-white/10 border-t-neo-accent animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
+        <div className="w-8 h-8 border-2 border-[#2D2A26]/10 border-t-[#8B7355] rounded-full animate-spin" />
       </div>
     );
   }
@@ -25,11 +26,12 @@ const Landing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FAF8F5]">
       <LandingHeader />
       <LandingHero />
       <LandingBenefits />
       <LandingFeatures />
+      <LandingCurriculum />
       <LandingCTA />
       <LandingAuth />
       <LandingTestimonials />

@@ -6,7 +6,8 @@ import {
   Target, Calendar, Clock, Brain,
   ChevronRight, ChevronLeft, Check,
   User, GraduationCap,
-  Sparkles, Shield, Crown
+  Sparkles, Shield, Crown,
+  BookOpen, Layers, Flame, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,15 +33,34 @@ export default function Onboarding() {
   const [weakAreas, setWeakAreas] = useState<string[]>([]);
   const [studyStyle] = useState<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'balanced'>('balanced');
 
+  // Roadmap Engine States
+  const [instituteChoice, setInstituteChoice] = useState<'template' | 'custom'>('template');
+  const [instituteName, setInstituteName] = useState<string>('Standard JEE');
+  const [batchName, setBatchName] = useState<string>('');
+  const [yearLevel, setYearLevel] = useState<'11' | '12' | 'Dropper'>('11');
+  const [currentWeek, setCurrentWeek] = useState<number>(1);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
+  const [coachingTemplates, setCoachingTemplates] = useState<any[]>([]);
 
   useEffect(() => {
     fetchExamTypes();
+    fetchCoachingTemplates();
   }, []);
 
   const fetchExamTypes = async () => {
     const { data } = await supabase.from('us_exam_types').select('*').eq('is_active', true);
     if (data) setExamTypes(data);
+  };
+
+  const fetchCoachingTemplates = async () => {
+    const { data } = await supabase.from('coaching_templates').select('id, institute_name, program, year_level, description, total_weeks');
+    if (data) {
+       setCoachingTemplates(data);
+       const defaultTmpl = data.find(t => t.institute_name === 'Standard JEE');
+       if (defaultTmpl) setActiveTemplateId(defaultTmpl.id);
+    }
   };
 
   const selectedExamData = examTypes.find(e => e.code === targetExam);
@@ -73,6 +93,17 @@ export default function Onboarding() {
         };
         const { error: goalError } = await supabase.from('user_study_goals').upsert(goalPayload);
         if (goalError) throw goalError;
+
+        // Trigger Roadmap Engine Onboarding Edge Function
+        await supabase.functions.invoke('roadmap-onboarding', {
+          body: {
+            template_id: instituteChoice === 'template' ? activeTemplateId : null,
+            institute_name: instituteChoice === 'template' ? coachingTemplates.find(t=>t.id===activeTemplateId)?.institute_name : instituteName,
+            year_level: yearLevel,
+            current_week: currentWeek,
+            batch_name: batchName || 'Standard'
+          }
+        });
       }
 
       await supabase.from('user_gamification').upsert({
@@ -105,12 +136,12 @@ export default function Onboarding() {
       <div className="w-full max-w-xl relative z-10">
         {/* Progress Steps */}
         <div className="mb-10 flex items-center justify-between px-2">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center flex-1 last:flex-none">
               <div className={`w-10 h-10 rounded-full font-bold flex items-center justify-center text-sm transition-all duration-300 border-2 ${step >= i ? 'bg-[#00D1FF] border-[#00D1FF] text-white shadow-float-cyan' : 'bg-white border-[#0A192F]/10 text-[#64748B]'} ${step === i ? 'scale-110' : ''}`}>
                 {step > i ? <Check className="w-4 h-4" /> : i}
               </div>
-              {i < 4 && (
+              {i < 5 && (
                 <div className={`h-1 flex-1 mx-2 rounded-full transition-all duration-500 ${step > i ? 'bg-[#00D1FF]/30' : 'bg-[#0A192F]/5'}`} />
               )}
             </div>
@@ -356,8 +387,155 @@ export default function Onboarding() {
             </motion.div>
           )}
 
-          {/* STEP 5: TRIAL */}
-          {step === 5 && (
+          {/* STEP 5: ROADMAP SETUP */}
+          {step === 5 && role === 'student' && (
+            <motion.div
+              key="step5"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="neo-card"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-[18px] flex items-center justify-center">
+                  <Calendar className="w-7 h-7 text-[#8B5CF6]" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Pick Your Path</h1>
+                  <p className="text-xs font-medium text-[#64748B] mt-1">Choose a structured roadmap or build your own</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+
+                {/* Mode Toggle */}
+                <div className="bg-[#F8FAFF] p-1 rounded-[14px] flex">
+                  <button
+                    onClick={() => setInstituteChoice('template')}
+                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'template' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                  >
+                    <Layers className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                    Coaching Roadmap
+                  </button>
+                  <button
+                    onClick={() => setInstituteChoice('custom')}
+                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                  >
+                    <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                    Self Study
+                  </button>
+                </div>
+
+                {/* Template Cards */}
+                {instituteChoice === 'template' && (
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider">Available Roadmaps</label>
+                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
+                      {coachingTemplates.map((t) => {
+                        const selected = activeTemplateId === t.id;
+                        const programColor = t.program === 'JEE' ? 'bg-[#00D1FF]/10 text-[#00D1FF]' : t.program === 'CBSE' ? 'bg-[#F472B6]/10 text-[#F472B6]' : 'bg-[#8B5CF6]/10 text-[#8B5CF6]';
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => { setActiveTemplateId(t.id); setYearLevel(t.year_level); setCurrentWeek(1); }}
+                            className={`w-full text-left p-4 rounded-[16px] border-2 transition-all ${selected ? 'border-[#00D1FF] bg-[#00D1FF]/5 shadow-float-cyan' : 'border-[#0A192F]/5 bg-white hover:border-[#0A192F]/10'}`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide ${programColor}`}>
+                                  {t.program}
+                                </span>
+                                <span className="text-[10px] font-bold text-[#64748B] bg-[#F8FAFF] px-2 py-0.5 rounded-full">
+                                  Class {t.year_level}
+                                </span>
+                              </div>
+                              {selected && <Check className="w-4 h-4 text-[#00D1FF]" />}
+                            </div>
+                            <h3 className="font-bold text-[#0A192F] text-sm mb-1">{t.institute_name}</h3>
+                            <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">{t.description}</p>
+                            <div className="flex items-center gap-3 mt-2.5">
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#64748B]">
+                                <Flame className="w-3 h-3 text-[#FBBF24]" />
+                                {t.total_weeks} Weeks
+                              </span>
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#64748B]">
+                                <Calendar className="w-3 h-3 text-[#8B5CF6]" />
+                                {t.total_weeks >= 50 ? 'Full Year' : t.total_weeks >= 40 ? 'Board Cycle' : 'Short Term'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Self Study */}
+                {instituteChoice === 'custom' && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Give Your Plan a Name</label>
+                    <input
+                      value={instituteName}
+                      onChange={(e) => setInstituteName(e.target.value)}
+                      placeholder="E.g. Online Self Paced JEE"
+                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                    />
+                  </div>
+                )}
+
+                {/* Batch Name */}
+                <div>
+                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Batch / Group Name <span className="normal-case font-medium text-[#94A3B8]">(optional)</span></label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                    <input
+                      value={batchName}
+                      onChange={(e) => setBatchName(e.target.value)}
+                      placeholder="E.g. Morning Batch, Alpha Group"
+                      className="w-full pl-10 pr-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Current Class</label>
+                    <select
+                      value={yearLevel}
+                      onChange={(e) => setYearLevel(e.target.value as '11' | '12' | 'Dropper')}
+                      className="w-full px-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                    >
+                      <option value="11">Class 11</option>
+                      <option value="12">Class 12</option>
+                      <option value="Dropper">Dropper (13th)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Current Week</label>
+                    <input
+                      type="number"
+                      min="1" max="52"
+                      value={currentWeek}
+                      onChange={(e) => setCurrentWeek(Math.min(52, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="w-full px-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2 group">
+                    Final Step <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* STEP 6: TRIAL */}
+          {step === 6 && (
             <motion.div
               key="step5"
               initial={{ opacity: 0, x: 20 }}

@@ -16,6 +16,36 @@ export function MasteryHeatmap() {
     const [masteryData, setMasteryData] = useState<MasteryData[]>([]);
     const [loading, setLoading] = useState(true);
     const [examType, setExamType] = useState('sat');
+    const [diagnosing, setDiagnosing] = useState(false);
+    const [diagnosis, setDiagnosis] = useState<any>(null);
+
+    const handleDiagnose = async (domain: string, subdomain: string) => {
+        setDiagnosing(true);
+        setDiagnosis(null);
+        try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/diagnose-knowledge-gap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionData?.session?.access_token}`
+                },
+                body: JSON.stringify({
+                    failing_concept_text: `${domain} - ${subdomain}`,
+                    k_nearest: 3
+                })
+            });
+            const result = await response.json();
+            setDiagnosis({
+                failingTopic: subdomain,
+                ...result
+            });
+        } catch (e) {
+            console.error('Diagnosis error:', e);
+        } finally {
+            setDiagnosing(false);
+        }
+    };
 
     useEffect(() => {
         if (user) fetchMastery();
@@ -124,12 +154,15 @@ export function MasteryHeatmap() {
                                 />
                             </div>
 
-                            {/* Heat Cells */}
+                                {/* Heat Cells */}
                             <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
-                                {domainData.map((sub, sIdx) => (
+                                {domainData.map((sub, sIdx) => {
+                                   const isWeak = sub.mastery_score < 60;
+                                   return (
                                     <div
                                         key={sIdx}
-                                        className={`aspect-square rounded-[6px] border relative group/cell cursor-help transition-all hover:scale-110 ${getHeatColor(sub.mastery_score)}`}
+                                        onClick={() => isWeak ? handleDiagnose(domain, sub.subdomain) : null}
+                                        className={`aspect-square rounded-[6px] border relative group/cell transition-all hover:scale-110 ${getHeatColor(sub.mastery_score)} ${isWeak ? 'cursor-pointer hover:ring-2 ring-red-400' : 'cursor-help'}`}
                                     >
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 bg-[#0A192F] text-white p-2.5 rounded-[10px] hidden group-hover/cell:block z-50 shadow-lg">
                                             <p className="text-[9px] font-bold text-[#00D1FF] mb-1">{sub.subdomain || 'General'}</p>
@@ -137,9 +170,10 @@ export function MasteryHeatmap() {
                                                 <span className="text-[9px] text-white/60">Accuracy:</span>
                                                 <span className="text-xs font-bold">{sub.mastery_score.toFixed(1)}%</span>
                                             </div>
+                                            {isWeak && <p className="text-[9px] text-red-300 mt-1 mt-1 border-t border-white/10 pt-1">Click for AI Gap Diagnosis</p>}
                                         </div>
                                     </div>
-                                ))}
+                                )})}
                             </div>
 
                             <button className="w-full flex items-center justify-between px-4 py-2.5 rounded-[10px] bg-[#F8FAFF] border-2 border-[#0A192F]/5 text-xs font-bold text-[#64748B] hover:border-[#00D1FF]/30 hover:text-[#00D1FF] transition-colors">
@@ -149,6 +183,49 @@ export function MasteryHeatmap() {
                     );
                 })}
             </div>
+
+            {/* AI Diagnosis Panel */}
+            {diagnosing && (
+                <div className="neo-card bg-[#0A192F]/5 border-[#00D1FF]/30 p-6 animate-pulse">
+                     <p className="text-sm font-bold text-[#64748B] flex items-center gap-2"><Sparkles className="w-4 h-4 text-[#00D1FF]"/> Analyzing knowledge graph for prerequisites...</p>
+                </div>
+            )}
+            
+            {diagnosis && !diagnosing && (
+                <div className="neo-card bg-white border-[#F472B6]/30 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#F472B6]/10 blur-3xl rounded-full" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-[#F472B6]/10 rounded-[12px] flex items-center justify-center border border-[#F472B6]/20">
+                                <Sparkles className="w-5 h-5 text-[#F472B6]" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-extrabold text-[#0A192F]">AI Root Cause Diagnosis</h3>
+                                <p className="text-xs text-[#64748B] font-medium">Tracing gaps for: <span className="text-[#0A192F] font-bold">{diagnosis.failingTopic}</span></p>
+                            </div>
+                        </div>
+
+                        {diagnosis.suggested_remediation && diagnosis.suggested_remediation.length > 0 ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-[#0A192F] font-medium">Our Knowledge Graph indicates you might be missing fundamental prerequisites down the tree:</p>
+                                <div className="flex gap-2 flex-wrap">
+                                    {diagnosis.suggested_remediation.map((rec: string, i: number) => (
+                                        <div key={i} className="px-3 py-1.5 bg-[#F8FAFF] border-2 border-[#0A192F]/5 rounded-[8px] text-xs font-bold text-[#F472B6]">
+                                            ⚠️ Review: {rec}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button className="mt-4 px-4 py-2 bg-[#0A192F] text-white rounded-[10px] text-xs font-bold shadow-float hover:-translate-y-0.5 transition-transform">
+                                    Start Remediation Session
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-[#0A192F] font-medium">We couldn't definitively trace this back to a deeper prerequisite gap. Recommended action: More targeted practice on {diagnosis.failingTopic}.</p>
+                        )}
+                         <button onClick={() => setDiagnosis(null)} className="absolute top-4 right-4 text-xs font-bold text-[#64748B] hover:text-[#0A192F]">Dismiss</button>
+                    </div>
+                </div>
+            )}
 
             {/* Legend */}
             <div className="neo-card flex flex-wrap items-center justify-center gap-6">

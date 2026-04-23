@@ -1,115 +1,126 @@
-import { Brain, Target, BarChart3 } from 'lucide-react';
+import { Brain, BookOpen, BarChart3, Mic, MessageSquare, Zap, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const features = [
+  {
+    icon: Brain,
+    title: 'AI Study Buddy',
+    description: 'Context-aware help that remembers your notes, weak topics, and chat history. Not generic — personal.',
+    tag: 'Atlas',
+    gradient: '#8B7355',
+    span: 'md:col-span-2 md:row-span-2',
+  },
+  {
+    icon: BookOpen,
+    title: 'Daily Prescriptions',
+    description: 'Auto-generated nightly plans based on today\'s class and your progress.',
+    tag: 'New',
+    gradient: '#8B7355',
+    span: '',
+  },
+  {
+    icon: BarChart3,
+    title: 'Test Analysis',
+    description: 'Upload a test photo. Get weak topics, failure modes, and a correction sprint.',
+    tag: 'Vision',
+    gradient: '#8B7355',
+    span: '',
+  },
+  {
+    icon: Mic,
+    title: 'Feynman Method',
+    description: 'Explain concepts aloud. AI listens, identifies gaps, and guides you to mastery.',
+    tag: 'Voice',
+    gradient: '#8B7355',
+    span: 'md:col-span-2',
+  },
+  {
+    icon: MessageSquare,
+    title: 'Study Groups',
+    description: 'Collaborate, compete on leaderboards, and keep each other accountable.',
+    tag: 'Social',
+    gradient: '#8B7355',
+    span: '',
+  },
+  {
+    icon: Zap,
+    title: 'Gamification',
+    description: 'XP, streaks, levels, and achievements that make studying addictive.',
+    tag: 'Fun',
+    gradient: '#8B7355',
+    span: '',
+  },
+];
 
 export function LandingFeatures() {
   return (
-    <section id="features" className="py-32 px-6 bg-white relative">
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-24">
+    <section id="features" className="py-24 md:py-32 px-6 relative overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center max-w-lg mx-auto mb-16">
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 12, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#F472B6]/10 text-[#F472B6] rounded-full font-bold text-sm mb-6 border border-[#F472B6]/20"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-sm border border-[#2D2A26]/[0.06] shadow-xs mb-5"
           >
-            <span>Supercharged Learning</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#C4A882]" />
+            <span className="text-[12px] font-bold text-[#8A8279] uppercase tracking-widest">Platform</span>
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-[#0A192F] mb-6 leading-tight">
-            Built for your <br />
-            <span className="text-[#00D1FF]">productivity.</span>
-          </h2>
-          <p className="text-[#64748B] text-xl font-medium">From custom study planning to dynamic exam simulators, we provide exactly what you need to succeed.</p>
+          <motion.h2
+            initial={{ y: 16, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.05 }}
+            className="text-4xl md:text-5xl font-semibold tracking-tight text-[#2D2A26] mb-4 leading-[1.05]"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Everything you need to{' '}
+            <span className="text-[#8B7355]">ace exams.</span>
+          </motion.h2>
+          <motion.p
+            initial={{ y: 12, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-[#8A8279] text-lg font-medium"
+          >
+            From AI tutoring to mock tests — one platform, zero friction.
+          </motion.p>
         </div>
 
-        <div className="flex flex-col gap-24">
+        {/* Bento Grid */}
+        <div className="grid md:grid-cols-3 gap-5 auto-rows-[180px]">
+          {features.map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ delay: i * 0.08, duration: 0.5 }}
+              className={`group relative ${f.span}`}
+            >
+              <div className="absolute -inset-px rounded-[24px] bg-[#8B7355] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[2px]" />
 
-          {/* Feature 1 - Zig */}
-          <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1"
-            >
-              <div className="w-20 h-20 bg-[#00D1FF]/10 rounded-[24px] flex items-center justify-center mb-6 border border-[#00D1FF]/20 shadow-[0_8px_16px_rgba(0,209,255,0.15)]">
-                <Brain className="w-10 h-10 text-[#00D1FF] stroke-[2.5px]" />
-              </div>
-              <h3 className="font-extrabold text-3xl text-[#0A192F] mb-6 tracking-tight">AI Study Buddy</h3>
-              <p className="text-[#64748B] text-lg font-medium leading-relaxed mb-6">
-                Context-aware answers that tap directly into your personal notes and chat memory. No more searching manuals or wrestling with generic chatbots.
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1 w-full"
-            >
-              <div className="aspect-[4/3] bg-[#0A192F]/5 rounded-[40px] flex items-center justify-center border-4 border-white shadow-float-cyan relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#00D1FF]/20 to-transparent opacity-50" />
-                <Brain className="w-32 h-32 text-[#00D1FF] opacity-80" />
-              </div>
-            </motion.div>
-          </div>
+              <div className="relative h-full bg-white rounded-[24px] border border-[#2D2A26]/[0.05] p-6 hover:shadow-[0_20px_60px_rgba(45,42,38,0.08)] transition-all duration-500 overflow-hidden flex flex-col">
+                <div className="absolute top-0 left-6 right-6 h-[2px] rounded-full bg-[#8B7355] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-          {/* Feature 2 - Zag */}
-          <div className="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20">
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1"
-            >
-              <div className="w-20 h-20 bg-[#F472B6]/10 rounded-[24px] flex items-center justify-center mb-6 border border-[#F472B6]/20 shadow-[0_8px_16px_rgba(244,114,182,0.15)]">
-                <Target className="w-10 h-10 text-[#F472B6] stroke-[2.5px]" />
-              </div>
-              <h3 className="font-extrabold text-3xl text-[#0A192F] mb-6 tracking-tight">Personalized Plans</h3>
-              <p className="text-[#64748B] text-lg font-medium leading-relaxed mb-6">
-                Generate day-wise schedules perfectly tailored to your syllabus and timeline. Exactly what you need, right when you need it most.
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1 w-full"
-            >
-              <div className="aspect-[4/3] bg-[#0A192F]/5 rounded-[40px] flex items-center justify-center border-4 border-white shadow-float-pink relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tl from-[#F472B6]/20 to-transparent opacity-50" />
-                <Target className="w-32 h-32 text-[#F472B6] opacity-80" />
-              </div>
-            </motion.div>
-          </div>
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#8B7355] opacity-[0.03] rounded-full blur-[40px] group-hover:opacity-[0.08] transition-opacity" />
 
-          {/* Feature 3 - Zig */}
-          <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1"
-            >
-              <div className="w-20 h-20 bg-[#34D399]/10 rounded-[24px] flex items-center justify-center mb-6 border border-[#34D399]/20 shadow-[0_8px_16px_rgba(52,211,153,0.15)]">
-                <BarChart3 className="w-10 h-10 text-[#34D399] stroke-[2.5px]" />
-              </div>
-              <h3 className="font-extrabold text-3xl text-[#0A192F] mb-6 tracking-tight">Exam Simulators</h3>
-              <p className="text-[#64748B] text-lg font-medium leading-relaxed mb-6">
-                Practice with highly adaptive SAT and AP test simulators featuring robust section resume. Feel the heat of the exam room before the big day.
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              className="flex-1 w-full"
-            >
-              <div className="aspect-[4/3] bg-[#0A192F]/5 rounded-[40px] flex items-center justify-center border-4 border-white shadow-float-mint relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#34D399]/20 to-transparent opacity-50" />
-                <BarChart3 className="w-32 h-32 text-[#34D399] opacity-80" />
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-[#8B7355] flex items-center justify-center text-white shadow-lg">
+                      <f.icon className="w-5 h-5" />
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-[#F5F0E8] text-[10px] font-bold text-[#8A8279] uppercase tracking-wider">
+                      {f.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg text-[#2D2A26] mb-1.5 tracking-tight">{f.title}</h3>
+                  <p className="text-[#8A8279] font-medium text-[13px] leading-relaxed flex-1">{f.description}</p>
+                </div>
               </div>
             </motion.div>
-          </div>
-
+          ))}
         </div>
       </div>
     </section>
@@ -117,4 +128,3 @@ export function LandingFeatures() {
 }
 
 export default LandingFeatures;
-

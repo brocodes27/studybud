@@ -1,74 +1,105 @@
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Star, Quote } from 'lucide-react';
 
 const testimonials = [
   {
     name: 'Sarah Jenkins',
     grade: 'Senior Year',
-    text: 'Atlas helped me improve my SAT score by 200 points. The personalized study plans are incredible!',
-    accent: '#00D1FF',
-    bg: 'bg-[#00D1FF]/8',
+    text: 'The daily prescription feature is a game changer. I open the app and know exactly what to study based on what we did in class. No more wondering "what should I do today?"',
+    score: '+200 SAT pts',
+    color: '#8B7355',
   },
   {
     name: 'Michael Chen',
     grade: 'Grade 11',
-    text: 'The AI flashcards and practice tests made AP Bio so much more manageable. Highly recommend!',
-    accent: '#F472B6',
-    bg: 'bg-[#F472B6]/8',
+    text: 'I uploaded my test photo and within minutes got a full analysis of my weak topics plus a 7-day repair plan. The AI actually understands where I went wrong.',
+    score: 'JEE Mains',
+    color: '#A0938D',
   },
   {
     name: 'Emily Davis',
     grade: 'Junior Year',
-    text: 'Study groups feature helped me connect with other students. We motivate each other every day!',
-    accent: '#34D399',
-    bg: 'bg-[#34D399]/8',
+    text: 'The AI actually remembers what I struggle with. When I miss days, it does not guilt-trip — it reschedules everything. That empathy is rare in study apps.',
+    score: '14 day streak',
+    color: '#C4A882',
   },
   {
     name: 'James Wilson',
     grade: 'Sophomore Year',
-    text: 'The AI Study Buddy is like having a private tutor 24/7. It explains complex concepts so simply.',
-    accent: '#00D1FF',
-    bg: 'bg-[#00D1FF]/8',
+    text: 'Study groups + gamification makes it feel like a game. I have never been this consistent with my prep. The streak feature alone keeps me coming back daily.',
+    score: '1520 SAT',
+    color: '#8B7355',
+  },
+  {
+    name: 'Priya Sharma',
+    grade: 'Class 12',
+    text: 'Ranjan Sir knows my weak subjects and always gives me the right task at the right time. It is genuinely like having a personal coach who remembers everything.',
+    score: 'CBSE 98%',
+    color: '#A0938D',
   },
   {
     name: 'Olivia Martinez',
     grade: 'Grade 9',
-    text: 'I used to struggle with organization, but Atlas automated everything for me. Game changer!',
-    accent: '#F472B6',
-    bg: 'bg-[#F472B6]/8',
+    text: 'I used to struggle with organization. Now everything is automated — plans, reminders, even break suggestions. My parents are shocked at my consistency.',
+    score: '+150 pts',
+    color: '#C4A882',
   },
 ];
 
-const Column = ({ items, duration = 15, reverse = false, className = '' }: { items: typeof testimonials; duration?: number; reverse?: boolean; className?: string }) => (
-  <div className={`overflow-hidden max-h-[760px] ${className}`}>
+const Column = ({
+  items,
+  duration = 20,
+  reverse = false,
+  className = '',
+}: {
+  items: typeof testimonials;
+  duration?: number;
+  reverse?: boolean;
+  className?: string;
+}) => (
+  <div className={`overflow-hidden max-h-[680px] relative ${className}`}>
+    <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#FAF8F5] to-transparent z-10 pointer-events-none" />
+    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#FAF8F5] to-transparent z-10 pointer-events-none" />
+
     <motion.div
       animate={{ translateY: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
       transition={{ duration, repeat: Infinity, ease: 'linear' }}
-      className="flex flex-col gap-6 pb-6"
+      className="flex flex-col gap-4 pb-4"
     >
       {[...items, ...items].map((t, i) => (
         <div
           key={i}
-          className="bg-white rounded-[32px] p-6 shadow-float-cyan border border-[#0A192F]/5 hover:-translate-y-1 transition-transform"
+          className="group bg-white rounded-2xl p-5 border border-[#2D2A26]/[0.05] hover:shadow-[0_8px_32px_rgba(45,42,38,0.08)] hover:-translate-y-0.5 transition-all duration-300"
         >
-          <div className="flex items-center mb-4">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center mr-3 font-extrabold text-sm"
-              style={{ backgroundColor: `${t.accent}20`, color: t.accent }}
-            >
-              {t.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <h4 className="font-extrabold text-[#0A192F] tracking-tight">{t.name}</h4>
-              <p className="text-[#64748B] text-sm font-medium">{t.grade}</p>
-            </div>
-          </div>
-          <div className="flex gap-0.5 mb-3">
+          <Quote className="w-5 h-5 text-[#2D2A26]/[0.05] mb-3" />
+
+          <div className="flex items-center gap-0.5 mb-3">
             {[...Array(5)].map((_, s) => (
-              <Star key={s} className="w-3.5 h-3.5 fill-current" style={{ color: t.accent }} />
+              <Star key={s} className="w-3 h-3 fill-[#C4A882] text-[#C4A882]" />
             ))}
           </div>
-          <p className="text-[#64748B] font-medium leading-relaxed text-sm">"{t.text}"</p>
+
+          <p className="text-[#2D2A26]/70 font-medium leading-relaxed text-[13px] mb-4">
+            "{t.text}"
+          </p>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
+                style={{ backgroundColor: t.color }}
+              >
+                {t.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+              </div>
+              <div>
+                <h4 className="font-bold text-[13px] text-[#2D2A26] tracking-tight">{t.name}</h4>
+                <p className="text-[#8A8279] text-[11px] font-medium">{t.grade}</p>
+              </div>
+            </div>
+            <span className="text-[10px] font-extrabold text-[#8B7355] bg-[#8B7355]/10 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+              {t.score}
+            </span>
+          </div>
         </div>
       ))}
     </motion.div>
@@ -77,33 +108,44 @@ const Column = ({ items, duration = 15, reverse = false, className = '' }: { ite
 
 export function LandingTestimonials() {
   return (
-    <section id="testimonials" className="py-32 px-6 bg-[#F8FAFF] relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[#00D1FF]/5 rounded-full blur-[100px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-20">
+    <section id="testimonials" className="py-24 md:py-32 px-6 relative overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14">
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 12, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 text-[#00D1FF] rounded-full font-bold text-sm mb-6 border border-[#00D1FF]/20"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-sm border border-[#2D2A26]/[0.06] shadow-xs mb-5"
           >
-            <Star className="w-4 h-4 fill-current" />
-            <span>Student Stories</span>
+            <Star className="w-3.5 h-3.5 fill-[#C4A882] text-[#C4A882]" />
+            <span className="text-[12px] font-bold text-[#8A8279] uppercase tracking-widest">Testimonials</span>
           </motion.div>
-          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-[#0A192F] mb-6 leading-tight">
-            Loved by <br />
-            <span className="text-[#00D1FF]">students worldwide.</span>
-          </h2>
-          <p className="text-[#64748B] text-xl font-medium max-w-2xl mx-auto">
-            Join thousands of learners who've transformed their study experience with Elevenfolks.
-          </p>
+          <motion.h2
+            initial={{ y: 16, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.05 }}
+            className="text-4xl md:text-5xl font-semibold tracking-tight text-[#2D2A26] mb-3 leading-[1.05]"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Loved by{' '}
+            <span className="text-[#8B7355]">students worldwide.</span>
+          </motion.h2>
+          <motion.p
+            initial={{ y: 12, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-[#8A8279] text-lg font-medium max-w-md mx-auto"
+          >
+            Real stories from real students using Elevenfolks every day.
+          </motion.p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12 max-h-[760px] overflow-hidden rounded-[40px]">
-          <Column items={testimonials} duration={20} />
-          <Column items={testimonials} className="hidden md:block" duration={25} reverse />
-          <Column items={testimonials} className="hidden lg:block" duration={22} />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[680px] overflow-hidden rounded-[28px]">
+          <Column items={testimonials} duration={26} />
+          <Column items={testimonials} className="hidden md:block" duration={32} reverse />
+          <Column items={testimonials} className="hidden lg:block" duration={28} />
         </div>
       </div>
     </section>

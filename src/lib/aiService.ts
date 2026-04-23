@@ -85,6 +85,53 @@ export class AIService {
     }
   }
 
+  /**
+   * Generates a response using the Orchestrator Edge Function (or fallback to NDCF).
+   */
+  async generateEmpatheticChat(message: string, sessionId: string, conversationHistory: any[], studyContext?: string, useFullOrchestration: boolean = true): Promise<{
+    response: string,
+    emotion_detected: string,
+    pedagogical_mode: string
+  }> {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        throw new Error('Unauthorized');
+      }
+
+      // Use the new Multi-Agent Orchestrator (it handles both fast path and complex path internally)
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/multi-agent-orchestrator`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`
+        },
+        body: JSON.stringify({
+          message,
+          session_id: sessionId,
+          conversation_history: conversationHistory,
+          study_context: studyContext,
+          use_full_orchestration: useFullOrchestration
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`NDCF Edge Function Error: ${response.status} - ${await response.text()}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Empathetic Chat Error:', error);
+      // Fallback to static RAG if edge function fails
+      const fallbackResponse = await this.generateChatCompletion(message, studyContext, true);
+      return {
+        response: fallbackResponse,
+        emotion_detected: 'neutral',
+        pedagogical_mode: 'socratic'
+      };
+    }
+  }
+
   async analyzeImagesWithVision(images: string[], prompt?: string, systemPrompt?: string, maxTokens: number = 2048): Promise<string> {
     try {
       const parts: any[] = [{ text: prompt || 'Analyze this image.' }];
