@@ -28,6 +28,10 @@ export interface TodayTask {
   prescriptionId?: string;
   sprintId?: string;
   taskOrder?: number;
+  strategy?: string;
+  resources?: string[];
+  outputSubmitted?: boolean;
+  taskType?: string;
 }
 
 export interface CorrectionSprint {
@@ -46,19 +50,56 @@ export interface StudentState {
   missedDaysStreak: number;
 }
 
+export interface DailyBriefingMemory {
+  id: string;
+  topic?: string;
+  subject?: string;
+  knowledgeType?: string;
+  content: string;
+  createdAt?: string;
+}
+
+export interface DailyBriefingSubmission {
+  id: string;
+  outputType: string;
+  taskOrder: number;
+  createdAt?: string;
+  analysis?: {
+    effort_score?: number;
+    accuracy_score?: number;
+    feedback?: string;
+    next_steps?: string[];
+  } | null;
+}
+
 export interface DailyBriefingData {
   greeting: string;
   userName: string;
   streak: number;
   classUpdate: ClassUpdate;
   todayTask: TodayTask;
+  todayTasks: TodayTask[];
   isTaskCompleted: boolean;
+  allTasksCompleted: boolean;
+  completedCount: number;
+  totalCount: number;
   hasPlan: boolean;
   hasClasses: boolean;
   activeRoadmap: boolean;
   roadmapId: string | null;
+  prescriptionId: string | null;
   correctionSprint: CorrectionSprint | null;
   studentState: StudentState;
+  totalEstimatedMinutes: number;
+  implementationIntentions: Array<{ trigger: string; action: string; duration_min: number; completed?: boolean }>;
+  recentKnowledge: DailyBriefingMemory[];
+  recentSubmissions: DailyBriefingSubmission[];
+}
+
+interface TaskCompletionOptions {
+  taskTitle?: string;
+  subject?: string;
+  notes?: string;
 }
 
 function getGreeting(): string {
@@ -84,10 +125,127 @@ export async function isTaskCompletedToday(userId: string, sourceType: string, s
       .eq('source_id', sourceId)
       .eq('task_order', taskOrder)
       .eq('scheduled_date', todayStr)
+      .limit(1)
       .maybeSingle();
     return !error && !!data;
   } catch {
     return false;
+  }
+}
+
+async function insertTaskCompletion(
+  userId: string,
+  sourceType: 'prescription' | 'sprint' | 'assignment' | 'weak_area',
+  sourceId: string,
+  taskOrder: number,
+  actualDurationMin?: number,
+  engagementScore?: number,
+  options?: TaskCompletionOptions
+): Promise<{ success: boolean; error?: string }> {
+  const payload = {
+    user_id: userId,
+    source_type: sourceType,
+    source_id: sourceId,
+    task_order: taskOrder,
+    task_title: options?.taskTitle ?? null,
+    subject: options?.subject ?? null,
+    completed_at: new Date().toISOString(),
+    scheduled_date: getTodayDateStr(),
+    actual_duration_min: actualDurationMin,
+    engagement_score: engagementScore,
+    notes: options?.notes ?? null,
+  };
+
+  // 1. Try upsert (requires unique index)
+  const { error: upsertError } = await supabase
+    .from('task_completions_v2')
+    .upsert(payload, {
+      onConflict: 'user_id,source_type,source_id,task_order,scheduled_date',
+      ignoreDuplicates: false,
+    });
+
+  if (!upsertError) return { success: true };
+
+  console.warn('task_completions_v2 upsert failed:', upsertError.message);
+
+  // 2. Fall back to plain INSERT if the unique constraint is missing.
+  //    This at least lets first-time completions land in the DB.
+  const { error: insertError } = await supabase
+    .from('task_completions_v2')
+    .insert(payload);
+
+  if (!insertError) return { success: true };
+
+  // If INSERT also failed because row already exists, treat as success
+  const msg = insertError.message || '';
+  if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('already exists')) {
+    return { success: true };
+  }
+
+  console.error('task_completions_v2 insert failed:', insertError);
+  return { success: false, error: insertError.message };
+}
+
+async function syncSourceTaskCompletion(
+  userId: string,
+  sourceType: 'prescription' | 'sprint' | 'assignment' | 'weak_area',
+  sourceId: string,
+  taskOrder: number
+): Promise<void> {
+  if (sourceType === 'prescription') {
+    const { data: prescription } = await supabase
+      .from('daily_prescriptions')
+      .select('tasks, status')
+      .eq('id', sourceId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const tasks = Array.isArray(prescription?.tasks) ? prescription.tasks : [];
+    if (!tasks.length) return;
+
+    const updatedTasks = tasks.map((task: any, index: number) => {
+      const order = typeof task?.order === 'number' ? task.order : index;
+      return order === taskOrder ? { ...task, completed: true } : task;
+    });
+    const allCompleted = updatedTasks.every((task: any) => !!task?.completed);
+
+    await supabase
+      .from('daily_prescriptions')
+      .update({
+        tasks: updatedTasks,
+        status: allCompleted ? 'completed' : prescription?.status || 'active',
+      })
+      .eq('id', sourceId)
+      .eq('user_id', userId);
+    return;
+  }
+
+  if (sourceType === 'sprint') {
+    const { data: sprint } = await supabase
+      .from('correction_sprints')
+      .select('sprint_tasks, status')
+      .eq('id', sourceId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const tasks = Array.isArray(sprint?.sprint_tasks) ? sprint.sprint_tasks : [];
+    if (!tasks.length) return;
+
+    const updatedTasks = tasks.map((task: any, index: number) => {
+      const order = typeof task?.order === 'number' ? task.order : index;
+      return order === taskOrder ? { ...task, completed: true } : task;
+    });
+    const allCompleted = updatedTasks.every((task: any) => !!task?.completed);
+
+    await supabase
+      .from('correction_sprints')
+      .update({
+        sprint_tasks: updatedTasks,
+        status: allCompleted ? 'completed' : sprint?.status || 'active',
+        completed_at: allCompleted ? new Date().toISOString() : null,
+      })
+      .eq('id', sourceId)
+      .eq('user_id', userId);
   }
 }
 
@@ -98,10 +256,12 @@ export async function markTaskCompleted(
   sourceId: string,
   taskOrder: number = 0,
   actualDurationMin?: number,
-  engagementScore?: number
-): Promise<{ success: boolean; xpEarned?: number; levelUp?: boolean; newLevel?: number }> {
+  engagementScore?: number,
+  options?: TaskCompletionOptions
+): Promise<{ success: boolean; xpEarned?: number; levelUp?: boolean; newLevel?: number; error?: string }> {
   try {
     let success = false;
+    let failureReason: string | undefined;
 
     if (sourceType === 'prescription') {
       const { error } = await supabase.rpc('mark_prescription_task_complete', {
@@ -112,6 +272,17 @@ export async function markTaskCompleted(
         p_engagement_score: engagementScore ?? null,
       });
       success = !error;
+      if (!success) {
+        failureReason = error?.message || 'RPC completion write failed';
+        console.error('mark_prescription_task_complete failed:', error);
+        const fallback = await insertTaskCompletion(userId, sourceType, sourceId, taskOrder, actualDurationMin, engagementScore, options);
+        success = fallback.success;
+        if (!success) {
+          failureReason = fallback.error || failureReason;
+        } else {
+          await syncSourceTaskCompletion(userId, sourceType, sourceId, taskOrder);
+        }
+      }
     } else if (sourceType === 'sprint') {
       const { error } = await supabase.rpc('mark_sprint_task_complete', {
         p_user_id: userId,
@@ -120,21 +291,26 @@ export async function markTaskCompleted(
         p_actual_duration_min: actualDurationMin ?? null,
       });
       success = !error;
+      if (!success) {
+        failureReason = error?.message || 'RPC completion write failed';
+        console.error('mark_sprint_task_complete failed:', error);
+        const fallback = await insertTaskCompletion(userId, sourceType, sourceId, taskOrder, actualDurationMin, engagementScore, options);
+        success = fallback.success;
+        if (!success) {
+          failureReason = fallback.error || failureReason;
+        } else {
+          await syncSourceTaskCompletion(userId, sourceType, sourceId, taskOrder);
+        }
+      }
     } else {
-      // Fallback: generic insert
-      const { error } = await supabase.from('task_completions_v2').insert({
-        user_id: userId,
-        source_type: sourceType,
-        source_id: sourceId,
-        task_order: taskOrder,
-        scheduled_date: getTodayDateStr(),
-        actual_duration_min: actualDurationMin,
-        engagement_score: engagementScore,
-      });
-      success = !error;
+      const fallback = await insertTaskCompletion(userId, sourceType, sourceId, taskOrder, actualDurationMin, engagementScore, options);
+      success = fallback.success;
+      failureReason = fallback.error;
     }
 
-    if (!success) return { success: false };
+    if (!success) return { success: false, error: failureReason || 'Could not save task completion' };
+
+    void supabase.rpc('refresh_behavioral_profile', { p_user_id: userId });
 
     // Award XP based on task type
     const xpMap: Record<string, number> = {
@@ -164,12 +340,13 @@ export async function markTaskCompleted(
       // XP failure should not fail the task completion
       return { success: true, xpEarned: totalXp };
     }
-  } catch {
-    return { success: false };
+  } catch (error: any) {
+    console.error('markTaskCompleted crashed:', error);
+    return { success: false, error: error?.message || 'Unexpected completion error' };
   }
 }
 
-export async function ensureBehavioralProfile(userId: string): Promise<void> {
+export async function ensureBehavioralProfile(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { data } = await supabase
       .from('student_behavioral_profiles')
@@ -177,20 +354,26 @@ export async function ensureBehavioralProfile(userId: string): Promise<void> {
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!data) {
-      await supabase.from('student_behavioral_profiles').insert({
-        user_id: userId,
-        preferred_time: 'evening',
-        typical_session_duration_min: 90,
-        weak_subjects: [],
-        strong_subjects: [],
-        stress_signals: {},
-        backlog_count: 0,
-        missed_days_streak: 0,
-      });
+    if (data) return { success: true };
+
+    const { error } = await supabase.from('student_behavioral_profiles').insert({
+      user_id: userId,
+      preferred_time: 'evening',
+      typical_session_duration_min: 90,
+      weak_subjects: [],
+      strong_subjects: [],
+      stress_signals: {},
+    });
+
+    if (error) {
+      console.error('ensureBehavioralProfile insert failed:', error);
+      return { success: false, error: error.message };
     }
-  } catch {
-    // Table may not exist yet — ignore
+    return { success: true };
+  } catch (e: any) {
+    const msg = e?.message || 'Unknown error ensuring profile';
+    console.error('ensureBehavioralProfile crashed:', msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -276,9 +459,9 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       // Fetch parallel roadmap data
       const [sessionsRes, prescriptionRes, sprintRes, behaviorRes] = await Promise.all([
         supabase.from('class_sessions').select('*').eq('roadmap_id', roadmapId).eq('session_date', todayStr),
-        supabase.from('daily_prescriptions').select('*').eq('user_id', userId).eq('prescription_date', todayStr).maybeSingle(),
+        supabase.from('daily_prescriptions').select('*').eq('user_id', userId).eq('prescription_date', todayStr).limit(1).maybeSingle(),
         supabase.from('correction_sprints').select('*').eq('user_id', userId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
-        supabase.from('student_behavioral_profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('student_behavioral_profiles').select('*').eq('user_id', userId).limit(1).maybeSingle(),
       ]);
 
       classSessions = sessionsRes.data || [];
@@ -480,20 +663,40 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     assignmentsRes,
     masteryRes,
     meetingNotesRes,
+    knowledgeRes,
+    recentOutputsRes,
   ] = await Promise.all([
     safeQuery(supabase.from('user_profiles').select('full_name').eq('id', userId).maybeSingle(), null),
     safeQuery(supabase.from('user_gamification').select('current_streak').eq('user_id', userId).maybeSingle(), null),
     safeQuery(supabase.from('class_members').select('class_id').eq('user_id', userId), []),
     safeQuery(
-      supabase.from('announcements').select('id, content, created_at, class_id, classes:class_id(class_name)').order('created_at', { ascending: false }).limit(10),
+      supabase.from('announcements').select('id, content, created_at, class_id, classes!class_id(class_name)').order('created_at', { ascending: false }).limit(10),
       []
     ),
     safeQuery(
-      supabase.from('assignments').select('id, title, description, due_date, class_id, classes:class_id(class_name)').order('due_date', { ascending: true }).limit(20),
+      supabase.from('assignments').select('id, title, description, due_date, class_id, classes!class_id(class_name)').order('due_date', { ascending: true }).limit(20),
       []
     ),
     safeQuery(supabase.from('user_subject_mastery').select('*').eq('user_id', userId).order('mastery_score', { ascending: true }).limit(3), []),
     safeQuery(supabase.from('meeting_notes').select('id, notes, saved_at, title').eq('user_id', userId).order('saved_at', { ascending: false }).limit(3), []),
+    safeQuery(
+      supabase
+        .from('user_knowledge')
+        .select('id, topic, subject, knowledge_type, source_type, content, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      []
+    ),
+    safeQuery(
+      supabase
+        .from('task_outputs')
+        .select('id, output_type, task_order, ai_analysis, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      []
+    ),
   ]);
 
   const userName = (profileRes as any)?.full_name || 'Student';
@@ -578,129 +781,142 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     };
   }
 
-  // --- Determine Today's Task (priority order) ---
-  let todayTask: TodayTask = roadmapPathAvailable
+  // --- Build ALL tasks for today ---
+  let allTasks: TodayTask[] = [];
+  let prescriptionIntentions: Array<{ trigger: string; action: string; duration_min: number; completed?: boolean }> = [];
+  let activePrescriptionId: string | null = null;
+
+  // Fetch task output statuses
+  let taskOutputs: any[] = [];
+  if (prescription?.id) {
+    try {
+      const { data: outputs } = await supabase
+        .from('task_outputs')
+        .select('task_order')
+        .eq('user_id', userId)
+        .eq('prescription_id', prescription.id);
+      taskOutputs = outputs || [];
+    } catch { /* table may not exist yet */ }
+  }
+  const submittedOrders = new Set(taskOutputs.map((o: any) => o.task_order));
+
+  // 1. Correction sprint tasks
+  if (correctionSprint) {
+    const sprintTasks = correctionSprint.sprint_tasks || [];
+    sprintTasks.forEach((t: any, i: number) => {
+      const order = t.order ?? i;
+      allTasks.push({
+        type: 'correction_sprint',
+        id: `sprint_${correctionSprint.id}_${order}`,
+        title: t.topic || t.description || 'Correction Sprint Task',
+        description: t.description || 'Complete your correction sprint task.',
+        strategy: t.strategy || 'Focus on understanding why you got this wrong, then re-attempt similar problems.',
+        subject: t.topic,
+        durationMin: t.duration_min || 30,
+        urgency: 'critical',
+        actionRoute: '/atlas',
+        actionLabel: 'Start Repair Task',
+        completed: t.completed || isCompleted('sprint', correctionSprint.id, order),
+        sprintId: correctionSprint.id,
+        taskOrder: order,
+        taskType: 'correction',
+      });
+    });
+  }
+
+  // 2. All prescription tasks (not just the first pending one)
+  if (prescription) {
+    activePrescriptionId = prescription.id;
+    const tasks = prescription.tasks || [];
+    const rawIntentions = prescription.implementation_intentions || [];
+    prescriptionIntentions = rawIntentions.map((intent: any) => {
+      if (typeof intent === 'string') {
+        const parts = intent.split(/→|then/i);
+        if (parts.length >= 2) {
+          return { trigger: parts[0].replace(/^If\s+/i, '').trim(), action: parts[1].trim(), duration_min: 5 };
+        }
+        return { trigger: intent, action: '', duration_min: 5 };
+      }
+      return { trigger: intent.trigger || '', action: intent.action || '', duration_min: intent.duration_min || 5, completed: intent.completed };
+    }).filter((i: any) => i.trigger);
+
+    tasks.forEach((t: any, i: number) => {
+      const order = t.order ?? i;
+      allTasks.push({
+        type: 'prescription',
+        id: `prescription_${prescription.id}_${order}`,
+        title: t.title || t.topic || 'Study Task',
+        description: t.description || t.details || `${t.type}: ${t.title || t.topic}`,
+        strategy: t.strategy || '',
+        resources: t.resources || [],
+        subject: t.subject,
+        durationMin: t.estimated_minutes || t.duration_min || 30,
+        urgency: 'high',
+        actionRoute: '/atlas',
+        actionLabel: 'Start with Atlas',
+        completed: t.completed || submittedOrders.has(order) || isCompleted('prescription', prescription.id, order),
+        prescriptionId: prescription.id,
+        taskOrder: order,
+        taskType: t.type || 'study',
+        outputSubmitted: submittedOrders.has(order),
+      });
+    });
+  }
+
+  // 3. Overdue assignments
+  const allRelevantAssignments = (assignmentsRes as any[]).filter((a: any) => enrolledClassIds.has(a.class_id));
+  allRelevantAssignments.forEach((a: any) => {
+    if (!a.due_date) return;
+    const due = new Date(a.due_date);
+    const now = new Date();
+    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 1) {
+      allTasks.push({
+        type: 'assignment',
+        id: `assignment_${a.id}`,
+        title: a.title,
+        description: a.description || 'Complete and submit this assignment.',
+        urgency: diffDays <= 0 ? 'critical' : 'high',
+        actionRoute: `/class/${a.class_id}`,
+        actionLabel: 'Go to Assignment',
+        completed: isCompleted('assignment', a.id),
+        taskType: 'assignment',
+      });
+    }
+  });
+
+  // Build legacy single todayTask (first pending for backward compat)
+  const firstPendingTask = allTasks.find(t => !t.completed) || allTasks[0];
+  let todayTask: TodayTask = firstPendingTask || (roadmapPathAvailable
     ? {
-        type: 'none',
+        type: 'none' as TaskType,
         id: 'none',
         title: 'All caught up for today!',
         description: 'No pending tasks right now. Your daily prescription will be generated soon — check back later or explore Atlas.',
-        urgency: 'low',
+        urgency: 'low' as const,
         actionRoute: '/atlas',
         actionLabel: 'Explore Atlas',
         completed: false,
       }
     : {
-        type: 'none',
+        type: 'none' as TaskType,
         id: 'none',
         title: 'Choose your roadmap',
         description: 'Pick a study roadmap to get daily tasks, revision plans, and personalized guidance.',
-        urgency: 'normal',
+        urgency: 'normal' as const,
         actionRoute: '/',
         actionLabel: 'Choose Roadmap',
         completed: false,
-      };
+      });
 
-  // 1. Active correction sprint
-  if (correctionSprint) {
-    const tasks = correctionSprint.sprint_tasks || [];
-    const firstPending = tasks.find((t: any) => !t.completed);
-    if (firstPending) {
-      const order = firstPending.order || 0;
-      todayTask = {
-        type: 'correction_sprint',
-        id: `sprint_${correctionSprint.id}_${order}`,
-        title: firstPending.topic || firstPending.description || 'Correction Sprint Task',
-        description: firstPending.description || 'Complete your correction sprint task.',
-        subject: firstPending.topic,
-        durationMin: firstPending.duration_min || 30,
-        urgency: 'critical',
-        actionRoute: '/atlas',
-        actionLabel: 'Start Repair Task',
-        completed: isCompleted('sprint', correctionSprint.id, order),
-        sprintId: correctionSprint.id,
-        taskOrder: order,
-      };
-    }
+  if (firstPendingTask && prescriptionIntentions.length > 0) {
+    todayTask = { ...todayTask, implementationIntentions: prescriptionIntentions };
   }
 
-  // 2. Today's AI-generated prescription
-  if (todayTask.type === 'none' && prescription) {
-    const tasks = prescription.tasks || [];
-    const rawIntentions = prescription.implementation_intentions || [];
-    // Normalize intentions: handle both string[] and object[] formats
-    const intentions = rawIntentions.map((intent: any) => {
-      if (typeof intent === 'string') {
-        const parts = intent.split(/→|then/i);
-        if (parts.length >= 2) {
-          return { trigger: parts[0].replace(/^If\s+/i, '').trim(), action: parts[1].trim() };
-        }
-        return { trigger: intent, action: '' };
-      }
-      return { trigger: intent.trigger || '', action: intent.action || '' };
-    }).filter((i: any) => i.trigger);
-
-    const firstPending = tasks.find((t: any) => !t.completed);
-    if (firstPending) {
-      const order = firstPending.order || 0;
-      todayTask = {
-        type: 'prescription',
-        id: `prescription_${prescription.id}_${order}`,
-        title: firstPending.title || firstPending.topic || 'Tonight\'s Study Task',
-        description: firstPending.description || firstPending.details || `${firstPending.type}: ${firstPending.title || firstPending.topic}`,
-        subject: firstPending.subject,
-        durationMin: firstPending.estimated_minutes || firstPending.duration_min || 30,
-        urgency: 'high',
-        actionRoute: '/atlas',
-        actionLabel: 'Start with Atlas',
-        completed: isCompleted('prescription', prescription.id, order),
-        implementationIntentions: intentions,
-        prescriptionId: prescription.id,
-        taskOrder: order,
-      };
-    }
-  }
-
-  // 3. Overdue assignment
-  if (todayTask.type === 'none') {
-    const allRelevantAssignments = (assignmentsRes as any[]).filter((a: any) => enrolledClassIds.has(a.class_id));
-    const overdueOrDueToday = allRelevantAssignments.find((a: any) => {
-      if (!a.due_date) return false;
-      const due = new Date(a.due_date);
-      const now = new Date();
-      const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return diffDays <= 0;
-    });
-    if (overdueOrDueToday) {
-      todayTask = {
-        type: 'assignment',
-        id: `assignment_${overdueOrDueToday.id}`,
-        title: overdueOrDueToday.title,
-        description: overdueOrDueToday.description || 'Complete and submit this assignment.',
-        urgency: 'critical',
-        actionRoute: `/class/${overdueOrDueToday.class_id}`,
-        actionLabel: 'Go to Assignment',
-        completed: isCompleted('assignment', overdueOrDueToday.id),
-      };
-    }
-  }
-
-  // 4. Weak area fallback
-  if (todayTask.type === 'none' && (masteryRes as any[]).length > 0) {
-    const weak = (masteryRes as any[])[0];
-    todayTask = {
-      type: 'weak_area',
-      id: `weak_${weak.domain}`,
-      title: `Revise ${weak.domain}`,
-      description: `Your mastery in ${weak.domain}${weak.subdomain ? ` (${weak.subdomain})` : ''} is at ${Math.round((weak.mastery_score || 0) * 100)}%. Let's plug this gap.`,
-      subject: weak.exam_type,
-      durationMin: 30,
-      urgency: 'normal',
-      actionRoute: '/atlas',
-      actionLabel: 'Plug with Atlas',
-      completed: isCompleted('weak_area', `weak_${weak.domain}`),
-    };
-  }
+  const completedCount = allTasks.filter(t => t.completed).length;
+  const totalCount = allTasks.length;
+  const allDone = totalCount > 0 && completedCount === totalCount;
+  const totalMinutes = allTasks.reduce((sum, t) => sum + (t.durationMin || 0), 0);
 
   const behavior = behavioralProfile;
   const studentState: StudentState = {
@@ -711,18 +927,44 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     missedDaysStreak: behavior?.missed_days_streak || 0,
   };
 
+  const recentKnowledge: DailyBriefingMemory[] = (knowledgeRes as any[]).map((entry: any) => ({
+    id: entry.id,
+    topic: entry.topic,
+    subject: entry.subject,
+    knowledgeType: entry.knowledge_type || entry.source_type,
+    content: entry.content,
+    createdAt: entry.created_at,
+  }));
+
+  const recentSubmissions: DailyBriefingSubmission[] = (recentOutputsRes as any[]).map((entry: any) => ({
+    id: entry.id,
+    outputType: entry.output_type,
+    taskOrder: entry.task_order,
+    createdAt: entry.created_at,
+    analysis: entry.ai_analysis,
+  }));
+
   return {
     greeting: getGreeting(),
     userName,
     streak,
     classUpdate,
     todayTask,
+    todayTasks: allTasks,
     isTaskCompleted: todayTask.completed,
+    allTasksCompleted: allDone,
+    completedCount,
+    totalCount,
     hasPlan: !!activeRoadmap,
     hasClasses: enrolledClassIds.size > 0,
     activeRoadmap: !!activeRoadmap,
     roadmapId,
+    prescriptionId: activePrescriptionId,
     correctionSprint: correctionSprintData,
     studentState,
+    totalEstimatedMinutes: totalMinutes,
+    implementationIntentions: prescriptionIntentions,
+    recentKnowledge,
+    recentSubmissions,
   };
 }

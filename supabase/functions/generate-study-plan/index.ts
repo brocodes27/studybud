@@ -1,4 +1,5 @@
 import { isUserPremium } from './_utils_subscription.ts';
+import { callGemini } from '../_shared/gemini.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -96,11 +97,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Prepare OpenAI API request
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
+    // Prepare Gemini API request
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey) {
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
+        JSON.stringify({ error: "Gemini API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -206,83 +207,42 @@ Return the response in this exact JSON format:
 
 IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep responses concise to avoid truncation.`;
 
-      const fullPrompt = `SYSTEM INSTRUCTION: You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested.\n\nUSER PROMPT: ${prompt}`;
-
-      const callOpenAI = async () => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 90000);
-        try {
-          const res = await fetch(
-            "https://api.openai.com/v1/chat/completions",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${openaiApiKey}`,
-              },
-              body: JSON.stringify({
-                model: "gpt-4o",
-                messages: [
-                  {
-                    role: "system",
-                    content: "You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested."
-                  },
-                  {
-                    role: "user",
-                    content: prompt,
-                  },
-                ],
-                temperature: 0.7,
-                max_completion_tokens: 4096,
-              }),
-              signal: controller.signal
-            }
-          );
-          return res;
-        } finally {
-          clearTimeout(timeout);
+      const callGeminiWithRetry = async (): Promise<string> => {
+        let lastErr: unknown;
+        for (let i = 0; i < 3; i++) {
+          try {
+            return await callGemini(
+              [
+                {
+                  role: "system",
+                  content: "You are an expert educational AI assistant that creates detailed, personalized study plans. Always return valid JSON in the exact format requested."
+                },
+                { role: "user", content: prompt }
+              ],
+              { temperature: 0.7, maxOutputTokens: 4096, json: true, apiKey: geminiApiKey }
+            );
+          } catch (e) {
+            lastErr = e;
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
+          }
         }
+        throw lastErr instanceof Error ? lastErr : new Error('Gemini call failed');
       };
 
-      let openaiResponse: Response;
-      try {
-        openaiResponse = await callOpenAI();
-      } catch (e: any) {
-        if (e?.name === 'AbortError' || String(e)?.includes('aborted')) {
-          await new Promise(r => setTimeout(r, 500));
-          openaiResponse = await callOpenAI();
-        } else {
-          throw e;
-        }
-      }
-      if (!openaiResponse.ok && (openaiResponse.status === 503 || openaiResponse.status === 429)) {
-        await new Promise(r => setTimeout(r, 500));
-        openaiResponse = await callOpenAI();
-      }
-      if (!openaiResponse.ok && (openaiResponse.status === 503 || openaiResponse.status === 429)) {
-        await new Promise(r => setTimeout(r, 1000));
-        openaiResponse = await callOpenAI();
-      }
-
-      if (!openaiResponse.ok) {
-        throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-      }
-
-      const openaiData = await openaiResponse.json();
-      const generatedText = openaiData.choices?.[0]?.message?.content || '';
-      console.log("OPENAI_LEN", generatedText?.length || 0);
+      const generatedText = await callGeminiWithRetry();
+      console.log("GEMINI_LEN", generatedText?.length || 0);
 
       // Validate response size and content
       if (!generatedText || generatedText.length < 50) {
-        throw new Error("OpenAI response is too short or empty");
+        throw new Error("Gemini response is too short or empty");
       }
 
-      // Check if response might be truncated (look for incomplete JSON)
+      // Check if response might be truncated
       if (generatedText.length > 10000) {
-        console.warn("Large OpenAI response detected, may be truncated");
+        console.warn("Large Gemini response detected, may be truncated");
       }
 
-      // Parse the JSON response from OpenAI with improved error handling
+      // Parse the JSON response with improved error handling
       let studyPlan;
       try {
         // First, try to extract JSON from the response (strip code fences if present)
@@ -322,7 +282,7 @@ IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep
         return studyPlan;
 
       } catch (parseError) {
-        console.error("Failed to parse OpenAI response:", {
+        console.error("Failed to parse Gemini response:", {
           error: parseError.message,
           responseLength: generatedText.length,
           responsePreview: generatedText.substring(0, 500) + "...",

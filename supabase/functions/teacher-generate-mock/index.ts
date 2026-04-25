@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini } from "../_shared/gemini.ts";
 
 // Add CORS headers
 const corsHeaders = {
@@ -7,9 +8,6 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
-
-// Read OpenAI API key from environment variable
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 serve(async (req) => {
     // Handle CORS preflight
@@ -19,10 +17,6 @@ serve(async (req) => {
 
     try {
         const { dailyTopics, mockQuestionCount } = await req.json();
-
-        if (!OPENAI_API_KEY) {
-            return new Response(JSON.stringify({ error: "OpenAI API key not set in Edge Function secrets." }), { status: 500, headers: corsHeaders });
-        }
 
         const prompt = `You are an expert CBSE question setter. Create a short mock test strictly based on the following topics taught today. Keep it aligned with latest CBSE patterns.
 
@@ -37,29 +31,13 @@ Rules:
 Each question item: {"index": number, "type": "mcq"|"short"|"long", "question": string, "marks": number, "options"?: string[]}
 `;
 
-        // Call OpenAI API
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "gpt-4o",
-                messages: [
-                    { role: "system", content: "You are a helpful assistant that outputs only JSON." },
-                    { role: "user", content: prompt }
-                ],
-                response_format: { type: "json_object" }
-            }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error?.message || "OpenAI API error");
-        }
-
-        const text = data.choices[0]?.message?.content || "";
+        const text = await callGemini(
+            [
+                { role: "system", content: "You are a helpful assistant that outputs only JSON." },
+                { role: "user", content: prompt }
+            ],
+            { json: true }
+        );
         // Clean up potential markdown code blocks if any (though json_object format usually avoids them, it's safe to clean)
         const clean = text.trim().replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
 

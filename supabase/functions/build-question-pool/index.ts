@@ -156,7 +156,7 @@ async function generateWithGemini(prompt) {
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY not configured");
   }
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {

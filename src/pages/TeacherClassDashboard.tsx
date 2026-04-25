@@ -39,6 +39,9 @@ const TeacherClassDashboard: React.FC = () => {
   const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
   const [assignmentError, setAssignmentError] = useState('');
   const [postingAssignment, setPostingAssignment] = useState(false);
+  const [assignmentMode, setAssignmentMode] = useState<'standard' | 'prove-it'>('prove-it');
+  const [proveItSubject, setProveItSubject] = useState('JEE Physics');
+  const [proveItTopic, setProveItTopic] = useState('');
 
   // Daily Log & Mock Test state
   const [dailyTopics, setDailyTopics] = useState('');
@@ -505,7 +508,11 @@ const TeacherClassDashboard: React.FC = () => {
 
   const handlePostAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignmentTitle.trim()) {
+    if (assignmentMode === 'prove-it' && !proveItTopic.trim()) {
+      setAssignmentError('Prove-It topic is required.');
+      return;
+    }
+    if (assignmentMode === 'standard' && !assignmentTitle.trim()) {
       setAssignmentError('Title is required.');
       return;
     }
@@ -520,19 +527,43 @@ const TeacherClassDashboard: React.FC = () => {
         const { data: publicURLData } = supabase.storage.from('assignments').getPublicUrl(filePath);
         fileUrl = publicURLData.publicUrl;
       }
+      const proveItUrl = `/prove-it?subject=${encodeURIComponent(proveItSubject)}&topic=${encodeURIComponent(proveItTopic)}`;
+      const title = assignmentMode === 'prove-it' ? `Prove-It: ${proveItTopic}` : assignmentTitle;
+      const description = assignmentMode === 'prove-it'
+        ? `Socratic mastery challenge assigned by your teacher.\n\nSubject: ${proveItSubject}\nTopic: ${proveItTopic}\n\nOpen: ${proveItUrl}`
+        : assignmentDesc;
       const { error } = await supabase.from('assignments').insert({
         class_id: id,
-        title: assignmentTitle,
-        description: assignmentDesc,
+        title,
+        description,
         due_date: assignmentDueDate || null,
         file_url: fileUrl,
       });
       if (error) throw new Error(error.message);
 
+      const { data: members } = await supabase
+        .from('class_members')
+        .select('user_id')
+        .eq('class_id', id);
+      const studentIds: string[] = (members || []).map((m: any) => m.user_id).filter((uid: string) => uid && uid !== user.id);
+      if (studentIds.length > 0) {
+        await supabase.from('notifications').insert(studentIds.map(uid => ({
+          user_id: uid,
+          type: 'assignment',
+          title: assignmentMode === 'prove-it' ? 'New Prove-It Challenge' : 'New Assignment',
+          message: assignmentMode === 'prove-it' ? `${proveItSubject}: ${proveItTopic}` : title,
+          is_read: false,
+          action_url: assignmentMode === 'prove-it' ? proveItUrl : `/class/${id}`,
+          priority: assignmentMode === 'prove-it' ? 'high' : 'normal',
+          class_id: id,
+        })));
+      }
+
       setAssignmentTitle('');
       setAssignmentDesc('');
       setAssignmentDueDate('');
       setAssignmentFile(null);
+      setProveItTopic('');
 
       // Refresh assignments
       const { data: assignmentData } = await supabase
@@ -849,7 +880,49 @@ const TeacherClassDashboard: React.FC = () => {
               </h3>
               <form onSubmit={handlePostAssignment} className="space-y-6">
                 {assignmentError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{assignmentError}</div>}
-                <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAssignmentMode('prove-it')}
+                    className={`p-4 border border-white/10 font-black uppercase tracking-widest text-sm transition-all ${assignmentMode === 'prove-it' ? 'bg-neo-accent text-white shadow-neo' : 'bg-slate-800 text-slate-100/70 hover:bg-slate-700'}`}
+                  >
+                    ASSIGN_PROVE_IT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAssignmentMode('standard')}
+                    className={`p-4 border border-white/10 font-black uppercase tracking-widest text-sm transition-all ${assignmentMode === 'standard' ? 'bg-neo-accent text-white shadow-neo' : 'bg-slate-800 text-slate-100/70 hover:bg-slate-700'}`}
+                  >
+                    STANDARD_TASK
+                  </button>
+                </div>
+                {assignmentMode === 'prove-it' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-800 p-5 border border-white/10">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">JEE_SUBJECT</label>
+                      <select
+                        value={proveItSubject}
+                        onChange={(e) => setProveItSubject(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                      >
+                        <option>JEE Physics</option>
+                        <option>JEE Chemistry</option>
+                        <option>JEE Mathematics</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TOPIC_TO_PROVE</label>
+                      <input
+                        type="text"
+                        placeholder="E.G. ROTATIONAL DYNAMICS"
+                        value={proveItTopic}
+                        onChange={(e) => setProveItTopic(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
+                      />
+                    </div>
+                  </div>
+                )}
+                {assignmentMode === 'standard' && <div>
                   <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TITLE</label>
                   <input
                     type="text"
@@ -859,8 +932,8 @@ const TeacherClassDashboard: React.FC = () => {
                     className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
                     required
                   />
-                </div>
-                <div>
+                </div>}
+                {assignmentMode === 'standard' && <div>
                   <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">DESCRIPTION</label>
                   <textarea
                     placeholder="DETAILS & INSTRUCTIONS..."
@@ -868,7 +941,7 @@ const TeacherClassDashboard: React.FC = () => {
                     onChange={(e) => setAssignmentDesc(e.target.value)}
                     className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[100px]"
                   />
-                </div>
+                </div>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
@@ -880,14 +953,14 @@ const TeacherClassDashboard: React.FC = () => {
                       className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
                     />
                   </div>
-                  <div>
+                  {assignmentMode === 'standard' && <div>
                     <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">ATTACHMENT</label>
                     <input
                       type="file"
                       onChange={(e) => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
                       className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 file:mr-4 file:py-2 file:px-4 file:border file:border-white/10 file:text-xs file:font-black file:bg-neo-secondary hover:file:bg-slate-900 hover:file:text-white transition-all"
                     />
-                  </div>
+                  </div>}
                 </div>
 
                 <button
@@ -895,7 +968,7 @@ const TeacherClassDashboard: React.FC = () => {
                   disabled={postingAssignment}
                   className="bg-slate-900 text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-transparent hover:bg-neo-accent hover:text-white hover:border-white/10 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
                 >
-                  {postingAssignment ? 'CREATING...' : 'INITIALIZE_ASSIGNMENT'}
+                  {postingAssignment ? 'CREATING...' : assignmentMode === 'prove-it' ? 'ASSIGN_PROVE_IT_CHALLENGE' : 'INITIALIZE_ASSIGNMENT'}
                 </button>
               </form>
             </div>

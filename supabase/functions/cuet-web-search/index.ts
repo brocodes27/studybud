@@ -1,8 +1,9 @@
 // supabase/functions/cuet-web-search/index.ts
-// Deno Edge Function: Searches the web for CUET-style MCQs and normalizes them via OpenAI
-// Env required: OPENAI_API_KEY (string), TAVILY_API_KEY (string)
+// Deno Edge Function: Searches the web for CUET-style MCQs and normalizes them via Gemini
+// Env required: GEMINI_API_KEY (string), TAVILY_API_KEY (string)
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { callGemini } from '../_shared/gemini.ts';
 
 type Quota = { domain: string; take: number };
 
@@ -24,9 +25,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY');
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
     if (!TAVILY_API_KEY) throw new Error('TAVILY_API_KEY not set');
 
     const body = (await req.json()) as Payload;
@@ -84,28 +83,17 @@ Constraints:
 Web context:
 ${context}`;
 
-    // Call OpenAI Chat Completions
-    const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [ { role: 'system', content: system }, { role: 'user', content: user } ],
-        max_tokens: 3000,
-        temperature: 0.2
-      })
-    });
-
-    if (!oaiRes.ok) {
-      const t = await oaiRes.text();
-      throw new Error(`OpenAI error: ${oaiRes.status} ${t}`);
-    }
-
-    const oaiJson = await oaiRes.json();
-    const text = oaiJson?.choices?.[0]?.message?.content || '[]';
+    // Call Gemini
+    const text = await callGemini(
+      [ { role: 'system', content: system }, { role: 'user', content: user } ],
+      { temperature: 0.2, maxOutputTokens: 3000 }
+    );
     // Return raw text as JSON if possible
     let payload: any = [];
-    try { payload = JSON.parse(text); } catch { payload = []; }
+    try {
+      const cleaned = text.replace(/```json|```/gi, '').trim();
+      payload = JSON.parse(cleaned);
+    } catch { payload = []; }
 
     return new Response(JSON.stringify({ items: payload }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

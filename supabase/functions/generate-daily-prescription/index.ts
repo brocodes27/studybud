@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { callGeminiJSON } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,10 +79,7 @@ serve(async (req: Request) => {
       behavioral_profile: profile || { preferred_time: 'evening', typical_session_duration_min: 90 }
     }
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) throw new Error("OpenAI key missing")
-
-    const systemPrompt = `You are Ranjan Sir, an elite JEE mentor. Your job is to generate a precise nightly study plan (prescription) for today.
+    const systemPrompt = `You are Ranjan Sir, a warm and encouraging JEE mentor. Your job is to generate a supportive, realistic nightly study plan (prescription) for today.
 Here is the context:
 ${JSON.stringify(contextSnapshot, null, 2)}
 
@@ -104,20 +102,13 @@ Output strictly in JSON:
 }
 `
 
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiApiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [{ role: "system", content: "You output JSON only." }, { role: "user", content: systemPrompt }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
-    })
-
-    if (!aiRes.ok) throw new Error(`OpenAI Error: ${await aiRes.text()}`)
-    const aiData = await aiRes.json()
-    const prescriptionJSON = JSON.parse(aiData.choices[0].message.content)
+    const prescriptionJSON = await callGeminiJSON<any>(
+      [
+        { role: "system", content: "You output JSON only." },
+        { role: "user", content: systemPrompt }
+      ],
+      { temperature: 0.3 }
+    )
 
     const { data: prescription, error: presErr } = await supabaseClient
       .from('daily_prescriptions')

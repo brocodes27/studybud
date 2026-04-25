@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { Input } from '../../components/Input';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,6 +10,7 @@ import { trackDubEvent } from '../../lib/dub';
 export function LandingAuth() {
   const { signUp, signIn, signInWithGoogle } = useAuth() as any;
   const { showToast } = useToast();
+  const { track } = useAnalytics();
 
   const [isSignUp, setIsSignUp] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
@@ -36,6 +38,7 @@ export function LandingAuth() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    track('signup_start', { method: isSignUp ? 'email' : 'signin' });
     setFormLoading(true);
     try {
       if (isSignUp) {

@@ -1,8 +1,9 @@
 // supabase/functions/generate-monthly-curriculum/index.ts
-// Generates or updates a monthly curriculum using OpenAI and (optionally) Tavily, then materializes tasks
-// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, [TAVILY_API_KEY optional]
+// Generates or updates a monthly curriculum using Gemini and (optionally) Tavily, then materializes tasks
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, [TAVILY_API_KEY optional]
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { callGemini } from '../_shared/gemini.ts';
 
 type Payload = {
   aim?: 'cbse' | 'jee';
@@ -57,10 +58,8 @@ Deno.serve(async (req: Request) => {
     stage = 'readEnv';
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY') || '';
     if (!supabaseUrl || !serviceKey) throw new Error('Supabase configuration missing');
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
     // TAVILY_API_KEY is optional; we will proceed without web context if it's not provided
 
     stage = 'checkAuthHeader';
@@ -155,23 +154,16 @@ Deno.serve(async (req: Request) => {
     const system = `You are an expert academic planner for ${aim.toUpperCase()}. Given month range${TAVILY_API_KEY ? ' and web context' : ''}, produce a balanced monthly curriculum. Avoid Sundays. Distribute tasks evenly across weeks and subjects. Return STRICT JSON only.`;
     const user = `Month: ${monthStartStr}..${monthEndStr}\nAim: ${aim}\nClass Level: ${classLevel || 'N/A'}\nSubjects: ${subjects.join(', ')}\n\nReturn exactly this JSON shape:\n{\n  "month": "${monthStartStr.slice(0,7)}",\n  "weeks": [\n    {\n      "week_start": "YYYY-MM-DD",\n      "tasks": [\n        { "date": "YYYY-MM-DD", "subject": "<one of subjects>", "title": "short title", "description": "1-2 lines" }\n      ]\n    }\n  ]\n}\n\nRules:\n- Dates must be within the month and not Sunday.\n- Balance per subject across the month.\n- 1-2 tasks per weekday is fine.\n\nWeb context (no need to cite, just align topics):\n${context}`;
 
-    stage = 'openAIRequest';
-    const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [ { role: 'system', content: system }, { role: 'user', content: user } ],
-        temperature: 0.2,
-        max_tokens: 3500,
-      }),
-    });
-    if (!oaiRes.ok) throw new Error(`OpenAI error: ${await oaiRes.text()}`);
-    const oaiJson = await oaiRes.json();
-    const text = oaiJson?.choices?.[0]?.message?.content || '{}';
+    stage = 'geminiRequest';
+    const text = await callGemini(
+      [ { role: 'system', content: system }, { role: 'user', content: user } ],
+      { temperature: 0.2, maxOutputTokens: 3500, json: true }
+    );
     let planJson: any = {};
-    try { planJson = JSON.parse(text); } catch { planJson = {}; }
+    try {
+      const cleaned = (text || '{}').replace(/```json|```/gi, '').trim();
+      planJson = JSON.parse(cleaned);
+    } catch { planJson = {}; }
 
     // Basic validation
     stage = 'validatePlan';

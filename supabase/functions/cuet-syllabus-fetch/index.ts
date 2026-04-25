@@ -1,8 +1,9 @@
 // supabase/functions/cuet-syllabus-fetch/index.ts
-// Deno Edge Function: Fetches CUET-UG domain syllabi via Tavily search and normalizes with OpenAI
-// Env: OPENAI_API_KEY, TAVILY_API_KEY
+// Deno Edge Function: Fetches CUET-UG domain syllabi via Tavily search and normalizes with Gemini
+// Env: GEMINI_API_KEY, TAVILY_API_KEY
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { callGemini } from '../_shared/gemini.ts';
 
 type FetchPayload = {
   subjects: string[]; // CUET domain subject names
@@ -21,9 +22,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY');
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
     if (!TAVILY_API_KEY) throw new Error('TAVILY_API_KEY not set');
 
     const body = (await req.json()) as FetchPayload;
@@ -74,24 +73,12 @@ Deno.serve(async (req: Request) => {
       const system = `You are an expert educational content curator for CUET-UG. Extract the official syllabus topics for the subject. Return STRICT JSON only.`;
       const user = `Subject: ${entry.subject}\nYear: ${year}\n\nFrom the web context below, extract a clean hierarchical syllabus aligned to NCERT Class 12 and CUET-UG official notices.\n\nReturn this JSON shape only (no markdown):\n{\n  "subject": "${entry.subject}",\n  "year": "${year}",\n  "topics": [\n    { "unit": "string", "subtopics": ["string", "string", "..."] }\n  ],\n  "sources": [ { "title": "string", "url": "string" } ]\n}\n\nWeb context:\n${context}`;
 
-      const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [ { role: 'system', content: system }, { role: 'user', content: user } ],
-          temperature: 0.2,
-          max_tokens: 3000
-        })
-      });
-      if (!oaiRes.ok) {
-        const t = await oaiRes.text();
-        throw new Error(`OpenAI error: ${oaiRes.status} ${t}`);
-      }
-      const oaiJson = await oaiRes.json();
-      const text = oaiJson?.choices?.[0]?.message?.content || '{}';
+      const text = await callGemini(
+        [ { role: 'system', content: system }, { role: 'user', content: user } ],
+        { temperature: 0.2, maxOutputTokens: 3000, json: true }
+      );
       let payload: any = {};
-      try { payload = JSON.parse(text); } catch { payload = {}; }
+      try { payload = JSON.parse(text.replace(/```json|```/gi, '').trim()); } catch { payload = {}; }
       // Attach top 5 sources with title/url
       payload.sources = entry.sources.slice(0, 5).map(s => ({ title: s.title, url: s.url }));
       results.push(payload);

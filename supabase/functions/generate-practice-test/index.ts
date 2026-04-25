@@ -157,7 +157,7 @@ Return the response in this exact JSON format:
 Make sure questions are challenging but fair, and test real understanding of ${subject} concepts at Class ${studentClass || ''} level.`;
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: {

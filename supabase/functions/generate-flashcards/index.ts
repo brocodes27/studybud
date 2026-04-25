@@ -158,7 +158,7 @@ Return the response in this exact JSON format (do NOT include markdown/code fenc
 Make sure questions are specific and answers are educational. Include definitions, explanations, examples, and key concepts relevant to Class ${studentClass || ''} ${subject}.`;
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: {

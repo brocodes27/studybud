@@ -119,7 +119,7 @@ If the student asks for practice questions, provide 2-3 relevant questions with 
 Keep your response concise but comprehensive, and always maintain a supportive and educational tone.`;
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
       {
         method: "POST",
         headers: {

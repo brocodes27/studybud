@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { callGeminiJSON } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,10 +36,7 @@ serve(async (req: Request) => {
       .eq('user_id', user.id)
       .maybeSingle()
 
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-    if (!openaiApiKey) throw new Error("OpenAI key missing")
-
-    const systemPrompt = `You are Ranjan Sir, an elite rigorous JEE mentor. You are creating a 'Correction Sprint' for a student who just took a test.
+    const systemPrompt = `You are Ranjan Sir, a warm and encouraging JEE mentor. You are creating a 'Correction Sprint' for a student who just took a test.
 Here are the weak topics extracted from their test result:
 ${JSON.stringify(weak_topics, null, 2)}
 Student Profile:
@@ -59,20 +57,13 @@ Output Format:
 }
 `
 
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiApiKey}` },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [{ role: "system", content: "You output JSON only." }, { role: "user", content: systemPrompt }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
-    })
-
-    if (!aiRes.ok) throw new Error(`OpenAI Error: ${await aiRes.text()}`)
-    const aiData = await aiRes.json()
-    const sprintJSON = JSON.parse(aiData.choices[0].message.content)
+    const sprintJSON = await callGeminiJSON<any>(
+      [
+        { role: "system", content: "You output JSON only." },
+        { role: "user", content: systemPrompt }
+      ],
+      { temperature: 0.3 }
+    )
 
     // Insert to DB
     const { data: sprint, error: insertError } = await supabaseClient

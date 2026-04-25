@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini } from "../_shared/gemini.ts";
 
 // Add CORS headers
 const corsHeaders = {
@@ -7,9 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
-
-// Read OpenAI API key from environment variable
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -19,9 +17,6 @@ serve(async (req) => {
 
   try {
     const { classId, students, resources, assignments, prompt } = await req.json();
-    if (!OPENAI_API_KEY) {
-      return new Response(JSON.stringify({ error: "OpenAI API key not set in Edge Function secrets." }), { status: 500, headers: corsHeaders });
-    }
 
     // Compose the prompt
     const fullPrompt = `Class ID: ${classId}
@@ -31,28 +26,10 @@ Assignments: ${JSON.stringify(assignments)}
 
 ${prompt}`;
 
-    // Call OpenAI API
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "You are an expert personalized educational consultant for a teacher." },
-          { role: "user", content: fullPrompt }
-        ]
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error?.message || "OpenAI API error");
-    }
-
-    const summary = data.choices[0]?.message?.content || "No summary returned.";
+    const summary = await callGemini([
+      { role: "system", content: "You are an expert personalized educational consultant for a teacher." },
+      { role: "user", content: fullPrompt }
+    ]);
 
     return new Response(JSON.stringify({ summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

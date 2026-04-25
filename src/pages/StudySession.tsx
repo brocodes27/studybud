@@ -54,7 +54,7 @@ export function StudySession() {
   const [messages, setMessages] = useState<Array<{ role: 'atlas' | 'user', content: string }>>([
     {
       role: 'atlas',
-      content: "Hello! I'm Atlas. I'm here to help you master this topic today. Do you have any questions, or would you like to try a practice problem?"
+      content: "Hey there! I'm Atlas, your study buddy. I'm here to help you tackle today's topic together — no pressure, we've got this! What would you like to start with? A quick explanation, a practice problem, or just chat about the topic?"
     }
   ]);
 

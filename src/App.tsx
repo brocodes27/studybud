@@ -4,20 +4,10 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ManusSidebar } from './components/ManusSidebar';
 import TeacherNavbar from './components/TeacherNavbar';
 import ManusHome from './pages/ManusHome';
-import { CreatePlan } from './pages/CreatePlan';
-import { StudyPlans } from './pages/StudyPlans';
-import { Progress } from './pages/Progress';
-import { StudyTools } from './pages/StudyTools';
-import { Social } from './pages/Social';
-import { Notifications } from './pages/Notifications';
 import Landing from './pages/Landing';
-import { StudySession } from './pages/StudySession';
 import { Toaster } from './components/Toaster';
 import { useOfflineStorage } from './hooks/useOfflineStorage';
 import { useToast } from './hooks/useToast';
-import { LiveMeetingNotes } from './components/LiveMeetingNotes';
-import { MyMeetingNotes } from './pages/MyMeetingNotes';
-import { NoteDetailPage } from './pages/NoteDetailPage';
 import { Profile } from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 import { usePayment } from './hooks/usePayment';
@@ -27,27 +17,21 @@ import TeacherPanel from './pages/TeacherPanel';
 import MyClasses from './pages/MyClasses';
 import { ClassPage } from './pages/ClassPage';
 import TeacherClassDashboard from './pages/TeacherClassDashboard';
-import SATSimulator from './pages/SATSimulator';
-import CollegeRoadmaps from './pages/CollegeRoadmaps';
-import VAPITestComponent from './components/VAPITestComponent';
-import VAPISetupTest from './components/VAPISetupTest';
-import VoiceSelector from './components/VoiceSelector';
-import ElliotVoiceTest from './components/ElliotVoiceTest';
-import { Crown, X } from 'lucide-react';
-import VoiceLesson from './pages/VoiceLesson';
 import { AtlasWorkspace } from './pages/AtlasWorkspace';
-import { VideoLessons } from './pages/VideoLessons';
 import { Curriculum } from './pages/Curriculum';
-import { AIStudyBuddyPage } from './pages/AIStudyBuddyPage';
-// import GlobalTourManager from './components/GlobalTourManager';
 import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
-import GuidedPaperSolver from './pages/GuidedPaperSolver';
-import FeynmanBoard from './pages/FeynmanBoard';
-import { DailyCheckin } from './components/DailyCheckin';
-import { SubscriptionPage } from './components/SubscriptionPage';
-import SYOW from './pages/SYOW';
+import { AppFirstRunTour } from './components/AppFirstRunTour';
+import SubscriptionPage from './components/SubscriptionPage';
+import { AdminAnalytics } from './components/AdminAnalytics';
 import MyProfileDashboard from './pages/MyProfileDashboard';
+import { ProveIt } from './pages/ProveIt';
+import { PublicReceipt } from './pages/PublicReceipt';
+import { MasteryTree } from './pages/MasteryTree';
+import { SquadProveIt } from './pages/SquadProveIt';
+import { OutcomeDashboard } from './pages/OutcomeDashboard';
+import { MasteryReports } from './pages/MasteryReports';
+import { Crown, X } from 'lucide-react';
 
 function AppContent() {
   const { user, role, loading, isPremium, onboardingCompleted } = useAuth();
@@ -55,7 +39,7 @@ function AppContent() {
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
   const location = useLocation();
-  const isImmersive = location.pathname === '/ai-buddy' || location.pathname === '/atlas';
+  const isImmersive = location.pathname === '/atlas';
 
   const isFullscreen = (() => {
     try {
@@ -148,60 +132,22 @@ function AppContent() {
 
           <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : `w-full mx-auto px-0 py-0 transition-all ${isImmersive ? 'h-full' : ''}`}>
             <Routes>
-              {/* Daily Experience - New Primary Flow */}
+              {/* Core Experience */}
               <Route path="/" element={<ManusHome />} />
               <Route path="/daily" element={<ManusHome />} />
               <Route path="/atlas" element={<AtlasWorkspace />} />
-              <Route path="/syow" element={<SYOW />} />
 
-              {/* Study Planning */}
-              <Route path="/create" element={<CreatePlan />} />
-              <Route path="/plans" element={<StudyPlans />} />
+              {/* Curriculum Reference */}
               <Route path="/curriculum" element={<Curriculum />} />
 
-              {/* Practice & Testing - US Exams */}
-              <Route path="/sat-simulator" element={<SATSimulator />} />
-              <Route path="/feynman" element={<FeynmanBoard />} />
-              <Route path="/guided-paper" element={<GuidedPaperSolver />} />
-
-              {/* Learning Content */}
-              <Route path="/videos" element={<VideoLessons />} />
-              <Route path="/tools" element={<StudyTools />} />
-              <Route path="/ai-buddy" element={<AIStudyBuddyPage />} />
-              <Route path="/voice-lesson" element={<VoiceLesson />} />
-
-              {/* Progress & Analytics */}
-              <Route path="/progress" element={<Progress />} />
-              <Route path="/dashboard" element={<ManusHome />} />
-              <Route path="/analytics" element={<ManusHome />} />
-
-              {/* College Prep */}
-              <Route path="/roadmaps" element={<CollegeRoadmaps />} />
-
-              {/* Social & Community */}
-              <Route path="/social" element={<Social />} />
-              <Route path="/notifications" element={<Notifications />} />
-
-              {/* Notes */}
-              <Route path="/live-notes" element={<LiveMeetingNotes />} />
-              <Route path="/my-notes" element={<MyMeetingNotes />} />
-              <Route path="/my-notes/:id" element={<NoteDetailPage />} />
-
-              {/* Study Sessions */}
-              <Route path="/study/:planId" element={<StudySession />} />
-
-              {/* Account */}
-              <Route path="/profile" element={<Profile />} />
+              {/* Account & Profile */}
+              <Route path="/profile" element={<MyProfileDashboard />} />
               <Route path="/my-profile" element={<MyProfileDashboard />} />
+              <Route path="/settings" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/pricing" element={<SubscriptionPage />} />
               <Route path="/subscription" element={<SubscriptionPage />} />
-
-              {/* Voice/VAPI Testing */}
-              <Route path="/vapi-test" element={<VAPITestComponent />} />
-              <Route path="/vapi-setup" element={<VAPISetupTest />} />
-              <Route path="/voice-selector" element={<VoiceSelector />} />
-              <Route path="/elliot-test" element={<ElliotVoiceTest />} />
 
               {/* Teacher Portal */}
               <Route path="/teacher" element={<TeacherPortal />}>
@@ -210,6 +156,19 @@ function AppContent() {
               </Route>
               <Route path="/my-classes" element={<MyClasses />} />
               <Route path="/class/:id" element={<ClassPage />} />
+
+              {/* Prove-It Mode — Socratic Mastery */}
+              <Route path="/prove-it" element={<ProveIt />} />
+              <Route path="/mastery-tree" element={<MasteryTree />} />
+              <Route path="/squad-prove-it" element={<SquadProveIt />} />
+              <Route path="/outcomes" element={<OutcomeDashboard />} />
+              <Route path="/mastery-reports" element={<MasteryReports />} />
+              <Route path="/m/:slug" element={<PublicReceipt />} />
+
+              {/* Dashboard redirects */}
+              <Route path="/dashboard" element={<ManusHome />} />
+              <Route path="/analytics" element={<ManusHome />} />
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
@@ -218,6 +177,7 @@ function AppContent() {
 
       <PersonalTipsManager />
       <GlobalGenerationStatus />
+      <AppFirstRunTour />
       <Toaster toasts={toasts} removeToast={removeToast} />
     </div>
   );

@@ -1,0 +1,5 @@
+Indian students spend three billion dollars on coaching classes that teach to the median. The top students are bored. The struggling ones are lost.
+StudyBud is an AI mastery platform. Our ATLAS engine picks any JEE topic and Socratically grills you with follow-up questions until you prove you actually understand. No hints. No participation trophies.
+Pass, and you get a shareable credential. Fail, and it prescribes exactly what to fix.
+We have packaged Socratic examination, daily AI study prescriptions, and voice-based Feynman practice into one system that refuses to let you fake understanding.
+We are Elevenfolks. Stop pretending you know JEE.

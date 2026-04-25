@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callGemini, callGeminiEmbedding } from "../_shared/gemini.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,6 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -22,10 +22,6 @@ serve(async (req) => {
     try {
         const { action, subject, classLevel, stream, chapters, difficulty, totalMarks, sections, chapterWeightage } = await req.json();
 
-        if (!OPENAI_API_KEY) {
-            throw new Error("OpenAI API key not set");
-        }
-
         if (action === "syllabus") {
             // ... (keep current syllabus logic)
             const prompt = `Carefully follow the official CBSE syllabus structure for Class ${classLevel} ${subject} ${stream ? `(${stream})` : ''}.
@@ -37,23 +33,13 @@ Each unit should have:
 
 Do not output anything else.`;
 
-            const completion = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o",
-                    messages: [
-                        { role: "system", content: "You are a CBSE syllabus expert. Output strictly JSON." },
-                        { role: "user", content: prompt }
-                    ],
-                    response_format: { type: "json_object" }
-                })
-            });
-            const data = await completion.json();
-            const text = data.choices[0].message.content;
+            const text = await callGemini(
+                [
+                    { role: "system", content: "You are a CBSE syllabus expert. Output strictly JSON." },
+                    { role: "user", content: prompt }
+                ],
+                { json: true }
+            );
             return new Response(text, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (action === "generate") {
@@ -62,20 +48,8 @@ Do not output anything else.`;
             try {
                 const query = `Class ${classLevel} ${subject} questions about ${chapters.join(", ")}`;
 
-                // Get Embedding
-                const embRes = await fetch("https://api.openai.com/v1/embeddings", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${OPENAI_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: "text-embedding-3-small",
-                        input: query
-                    })
-                });
-                const embData = await embRes.json();
-                const embedding = embData.data[0].embedding;
+                // Get Embedding via Gemini
+                const embedding = await callGeminiEmbedding(query, { taskType: 'RETRIEVAL_QUERY' });
 
                 // Vector Search
                 const { data: matches, error: matchErr } = await supabase.rpc('match_questions', {
@@ -131,23 +105,13 @@ Return ONLY a valid JSON object with a "questions" key. Each question object mus
 
 Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMarks} marks total.`;
 
-            const completion = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o",
-                    messages: [
-                        { role: "system", content: "You are an expert CBSE exam setter." },
-                        { role: "user", content: prompt }
-                    ],
-                    response_format: { type: "json_object" }
-                })
-            });
-            const data = await completion.json();
-            const text = data.choices[0].message.content;
+            const text = await callGemini(
+                [
+                    { role: "system", content: "You are an expert CBSE exam setter." },
+                    { role: "user", content: prompt }
+                ],
+                { json: true }
+            );
             return new Response(text, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         else if (action === "ocr") {
@@ -162,16 +126,12 @@ Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMa
 
             for (const img of images) {
                 if (img.includes('application/pdf') || img.startsWith('JVBERi0')) { // PDF magic bytes
-                    // For now, GPT-4o Vision doesn't handle PDF directly in Chat Completions.
-                    // Ideally we'd convert it, but as a shortcut we can ask for text if it's digital,
-                    // or just ignore if it's a scan until we have a converter.
-                    // FOR NOW: Let's treat it as a request to handle PDF.
-                    // Since it's handwritten, we really need images.
+                    // Gemini doesn't handle PDF directly here; skip for now.
                     continue;
                 }
                 contentParts.push({
-                    type: "image_url",
-                    image_url: { url: img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}` }
+                    type: "image",
+                    dataUrl: img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`
                 });
             }
 
@@ -179,22 +139,10 @@ Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMa
                 return new Response(JSON.stringify({ text: "Please upload image files for handwritten OCR. PDF support is coming soon (needs conversion to images)." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
 
-            const completion = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o",
-                    messages: [
-                        { role: "user", content: contentParts }
-                    ],
-                    max_tokens: 4000
-                })
-            });
-            const data = await completion.json();
-            const text = data.choices[0].message.content;
+            const text = await callGemini(
+                [ { role: "user", content: contentParts } ],
+                { maxOutputTokens: 4000 }
+            );
             return new Response(JSON.stringify({ text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (action === "evaluate") {
@@ -224,23 +172,13 @@ ${questionsList}
 Student's Answers:
 ${studentText}`;
 
-            const completion = await fetch("https://api.openai.com/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o",
-                    messages: [
-                        { role: "system", content: "You are a strict CBSE examiner. Output strictly JSON." },
-                        { role: "user", content: prompt }
-                    ],
-                    response_format: { type: "json_object" }
-                })
-            });
-            const data = await completion.json();
-            const text = data.choices[0].message.content;
+            const text = await callGemini(
+                [
+                    { role: "system", content: "You are a strict CBSE examiner. Output strictly JSON." },
+                    { role: "user", content: prompt }
+                ],
+                { json: true }
+            );
             return new Response(text, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 

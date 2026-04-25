@@ -19,7 +19,7 @@ export function AtlasWorkspace() {
   }, [location]);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col rounded-[40px] overflow-hidden border-2 border-[#E8E2D9] shadow-md bg-[#FAF8F5]">
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#FAF8F5]">
       <AIStudyBuddy
         title="Atlas"
         subtitle="AI Study Buddy"

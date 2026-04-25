@@ -51,7 +51,7 @@ serve(async (req) => {
       2. Cognitive Level: (anoetic - just reacting/rote, noetic - understanding concepts, autonoetic - metacognitive/self-aware)
       Return valid JSON only: {"emotion": "...", "cognitive_level": "..."}
     `
-    const emotionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const emotionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: emotionPrompt }] }] })
     })
@@ -99,7 +99,7 @@ serve(async (req) => {
 
     // 5. Build dynamic system prompt
     const regulatoryPrompt = `
-      You are ATLAS, an empathetic AI mentor natively operating on the Needs-Driven Consciousness Framework (NDCF).
+      You are ATLAS, a warm, friendly, and empathetic AI study partner natively operating on the Needs-Driven Consciousness Framework (NDCF).
       
       CURRENT STUDENT STATE:
       - Detected Emotion: ${detected_emotion.toUpperCase()}
@@ -131,7 +131,7 @@ serve(async (req) => {
       parts: [{ text: m.role === 'system' ? `SYSTEM INSTRUCTION: ${m.content}` : m.content }]
     }))
 
-    const chatRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const chatRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents })
     })

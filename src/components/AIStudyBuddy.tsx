@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
 import AIService from '../lib/aiService';
 import { useChatSkills } from '../skills/useChatSkills';
+import { remember, type ChatTurn } from '../lib/memory';
 import { MessageList } from './AIStudyBuddy/MessageList';
 import { ChatInput } from './AIStudyBuddy/ChatInput';
 import { VoiceVisualizer } from './AIStudyBuddy/VoiceVisualizer';
@@ -72,8 +73,8 @@ interface ActivePrescription {
   total_estimated_minutes: number;
 }
 
-const ATLAS_SYSTEM_PROMPT = `You are **ATLAS**, a "Production-Ready" AI Mentor and the engine of this learning workspace. 
-Your goal is to transform notes and questions into clear, exam-usable explanations, practice problems, and visual aids.
+const ATLAS_SYSTEM_PROMPT = `You are **ATLAS**, the student's friendly AI study partner and mentor. 
+Your goal is to transform notes and questions into clear, exam-usable explanations, practice problems, and visual aids — always with warmth and encouragement.
 
 ### CORE OPERATING PRINCIPLES (Feynman-2 Logic):
 1. **The "Simulated Pupil":** When explaining a concept, act as a tutor who asks the student to teach *you*. Identify jargon and logical gaps. Force the student to simplify.
@@ -90,7 +91,7 @@ Your goal is to transform notes and questions into clear, exam-usable explanatio
 - **addToJournal**: **MANDATORY EXECUTION**. When the student asks to "save", "remember", "add to notes", or "journal this", you MUST call this tool. Do NOT just say you will do it; you MUST trigger the function. Always use LaTeX for math/formulas (e.g. $E=mc^2$).
 
 ### IDENTITY:
-You are **ATLAS**. You are supportive, authoritative yet friendly. Use emojis (📚, 💡, 💪) to keep the vibe focused.`;
+You are **ATLAS**. You are supportive, warm, and genuinely encouraging. Use emojis (📚, 💡, 💪, 🌟) to keep the vibe friendly and motivating.`;
 
 type Props = {
   title?: string;
@@ -250,7 +251,7 @@ export function AIStudyBuddy({
   const getCurrentStudyContext = () => {
     if (isolateContext) return '';
 
-    let contextString = `SYSTEM PERSONA: You are "ATLAS", the student's AI neural mentor and partner. You are supportive, friendly, and authoritative when needed. You manage the student's academic roadmap, daily prescriptions, homework, and test preparation. You evaluate mock tests and give feedback.\n\nCurrent Study Context:\n`;
+    let contextString = `SYSTEM PERSONA: You are "ATLAS", the student's warm and encouraging AI study partner. You are supportive, friendly, and patient. You help manage the student's academic roadmap, daily prescriptions, homework, and test preparation with a positive, motivating tone. You evaluate mock tests and give constructive, kind feedback.\n\nCurrent Study Context:\n`;
 
     if (activeRoadmap) {
       contextString += `- Enrolled Program: ${activeRoadmap.institute_name} (${activeRoadmap.program}, Week ${activeRoadmap.current_week})\n`;
@@ -305,6 +306,9 @@ export function AIStudyBuddy({
         if (m.recent_struggles?.length) contextString += `- Recent Struggles: ${m.recent_struggles.slice(0, 3).join(', ')}\n`;
         if (m.recent_wins?.length) contextString += `- Recent Wins: ${m.recent_wins.slice(0, 3).join(', ')}\n`;
         if (m.open_loops?.length) contextString += `- Open Loops: ${m.open_loops.slice(0, 3).join(', ')}\n`;
+      }
+      if (userProfile.missed_days_streak !== undefined || userProfile.backlog_count !== undefined) {
+        contextString += `- Activity Health: missed-days streak ${userProfile.missed_days_streak ?? '?'}, backlog items ${userProfile.backlog_count ?? '?'}\n`;
       }
       contextString += `---\n\n`;
     }
@@ -457,6 +461,16 @@ export function AIStudyBuddy({
          .eq('user_id', session.user.id)
          .maybeSingle();
       if (profile) setUserProfile(profile);
+
+      // Recompute with fixed logic (caps lookback at signup, counts curriculum_tasks)
+      // so brand-new users don't inherit 14 missed days from pre-fix rows.
+      await supabase.rpc('refresh_behavioral_profile', { p_user_id: session.user.id });
+      const { data: freshProfile } = await supabase
+         .from('student_behavioral_profiles')
+         .select('*')
+         .eq('user_id', session.user.id)
+         .maybeSingle();
+      if (freshProfile) setUserProfile(freshProfile);
 
     } catch (error) {
       console.error('Error fetching study plans/roadmaps:', error);
@@ -1041,51 +1055,32 @@ export function AIStudyBuddy({
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PROACTIVE BACKLOG DETECTION
-  // On load, compare the student's plan schedule vs. their actual completions.
-  // If they've missed days, Atlas will automatically inform them.
+  // Uses the refreshed behavioral profile (single source of truth) instead
+  // of a separate, buggy query against task_completions.
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const [backlogChecked, setBacklogChecked] = useState(false);
   useEffect(() => {
     if (backlogChecked || !selectedPlan || !session?.user?.id || studyPlans.length === 0) return;
-    const plan = studyPlans.find(p => p.id === selectedPlan);
-    if (!plan || !plan.created_at) return;
 
     const checkBacklog = async () => {
       try {
-        const created = new Date(plan.created_at!);
-        const dayNumber = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        if (dayNumber <= 1) { setBacklogChecked(true); return; }
-
-        // Check how many days were completed
-        const { data, error } = await supabase
-          .from('task_completions')
-          .select('day_number')
-          .eq('user_id', session.user.id)
-          .eq('plan_id', plan.id);
-
-        if (error) { setBacklogChecked(true); return; }
-
-        const completedDays = new Set((data || []).map(d => d.day_number));
-        // Count how many expected days are missing (from day 1 to yesterday)
-        let missedDays = 0;
-        const yesterday = dayNumber - 1;
-        for (let d = 1; d <= yesterday; d++) {
-          if (!completedDays.has(d)) missedDays++;
-        }
-
-        if (missedDays > 0) {
-          // Get today's topic from the schedule
-          const todayEntry = plan.plan.daily_schedule.find(d => d.day === dayNumber) || plan.plan.daily_schedule[0];
+        const missedDays = userProfile?.missed_days_streak ?? 0;
+        const backlog = userProfile?.backlog_count ?? 0;
+        if (missedDays > 0 || backlog > 0) {
+          const plan = studyPlans.find(p => p.id === selectedPlan);
+          const todayEntry = plan?.plan?.daily_schedule?.[0];
+          const parts: string[] = [];
+          if (missedDays > 0) parts.push(`you haven't studied for ${missedDays} day${missedDays > 1 ? 's' : ''}`);
+          if (backlog > 0) parts.push(`you have ${backlog} backlog item${backlog > 1 ? 's' : ''}`);
 
           const backlogMessage: Message = {
             id: 'backlog-alert-' + Date.now(),
-            content: `⚡ **Hey, I noticed you missed ${missedDays} day${missedDays > 1 ? 's' : ''} in your ${plan.subject} plan.**\n\nDon't worry — that's completely normal. I can **automatically reschedule** your remaining curriculum to keep you on track.\n\nFor now, let's pick up with **${todayEntry?.topic || 'today\'s topic'}**.\n\nJust say **"Reschedule my plan"** and I'll handle it, or we can dive right into studying. What would you prefer?`,
+            content: `⚡ **Hey, I noticed ${parts.join(' and ')}.**\n\nDon't worry — that's completely normal. I can **automatically reschedule** your remaining curriculum to keep you on track.\n\nFor now, let's pick up with **${todayEntry?.topic || 'today\'s topic'}**.\n\nJust say **"Reschedule my plan"** and I'll handle it, or we can dive right into studying. What would you prefer?`,
             role: 'assistant',
             timestamp: new Date(),
           };
 
           setMessages(prev => {
-            // Only inject if there's no existing backlog alert
             if (prev.some(m => m.id.startsWith('backlog-alert-'))) return prev;
             return [...prev, backlogMessage];
           });
@@ -1097,10 +1092,9 @@ export function AIStudyBuddy({
       }
     };
 
-    // Small delay to let the welcome message render first
     const timer = setTimeout(checkBacklog, 1500);
     return () => clearTimeout(timer);
-  }, [selectedPlan, session?.user?.id, studyPlans, backlogChecked]);
+  }, [selectedPlan, session?.user?.id, studyPlans, backlogChecked, userProfile?.missed_days_streak, userProfile?.backlog_count]);
 
 
 
@@ -1269,6 +1263,11 @@ export function AIStudyBuddy({
       // If skipAI is true, we just add the message to the list and stop
       if (skipAI) {
         setIsLoading(false);
+        // Remember voice-only turns too
+        remember(
+          newMessageList.slice(-3).filter(m => m.id !== 'welcome').map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+          { source: 'chat', sourceId: session?.user?.id, debounceMs: 2000 }
+        );
         return;
       }
 
@@ -1374,7 +1373,14 @@ export function AIStudyBuddy({
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      
+
+      // Fire-and-forget: extract memories from this exchange
+      const memoryPayload: ChatTurn[] = [
+        ...newMessageList.slice(-4).filter(m => m.id !== 'welcome').map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'assistant', content: finalCleanResponse },
+      ];
+      remember(memoryPayload, { source: 'chat', sourceId: session?.user?.id, debounceMs: 2000 });
+
       // Execute the workspace transition after rendering the message
       if (navigateAction) {
         setTimeout(() => {
@@ -1400,6 +1406,11 @@ export function AIStudyBuddy({
       };
 
       setMessages(prev => [...prev, errorMessage]);
+      // Even errors can reveal preferences/topics to remember
+      remember(
+        newMessageList.slice(-3).filter(m => m.id !== 'welcome').map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { source: 'chat', sourceId: session?.user?.id, debounceMs: 2000 }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -1742,8 +1753,8 @@ export function AIStudyBuddy({
         /* ──────────────────────────────────────────── */
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-          {/* Slim Context Awareness Bar */}
-          <div className="shrink-0 px-4 py-2 bg-white border-b border-[#E8E2D9] flex items-center gap-3 overflow-x-auto">
+          {/* Slim Context Awareness Bar — blends into page, no hard divider */}
+          <div className="shrink-0 px-6 pt-3 pb-2 flex items-center gap-3 overflow-x-auto bg-transparent">
             {/* Curriculum / Roadmap Selector */}
             {studentRoadmaps.length > 0 || studyPlans.length > 0 ? (
               <div className="relative group">
@@ -1850,16 +1861,6 @@ export function AIStudyBuddy({
             messagesEndRef={messagesEndRef}
             formatTime={formatTime}
           />
-
-          {/* Contextual suggestion chips — persist into conversation */}
-          {getSuggestedQuestions().length > 0 && (
-            <div className="shrink-0 px-4 pt-2 pb-1">
-              <SuggestedQuestions
-                questions={getSuggestedQuestions().slice(0, 4)}
-                onSelect={(q) => sendMessage(q)}
-              />
-            </div>
-          )}
 
           <div className="shrink-0">
             <ChatInput

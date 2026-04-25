@@ -181,6 +181,10 @@ function usePathKey(pathname: string) {
       return 'my-classes';
     case '/profile':
       return 'profile';
+    case '/my-profile':
+      return 'profile';
+    case '/settings':
+      return 'settings';
     case '/pricing':
       return 'pricing';
     default:
@@ -360,7 +364,14 @@ const PersonalTipsManager: React.FC = () => {
         return make('profile', [
           {
             title: 'Profile',
-            content: 'Manage your details and preferences here.'
+            content: 'See what the system knows about your study habits, recent work, and learner model here.'
+          },
+        ]);
+      case 'settings':
+        return make('settings', [
+          {
+            title: 'Settings',
+            content: 'Manage your account details, privacy, and preferences here.'
           },
         ]);
       case 'pricing':

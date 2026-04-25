@@ -1,19 +1,26 @@
-import { Zap, Crown, Check, Star, Sparkles } from 'lucide-react';
+import { Zap, Crown, Check, Star, Sparkles, IndianRupee } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { usePayment } from '../hooks/usePayment';
 
-export function SubscriptionPage() {
-    const { isPremium } = useAuth();
-    const { initiatePayment, isLoadingPayment } = usePayment();
+export default function SubscriptionPage() {
+    const { isPremium, user } = useAuth() as any;
+    const { isLoadingPayment, initiatePayment } = usePayment();
+    const { track } = useAnalytics();
+
+    useEffect(() => {
+        track('subscription_page_view');
+    }, [track]);
 
     const features = [
-        { name: "AI Study Plans", free: "1 / month", pro: "Unlimited + Detailed" },
-        { name: "Flashcards", free: "20 / deck", pro: "Unlimited + From PDF" },
-        { name: "Practice Tests", free: "1 / week", pro: "Visual + AI Explanations" },
-        { name: "Lectures", free: "Audio Summaries", pro: "HD Video Lectures" },
-        { name: "Voices", free: "Standard", pro: "Ultra-Realistic Neural" },
-        { name: "Social Groups", free: "Join Only", pro: "Create & Manage Groups" },
-        { name: "Analytics", free: "Basic Stats", pro: "Deep Learning Insights" },
+        { name: "JEE Prove-It", free: "1 attempt / day", pro: "Unlimited credentials" },
+        { name: "Mastery Tree", free: "Basic progress", pro: "Full branch tracking" },
+        { name: "Score Prediction", free: "Preview", pro: "JEE target-gap plan" },
+        { name: "Squad Accountability", free: "Join squads", pro: "Create squads" },
+        { name: "Daily Prescriptions", free: "Limited", pro: "Adaptive JEE plan" },
+        { name: "Teacher Assignments", free: "Assigned only", pro: "Full analytics" },
+        { name: "Mastery Reports", free: "Weekly summary", pro: "Shareable report cards" },
     ];
 
     const faqs = [
@@ -37,10 +44,10 @@ export function SubscriptionPage() {
                         <span>Unlock your full potential</span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">
-                        Upgrade to <span className="text-[#00D1FF]">Premium</span>
+                        JEE Pro <span className="text-[#00D1FF]">Mastery</span>
                     </h1>
                     <p className="text-xl font-medium text-[#64748B] max-w-2xl mx-auto leading-relaxed">
-                        Remove limits. Access all AI modules. Score higher.
+                        Unlimited Prove-It credentials, full mastery tracking, and adaptive daily plans for JEE.
                     </p>
                 </div>
 
@@ -50,11 +57,11 @@ export function SubscriptionPage() {
                     <div className="neo-card">
                         <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1">Free</h3>
                         <div className="flex items-end gap-1 mb-2">
-                            <span className="text-5xl font-extrabold text-[#0A192F]">$0</span>
-                            <span className="text-[#64748B] font-medium mb-2">/mo</span>
+                            <span className="text-5xl font-extrabold text-[#0A192F]">₹0</span>
+                            <span className="text-[#64748B] font-medium mb-2">/month</span>
                         </div>
                         <p className="text-[#64748B] font-medium text-sm mb-8 pb-6 border-b border-[#0A192F]/5">
-                            Core access with basic limits.
+                            Start proving mastery with basic limits.
                         </p>
 
                         <ul className="space-y-4 mb-8">
@@ -72,7 +79,7 @@ export function SubscriptionPage() {
 
                         <div className="bg-slate-50 rounded-[16px] p-4 border border-[#0A192F]/5">
                             <p className="text-xs font-bold text-[#64748B] leading-relaxed">
-                                1 plan/mo · 1 subject · 20 flashcards/deck · 1 practice test/week · Max 30-day plans
+                                1 Prove-It/day · basic practice · limited mastery tree · weekly report preview
                             </p>
                         </div>
                     </div>
@@ -84,14 +91,15 @@ export function SubscriptionPage() {
                         </div>
 
                         <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1 flex items-center gap-2">
-                            Premium <Crown className="w-5 h-5 text-[#F472B6]" />
+                            Pro <Crown className="w-5 h-5 text-[#F472B6]" />
                         </h3>
                         <div className="flex items-end gap-1 mb-2">
-                            <span className="text-5xl font-extrabold text-[#0A192F]">$15.99</span>
-                            <span className="text-[#64748B] font-medium mb-2">/mo</span>
+                            <IndianRupee className="w-8 h-8 text-[#0A192F] mb-2" />
+                            <span className="text-5xl font-extrabold text-[#0A192F]">199</span>
+                            <span className="text-[#64748B] font-medium mb-2">/month</span>
                         </div>
                         <p className="text-[#00D1FF] font-bold text-sm mb-8 pb-6 border-b border-[#00D1FF]/20">
-                            Full access. Upgrade or cancel anytime.
+                            Less than a single JEE guidebook. Unlimited everything.
                         </p>
 
                         <ul className="space-y-4 mb-8">
@@ -108,15 +116,15 @@ export function SubscriptionPage() {
                         </ul>
 
                         <button
-                            onClick={() => initiatePayment()}
+                            onClick={() => { track('payment_initiate', { plan: 'pro' }); initiatePayment(); }}
                             disabled={isLoadingPayment || isPremium}
                             className="neo-button w-full py-4 text-base shadow-float-cyan"
                         >
-                            {isLoadingPayment ? 'Processing...' : isPremium ? 'You\'re Premium' : 'Upgrade to Premium'}
+                            {isLoadingPayment ? 'Processing...' : isPremium ? 'You\'re Pro' : 'Upgrade to Pro'}
                             {!isLoadingPayment && !isPremium && <Zap className="w-5 h-5 stroke-[2.5px]" />}
                             {isPremium && <Star className="w-5 h-5 fill-current" />}
                         </button>
-                        <p className="text-center text-xs font-medium text-[#64748B] mt-4">Free base tier. Upgrade or cancel anytime.</p>
+                        <p className="text-center text-xs font-medium text-[#64748B] mt-4">Coaching centers: bulk pricing available. Contact us.</p>
                     </div>
                 </div>
 

@@ -32,12 +32,12 @@ export class AIService {
         const context = await this.findRelevantKnowledge(prompt);
         contextualSystemPrompt = systemPrompt
           ? `${systemPrompt}\n\nRELEVANT PAST KNOWLEDGE (Use this to personalize your response):\n${context}`
-          : `You are ATLAS, an advanced AI study architect with memory of the student's past work. 
-             Your mission is to provide high-performance coaching, specializing in international competitive exams like the SAT.
+          : `You are ATLAS, the student's friendly AI study partner with memory of their past work.
+             Your mission is to provide warm, encouraging, and effective coaching, specializing in JEE (Joint Entrance Examination) preparation.
              RELEVANT PAST KNOWLEDGE:\n${context}`;
       } else if (!contextualSystemPrompt) {
         // Default system prompt if none provided and RAG is off
-        contextualSystemPrompt = `You are ATLAS, an advanced AI study architect. Your mission is to provide high-performance coaching.`;
+        contextualSystemPrompt = `You are ATLAS, the student's friendly AI study partner. Your mission is to provide warm, encouraging, and effective coaching.`;
       }
 
       const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\nUSER PROMPT: ${prompt}`;
@@ -119,7 +119,22 @@ export class AIService {
         throw new Error(`NDCF Edge Function Error: ${response.status} - ${await response.text()}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+
+      // Guard: edge function sometimes returns HTTP 200 with an empty response
+      // (e.g. Gemini was rate-limited or safety-blocked). Treat that as failure
+      // and fall back to the simple chat completion path.
+      if (!data?.response || typeof data.response !== 'string' || data.response.trim() === '') {
+        console.warn('Empathetic Chat: empty response from orchestrator, falling back.', data);
+        const fallbackResponse = await this.generateChatCompletion(message, studyContext, true);
+        return {
+          response: fallbackResponse,
+          emotion_detected: data?.emotion_detected || 'neutral',
+          pedagogical_mode: data?.pedagogical_mode || 'socratic'
+        };
+      }
+
+      return data;
     } catch (error) {
       console.error('Empathetic Chat Error:', error);
       // Fallback to static RAG if edge function fails

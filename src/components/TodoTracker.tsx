@@ -1,46 +1,102 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, Circle, Target, ListTodo } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Trash2, CheckCircle2, Circle, Target, ListTodo, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Todo {
     id: string;
     text: string;
     completed: boolean;
     category: 'urgent' | 'regular' | 'backlog';
-    createdAt: number;
+    createdAt: number; // timestamp ms
 }
 
 export function TodoTracker() {
+    const { user } = useAuth() as any;
     const [todos, setTodos] = useState<Todo[]>(() => {
         const saved = localStorage.getItem('studybud_todos');
         return saved ? JSON.parse(saved) : [];
     });
     const [inputValue, setInputValue] = useState('');
     const [category, setCategory] = useState<Todo['category']>('regular');
+    const [syncing, setSyncing] = useState(false);
 
+    // Load from Supabase on mount / user change
+    useEffect(() => {
+        if (!user?.id) return;
+        let cancelled = false;
+        (async () => {
+            const { data, error } = await supabase
+                .from('user_todos')
+                .select('id, text, completed, category, created_at')
+                .eq('user_id', user.id)
+                .order('sort_order', { ascending: true });
+            if (cancelled) return;
+            if (!error && data) {
+                const loaded: Todo[] = data.map((row: any) => ({
+                    id: row.id,
+                    text: row.text,
+                    completed: row.completed,
+                    category: row.category,
+                    createdAt: new Date(row.created_at).getTime(),
+                }));
+                setTodos(loaded);
+                localStorage.setItem('studybud_todos', JSON.stringify(loaded));
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [user?.id]);
+
+    // Optimistic localStorage mirror
     useEffect(() => {
         localStorage.setItem('studybud_todos', JSON.stringify(todos));
     }, [todos]);
 
-    const addTodo = (e?: React.FormEvent) => {
+    const syncTodo = useCallback(async (id: string, payload: any) => {
+        if (!user?.id) return;
+        await supabase.from('user_todos').update(payload).eq('id', id).eq('user_id', user.id);
+    }, [user?.id]);
+
+    const addTodo = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!inputValue.trim()) return;
+        const tempId = crypto.randomUUID();
         const newTodo: Todo = {
-            id: crypto.randomUUID(),
+            id: tempId,
             text: inputValue.trim(),
             completed: false,
             category,
             createdAt: Date.now(),
         };
-        setTodos([newTodo, ...todos]);
+        setTodos(prev => [newTodo, ...prev]);
         setInputValue('');
+        if (user?.id) {
+            setSyncing(true);
+            const { data, error } = await supabase.from('user_todos').insert({
+                user_id: user.id,
+                text: newTodo.text,
+                completed: newTodo.completed,
+                category: newTodo.category,
+                sort_order: 0,
+            }).select('id').single();
+            if (!error && data) {
+                setTodos(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
+            }
+            setSyncing(false);
+        }
     };
 
-    const toggleTodo = (id: string) => {
-        setTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    const toggleTodo = async (id: string) => {
+        const nextCompleted = !todos.find(t => t.id === id)?.completed;
+        setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: nextCompleted } : t));
+        await syncTodo(id, { completed: nextCompleted });
     };
 
-    const deleteTodo = (id: string) => {
-        setTodos(todos.filter(t => t.id !== id));
+    const deleteTodo = async (id: string) => {
+        setTodos(prev => prev.filter(t => t.id !== id));
+        if (user?.id) {
+            await supabase.from('user_todos').delete().eq('id', id).eq('user_id', user.id);
+        }
     };
 
     const categories = [

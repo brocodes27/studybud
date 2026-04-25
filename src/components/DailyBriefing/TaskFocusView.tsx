@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2, Clock, BookOpen, ExternalLink, Brain, Zap, Tar
 import type { TodayTask } from '../../lib/dailyBriefing';
 import { markTaskCompleted } from '../../lib/dailyBriefing';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
 
 interface TaskFocusViewProps {
   task: TodayTask;
@@ -23,6 +24,7 @@ const taskTypeConfig: Record<string, { icon: any; label: string; color: string }
 };
 
 export function TaskFocusView({ task, userId, onComplete, onBack }: TaskFocusViewProps) {
+  const { showToast } = useToast();
   const [confirming, setConfirming] = useState(false);
   const [timerStarted, setTimerStarted] = useState(false);
   const [checkedIntentions, setCheckedIntentions] = useState<Set<number>>(new Set());
@@ -42,15 +44,20 @@ export function TaskFocusView({ task, userId, onComplete, onBack }: TaskFocusVie
     const sourceId = task.prescriptionId || task.sprintId || task.id;
     const order = task.taskOrder || 0;
 
-    await markTaskCompleted(
+    const result = await markTaskCompleted(
       userId,
       sourceType,
       sourceId,
       order,
       task.durationMin,
-      engagementScore ?? undefined
+      engagementScore ?? undefined,
+      { taskTitle: task.title, subject: task.subject }
     );
     setSaving(false);
+    if (!result.success) {
+      showToast(result.error || 'Could not save task completion', 'error');
+      return;
+    }
     onComplete();
   };
 

@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,37 +31,22 @@ serve(async (req: Request) => {
     
     let weak_topics = manual_weaknesses || []
     
-    // If we have an image, ask OpenAI to parse it for mistakes
+    // If we have an image, ask Gemini to parse it for mistakes
     if (base64_image && (!manual_weaknesses || manual_weaknesses.length === 0)) {
-      const openaiApiKey = Deno.env.get("OPENAI_API_KEY")
-      if (!openaiApiKey) throw new Error("OpenAI key missing")
-      
-      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${openaiApiKey}` },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            { 
-              role: "system", 
-              content: "You are Ranjan Sir, an elite JEE mentor evaluating an answer sheet. Identify specific weak topics based on the incorrect answers shown. Respond in JSON with an array of objects: { \"weak_topics\": [{\"topic\": \"Friction on incline\", \"subject\": \"Physics\", \"severity\": \"high|medium|low\"}] }"
-            },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: `Analyze this marked test paper for the test: ${test_name}.` },
-                { type: "image_url", image_url: { url: base64_image } }
-              ]
-            }
-          ],
-          temperature: 0.2,
-          response_format: { type: "json_object" }
-        })
-      })
-
-      if (!aiRes.ok) throw new Error(`OpenAI Vision Error: ${await aiRes.text()}`)
-      const aiData = await aiRes.json()
-      const parsed = JSON.parse(aiData.choices[0].message.content)
+      const messages: GeminiMessage[] = [
+        {
+          role: "system",
+          content: "You are Ranjan Sir, a warm and encouraging JEE mentor evaluating an answer sheet. Identify specific weak topics based on the incorrect answers shown with kindness and constructive framing. Respond in JSON with an array of objects: { \"weak_topics\": [{\"topic\": \"Friction on incline\", \"subject\": \"Physics\", \"severity\": \"high|medium|low\"}] }"
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Analyze this marked test paper for the test: ${test_name}.` },
+            { type: "image", dataUrl: base64_image }
+          ]
+        }
+      ]
+      const parsed = await callGeminiJSON<any>(messages, { temperature: 0.2 })
       weak_topics = parsed.weak_topics
     }
 

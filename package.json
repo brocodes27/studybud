@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@inworld/web-sdk": "^1.9.3",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.12",
     "@remotion/player": "^4.0.417",
     "@remotion/shapes": "^4.0.417",
     "@remotion/transitions": "^4.0.417",
@@ -22,6 +24,7 @@
     "@tiptap/pm": "^3.17.1",
     "@tiptap/react": "^3.17.1",
     "@tiptap/starter-kit": "^3.17.1",
+    "@types/three": "^0.184.0",
     "@vapi-ai/web": "^2.5.2",
     "date-fns": "^3.2.0",
     "docx": "^8.5.0",
@@ -44,6 +47,7 @@
     "remotion": "^4.0.417",
     "supabase": "^2.33.5",
     "tesseract.js": "^5.1.1",
+    "three": "^0.184.0",
     "tsx": "^4.21.0",
     "typescript": "^5.5.3",
     "workbox-window": "^7.0.0"

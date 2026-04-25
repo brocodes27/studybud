@@ -3,23 +3,23 @@ import { Calendar, BrainCircuit, Target, ArrowRight } from 'lucide-react';
 
 const steps = [
   {
-    icon: Calendar,
-    title: 'Teacher logs class',
-    description: 'What was taught, homework assigned, topics covered — all captured in one place.',
+    icon: Target,
+    title: 'Prove your weak areas',
+    description: 'Upload a test or pick a topic. ATLAS grills you with Socratic follow-ups until you truly understand — not memorize.',
     color: '#8B7355',
     bgGlow: 'bg-[#8B7355]/[0.08]',
   },
   {
     icon: BrainCircuit,
-    title: 'AI builds your plan',
-    description: 'Ranjan Sir reads your class sessions, test history, and behavioral profile to generate tonight\'s prescription.',
+    title: 'Get daily prescriptions',
+    description: 'Every morning: one prioritized task based on your backlog, weak subjects, and exam date. No more "what should I study?"',
     color: '#8B7355',
     bgGlow: 'bg-[#8B7355]/[0.08]',
   },
   {
-    icon: Target,
-    title: 'You just study',
-    description: 'Open your daily briefing. One prioritized task. Implementation intentions. No decision fatigue.',
+    icon: Calendar,
+    title: 'Squad accountability',
+    description: 'Form a Prove-It squad with friends. Weekly topic, shared streak, real rigor scores. Peer pressure, but productive.',
     color: '#8B7355',
     bgGlow: 'bg-[#8B7355]/[0.08]',
   },
@@ -47,8 +47,8 @@ export function LandingBenefits() {
             className="text-4xl md:text-5xl font-semibold tracking-tight text-[#2D2A26] mb-4 leading-[1.05]"
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            From classroom to{' '}
-            <span className="text-[#8B7355]">completion.</span>
+            From <span className="text-[#8B7355]">rote learning</span>{' '}
+            to real JEE mastery.
           </motion.h2>
           <motion.p
             initial={{ y: 12, opacity: 0 }}

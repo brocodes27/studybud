@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Upload, Sparkles, RefreshCw, AlertCircle, BookOpen, ChevronDown, Check } from 'lucide-react';
+import { Loader2, Upload, Sparkles, RefreshCw, AlertCircle, BookOpen, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import {
   fetchDailyBriefing,
   markTaskCompleted,
@@ -12,14 +13,16 @@ import {
 import { supabase } from '../../lib/supabase';
 import { AgentGreeting } from './AgentGreeting';
 import { ClassUpdateCard } from './ClassUpdateCard';
-import { TodayTaskCard } from './TodayTaskCard';
-import { TaskFocusView } from './TaskFocusView';
+import { TaskDashboard } from './TaskDashboard';
 import { CompletionCelebration } from './CompletionCelebration';
 import { ExploreGrid } from './ExploreGrid';
 import { CorrectionSprintBanner } from './CorrectionSprintBanner';
 import { BacklogAlert } from './BacklogAlert';
 import { TestUploadModal } from './TestUploadModal';
 import { RoadmapOnboarding } from './RoadmapOnboarding';
+import { LearnerModelCard } from './LearnerModelCard';
+import { WhatChangedCard } from './WhatChangedCard';
+import { ConversationalBriefing } from './ConversationalBriefing';
 
 type BriefingState = 'loading' | 'generating' | 'briefing' | 'task' | 'complete' | 'explore' | 'error';
 
@@ -40,7 +43,12 @@ export function DailyBriefing() {
   const [showTestModal, setShowTestModal] = useState(false);
   const [roadmapId, setRoadmapId] = useState<string | null>(null);
   const [completionMeta, setCompletionMeta] = useState<{ xpEarned?: number; levelUp?: boolean; newLevel?: number }>({});
+  const { track } = useAnalytics();
   const isLoadingRef = useRef(false);
+
+  useEffect(() => {
+    track('daily_briefing_open');
+  }, [track]);
 
   // Roadmap picker state
   const [allRoadmaps, setAllRoadmaps] = useState<RoadmapOption[]>([]);
@@ -92,26 +100,28 @@ export function DailyBriefing() {
   // ------------------------------------------------------------------
   // Load briefing data — only depends on user.id, NEVER on roadmapId
   // ------------------------------------------------------------------
-  const loadBriefing = useCallback(async () => {
+  const loadBriefing = useCallback(async (preserveState = false) => {
     if (!user?.id || isLoadingRef.current) return;
     isLoadingRef.current = true;
 
     try {
-      setState('loading');
+      if (!preserveState) setState('loading');
       setErrorMsg(null);
       const briefing = await fetchDailyBriefing(user.id);
       setData(briefing);
       setRoadmapId(briefing.roadmapId);
 
-      if (briefing.isTaskCompleted) {
-        setState('explore');
-      } else {
-        setState('briefing');
+      if (!preserveState) {
+        if (briefing.isTaskCompleted) {
+          setState('explore');
+        } else {
+          setState('briefing');
+        }
       }
     } catch (err: any) {
       console.error('DailyBriefing load error:', err);
       setErrorMsg(err?.message || 'Something went wrong loading your briefing.');
-      setState('error');
+      if (!preserveState) setState('error');
     } finally {
       isLoadingRef.current = false;
     }
@@ -127,9 +137,9 @@ export function DailyBriefing() {
   // ------------------------------------------------------------------
   useEffect(() => {
     if (!data || !user?.id) return;
-    if (data.isTaskCompleted) return;
+    if (data.allTasksCompleted) return;
     if (!data.activeRoadmap || !data.roadmapId) return;
-    if (data.todayTask.type !== 'none') return; // task already exists (sprint, prescription, etc.)
+    if (data.todayTasks.length > 0) return; // tasks already exist (sprint, prescription, etc.)
 
     let cancelled = false;
 
@@ -154,49 +164,18 @@ export function DailyBriefing() {
 
     autoGenerate();
     return () => { cancelled = true; };
-  }, [data?.activeRoadmap, data?.roadmapId, data?.todayTask?.type, data?.todayTask?.implementationIntentions, data?.isTaskCompleted, user?.id]);
+  }, [data?.activeRoadmap, data?.roadmapId, data?.todayTasks?.length, data?.allTasksCompleted, user?.id]);
 
   const handleStartTask = () => {
-    // If no real task, open the roadmap picker instead of focus view
-    if (data?.todayTask?.type === 'none') {
+    // If no real tasks, open the roadmap picker instead of focus view
+    if (data?.todayTasks.length === 0) {
       setShowRoadmapPicker(true);
       return;
     }
     setState('task');
   };
 
-  const handleTaskComplete = async () => {
-    if (data && user?.id) {
-      const sourceType =
-        data.todayTask.type === 'prescription' ? 'prescription' :
-        data.todayTask.type === 'correction_sprint' ? 'sprint' :
-        data.todayTask.type === 'assignment' ? 'assignment' : 'weak_area';
-
-      const result = await markTaskCompleted(
-        user.id,
-        sourceType,
-        data.todayTask.prescriptionId || data.todayTask.sprintId || data.todayTask.id,
-        data.todayTask.taskOrder || 0,
-        data.todayTask.durationMin
-      );
-
-      if (result.success) {
-        setCompletionMeta({
-          xpEarned: result.xpEarned,
-          levelUp: result.levelUp,
-          newLevel: result.newLevel,
-        });
-        if (result.xpEarned) {
-          showToast(`+${result.xpEarned} XP earned!`, 'success');
-        }
-      }
-
-      setData((prev) =>
-        prev
-          ? { ...prev, isTaskCompleted: true, todayTask: { ...prev.todayTask, completed: true } }
-          : prev
-      );
-    }
+  const handleAllTasksComplete = () => {
     setState('complete');
   };
 
@@ -237,6 +216,14 @@ export function DailyBriefing() {
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center px-4 pt-8 md:pt-16 pb-20">
       {/* Top action bar */}
       <div className="w-full max-w-xl flex items-center justify-end gap-2 mb-4">
+        <button
+          onClick={() => window.location.href = '/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics'}
+          data-app-action="briefing-prove-today"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2D2A26] rounded-xl text-[11px] font-bold text-white hover:bg-[#3D3833] transition-colors shadow-sm"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          Prove today
+        </button>
         {/* Roadmap Picker */}
         {allRoadmaps.length > 0 && (
           <div className="relative" ref={pickerRef}>
@@ -363,33 +350,21 @@ export function DailyBriefing() {
           </motion.div>
         )}
 
-        {/* BRIEFING */}
-        {state === 'briefing' && data && (
+        {/* CONVERSATIONAL BRIEFING — merges old briefing + task flow into a chat thread */}
+        {(state === 'briefing' || state === 'task') && data && (
           <motion.div
-            key="briefing"
+            key="conversation"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
-            className="w-full max-w-xl flex flex-col items-center"
+            className="w-full"
           >
-            {data.correctionSprint && (
-              <CorrectionSprintBanner sprint={data.correctionSprint} onContinue={handleStartTask} />
-            )}
-            <BacklogAlert state={data.studentState} onReschedule={handleReschedule} />
-            <AgentGreeting greeting={data.greeting} userName={data.userName} streak={data.streak} />
-            <ClassUpdateCard update={data.classUpdate} />
-            <TodayTaskCard task={data.todayTask} onStart={handleStartTask} />
-          </motion.div>
-        )}
-
-        {/* TASK */}
-        {state === 'task' && data && (
-          <motion.div key="task" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-2xl">
-            <TaskFocusView
-              task={data.todayTask}
+            <ConversationalBriefing
+              data={data}
               userId={user.id}
-              onComplete={handleTaskComplete}
-              onBack={() => setState('briefing')}
+              onAllComplete={handleAllTasksComplete}
+              onRefresh={() => loadBriefing(true)}
+              onReschedule={handleReschedule}
             />
           </motion.div>
         )}
@@ -420,6 +395,11 @@ export function DailyBriefing() {
                 </p>
               </div>
             </div>
+            {data && (
+              <div className="w-full max-w-xl mb-6">
+                <WhatChangedCard data={data} />
+              </div>
+            )}
             <ExploreGrid />
           </motion.div>
         )}

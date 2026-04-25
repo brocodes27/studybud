@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { ensureBehavioralProfile } from '../lib/dailyBriefing';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain,
   Clock,
   Target,
-  TrendingUp,
   AlertTriangle,
   Heart,
   BookOpen,
@@ -20,8 +20,8 @@ import {
   Info,
   Sparkles,
   Zap,
-  BarChart3,
-  Calendar,
+  Network,
+  FileText,
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
@@ -29,8 +29,16 @@ interface BehavioralProfile {
   id: string;
   user_id: string;
   preferred_study_time: string;
+  preferred_time?: string;
   typical_session_duration_min: number;
   subject_affinity: Record<string, number>;
+  weak_subjects?: string[];
+  strong_subjects?: string[];
+  backlog_count?: number;
+  missed_days_streak?: number;
+  stress_signals?: Record<string, any>;
+  typical_slump_day?: string;
+  response_to_low_score?: string;
   fatigue_patterns: {
     peak_focus_hour?: number;
     fatigue_onset_min?: number;
@@ -97,6 +105,24 @@ const SECTIONS = [
     borderColor: 'border-rose-200',
     iconColor: 'text-rose-500',
   },
+  {
+    key: 'knowledge_map',
+    title: 'Knowledge Map',
+    icon: Network,
+    description: 'Concepts you have mastered or need help with',
+    color: 'from-fuchsia-500/10 to-indigo-500/10',
+    borderColor: 'border-fuchsia-200',
+    iconColor: 'text-fuchsia-500',
+  },
+  {
+    key: 'recent_submissions',
+    title: 'Recent Submissions',
+    icon: FileText,
+    description: 'Your recent task outputs and evaluations',
+    color: 'from-blue-500/10 to-cyan-500/10',
+    borderColor: 'border-blue-200',
+    iconColor: 'text-blue-500',
+  },
 ];
 
 export default function MyProfileDashboard() {
@@ -104,6 +130,7 @@ export default function MyProfileDashboard() {
   const { showToast } = useToast();
   const [profile, setProfile] = useState<BehavioralProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<BehavioralProfile>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['study_patterns']));
@@ -116,17 +143,95 @@ export default function MyProfileDashboard() {
 
   const loadProfile = async () => {
     setLoading(true);
+    setLoadError(null);
+    let lastError: string | null = null;
+
     try {
-      const { data, error } = await supabase
+      // 1. Try direct read
+      let { data, error } = await supabase
         .from('student_behavioral_profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        lastError = `Read failed: ${error.message}`;
+        console.error(lastError);
+      }
+
+      // 2. Try RPC refresh
+      if (!data) {
+        const { error: rpcError } = await supabase.rpc('refresh_behavioral_profile', { p_user_id: user.id });
+        if (rpcError) {
+          lastError = `refresh_behavioral_profile RPC failed: ${rpcError.message}`;
+          console.error(lastError);
+        }
+        const retry = await supabase
+          .from('student_behavioral_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (retry.error) {
+          lastError = `Retry read after RPC failed: ${retry.error.message}`;
+          console.error(lastError);
+        }
+        data = retry.data;
+      }
+
+      // 3. Try helper insert
+      if (!data) {
+        const ensureRes = await ensureBehavioralProfile(user.id);
+        if (!ensureRes.success) {
+          lastError = `ensureBehavioralProfile failed: ${ensureRes.error}`;
+          console.error(lastError);
+        }
+        const finalRetry = await supabase
+          .from('student_behavioral_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (finalRetry.error) {
+          lastError = `Final read after ensure failed: ${finalRetry.error.message}`;
+          console.error(lastError);
+        }
+        data = finalRetry.data;
+      }
+
+      // 4. Last resort — direct inline insert with full error capture
+      if (!data) {
+        const { error: insertErr } = await supabase.from('student_behavioral_profiles').insert({
+          user_id: user.id,
+          preferred_time: 'evening',
+          typical_session_duration_min: 90,
+          weak_subjects: [],
+          strong_subjects: [],
+          stress_signals: {},
+        });
+        if (insertErr) {
+          lastError = `Direct insert failed: ${insertErr.message}`;
+          console.error(lastError);
+        } else {
+          const lastRead = await supabase
+            .from('student_behavioral_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          data = lastRead.data;
+          if (!data && lastRead.error) {
+            lastError = `Read after direct insert failed: ${lastRead.error.message}`;
+            console.error(lastError);
+          }
+        }
+      }
+
       setProfile(data);
-    } catch (err) {
+      if (!data && lastError) {
+        setLoadError(lastError);
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Unexpected profile load error';
       console.error('Failed to load profile:', err);
+      setLoadError(msg);
       showToast('Could not load your profile', 'error');
     } finally {
       setLoading(false);
@@ -212,21 +317,40 @@ export default function MyProfileDashboard() {
             <Brain className="w-8 h-8 text-[#6366F1]" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#0A192F] mb-3">No Profile Data Yet</h1>
-          <p className="text-[#64748B] mb-8 max-w-md mx-auto">
+          <p className="text-[#64748B] mb-4 max-w-md mx-auto">
             Ranjan Sir hasn't built a behavioral model for you yet. Start completing tasks and interacting with the platform — your profile will grow automatically.
           </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="bg-[#0A192F] text-white font-bold text-sm py-3 px-6 rounded-xl hover:bg-[#1E293B] transition-colors"
-          >
-            Go to Daily Briefing
-          </button>
+          {loadError && (
+            <div className="mb-6 mx-auto max-w-md">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-left">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-red-700 mb-1">Diagnostics</p>
+                    <p className="text-[11px] text-red-600 font-mono break-all">{loadError}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="bg-[#0A192F] text-white font-bold text-sm py-3 px-6 rounded-xl hover:bg-[#1E293B] transition-colors"
+            >
+              Go to Daily Briefing
+            </button>
+            <button
+              onClick={loadProfile}
+              className="bg-white text-[#0A192F] border border-[#0A192F]/10 font-bold text-sm py-3 px-6 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Retry Load
+            </button>
+          </div>
         </div>
       </div>
     );
   }
-
-  const subjectEntries = Object.entries(profile.subject_affinity || {});
 
   return (
     <div className="min-h-screen bg-[#F8FAF9] py-8 px-4">
@@ -251,16 +375,20 @@ export default function MyProfileDashboard() {
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="bg-white rounded-2xl border border-[#0A192F]/[0.06] p-4 text-center">
-            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.total_sessions_logged}</div>
+            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.total_sessions_logged ?? 0}</div>
             <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">Sessions Logged</div>
           </div>
           <div className="bg-white rounded-2xl border border-[#0A192F]/[0.06] p-4 text-center">
-            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.avg_plan_adherence_pct}%</div>
-            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">Plan Adherence</div>
+            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.backlog_count ?? profile.avg_plan_adherence_pct ?? 0}</div>
+            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">
+              {profile.backlog_count != null ? 'Backlog Count' : 'Plan Adherence'}
+            </div>
           </div>
           <div className="bg-white rounded-2xl border border-[#0A192F]/[0.06] p-4 text-center">
-            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.last_emotional_state || '—'}</div>
-            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">Last State</div>
+            <div className="text-2xl font-extrabold text-[#0A192F]">{profile.missed_days_streak ?? (profile.last_emotional_state || '—')}</div>
+            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">
+              {profile.missed_days_streak != null ? 'Missed Days' : 'Last State'}
+            </div>
           </div>
         </div>
 
@@ -393,9 +521,9 @@ function SectionContent({ section, profile }: { section: string; profile: Behavi
     case 'study_patterns':
       return (
         <div className="space-y-3 pt-2">
-          <DataRow label="Preferred Study Time" value={profile.preferred_study_time || 'Not set'} />
+          <DataRow label="Preferred Study Time" value={profile.preferred_study_time || profile.preferred_time || 'Not set'} />
           <DataRow label="Typical Session" value={`${profile.typical_session_duration_min} minutes`} />
-          <DataRow label="Response to Failure" value={profile.response_to_failure || 'Not observed'} />
+          <DataRow label="Response to Failure" value={profile.response_to_failure || profile.response_to_low_score || 'Not observed'} />
           <div className="mt-3 p-3 bg-blue-50 rounded-xl">
             <div className="flex items-start gap-2">
               <Sparkles className="w-3.5 h-3.5 text-blue-500 mt-0.5" />
@@ -410,23 +538,27 @@ function SectionContent({ section, profile }: { section: string; profile: Behavi
     case 'subject_affinity':
       return (
         <div className="space-y-3 pt-2">
-          {Object.entries(profile.subject_affinity || {}).length === 0 ? (
+          {Object.entries(profile.subject_affinity || {}).length === 0 && !(profile.weak_subjects?.length || profile.strong_subjects?.length) ? (
             <p className="text-sm text-[#94A3B8]">No subject data collected yet.</p>
           ) : (
-            Object.entries(profile.subject_affinity).map(([subject, score]) => (
-              <div key={subject} className="flex items-center gap-3">
-                <span className="text-sm font-medium text-[#0A192F] w-24">{subject}</span>
-                <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(score as number) * 100}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
-                  />
+            <div className="space-y-2">
+              {Object.entries(profile.subject_affinity || {}).map(([subject, score]) => (
+                <div key={subject} className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-[#0A192F] w-24">{subject}</span>
+                  <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(score as number) * 100}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400"
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-[#64748B] w-10 text-right">{Math.round((score as number) * 100)}%</span>
                 </div>
-                <span className="text-xs font-bold text-[#64748B] w-10 text-right">{Math.round((score as number) * 100)}%</span>
-              </div>
-            ))
+              ))}
+              {profile.weak_subjects?.length ? <DataRow label="Weak Subjects" value={profile.weak_subjects.join(', ')} /> : null}
+              {profile.strong_subjects?.length ? <DataRow label="Strong Subjects" value={profile.strong_subjects.join(', ')} /> : null}
+            </div>
           )}
           <div className="mt-3 p-3 bg-emerald-50 rounded-xl">
             <div className="flex items-start gap-2">
@@ -459,9 +591,11 @@ function SectionContent({ section, profile }: { section: string; profile: Behavi
     case 'behavior':
       return (
         <div className="space-y-3 pt-2">
-          <DataRow label="Slump Triggers" value={profile.slump_triggers?.length ? profile.slump_triggers.join(', ') : 'None identified'} />
+          <DataRow label="Slump Triggers" value={profile.slump_triggers?.length ? profile.slump_triggers.join(', ') : profile.typical_slump_day || 'None identified'} />
           <DataRow label="Last Emotional State" value={profile.last_emotional_state || 'Not recorded'} />
           <DataRow label="Escalation History" value={`${(profile.escalation_history || []).length} events`} />
+          {profile.backlog_count != null ? <DataRow label="Backlog Count" value={`${profile.backlog_count}`} /> : null}
+          {profile.missed_days_streak != null ? <DataRow label="Missed Days Streak" value={`${profile.missed_days_streak}`} /> : null}
           <div className="mt-3 p-3 bg-violet-50 rounded-xl">
             <div className="flex items-start gap-2">
               <Sparkles className="w-3.5 h-3.5 text-violet-500 mt-0.5" />
@@ -472,6 +606,12 @@ function SectionContent({ section, profile }: { section: string; profile: Behavi
           </div>
         </div>
       );
+
+    case 'knowledge_map':
+      return <KnowledgeMapContent userId={profile.user_id} />;
+
+    case 'recent_submissions':
+      return <RecentSubmissionsContent userId={profile.user_id} />;
 
     case 'memory':
       return (
@@ -713,4 +853,131 @@ function EditForm({
     default:
       return null;
   }
+}
+
+function KnowledgeMapContent({ userId }: { userId: string }) {
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('user_knowledge')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setNodes(data || []);
+      setLoading(false);
+    }
+    load();
+  }, [userId]);
+
+  if (loading) return <div className="p-4 text-center text-xs text-[#94A3B8]">Loading knowledge map...</div>;
+  if (!nodes.length) return <div className="p-4 text-center text-xs text-[#94A3B8]">No knowledge data recorded yet.</div>;
+
+  return (
+    <div className="space-y-3 pt-2">
+      {nodes.map(n => (
+        <div key={n.id} className="p-3 bg-fuchsia-50 rounded-xl border border-fuchsia-100">
+          <div className="flex items-center gap-2 mb-1">
+            <Network className="w-4 h-4 text-fuchsia-500" />
+            <span className="font-bold text-xs text-[#0A192F]">{n.topic || n.metadata?.topic || 'Knowledge Entry'}</span>
+            <span className="ml-auto text-[10px] font-medium text-fuchsia-700 uppercase">{n.knowledge_type || n.source_type || 'knowledge'}</span>
+          </div>
+          <p className="text-xs text-[#64748B]">{n.content}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecentSubmissionsContent({ userId }: { userId: string }) {
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [retrying, setRetrying] = useState<Set<string>>(new Set());
+
+  const fetchSubmissions = async () => {
+    const { data } = await supabase
+      .from('task_outputs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    return data || [];
+  };
+
+  const retryPendingAnalyses = async (rows: any[]) => {
+    const pending = rows.filter(r => !r.ai_analysis);
+    if (pending.length === 0) return rows;
+
+    setRetrying(new Set(pending.map(p => p.id)));
+
+    await Promise.all(
+      pending.map(async (row) => {
+        try {
+          await supabase.functions.invoke('analyse-task-output', {
+            body: {
+              output_id: row.id,
+              task_title: row.metadata?.task_title || 'Task Output',
+              subject: row.metadata?.subject || null,
+              output_type: row.output_type || 'text',
+              text_content: row.text_content || null,
+            },
+          });
+        } catch (err) {
+          console.error(`Retry failed for output ${row.id}:`, err);
+        }
+      })
+    );
+
+    // Re-fetch after retries completed
+    const refreshed = await fetchSubmissions();
+    setRetrying(new Set());
+    return refreshed;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const initial = await fetchSubmissions();
+      if (cancelled) return;
+      setSubmissions(initial);
+      setLoading(false);
+
+      const refreshed = await retryPendingAnalyses(initial);
+      if (cancelled) return;
+      setSubmissions(refreshed);
+    }
+    load();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  if (loading) return <div className="p-4 text-center text-xs text-[#94A3B8]">Loading submissions...</div>;
+  if (!submissions.length) return <div className="p-4 text-center text-xs text-[#94A3B8]">No submissions yet.</div>;
+
+  return (
+    <div className="space-y-3 pt-2">
+      {submissions.map(s => (
+        <div key={s.id} className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText className="w-4 h-4 text-blue-500" />
+            <span className="font-bold text-xs text-[#0A192F]">Task Output</span>
+            <span className="ml-auto text-[10px] font-medium text-blue-700 uppercase">{s.output_type}</span>
+          </div>
+          {s.ai_analysis ? (
+            <div className="mt-2 text-xs text-[#64748B]">
+              <div className="mb-1"><strong>Effort:</strong> {s.ai_analysis.effort_score}/10 | <strong>Accuracy:</strong> {s.ai_analysis.accuracy_score}/10</div>
+              <p>{s.ai_analysis.feedback}</p>
+            </div>
+          ) : retrying.has(s.id) ? (
+            <p className="text-xs text-blue-600 italic mt-2">Running analysis...</p>
+          ) : (
+            <p className="text-xs text-[#64748B] italic mt-2">Analysis pending...</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import {
   Target, Calendar, Clock, Brain,
   ChevronRight, ChevronLeft, Check,
@@ -26,8 +27,8 @@ export default function Onboarding() {
 
   const [role] = useState<'student' | 'teacher'>('student');
   const [fullName, setFullName] = useState<string>(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
-  const [targetExam, setTargetExam] = useState<string>('sat');
-  const [targetScore, setTargetScore] = useState<number>(1400);
+  const [targetExam, setTargetExam] = useState<string>('jee');
+  const [targetScore, setTargetScore] = useState<number>(180);
   const [examDate, setExamDate] = useState<string>('');
   const [hoursPerWeek, setHoursPerWeek] = useState<number>(10);
   const [weakAreas, setWeakAreas] = useState<string[]>([]);
@@ -41,18 +42,14 @@ export default function Onboarding() {
   const [currentWeek, setCurrentWeek] = useState<number>(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
-  const [examTypes, setExamTypes] = useState<ExamType[]>([]);
+  const examTypes: ExamType[] = [
+    { code: 'jee', name: 'JEE (Mains + Advanced)', description: 'Joint Entrance Examination for IITs and NITs', total_score_max: 360 }
+  ];
   const [coachingTemplates, setCoachingTemplates] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchExamTypes();
     fetchCoachingTemplates();
   }, []);
-
-  const fetchExamTypes = async () => {
-    const { data } = await supabase.from('us_exam_types').select('*').eq('is_active', true);
-    if (data) setExamTypes(data);
-  };
 
   const fetchCoachingTemplates = async () => {
     const { data } = await supabase.from('coaching_templates').select('id, institute_name, program, year_level, description, total_weeks');
@@ -114,7 +111,8 @@ export default function Onboarding() {
       }, { onConflict: 'user_id' });
 
       await refreshProfile();
-      navigate('/pricing');
+      track('onboarding_complete', { target_exam: targetExam, year_level: yearLevel });
+      navigate('/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics');
     } catch (e: any) {
       alert(e.message || 'Failed to complete onboarding');
     } finally {
@@ -352,7 +350,7 @@ export default function Onboarding() {
 
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-2">
-                  {['Algebra', 'Geometry', 'Trig', 'Reading', 'Writing', 'Data Analysis', 'Calculus', 'Vocabulary'].map((area) => (
+                  {['Mechanics', 'Electrostatics', 'Organic Chemistry', 'Physical Chemistry', 'Calculus', 'Coordinate Geometry', 'Algebra', 'Vectors'].map((area) => (
                     <button
                       key={area}
                       onClick={() => setWeakAreas(areas => areas.includes(area) ? areas.filter(a => a !== area) : [...areas, area])}
@@ -368,7 +366,7 @@ export default function Onboarding() {
                   <h5 className="font-bold text-[#0A192F] text-sm mb-2 flex items-center gap-2">
                     <Shield className="w-4 h-4 text-[#34D399]" /> Our Promise
                   </h5>
-                  <p className="text-sm font-medium text-[#64748B] leading-relaxed">We'll build a personalized plan that converts your weak areas into strengths. Your journey starts today.</p>
+                  <p className="text-sm font-medium text-[#64748B] leading-relaxed">We'll turn your JEE weak areas into verified mastery credentials. Your first Prove-It starts today.</p>
                 </div>
 
                 <div className="flex gap-3">
@@ -556,10 +554,10 @@ export default function Onboarding() {
               <div className="space-y-6">
                 <div className="bg-gradient-to-br from-[#00D1FF]/5 to-[#F472B6]/5 rounded-[20px] border-2 border-[#00D1FF]/15 p-6">
                   <h3 className="text-lg font-extrabold text-[#0A192F] mb-2 tracking-tight">7-Day Free Trial</h3>
-                  <p className="text-sm font-medium text-[#64748B] mb-5">Experience full AI-powered learning, smart plans, and college roadmaps free for 7 days. Then just $5/mo.</p>
+                  <p className="text-sm font-medium text-[#64748B] mb-5">Start with a JEE Prove-It challenge, then unlock smart plans, practice, and mastery credentials.</p>
 
                   <ul className="space-y-3">
-                    {['Full AI Strategy Engine', 'US College Roadmaps', 'Unlimited Mock Exams'].map(f => (
+                    {['JEE Prove-It credentials', 'Personalized JEE roadmap', 'Unlimited adaptive practice'].map(f => (
                       <li key={f} className="flex items-center gap-3 text-sm font-medium text-[#0A192F]">
                         <div className="w-5 h-5 bg-[#34D399]/10 border border-[#34D399]/30 rounded-full flex items-center justify-center shrink-0">
                           <Check className="w-3 h-3 text-[#34D399]" />
@@ -575,7 +573,7 @@ export default function Onboarding() {
                   disabled={loading}
                   className="neo-button w-full py-4 flex items-center justify-center gap-2 group disabled:opacity-50 text-base"
                 >
-                  {loading ? 'Setting up...' : 'Complete Onboarding'}
+                  {loading ? 'Setting up...' : 'Start First Prove-It'}
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
 
