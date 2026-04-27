@@ -74,9 +74,22 @@ export async function callGemini(
 
   const model = opts.model || DEFAULT_MODEL;
 
+  // --- Inject real-world temporal awareness into every call ---
+  const now = new Date();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const realWorldContext = `Today is ${dayNames[now.getUTCDay()]}, ${monthNames[now.getUTCMonth()]} ${now.getUTCDate()}, ${now.getUTCFullYear()} (UTC).`;
+
+  // Prepend the real-world context as a system message so every edge function
+  // AI interaction knows the current date without individual changes.
+  const enrichedMessages: GeminiMessage[] = [
+    { role: "system", content: `Real-world context: ${realWorldContext}` },
+    ...messages,
+  ];
+
   // Gemini uses `systemInstruction` separately and only role=user|model in contents.
-  const systemMessages = messages.filter((m) => m.role === "system");
-  const nonSystem = messages.filter((m) => m.role !== "system");
+  const systemMessages = enrichedMessages.filter((m) => m.role === "system");
+  const nonSystem = enrichedMessages.filter((m) => m.role !== "system");
 
   const systemInstruction = systemMessages.length
     ? { parts: systemMessages.flatMap((m) => partsFromContent(m.content)) }

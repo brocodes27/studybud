@@ -1,8 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ProfileSettings } from '../components/ProfileSettings';
-import { User, Shield, Bell, Key, Download, Trash2 } from 'lucide-react';
+import { User, Shield, Bell, Key, Download, Trash2, Loader2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export function Profile() {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to permanently delete your account? This action cannot be undone. All your data will be removed within 30 days."
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert("You must be logged in to delete your account.");
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to delete account");
+      }
+
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch (err: any) {
+      console.error("Delete account error:", err);
+      alert(err.message || "Failed to delete account. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in pb-20">
       <div className="max-w-6xl mx-auto">
@@ -53,9 +93,19 @@ export function Profile() {
                 <button className="w-full flex items-center justify-between p-3 rounded-[16px] bg-slate-50 hover:bg-[#00D1FF]/5 border-2 border-transparent hover:border-[#00D1FF]/20 transition-all">
                   <span className="text-[#0A192F] font-medium text-sm">Export Account Data</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-[16px] bg-red-50 border-2 border-red-100 hover:bg-red-100 transition-all">
-                  <Trash2 className="h-4 w-4 text-red-500 stroke-[2.5px]" />
-                  <span className="text-red-500 font-medium text-sm">Delete Account</span>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="w-full flex items-center gap-3 p-3 rounded-[16px] bg-red-50 border-2 border-red-100 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? (
+                    <Loader2 className="h-4 w-4 text-red-500 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 text-red-500 stroke-[2.5px]" />
+                  )}
+                  <span className="text-red-500 font-medium text-sm">
+                    {deleting ? "Deleting..." : "Delete Account"}
+                  </span>
                 </button>
               </div>
             </div>

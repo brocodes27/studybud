@@ -1,3 +1,25 @@
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    Content-Security-Policy = """
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://dub.sh https://js.stripe.com https://www.paypal.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https: blob:;
+      connect-src 'self' https://yjdcshkqgzcubniinwoc.supabase.co https://yjdcshkqgzcubniinwoc.supabase.co:443 wss://yjdcshkqgzcubniinwoc.supabase.co https://api.dub.co https://api.vapi.ai https://api.openai.com https://api.heygen.com https://api.murf.ai https://*.daily.co https://*.paypal.com https://*.razorpay.com https://api-m.paypal.com;
+      media-src 'self' blob: https:;
+      frame-src 'self' https://www.paypal.com https://*.razorpay.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      upgrade-insecure-requests;
+    """
+
 [[redirects]]
   from = "/*"
   to = "/"

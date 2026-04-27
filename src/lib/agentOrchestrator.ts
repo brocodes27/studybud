@@ -67,7 +67,7 @@ async function actionAnalyzePendingOutputs(
   try {
     const { data: pending } = await supabase
       .from('task_outputs')
-      .select('id, output_type, text_content, metadata, created_at')
+      .select('id, output_type, text_content, file_url, created_at')
       .eq('user_id', userId)
       .is('ai_analysis', null)
       .order('created_at', { ascending: false })
@@ -90,8 +90,8 @@ async function actionAnalyzePendingOutputs(
         await supabase.functions.invoke('analyse-task-output', {
           body: {
             output_id: row.id,
-            task_title: (row as any).metadata?.task_title || 'Your submission',
-            subject: (row as any).metadata?.subject || null,
+            task_title: (row as any).file_url ? 'File submission' : 'Your submission',
+            subject: null,
             output_type: row.output_type || 'text',
             text_content: row.text_content || null,
           },
@@ -282,7 +282,7 @@ async function actionIdentifyRepairTarget(
   try {
     const { data } = await supabase
       .from('user_subject_mastery')
-      .select('subject, topic, mastery_score')
+      .select('domain, subdomain, mastery_score')
       .eq('user_id', userId)
       .order('mastery_score', { ascending: true })
       .limit(3);
@@ -297,12 +297,12 @@ async function actionIdentifyRepairTarget(
 
     const weakest = data[0];
     step.status = 'done';
-    step.result = `Weakest signal: ${weakest.subject} → ${weakest.topic || 'general'}`;
+    step.result = `Weakest signal: ${weakest.domain} → ${weakest.subdomain || 'general'}`;
     step.finishedAt = now();
     onUpdate({ ...step });
 
     if ((weakest.mastery_score ?? 100) < 50) {
-      findings.push(`${weakest.subject} (${weakest.topic || 'general'}) is your weakest signal at ${weakest.mastery_score}% — I'll prioritize repair there.`);
+      findings.push(`${weakest.domain} (${weakest.subdomain || 'general'}) is your weakest signal at ${weakest.mastery_score}% — I'll prioritize repair there.`);
     }
   } catch {
     step.status = 'error';
@@ -374,9 +374,6 @@ function composeProactiveQuestion(steps: AgentStep[], findings: string[]): strin
   const profile = steps.find((s) => s.id === 'profile');
   if (profile?.result?.includes('missed days')) {
     return `You've been off for a few days — is something blocking you, or should I just trim today's plan to something manageable?`;
-  }
-  if (findings.some((f) => f.includes('is') && f.includes('day'))) {
-    return `Your next test is close — want me to pull together a focused revision set instead of standard tasks?`;
   }
   if (findings.some((f) => f.includes('weakest signal'))) {
     return `Should I spend tonight's session repairing that weak spot, or stay on roadmap?`;

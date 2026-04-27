@@ -213,7 +213,7 @@ export function Dashboard() {
     );
   }
 
-  if (role === 'teacher') return <Navigate to="/teacher" replace />;
+  if (role === 'teacher') return <Navigate to="/my-classes" replace />;
 
   const displayName = fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student';
   const primaryTask = todaysTasks.find(t => !t.completed) || todaysTasks[0];

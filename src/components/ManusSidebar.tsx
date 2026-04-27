@@ -11,11 +11,13 @@ import {
   Trophy,
   Users,
   BarChart3,
-  PlayCircle
+  PlayCircle,
+  LogOut,
+  BookOpen
 } from 'lucide-react';
 
 export const ManusSidebar = () => {
-    const { user } = useAuth() as any;
+    const { user, signOut } = useAuth() as any;
 
     if (!user) return null;
 
@@ -110,6 +112,18 @@ export const ManusSidebar = () => {
                 </NavLink>
 
                 <NavLink
+                    to="/my-classes"
+                    className={({ isActive }) =>
+                        `p-2.5 rounded-xl transition-all duration-200 relative group ${isActive ? 'bg-white shadow-sm border border-[#E8E2D9] text-[#2D2A26]' : 'text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26]'}`
+                    }
+                >
+                    <BookOpen className="w-[17px] h-[17px]" strokeWidth={2}/>
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">
+                        My Classes
+                    </div>
+                </NavLink>
+
+                <NavLink
                     to="/demo"
                     className={({ isActive }) =>
                         `p-2.5 rounded-xl transition-all duration-200 relative group ${isActive ? 'bg-white shadow-sm border border-[#E8E2D9] text-[#2D2A26]' : 'text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26]'}`
@@ -160,6 +174,16 @@ export const ManusSidebar = () => {
                         Settings
                     </div>
                 </NavLink>
+
+                <button
+                    onClick={() => signOut?.()}
+                    className="p-2.5 rounded-xl text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26] transition-all duration-200 relative group"
+                >
+                    <LogOut className="w-[17px] h-[17px]" strokeWidth={2}/>
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">
+                        Sign Out
+                    </div>
+                </button>
             </div>
         </aside>
     );

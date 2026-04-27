@@ -22,10 +22,11 @@ interface ExamType {
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const { track } = useAnalytics();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const [role] = useState<'student' | 'teacher'>('student');
+  const [role] = useState<'student' | 'teacher'>((user?.user_metadata?.role as 'student' | 'teacher') || 'student');
   const [fullName, setFullName] = useState<string>(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
   const [targetExam, setTargetExam] = useState<string>('jee');
   const [targetScore, setTargetScore] = useState<number>(180);
@@ -35,12 +36,13 @@ export default function Onboarding() {
   const [studyStyle] = useState<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'balanced'>('balanced');
 
   // Roadmap Engine States
-  const [instituteChoice, setInstituteChoice] = useState<'template' | 'custom'>('template');
+  const [instituteChoice, setInstituteChoice] = useState<'template' | 'custom' | 'join_class'>('template');
   const [instituteName, setInstituteName] = useState<string>('Standard JEE');
   const [batchName, setBatchName] = useState<string>('');
   const [yearLevel, setYearLevel] = useState<'11' | '12' | 'Dropper'>('11');
   const [currentWeek, setCurrentWeek] = useState<number>(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [classCode, setClassCode] = useState<string>('');
 
   const examTypes: ExamType[] = [
     { code: 'jee', name: 'JEE (Mains + Advanced)', description: 'Joint Entrance Examination for IITs and NITs', total_score_max: 360 }
@@ -91,16 +93,28 @@ export default function Onboarding() {
         const { error: goalError } = await supabase.from('user_study_goals').upsert(goalPayload);
         if (goalError) throw goalError;
 
-        // Trigger Roadmap Engine Onboarding Edge Function
-        await supabase.functions.invoke('roadmap-onboarding', {
-          body: {
-            template_id: instituteChoice === 'template' ? activeTemplateId : null,
-            institute_name: instituteChoice === 'template' ? coachingTemplates.find(t=>t.id===activeTemplateId)?.institute_name : instituteName,
-            year_level: yearLevel,
-            current_week: currentWeek,
-            batch_name: batchName || 'Standard'
+        if (instituteChoice === 'join_class' && classCode.trim()) {
+          const trimmed = classCode.trim();
+          let result;
+          if (trimmed.length <= 10 && !trimmed.includes('/')) {
+            result = await supabase.rpc('join_class', { p_class_code: trimmed });
+          } else {
+            const slug = trimmed.replace(/^.*\/join\//, '');
+            result = await supabase.rpc('join_class_by_invite', { p_invite_link: slug });
           }
-        });
+          if (result.error) throw new Error(result.error.message);
+        } else {
+          // Trigger Roadmap Engine Onboarding Edge Function
+          await supabase.functions.invoke('roadmap-onboarding', {
+            body: {
+              template_id: instituteChoice === 'template' ? activeTemplateId : null,
+              institute_name: instituteChoice === 'template' ? coachingTemplates.find(t=>t.id===activeTemplateId)?.institute_name : instituteName,
+              year_level: yearLevel,
+              current_week: currentWeek,
+              batch_name: batchName || 'Standard'
+            }
+          });
+        }
       }
 
       await supabase.from('user_gamification').upsert({
@@ -111,8 +125,8 @@ export default function Onboarding() {
       }, { onConflict: 'user_id' });
 
       await refreshProfile();
-      track('onboarding_complete', { target_exam: targetExam, year_level: yearLevel });
-      navigate('/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics');
+      track('onboarding_complete', { role, target_exam: targetExam, year_level: yearLevel });
+      navigate(role === 'teacher' ? '/my-classes' : '/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics');
     } catch (e: any) {
       alert(e.message || 'Failed to complete onboarding');
     } finally {
@@ -177,23 +191,45 @@ export default function Onboarding() {
                   />
                 </div>
 
-                <div className="p-5 bg-[#00D1FF]/5 rounded-[16px] border-2 border-[#00D1FF]/15 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[12px] flex items-center justify-center">
-                    <GraduationCap className="w-6 h-6 text-[#00D1FF]" />
+                {role === 'student' ? (
+                  <div className="p-5 bg-[#00D1FF]/5 rounded-[16px] border-2 border-[#00D1FF]/15 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[12px] flex items-center justify-center">
+                      <GraduationCap className="w-6 h-6 text-[#00D1FF]" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-[#0A192F] tracking-tight">Student Account</p>
+                      <p className="text-xs font-medium text-[#64748B]">Profile configured for peak learning performance</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-extrabold text-[#0A192F] tracking-tight">Student Account</p>
-                    <p className="text-xs font-medium text-[#64748B]">Profile configured for peak learning performance</p>
+                ) : (
+                  <div className="p-5 bg-[#8B7355]/5 rounded-[16px] border-2 border-[#8B7355]/15 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-[12px] flex items-center justify-center">
+                      <BookOpen className="w-6 h-6 text-[#8B7355]" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-[#0A192F] tracking-tight">Teacher Account</p>
+                      <p className="text-xs font-medium text-[#64748B]">Create classes, assign tasks, and track student progress</p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <button
-                  onClick={nextStep}
-                  disabled={!role || !fullName}
-                  className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
-                >
-                  Next <ChevronRight className="w-5 h-5" />
-                </button>
+                {role === 'teacher' ? (
+                  <button
+                    onClick={saveOnboarding}
+                    disabled={!fullName || loading}
+                    className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
+                  >
+                    {loading ? 'Setting up...' : 'Get Started'} <ChevronRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={nextStep}
+                    disabled={!role || !fullName}
+                    className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
+                  >
+                    Next <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </motion.div>
           )}
@@ -416,6 +452,13 @@ export default function Onboarding() {
                     Coaching Roadmap
                   </button>
                   <button
+                    onClick={() => setInstituteChoice('join_class')}
+                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'join_class' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                  >
+                    <MapPin className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                    Join a Class
+                  </button>
+                  <button
                     onClick={() => setInstituteChoice('custom')}
                     className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
                   >
@@ -423,6 +466,20 @@ export default function Onboarding() {
                     Self Study
                   </button>
                 </div>
+
+                {/* Join Class Input */}
+                {instituteChoice === 'join_class' && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Class Code or Invite Link</label>
+                    <input
+                      value={classCode}
+                      onChange={(e) => setClassCode(e.target.value)}
+                      placeholder="Paste class code or invite link..."
+                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                    />
+                    <p className="text-xs text-[#64748B] mt-1.5">Ask your teacher for the class code or invite link.</p>
+                  </div>
+                )}
 
                 {/* Template Cards */}
                 {instituteChoice === 'template' && (

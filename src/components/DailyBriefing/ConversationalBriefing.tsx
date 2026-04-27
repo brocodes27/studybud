@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Brain, CheckCircle2, Lightbulb,
@@ -6,12 +6,13 @@ import {
 } from 'lucide-react';
 import type { DailyBriefingData, TodayTask } from '../../lib/dailyBriefing';
 import { markTaskCompleted } from '../../lib/dailyBriefing';
+import { supabase } from '../../lib/supabase';
 import { TaskOutputUpload } from './TaskOutputUpload';
 import { useToast } from '../../hooks/useToast';
 import { remember, type ChatTurn } from '../../lib/memory';
 import { AgentWorkstream } from './AgentWorkstream';
 import type { AgentRunReport } from '../../lib/agentOrchestrator';
-import AIService from '../../lib/aiService';
+import { executeTool, type AgentContext, type ToolResult } from '../../lib/agentTools';
 
 /**
  * Conversational, agentic replacement for the card-grid Daily Briefing.
@@ -35,7 +36,8 @@ type MsgKind =
   | 'task'
   | 'student'
   | 'allDone'
-  | 'typing';
+  | 'typing'
+  | 'tool_call';
 
 interface ChatMessage {
   id: string;
@@ -45,6 +47,8 @@ interface ChatMessage {
   taskIndex?: number;
   actions?: Array<{ label: string; onClick: () => void; primary?: boolean; icon?: any }>;
   meta?: string;
+  toolCall?: { tool: string; args: any; preface?: string };
+  suggestedReplies?: string[];
 }
 
 interface Props {
@@ -75,16 +79,21 @@ export function ConversationalBriefing({
   userId,
   onAllComplete,
   onRefresh,
-  onReschedule,
+  onReschedule, // agent now handles rescheduling via regenerate_plan tool
 }: Props) {
   const { showToast } = useToast();
+  void onReschedule; // agent now handles rescheduling via regenerate_plan tool
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [localTasks, setLocalTasks] = useState<TodayTask[]>(data.todayTasks);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
-  const [scripted, setScripted] = useState(false);
   const [agentReport, setAgentReport] = useState<AgentRunReport | null>(null);
+  const [isAgentThinking, setIsAgentThinking] = useState(false);
+  const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const conversationHistory = useRef<Array<{ role: 'user' | 'model'; content: string }>>([]);
+  const initializedRef = useRef(false);
+  const isTurnInProgress = useRef(false);
 
   // Sync localTasks when upstream data changes
   useEffect(() => {
@@ -99,146 +108,190 @@ export function ConversationalBriefing({
   }, [messages]);
 
   // -----------------------------------------------------------------------
-  // Script: the initial conversational sequence
+  // Agent context builder
+  // -----------------------------------------------------------------------
+  const buildAgentContext = useCallback(() => {
+    const s = data.studentState;
+    const nextTest = (data as any).nextTest || null;
+    return {
+      userName: data.userName,
+      studentState: {
+        currentStreak: data.streak,
+        backlogCount: s.backlogCount,
+        missedDaysStreak: s.missedDaysStreak,
+        weakSubjects: s.weakSubjects,
+        preferredTime: s.preferredTime,
+        typicalSessionDuration: s.typicalSessionDuration,
+      },
+      todayTasks: localTasks.map((t, i) => ({
+        index: i,
+        type: t.type,
+        title: t.title,
+        subject: t.subject,
+        durationMin: t.durationMin,
+        completed: t.completed,
+        description: t.description?.slice(0, 200),
+      })),
+      nextTest: nextTest ? {
+        name: nextTest.test_name || nextTest.name,
+        date: nextTest.test_date || nextTest.date,
+        daysUntil: nextTest.days_until || 0,
+      } : null,
+      findings: agentReport?.findings || [],
+      bookmark: agentReport?.bookmark,
+      classUpdate: data.classUpdate,
+    };
+  }, [data, localTasks, agentReport]);
+
+  // -----------------------------------------------------------------------
+  // Agent turn — the heart of the loop
+  // -----------------------------------------------------------------------
+  const agentTurn = useCallback(async (
+    studentMessage: string | null,
+    overrideContext?: any,
+    toolResult?: ToolResult,
+  ) => {
+    if (studentMessage) {
+      conversationHistory.current.push({ role: 'user', content: studentMessage });
+    }
+
+    if (isTurnInProgress.current) return;
+    isTurnInProgress.current = true;
+    setIsAgentThinking(true);
+    setSuggestedReplies([]);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const context = overrideContext || buildAgentContext();
+      const body: any = {
+        messages: conversationHistory.current.slice(-20),
+        context,
+      };
+      if (toolResult) {
+        body.tool_results = toolResult;
+      }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-turn`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!res.ok) throw new Error(`Agent turn failed: ${res.status}`);
+      const result = await res.json();
+
+      if (result.type === 'tool_call') {
+        // Show preface text if agent provided one, then execute tool
+        if (result.text) {
+          conversationHistory.current.push({ role: 'model', content: result.text });
+          appendAgent({ kind: 'plan', text: result.text });
+        }
+        // Execute tool and send result back
+        await handleToolExecution(result.tool, result.args);
+      } else if (result.type === 'message') {
+        conversationHistory.current.push({ role: 'model', content: result.text });
+        appendAgent({ kind: 'plan', text: result.text });
+        // Parse suggested replies if embedded in text
+        const replyMatch = result.text.match(/\[SUGGESTED_REPLIES:([^\]]+)\]/);
+        if (replyMatch) {
+          try {
+            const replies = JSON.parse(replyMatch[1]);
+            if (Array.isArray(replies)) setSuggestedReplies(replies);
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (err: any) {
+      console.error('Agent turn error:', err);
+      appendAgent({
+        kind: 'plan',
+        text: `I'm having a little trouble thinking right now — let's keep going in a moment.`,
+      });
+    } finally {
+      setIsAgentThinking(false);
+      isTurnInProgress.current = false;
+    }
+  }, [buildAgentContext]);
+
+  // -----------------------------------------------------------------------
+  // Tool execution
+  // -----------------------------------------------------------------------
+  const handleToolExecution = useCallback(async (tool: string, args: any) => {
+    const toolContext: AgentContext = {
+      userId,
+      roadmapId: data.roadmapId,
+      todayTasks: localTasks,
+      data,
+      onRefresh,
+      onNavigate: (route: string) => {
+        if (typeof window !== 'undefined') window.location.href = route;
+      },
+      onPresentTask: (taskIndex: number, preface: string) => {
+        if (preface) appendAgent({ kind: 'plan', text: preface });
+        const task = localTasks[taskIndex];
+        if (task) appendAgent({ kind: 'task', task, taskIndex });
+      },
+      onAskReflection: (question: string) => {
+        appendAgent({
+          kind: 'plan',
+          text: question,
+          actions: [{ label: 'Skip', onClick: () => agentTurn('Skipped reflection.') }],
+        });
+      },
+      onShowReplies: (replies: string[]) => setSuggestedReplies(replies),
+    };
+
+    const result = await executeTool({ tool, args }, toolContext);
+
+    // Refresh local tasks if completion happened
+    if (tool === 'mark_task_complete' && result.success) {
+      const idx = args.task_index ?? 0;
+      const updated = [...localTasks];
+      if (updated[idx]) updated[idx] = { ...updated[idx], completed: true };
+      setLocalTasks(updated);
+      if (result.data?.xp_earned) {
+        appendAgent({ kind: 'plan', text: `+${result.data.xp_earned} XP. Great work!` });
+      }
+      onRefresh();
+    }
+
+    // Only send tool result back for tools that need an agent response.
+    // present_task, ask_reflection, show_suggested_replies, navigate_to, open_mentor_chat
+    // are terminal — executing them is enough; sending back creates an infinite loop.
+    const toolsNeedingResponse = ['search_web', 'regenerate_plan', 'mark_task_complete'];
+    if (toolsNeedingResponse.includes(tool)) {
+      await agentTurn(null, undefined, result);
+    }
+  }, [localTasks, data, userId, onRefresh, agentTurn]);
+
+  // -----------------------------------------------------------------------
+  // Initialize agent when workstream completes
   // -----------------------------------------------------------------------
   useEffect(() => {
-    // Wait until the autonomous agent workstream has finished running.
-    if (scripted || !agentReport) return;
-    setScripted(true);
+    if (initializedRef.current || !agentReport) return;
+    initializedRef.current = true;
 
-    const pending = localTasks.filter(t => !t.completed);
-    const firstPending = pending[0];
-
-    const script: Array<Omit<ChatMessage, 'id'>> = [];
-
-    // 1. Greeting — but framed around what the agent already DID, not "hi".
-    const findingCount = agentReport.findings.length;
-    script.push({
-      kind: 'greeting',
-      text: findingCount > 0
-        ? `${data.greeting}, ${data.userName}. I finished a few things for you while you were away:`
-        : `${data.greeting}, ${data.userName}.${data.streak > 1 ? ` ${data.streak}-day streak — keep the chain alive.` : ''}`,
-    });
-
-    // 1a. Stream each finding as its own message so it feels like the agent is
-    //     reporting back, not greeting.
-    agentReport.findings.slice(0, 3).forEach((f) => {
-      script.push({ kind: 'plan', text: f });
-    });
-
-    // 1b. If we have a "left off" bookmark, surface it with a resume action
-    if (agentReport.bookmark) {
-      const bookmark = agentReport.bookmark;
-      script.push({
-        kind: 'plan',
-        text: `I remember you left off on: "${bookmark.slice(0, 140)}". Want to pick up there, or start fresh with today's plan?`,
-        actions: [
-          {
-            label: 'Pick up where I left off',
-            primary: true,
-            onClick: () => {
-              appendStudent('Pick up where I left off');
-              window.dispatchEvent(
-                new CustomEvent('trigger-atlas-chat', {
-                  detail: { message: `Let's continue from: ${bookmark}`, voice: false },
-                }),
-              );
-            },
-          },
-          { label: "Today's plan first", onClick: () => appendStudent("Today's plan first") },
-        ],
-      });
-    }
-
-    // 1c. Proactive question — agent-driven, not waiting for input
-    if (agentReport.proactiveQuestion) {
-      script.push({
-        kind: 'plan',
-        text: agentReport.proactiveQuestion,
-      });
-    }
-
-    // 2. State snapshot (only if meaningful)
-    const state = data.studentState;
-    const stateBits: string[] = [];
-    if (state.backlogCount > 0) stateBits.push(`${state.backlogCount} backlog item${state.backlogCount === 1 ? '' : 's'}`);
-    if (state.missedDaysStreak > 1) stateBits.push(`${state.missedDaysStreak} missed days`);
-    if (state.weakSubjects.length > 0) stateBits.push(`weak in ${state.weakSubjects.slice(0, 2).join(', ')}`);
-
-    if (stateBits.length > 0) {
-      script.push({
-        kind: 'state',
-        text: `Quick read on your current state: ${stateBits.join(', ')}. I've factored that into today's plan.`,
-        actions: state.backlogCount > 2 || state.missedDaysStreak > 2 ? [
-          { label: 'Reschedule realistically', onClick: onReschedule, icon: MessageCircle },
-        ] : undefined,
-      });
-    }
-
-    // 3. Class / announcement context
-    if (data.classUpdate.type !== 'none') {
-      const cu = data.classUpdate;
-      let text = '';
-      if (cu.type === 'class_session') {
-        text = `You had class today — ${cu.content}. Let's consolidate that before it fades.`;
-      } else if (cu.type === 'announcement') {
-        text = `Heads up from ${cu.source}: ${cu.content}`;
-      } else if (cu.type === 'assignment_due') {
-        text = `"${cu.title}" is due soon — I've pulled it into today's queue.`;
-      } else if (cu.type === 'meeting_note') {
-        text = `I pulled your note "${cu.title}" — we'll build on that.`;
-      }
-      if (text) script.push({ kind: 'classUpdate', text });
-    }
-
-    // 4. The plan
-    if (pending.length > 0) {
-      script.push({
-        kind: 'plan',
-        text: `Here's what I want you to do tonight — ${pending.length} task${pending.length === 1 ? '' : 's'}, about ${data.totalEstimatedMinutes} min total. We'll go one at a time.`,
-      });
-
-      // 5. First pending task surfaced immediately
-      if (firstPending) {
-        const idx = localTasks.indexOf(firstPending);
-        script.push({
-          kind: 'task',
-          task: firstPending,
-          taskIndex: idx,
-        });
-      }
-    } else if (data.allTasksCompleted) {
-      script.push({
-        kind: 'allDone',
-        text: `You've cleared everything for today. Proud of you. Go rest — or explore something new.`,
-      });
-    } else if (!data.activeRoadmap) {
-      script.push({
-        kind: 'plan',
-        text: `You don't have an active roadmap yet. Pick one and I'll start building your daily plan.`,
-      });
-    }
-
-    // Animate each message in sequence with typing delay
-    let cumulative = 0;
-    script.forEach((msg, i) => {
-      const delay = i === 0 ? 150 : 350;
-      cumulative += delay;
-      setTimeout(() => {
-        setMessages(prev => [...prev, { ...msg, id: `scripted-${i}-${Date.now()}` }]);
-      }, cumulative);
-      cumulative += typingDelay(msg.text || msg.task?.title || '');
-    });
+    const init = async () => {
+      const context = buildAgentContext();
+      await agentTurn(null, context);
+    };
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentReport]);
 
   // -----------------------------------------------------------------------
-  // Actions
+  // Message helpers
   // -----------------------------------------------------------------------
   const appendStudent = (text: string, opts?: { mine?: boolean; bookmarkHint?: string }) => {
     setMessages(prev => [...prev, { id: `student-${Date.now()}-${Math.random()}`, kind: 'student', text }]);
-    // Silently mine this utterance for long-term memory. Skip trivial chips
-    // like "Done ✓" unless explicitly asked to mine, to keep the KB clean.
     if (opts?.mine !== false) {
       const recentChat: ChatTurn[] = messages
         .filter((m) => m.kind === 'student' || m.kind === 'plan' || m.kind === 'greeting' || m.kind === 'state' || m.kind === 'classUpdate' || m.kind === 'allDone')
@@ -257,7 +310,6 @@ export function ConversationalBriefing({
   };
 
   const appendAgent = (msg: Omit<ChatMessage, 'id' | 'kind'> & { kind?: MsgKind }) => {
-    // Add typing indicator, then replace with real message after delay
     const typingId = `typing-${Date.now()}-${Math.random()}`;
     setMessages(prev => [...prev, { id: typingId, kind: 'typing' }]);
     const delay = typingDelay(msg.text || '');
@@ -270,6 +322,9 @@ export function ConversationalBriefing({
     }, delay);
   };
 
+  // -----------------------------------------------------------------------
+  // Task interaction helpers
+  // -----------------------------------------------------------------------
   const surfaceNextTask = (afterIdx: number) => {
     const remaining = localTasks
       .map((t, i) => ({ t, i }))
@@ -283,27 +338,18 @@ export function ConversationalBriefing({
           text: `That's the full list cleared. ${localTasks.length === 1 ? 'Sharp work.' : 'Clean sweep.'} Want to review what you learned?`,
           actions: [{ label: 'Celebrate & continue', onClick: onAllComplete, primary: true, icon: Sparkles }],
         });
-      } else {
-        appendAgent({
-          kind: 'plan',
-          text: `That's it for the suggested queue. You can revisit any task above, or call it a night.`,
-        });
       }
       return;
     }
 
     const next = remaining[0];
-    appendAgent({
-      kind: 'task',
-      task: next.t,
-      taskIndex: next.i,
-    });
+    appendAgent({ kind: 'task', task: next.t, taskIndex: next.i });
   };
 
   const handleComplete = async (idx: number, task: TodayTask) => {
     if (task.completed) return;
     setCompletingTaskId(task.id);
-    appendStudent('Done ✓', { mine: false });
+    appendStudent('Done', { mine: false });
 
     const sourceType =
       task.type === 'prescription' ? 'prescription' as const :
@@ -312,12 +358,8 @@ export function ConversationalBriefing({
       'weak_area' as const;
     const sourceId = task.prescriptionId || task.sprintId || task.id;
     const result = await markTaskCompleted(
-      userId,
-      sourceType,
-      sourceId,
-      task.taskOrder || 0,
-      task.durationMin,
-      undefined,
+      userId, sourceType, sourceId,
+      task.taskOrder || 0, task.durationMin, undefined,
       { taskTitle: task.title, subject: task.subject }
     );
     setCompletingTaskId(null);
@@ -332,25 +374,20 @@ export function ConversationalBriefing({
     setLocalTasks(updated);
 
     if (result.xpEarned) {
-      appendAgent({ kind: 'plan', text: `+${result.xpEarned} XP. Moving on.` });
+      appendAgent({ kind: 'plan', text: `+${result.xpEarned} XP earned.` });
     }
     surfaceNextTask(idx);
   };
 
   const handleSkip = (idx: number) => {
     appendStudent('Skip for now', { mine: false });
-    appendAgent({ kind: 'plan', text: `Noted — I'll keep it on the list. Next one.` });
     surfaceNextTask(idx);
   };
 
   const handleAskHelp = (task: TodayTask) => {
-    appendStudent('I need help with this', {
+    appendStudent(`I need help with ${task.title}`, {
       mine: true,
       bookmarkHint: `Stuck on: ${task.title}${task.subject ? ` (${task.subject})` : ''}`,
-    });
-    appendAgent({
-      kind: 'plan',
-      text: `Opening a focused chat. Tell me where you're stuck — formula, a specific step, or conceptually?`,
     });
     window.dispatchEvent(
       new CustomEvent('trigger-atlas-chat', {
@@ -378,18 +415,16 @@ export function ConversationalBriefing({
       mine: true,
       bookmarkHint: `Student submitted work for: ${task.title}${task.subject ? ` (${task.subject})` : ''}`,
     });
-    appendAgent({ kind: 'plan', text: `Got it. I'll analyze what you submitted and fold it into your learner model.` });
     surfaceNextTask(idx);
     onRefresh();
   };
 
+  // -----------------------------------------------------------------------
+  // Render message bubble
+  // -----------------------------------------------------------------------
   const renderMessage = (m: ChatMessage) => {
-    if (m.kind === 'typing') {
-      return <TypingBubble key={m.id} />;
-    }
-    if (m.kind === 'student') {
-      return <StudentBubble key={m.id} text={m.text || ''} />;
-    }
+    if (m.kind === 'typing') return <TypingBubble key={m.id} />;
+    if (m.kind === 'student') return <StudentBubble key={m.id} text={m.text || ''} />;
     if (m.kind === 'task' && m.task && typeof m.taskIndex === 'number') {
       const t = m.task;
       const idx = m.taskIndex;
@@ -415,7 +450,6 @@ export function ConversationalBriefing({
               <p className="text-[11px] text-amber-900 leading-relaxed">{current.strategy}</p>
             </div>
           )}
-
           <AnimatePresence>
             {isUploading && current.prescriptionId && (
               <TaskOutputUpload
@@ -429,7 +463,6 @@ export function ConversationalBriefing({
               />
             )}
           </AnimatePresence>
-
           {!current.completed && !isUploading && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               <ChipButton
@@ -441,16 +474,10 @@ export function ConversationalBriefing({
                 {isCompleting ? 'Saving…' : 'Mark done'}
               </ChipButton>
               {current.type === 'prescription' && !current.outputSubmitted && (
-                <ChipButton onClick={() => setUploadingIdx(idx)} icon={Upload}>
-                  Submit work
-                </ChipButton>
+                <ChipButton onClick={() => setUploadingIdx(idx)} icon={Upload}>Submit work</ChipButton>
               )}
-              <ChipButton onClick={() => handleAskHelp(current)} icon={MessageCircle}>
-                Need help
-              </ChipButton>
-              <ChipButton onClick={() => handleExplainWhy(current)}>
-                Why this?
-              </ChipButton>
+              <ChipButton onClick={() => handleAskHelp(current)} icon={MessageCircle}>Need help</ChipButton>
+              <ChipButton onClick={() => handleExplainWhy(current)}>Why this?</ChipButton>
               <ChipButton onClick={() => handleSkip(idx)}>Skip</ChipButton>
             </div>
           )}
@@ -482,8 +509,7 @@ export function ConversationalBriefing({
   const total = localTasks.length;
   const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  // Before the autonomous workstream finishes, render only the agent activity
-  // feed. This is the crucial "it's already working" moment.
+  // Before workstream finishes, show agent activity
   if (!agentReport) {
     return (
       <div className="w-full max-w-xl mx-auto flex flex-col pt-4">
@@ -503,7 +529,8 @@ export function ConversationalBriefing({
           <h2 className="text-[13px] font-bold text-[#2D2A26] leading-tight">Ranjan Sir</h2>
           <div className="flex items-center gap-2 text-[10px] font-semibold text-[#8A8279]">
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Mentoring live
+              <span className={`w-1.5 h-1.5 rounded-full ${isAgentThinking ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+              {isAgentThinking ? 'Thinking...' : 'Mentoring live'}
             </span>
             {total > 0 && (
               <>
@@ -538,22 +565,33 @@ export function ConversationalBriefing({
         </AnimatePresence>
       </div>
 
-      {/* Quick-reply composer */}
-      <QuickComposer
-        onSend={async (text) => {
-          appendStudent(text, { mine: true, bookmarkHint: text.slice(0, 240) });
-          try {
-            const today = localTasks.map((task, i) => `${i + 1}. ${task.title}${task.subject ? ` (${task.subject})` : ''}${task.completed ? ' [done]' : ''}`).join('\n') || 'No tasks loaded yet.';
-            const stateLine = `Backlog: ${data.studentState.backlogCount}, Missed days streak: ${data.studentState.missedDaysStreak}, Weak: ${(data.studentState.weakSubjects || []).slice(0, 3).join(', ') || 'unknown'}`;
-            const prompt = `You are Ranjan Sir, the student's personal JEE coach inside their Daily Briefing. Reply concisely, warmly, and decisively in 2-4 short sentences. No fluff. Use second person.\n\nStudent context:\n${stateLine}\n\nToday's tasks:\n${today}\n\nStudent question: ${text}`;
-            const { response } = await AIService.getInstance().generateEmpatheticChat(prompt, userId || 'guest', [], 'daily-briefing', false);
-            const reply = response?.trim() || `I hear you. Let's keep moving on today's tasks and we can dig deeper after.`;
-            appendAgent({ kind: 'plan', text: reply });
-          } catch (err) {
-            appendAgent({ kind: 'plan', text: `I couldn't reach the brain just now. Try again in a moment, or open Atlas for a deeper chat.` });
-          }
-        }}
-      />
+      {/* Composer: free text + suggested replies */}
+      <div className="space-y-2">
+        {suggestedReplies.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {suggestedReplies.map((reply, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  appendStudent(reply, { mine: true });
+                  agentTurn(reply);
+                  setSuggestedReplies([]);
+                }}
+                className="px-3 py-1.5 bg-white border border-[#E8E2D9] rounded-full text-[11px] font-semibold text-[#5D5A56] hover:bg-[#FAF8F5] hover:border-[#8B7355]/30 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
+        <AgentComposer
+          onSend={(text) => {
+            appendStudent(text, { mine: true, bookmarkHint: text.slice(0, 240) });
+            agentTurn(text);
+          }}
+          disabled={isAgentThinking}
+        />
+      </div>
     </div>
   );
 }
@@ -656,7 +694,7 @@ function ChipButton({
   );
 }
 
-function QuickComposer({ onSend }: { onSend: (text: string) => void }) {
+function AgentComposer({ onSend, disabled }: { onSend: (text: string) => void; disabled?: boolean }) {
   const [value, setValue] = useState('');
   const submit = () => {
     const v = value.trim();
@@ -670,12 +708,13 @@ function QuickComposer({ onSend }: { onSend: (text: string) => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-        placeholder="Ask Ranjan Sir anything..."
-        className="flex-1 bg-transparent text-[13px] text-[#2D2A26] placeholder:text-[#B5AEA5] outline-none"
+        placeholder={disabled ? "Ranjan Sir is thinking..." : "Ask Ranjan Sir anything..."}
+        disabled={disabled}
+        className="flex-1 bg-transparent text-[13px] text-[#2D2A26] placeholder:text-[#B5AEA5] outline-none disabled:opacity-50"
       />
       <button
         onClick={submit}
-        disabled={!value.trim()}
+        disabled={!value.trim() || disabled}
         className="w-8 h-8 rounded-full bg-[#2D2A26] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#3D3833] transition-colors"
       >
         <Send className="w-3.5 h-3.5" />

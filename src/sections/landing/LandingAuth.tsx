@@ -15,12 +15,14 @@ export function LandingAuth() {
   const [isSignUp, setIsSignUp] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     full_name: '',
     grade: '',
-    school: ''
+    school: '',
+    subject: ''
   });
 
   const handleGoogleSignIn = async () => {
@@ -46,7 +48,8 @@ export function LandingAuth() {
           full_name: formData.full_name,
           grade: formData.grade,
           school: formData.school,
-          role: 'student'
+          subject: formData.subject,
+          role: role
         });
         if (error) showToast(error.message, 'error');
         else {
@@ -112,12 +115,42 @@ export function LandingAuth() {
           <form onSubmit={handleSubmit} className="space-y-3">
             {isSignUp && (
               <>
-                <Input label="Full Name" placeholder="Alex Rivers" value={formData.full_name}
+                {/* Role Toggle */}
+                <div className="bg-[#F8FAFF] p-1 rounded-[14px] flex">
+                  <button
+                    type="button"
+                    onClick={() => setRole('student')}
+                    className={`flex-1 py-2 rounded-[12px] text-xs font-bold transition-all ${role === 'student' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                  >
+                    Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('teacher')}
+                    className={`flex-1 py-2 rounded-[12px] text-xs font-bold transition-all ${role === 'teacher' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                  >
+                    Teacher
+                  </button>
+                </div>
+
+                <Input label="Full Name" placeholder={role === 'teacher' ? 'Dr. Priya Sharma' : 'Alex Rivers'} value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: (e.target as HTMLInputElement).value })} required className="neo-input" />
-                <Input label="Grade / Class" placeholder="Class 12" value={formData.grade}
-                  onChange={(e) => setFormData({ ...formData, grade: (e.target as HTMLInputElement).value })} required className="neo-input" />
-                <Input label="School / Institute" placeholder="Delhi Public School" value={formData.school}
-                  onChange={(e) => setFormData({ ...formData, school: (e.target as HTMLInputElement).value })} required className="neo-input" />
+                {role === 'student' && (
+                  <>
+                    <Input label="Grade / Class" placeholder="Class 12" value={formData.grade}
+                      onChange={(e) => setFormData({ ...formData, grade: (e.target as HTMLInputElement).value })} required className="neo-input" />
+                    <Input label="School / Institute" placeholder="Delhi Public School" value={formData.school}
+                      onChange={(e) => setFormData({ ...formData, school: (e.target as HTMLInputElement).value })} required className="neo-input" />
+                  </>
+                )}
+                {role === 'teacher' && (
+                  <>
+                    <Input label="Subject (optional)" placeholder="Physics, Mathematics..." value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: (e.target as HTMLInputElement).value })} className="neo-input" />
+                    <Input label="School / Institute (optional)" placeholder="Delhi Public School" value={formData.school}
+                      onChange={(e) => setFormData({ ...formData, school: (e.target as HTMLInputElement).value })} className="neo-input" />
+                  </>
+                )}
               </>
             )}
             <Input label="Email" type="email" placeholder="alex@example.com" value={formData.email}
@@ -128,7 +161,7 @@ export function LandingAuth() {
             <button type="submit" disabled={formLoading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[12px] font-bold text-white bg-[#2D2A26] hover:bg-[#3E3A35] transition-colors active:scale-[0.98] mt-1">
               {formLoading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing...</>
-                : <>{isSignUp ? 'Create Account' : 'Sign In'} <ArrowRight className="w-3.5 h-3.5" /></>}
+                : <>{isSignUp ? (role === 'teacher' ? 'Create Teacher Account' : 'Create Account') : 'Sign In'} <ArrowRight className="w-3.5 h-3.5" /></>}
             </button>
           </form>
 

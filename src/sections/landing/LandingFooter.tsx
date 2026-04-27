@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export function LandingFooter() {
@@ -40,10 +41,21 @@ export function LandingFooter() {
             <div>
               <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">Company</p>
               <div className="flex flex-col gap-2.5">
-                {['About', 'Privacy Policy', 'Terms of Service', 'Contact'].map((item) => (
-                  <span key={item} className="text-[13px] font-medium text-white/45 cursor-default">
-                    {item}
-                  </span>
+                {[
+                  { label: 'About', href: '#about' },
+                  { label: 'Privacy Policy', href: '/privacy' },
+                  { label: 'Terms of Service', href: '/terms' },
+                  { label: 'Contact', href: 'mailto:hello@elevenfolks.com' }
+                ].map((item) => (
+                  item.href.startsWith('/') || item.href.startsWith('mailto:') ? (
+                    <Link key={item.label} to={item.href} className="text-[13px] font-medium text-white/45 hover:text-white/80 transition-colors">
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span key={item.label} className="text-[13px] font-medium text-white/45 cursor-default">
+                      {item.label}
+                    </span>
+                  )
                 ))}
               </div>
             </div>
@@ -55,9 +67,9 @@ export function LandingFooter() {
             &copy; {new Date().getFullYear()} elevenfolks. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <span className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors cursor-pointer">Privacy</span>
-            <span className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors cursor-pointer">Terms</span>
-            <span className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors cursor-pointer">Cookies</span>
+            <Link to="/privacy" className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors">Privacy</Link>
+            <Link to="/terms" className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors">Terms</Link>
+            <span className="text-[12px] font-medium text-white/20 cursor-default">Cookies</span>
           </div>
         </div>
       </div>

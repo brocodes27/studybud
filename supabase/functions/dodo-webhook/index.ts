@@ -1,11 +1,44 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
+import { isEventProcessed, markEventProcessed } from "../_shared/idempotency.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DODO_WEBHOOK_SECRET = Deno.env.get("DODO_PAYMENTS_WEBHOOK_KEY");
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+async function verifyDodoSignature(req: Request, rawBody: string): Promise<boolean> {
+    if (!DODO_WEBHOOK_SECRET) {
+        console.warn("⚠️ DODO_PAYMENTS_WEBHOOK_KEY not set; skipping signature verification.");
+        return true;
+    }
+    const signature = req.headers.get("webhook-signature") || req.headers.get("x-webhook-signature");
+    if (!signature) {
+        console.error("❌ No webhook signature header found");
+        return false;
+    }
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(DODO_WEBHOOK_SECRET),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+    );
+    const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
+    const computedSig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
+    const expectedSig = signature.replace("sha256=", "").trim();
+    if (computedSig.length !== expectedSig.length) {
+        // Try hex comparison if lengths differ
+        const computedHex = Array.from(new Uint8Array(sigBuffer))
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+        return computedHex === expectedSig.toLowerCase();
+    }
+    return computedSig === expectedSig;
+}
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -18,13 +51,40 @@ serve(async (req) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
+    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+    const limit = checkRateLimit(`dodo-webhook:${clientIp}`, 60, 60000);
+    if (!limit.allowed) {
+        return rateLimitResponse(limit.remaining, limit.resetAt);
+    }
+
     try {
         if (req.method !== "POST") {
             return new Response("Method not allowed", { status: 405, headers: corsHeaders });
         }
 
-        const payload = await req.json();
+        const rawBody = await req.text();
+        const isValid = await verifyDodoSignature(req, rawBody);
+        if (!isValid) {
+            console.error("❌ Dodo webhook signature verification failed");
+            return new Response(JSON.stringify({ error: "Invalid signature" }), {
+                status: 401,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
+        const payload = JSON.parse(rawBody);
         console.log("🔔 Dodo Webhook Received:", JSON.stringify(payload, null, 2));
+
+        // Idempotency: skip duplicate events
+        const eventId = payload.id || payload.data?.id || `dodo-${crypto.randomUUID()}`;
+        const alreadyProcessed = await isEventProcessed(supabase, eventId);
+        if (alreadyProcessed) {
+            console.log(`⏭️ Dodo event ${eventId} already processed — skipping.`);
+            return new Response(JSON.stringify({ received: true, idempotent: true }), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
 
         // Handle various Dodo event types for successful payment
         const eventType = payload.type || payload.event;
@@ -118,10 +178,16 @@ serve(async (req) => {
                     }
                 }
                 console.log("🎉 User upgraded to Premium successfully!");
+                await markEventProcessed(supabase, eventId, "dodo", eventType, payload);
 
                 // Notify Dub.co of the sale
                 try {
-                    const dubApiKey = Deno.env.get("DUB_API_KEY") || "dub_KgTsJoBfJGMT7jDjmxzF1m3I";
+                    const dubApiKey = Deno.env.get("DUB_API_KEY");
+                    if (!dubApiKey) {
+                        console.warn("⚠️ DUB_API_KEY not set; skipping Dub.co sale tracking.");
+                        return;
+                    }
+
                     const dubResponse = await fetch("https://api.dub.co/track/sale", {
                         method: "POST",
                         headers: {

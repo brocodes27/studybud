@@ -22,6 +22,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const normalizeRole = (value: unknown) => {
+  return typeof value === 'string' ? value.trim().toLowerCase() : null;
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -43,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profile && profile.length > 0) {
       const p = profile[0];
-      setRole(p.role ?? null);
+      setRole(normalizeRole(p.role));
       setIsAdmin(p.is_admin ?? false);
       setFullName(p.full_name ?? null);
       setTrialStart(p.created_at ? new Date(p.created_at) : null);
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (isMounted) {
             const hasProfile = Array.isArray(profile) && profile.length > 0;
             const p = profile?.[0];
-            setRole(hasProfile ? (p?.role ?? null) : null);
+            setRole(normalizeRole(hasProfile ? p?.role : data.session.user.user_metadata?.role));
             setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
             setFullName(hasProfile ? (p?.full_name ?? null) : null);
             setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
@@ -177,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             const hasProfile = Array.isArray(profile) && profile.length > 0;
             const p = profile?.[0];
-            setRole(hasProfile ? (p?.role ?? null) : null);
+            setRole(normalizeRole(hasProfile ? p?.role : session.user.user_metadata?.role));
             setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
             setFullName(hasProfile ? (p?.full_name ?? null) : null);
             setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);

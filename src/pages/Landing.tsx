@@ -23,7 +23,7 @@ const Landing: React.FC = () => {
   }
 
   if (role === 'teacher') {
-    return <Navigate to="/teacher" replace />;
+    return <Navigate to="/my-classes" replace />;
   }
 
   return (

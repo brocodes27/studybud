@@ -150,7 +150,15 @@ export class VAPIService {
             provider: '11labs',
             voiceId: 'elliot'
           },
-          instructions: `You are an AI tutor helping students learn various subjects. You are using Gemini 3 Flash for enhanced reasoning and conversation capabilities.
+          instructions: (() => {
+            const now = new Date();
+            const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            return `You are an AI tutor helping students learn various subjects. You are using Gemini 3 Flash for enhanced reasoning and conversation capabilities.
+
+CURRENT REAL-WORLD CONTEXT:
+- Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}.
+- Current time: ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} (local time).
 
 Key Responsibilities:
 - Be encouraging, patient, and adapt your teaching style to the student's needs
@@ -167,7 +175,8 @@ Remember to:
 - Ask follow-up questions to deepen understanding
 - Provide specific, actionable feedback
 - Keep the conversation engaging and interactive
-- Use analogies and examples relevant to the student's level`
+- Use analogies and examples relevant to the student's level`;
+          })()
         }),
       });
 

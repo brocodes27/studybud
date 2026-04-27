@@ -1,11 +1,11 @@
 import { Zap, Crown, Check, Star, Sparkles, IndianRupee } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { usePayment } from '../hooks/usePayment';
 
 export default function SubscriptionPage() {
-    const { isPremium, user } = useAuth() as any;
+    const { isPremium, role, isAdmin } = useAuth() as any;
     const { isLoadingPayment, initiatePayment } = usePayment();
     const { track } = useAnalytics();
 
@@ -24,7 +24,7 @@ export default function SubscriptionPage() {
     ];
 
     const faqs = [
-        { q: "Freemium model?", a: "Free core access forever. Upgrade to Pro for unlimited modules." },
+        { q: "Who needs a subscription?", a: "Students need Pro to access the app. Teachers can access their teaching workspace for free." },
         { q: "Refund policy?", a: "Access remains active until cycle expiration. Cancel anytime." },
         { q: "Data persistence?", a: "Your history is safe. Downgrading freezes Pro data but never deletes it." },
         { q: "Support?", a: "Direct developer channel open for Pro subscribers. 24h resolution target." },
@@ -41,13 +41,13 @@ export default function SubscriptionPage() {
                 <div className="text-center mb-16 space-y-4">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#F472B6]/10 text-[#F472B6] rounded-full font-bold text-sm border border-[#F472B6]/20">
                         <Crown className="w-4 h-4" />
-                        <span>Unlock your full potential</span>
+                        <span>Student access pass</span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">
-                        JEE Pro <span className="text-[#00D1FF]">Mastery</span>
+                        Student Pro <span className="text-[#00D1FF]">Access</span>
                     </h1>
                     <p className="text-xl font-medium text-[#64748B] max-w-2xl mx-auto leading-relaxed">
-                        Unlimited Prove-It credentials, full mastery tracking, and adaptive daily plans for JEE.
+                        Students need an active subscription to enter the app. Teachers get free access to their workspace.
                     </p>
                 </div>
 
@@ -55,13 +55,13 @@ export default function SubscriptionPage() {
                 <div className="grid md:grid-cols-2 gap-8 mb-16">
                     {/* Free Plan */}
                     <div className="neo-card">
-                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1">Free</h3>
+                        <h3 className="text-2xl font-extrabold text-[#0A192F] tracking-tight mb-1">Teacher</h3>
                         <div className="flex items-end gap-1 mb-2">
                             <span className="text-5xl font-extrabold text-[#0A192F]">₹0</span>
-                            <span className="text-[#64748B] font-medium mb-2">/month</span>
+                            <span className="text-[#64748B] font-medium mb-2">for teachers</span>
                         </div>
                         <p className="text-[#64748B] font-medium text-sm mb-8 pb-6 border-b border-[#0A192F]/5">
-                            Start proving mastery with basic limits.
+                            Teachers can access the app for free.
                         </p>
 
                         <ul className="space-y-4 mb-8">
@@ -79,7 +79,7 @@ export default function SubscriptionPage() {
 
                         <div className="bg-slate-50 rounded-[16px] p-4 border border-[#0A192F]/5">
                             <p className="text-xs font-bold text-[#64748B] leading-relaxed">
-                                1 Prove-It/day · basic practice · limited mastery tree · weekly report preview
+                                Free teacher access · class management · assignments · learner insights
                             </p>
                         </div>
                     </div>
@@ -99,7 +99,7 @@ export default function SubscriptionPage() {
                             <span className="text-[#64748B] font-medium mb-2">/month</span>
                         </div>
                         <p className="text-[#00D1FF] font-bold text-sm mb-8 pb-6 border-b border-[#00D1FF]/20">
-                            Less than a single JEE guidebook. Unlimited everything.
+                            Required for student access.
                         </p>
 
                         <ul className="space-y-4 mb-8">
@@ -117,12 +117,12 @@ export default function SubscriptionPage() {
 
                         <button
                             onClick={() => { track('payment_initiate', { plan: 'pro' }); initiatePayment(); }}
-                            disabled={isLoadingPayment || isPremium}
+                            disabled={isLoadingPayment || isPremium || role === 'teacher' || isAdmin}
                             className="neo-button w-full py-4 text-base shadow-float-cyan"
                         >
-                            {isLoadingPayment ? 'Processing...' : isPremium ? 'You\'re Pro' : 'Upgrade to Pro'}
-                            {!isLoadingPayment && !isPremium && <Zap className="w-5 h-5 stroke-[2.5px]" />}
-                            {isPremium && <Star className="w-5 h-5 fill-current" />}
+                            {isLoadingPayment ? 'Processing...' : role === 'teacher' || isAdmin ? 'Free Access Enabled' : isPremium ? 'You\'re Pro' : 'Subscribe to Access'}
+                            {!isLoadingPayment && !isPremium && role !== 'teacher' && !isAdmin && <Zap className="w-5 h-5 stroke-[2.5px]" />}
+                            {(isPremium || role === 'teacher' || isAdmin) && <Star className="w-5 h-5 fill-current" />}
                         </button>
                         <p className="text-center text-xs font-medium text-[#64748B] mt-4">Coaching centers: bulk pricing available. Contact us.</p>
                     </div>

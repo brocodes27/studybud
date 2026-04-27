@@ -142,6 +142,7 @@ async function insertTaskCompletion(
   engagementScore?: number,
   options?: TaskCompletionOptions
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('[DEBUG insertTaskCompletion] writing completion:', { userId, sourceType, sourceId, taskOrder });
   const payload = {
     user_id: userId,
     source_type: sourceType,
@@ -304,6 +305,7 @@ export async function markTaskCompleted(
       }
     } else {
       const fallback = await insertTaskCompletion(userId, sourceType, sourceId, taskOrder, actualDurationMin, engagementScore, options);
+      console.log('[DEBUG markTaskCompleted] assignment fallback result:', fallback);
       success = fallback.success;
       failureReason = fallback.error;
     }
@@ -328,7 +330,7 @@ export async function markTaskCompleted(
     // Update streak + award XP (fire-and-forget, don't block on failure)
     try {
       await updateStreak(userId);
-      const { newTotal, levelUp, newLevel } = await awardXp(
+      const { levelUp, newLevel } = await awardXp(
         userId,
         totalXp,
         `Completed ${sourceType} task`,
@@ -377,7 +379,7 @@ export async function ensureBehavioralProfile(userId: string): Promise<{ success
   }
 }
 
-export async function generateDailyPrescription(userId: string, roadmapId: string): Promise<boolean> {
+export async function generateDailyPrescription(_userId: string, roadmapId: string): Promise<boolean> {
   try {
     const { data, error } = await supabase.functions.invoke('generate-daily-prescription', {
       body: { roadmap_id: roadmapId, target_date: getTodayDateStr() },
@@ -389,7 +391,7 @@ export async function generateDailyPrescription(userId: string, roadmapId: strin
 }
 
 export async function uploadTestResult(
-  userId: string,
+  _userId: string,
   roadmapId: string,
   payload: {
     test_name: string;
@@ -411,7 +413,7 @@ export async function uploadTestResult(
 }
 
 // Helper: safely query Supabase, return fallback on any error
-async function safeQuery<T>(queryPromise: Promise<{ data: T | null; error: any }>, fallback: T): Promise<T> {
+async function safeQuery<T>(queryPromise: any, fallback: T): Promise<T> {
   try {
     const { data, error } = await queryPromise;
     if (error) {
@@ -457,11 +459,12 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       roadmapPathAvailable = true;
 
       // Fetch parallel roadmap data
-      const [sessionsRes, prescriptionRes, sprintRes, behaviorRes] = await Promise.all([
+      const [sessionsRes, prescriptionRes, sprintRes, behaviorRes, upcomingTestRes] = await Promise.all([
         supabase.from('class_sessions').select('*').eq('roadmap_id', roadmapId).eq('session_date', todayStr),
         supabase.from('daily_prescriptions').select('*').eq('user_id', userId).eq('prescription_date', todayStr).limit(1).maybeSingle(),
         supabase.from('correction_sprints').select('*').eq('user_id', userId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('student_behavioral_profiles').select('*').eq('user_id', userId).limit(1).maybeSingle(),
+        supabase.from('upcoming_tests').select('test_name, test_date, syllabus').eq('user_id', userId).eq('status', 'upcoming').gte('test_date', todayStr).order('test_date', { ascending: true }).limit(1).maybeSingle(),
       ]);
 
       classSessions = sessionsRes.data || [];
@@ -469,9 +472,63 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       correctionSprint = sprintRes.data || null;
       behavioralProfile = behaviorRes.data || null;
 
+      // If a test is close but the existing prescription wasn't generated with test context, adapt it automatically
+      const nextTest = upcomingTestRes.data || null;
+      if (prescription && nextTest && activeRoadmap) {
+        const daysUntil = Math.ceil((new Date(nextTest.test_date).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil <= 7 && !prescription.context_snapshot?.next_test) {
+          try {
+            const adaptedTasks = (prescription.tasks || []).map((t: any, i: number) => {
+              const newType = daysUntil <= 3 ? 'timed_set' : (['timed_set', 'retrieval_check', 'guided_examples'][i % 3]);
+              return {
+                ...t,
+                type: newType,
+                strategy: daysUntil <= 3
+                  ? `Test sprint — ${nextTest.test_name} in ${daysUntil} days. Solve under exam conditions, no notes, then review errors.`
+                  : `Revision focus for ${nextTest.test_name} (${daysUntil} days away). ${t.strategy || ''}`,
+                details: t.details ? `[${nextTest.test_name} prep] ${t.details}` : `[${nextTest.test_name} prep] ${t.title || ''}`,
+              };
+            });
+            await supabase
+              .from('daily_prescriptions')
+              .update({
+                tasks: adaptedTasks,
+                context_snapshot: { ...(prescription.context_snapshot || {}), next_test: { name: nextTest.test_name, date: nextTest.test_date, days_until: daysUntil } },
+                generated_by: 'test_adaptation',
+              })
+              .eq('id', prescription.id)
+              .eq('user_id', userId);
+            prescription.tasks = adaptedTasks;
+          } catch {
+            // Best-effort adaptation — continue with original tasks if DB update fails
+          }
+        }
+      }
+
       // If no prescription for today, generate one locally from the coaching template
       if (!prescription && activeRoadmap.template_id) {
         try {
+          // Fetch weak areas and behavioral profile for personalization
+          const [{ data: weakAreasFallback }, { data: profileFallback }] = await Promise.all([
+            supabase.from('user_subject_mastery')
+              .select('domain, subdomain, mastery_score, questions_attempted, questions_correct')
+              .eq('user_id', userId)
+              .order('mastery_score', { ascending: true })
+              .limit(3),
+            supabase.from('student_behavioral_profiles')
+              .select('preferred_time, typical_session_duration_min, weak_subjects, missed_days_streak')
+              .eq('user_id', userId)
+              .maybeSingle(),
+          ]);
+
+          const weakAreaMap = new Map<string, { mastery: number; accuracy: number }>();
+          (weakAreasFallback || []).forEach((w: any) => {
+            const key = `${w.domain}${w.subdomain ? ` — ${w.subdomain}` : ''}`;
+            const accuracy = w.questions_attempted > 0 ? Math.round((w.questions_correct / w.questions_attempted) * 100) : 0;
+            weakAreaMap.set(key, { mastery: Math.round((w.mastery_score || 0) * 100), accuracy });
+          });
+          const weakestThree = Array.from(weakAreaMap.entries()).slice(0, 3);
+
           const { data: template } = await supabase
             .from('coaching_templates')
             .select('weekly_schedule')
@@ -493,13 +550,49 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
               ['timed_set', 'guided_examples', 'retrieval_check'],     // Fri
               ['review_notes', 'retrieval_check', 'timed_set'],        // Sat
             ];
-            const todayTypes = taskTypeRotation[dayOfWeek];
+            let todayTypes = taskTypeRotation[dayOfWeek];
 
-            const taskTypeLabels: Record<string, { verb: string; strategy: string; duration: number }> = {
-              review_notes: { verb: 'Review & understand', strategy: 'Read through the theory, highlight key formulas, and write summary notes in your own words.', duration: 30 },
-              guided_examples: { verb: 'Practice with examples', strategy: 'Work through solved examples first, then attempt 5 similar problems on your own. Check solutions only after attempting.', duration: 40 },
-              retrieval_check: { verb: 'Self-test', strategy: 'Close your notes. Write down everything you remember about this topic — key concepts, formulas, and steps. Then verify against your notes.', duration: 20 },
-              timed_set: { verb: 'Timed problem set', strategy: 'Set a timer and solve problems under exam-like conditions. No peeking at notes. Mark what you got wrong and review those.', duration: 25 },
+            // If an upcoming test is within 7 days, override with exam-focused revision types
+            const nextTestFallback = nextTest;
+            if (nextTestFallback) {
+              const daysUntilFallback = Math.ceil((new Date(nextTestFallback.test_date).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+              if (daysUntilFallback <= 3) {
+                todayTypes = ['timed_set', 'timed_set', 'timed_set'];
+              } else if (daysUntilFallback <= 7) {
+                todayTypes = ['timed_set', 'retrieval_check', 'timed_set'];
+              }
+            }
+
+            // Rich, personalized task type definitions — never generic
+            const taskTypeLabels: Record<string, { verb: string; strategy: string; duration: number; checkpoint: string; coachNote: string }> = {
+              review_notes: {
+                verb: 'Build the foundation',
+                strategy: 'Open your notes to the exact chapter. Write down the 3 most important formulas WITHOUT looking first. Then verify. If you miss even one, re-read the derivation before moving on.',
+                duration: 30,
+                checkpoint: 'Can you write the key formula from memory and explain what each symbol means?',
+                coachNote: 'Slow is smooth, smooth is fast. Don\'t rush the theory — every JEE top-ranker I know spends 40% of their time here.',
+              },
+              guided_examples: {
+                verb: 'Pattern-mastery drill',
+                strategy: 'Pick 1 solved example. Cover the solution, attempt it yourself, then reveal and compare your steps. Now do 2 fresh problems using the SAME pattern. Name the pattern out loud before you start each one.',
+                duration: 40,
+                checkpoint: 'Could you explain the solution to a friend who\'s struggling? If not, redo the solved example first.',
+                coachNote: 'You don\'t need more problems — you need to SEE the pattern in the ones you already have.',
+              },
+              retrieval_check: {
+                verb: 'Closed-book pressure test',
+                strategy: 'Put ALL notes away. Set a 12-minute timer. Write everything you know about this topic: definitions, formulas, 2 solved examples from memory, and one common mistake. Then grade yourself honestly.',
+                duration: 20,
+                checkpoint: 'Did you recall at least 80% correctly? If below 60%, this topic needs review_notes tomorrow.',
+                coachNote: 'Retrieval is the single most effective learning technique — but only if you\'re honest about what you missed.',
+              },
+              timed_set: {
+                verb: 'Exam simulation',
+                strategy: 'Set a stopwatch. 1 minute per easy, 3 per medium, 5 per hard. NO notes, NO phone, NO breaks. After the timer, mark what you got wrong and classify each error: silly mistake, formula forgotten, or concept gap.',
+                duration: 25,
+                checkpoint: 'How many errors were silly mistakes vs. not knowing the concept? Write the ratio down — I\'ll remember it.',
+                coachNote: 'Speed without accuracy is worthless. If you\'re getting 3+ silly mistakes, slow down by 20% tomorrow.',
+              },
             };
 
             if (Array.isArray(schedule)) {
@@ -514,14 +607,37 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
                   const meta = taskTypeLabels[taskType];
                   const subjectName = subj.charAt(0).toUpperCase() + subj.slice(1);
 
-                  // Build a detailed, actionable description
+                  // Build a personalized, actionable description
                   const subtopicList = subtopics.length > 0
-                    ? `\n\nKey concepts to cover:\n${subtopics.map((st: string, idx: number) => `${idx + 1}. ${st}`).join('\n')}`
+                    ? `\n\nSpecific targets:\n${subtopics.map((st: string, idx: number) => `${idx + 1}. ${st}`).join('\n')}`
                     : '';
 
-                  const description = `${meta.verb} — ${topicData.topic} (${subjectName})\n\n` +
+                  // Find if this subject/topic matches a known weak area
+                  const weakMatch = weakestThree.find(([key]) =>
+                    key.toLowerCase().includes(subjectName.toLowerCase()) ||
+                    key.toLowerCase().includes(topicData.topic.toLowerCase())
+                  );
+                  const weakHook = weakMatch
+                    ? `🎯 Personal Focus: Your accuracy on ${weakMatch[0]} is ${weakMatch[1].accuracy}%. ${weakMatch[1].mastery < 40 ? 'This is a red flag — we fix it today.' : 'Let\'s push this above 70%.\n\n'}`
+                    : '';
+
+                  let description = `${meta.verb} — ${topicData.topic} (${subjectName})\n\n` +
+                    `${weakHook}` +
                     `📋 Strategy: ${meta.strategy}${subtopicList}\n\n` +
-                    `💡 Tip: Focus on understanding the "why" behind each concept, not just memorizing formulas.`;
+                    `✅ Before you mark done: ${meta.checkpoint}\n\n` +
+                    `📝 Coach's Note: ${meta.coachNote}`;
+
+                  if (nextTestFallback) {
+                    const daysUntilFallback = Math.ceil((new Date(nextTestFallback.test_date).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+                    if (daysUntilFallback <= 7) {
+                      description = `${meta.verb} — ${topicData.topic} (${subjectName})\n\n` +
+                        `${weakHook}` +
+                        `📋 Strategy: ${meta.strategy}${subtopicList}\n\n` +
+                        `🎯 Test Focus: ${nextTestFallback.test_name} is in ${daysUntilFallback} days. This topic maps to ~8-12 marks. Treat every problem like it costs you a rank.\n\n` +
+                        `✅ Before you mark done: ${meta.checkpoint}\n\n` +
+                        `📝 Coach's Note: ${meta.coachNote}`;
+                    }
+                  }
 
                   return {
                     order: i + 1,
@@ -579,12 +695,34 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
                   }
 
                   const subtopicList = subtopics.length > 0
-                    ? `\n\nKey concepts to cover:\n${subtopics.map((st: string, idx: number) => `${idx + 1}. ${st}`).join('\n')}`
+                    ? `\n\nSpecific targets:\n${subtopics.map((st: string, idx: number) => `${idx + 1}. ${st}`).join('\n')}`
                     : '';
 
-                  const description = `${meta.verb} — ${topicTitle} (${s.subject})\n\n` +
+                  const weakMatch = weakestThree.find(([key]) =>
+                    key.toLowerCase().includes(s.subject?.toLowerCase() || '') ||
+                    key.toLowerCase().includes(topicTitle.toLowerCase())
+                  );
+                  const weakHook = weakMatch
+                    ? `🎯 Personal Focus: Your accuracy on ${weakMatch[0]} is ${weakMatch[1].accuracy}%. ${weakMatch[1].mastery < 40 ? 'This is a red flag — we fix it today.' : 'Let\'s push this above 70%.\n\n'}`
+                    : '';
+
+                  let description = `${meta.verb} — ${topicTitle} (${s.subject})\n\n` +
+                    `${weakHook}` +
                     `📋 Strategy: ${meta.strategy}${subtopicList}\n\n` +
-                    `💡 Tip: Focus on understanding the "why" behind each concept, not just memorizing formulas. Keep an error log for problems you get wrong.`;
+                    `✅ Before you mark done: ${meta.checkpoint}\n\n` +
+                    `📝 Coach's Note: ${meta.coachNote}`;
+
+                  if (nextTestFallback) {
+                    const daysUntilFallback = Math.ceil((new Date(nextTestFallback.test_date).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+                    if (daysUntilFallback <= 7) {
+                      description = `${meta.verb} — ${topicTitle} (${s.subject})\n\n` +
+                        `${weakHook}` +
+                        `📋 Strategy: ${meta.strategy}${subtopicList}\n\n` +
+                        `🎯 Test Focus: ${nextTestFallback.test_name} is in ${daysUntilFallback} days. This topic maps to ~8-12 marks. Treat every problem like it costs you a rank.\n\n` +
+                        `✅ Before you mark done: ${meta.checkpoint}\n\n` +
+                        `📝 Coach's Note: ${meta.coachNote}`;
+                    }
+                  }
 
                   return {
                     order: i + 1,
@@ -613,10 +751,10 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
                   context_snapshot: { source: 'template_schedule', week: activeRoadmap.current_week },
                   tasks: todaySessions,
                   implementation_intentions: [
-                    { trigger: 'After I finish dinner', action: `Open my ${firstSubject} notes and start Task 1`, duration_min: 5 },
-                    { trigger: 'If I feel stuck on a problem for more than 10 minutes', action: 'Mark it with a ❓, skip to the next one, and return later with fresh eyes', duration_min: 2 },
-                    { trigger: 'After completing each task', action: 'Take a 5-minute break — stretch, drink water, look away from the screen', duration_min: 5 },
-                    { trigger: 'If I finish all tasks early', action: 'Revise the error log from last session or attempt 2 bonus problems', duration_min: 15 },
+                    { trigger: `At ${profileFallback?.preferred_time || '7:00 PM'}`, action: `Phone in another room. Open ${firstSubject} notes to Task 1. Set a 25-minute timer before touching the first problem.`, duration_min: 5 },
+                    { trigger: 'If I feel like skipping the self-test or giving up', action: 'Do exactly 2 problems instead of 5, then stop. Consistency beats intensity.', duration_min: 2 },
+                    { trigger: 'After completing each task', action: '30-second reflection: what was the one thing that still felt fuzzy? Write it in one sentence.', duration_min: 5 },
+                    { trigger: `If I finish all tasks before ${profileFallback?.typical_session_duration_min || 90} minutes`, action: 'Pick the weakest subject from today and do 1 retrieval check. No notes.', duration_min: 10 },
                   ],
                   total_estimated_minutes: totalMin,
                   generated_by: 'template_fallback',
@@ -653,6 +791,18 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
   const todayCompletions = new Set((completionsRes as any[]).map((c: any) => `${c.source_type}:${c.source_id}:${c.task_order}`));
 
   // ------------------------------------------------------------------
+  // B2. Fetch all-time assignment completions so finished teacher
+  //     assignments don't reappear tomorrow.
+  // ------------------------------------------------------------------
+  const assignmentCompletionsRes = await safeQuery(
+    supabase.from('task_completions_v2').select('source_id').eq('user_id', userId).eq('source_type', 'assignment'),
+    []
+  );
+  const completedAssignmentIds = new Set((assignmentCompletionsRes as any[]).map((c: any) => c.source_id));
+  console.log('[DEBUG dailyBriefing] assignment completions count:', completedAssignmentIds.size);
+  console.log('[DEBUG dailyBriefing] completed assignment ids:', Array.from(completedAssignmentIds).slice(0, 10));
+
+  // ------------------------------------------------------------------
   // C. Always fetch generic data (old tables)
   // ------------------------------------------------------------------
   const [
@@ -661,7 +811,6 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     classesRes,
     announcementsRes,
     assignmentsRes,
-    masteryRes,
     meetingNotesRes,
     knowledgeRes,
     recentOutputsRes,
@@ -670,11 +819,11 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     safeQuery(supabase.from('user_gamification').select('current_streak').eq('user_id', userId).maybeSingle(), null),
     safeQuery(supabase.from('class_members').select('class_id').eq('user_id', userId), []),
     safeQuery(
-      supabase.from('announcements').select('id, content, created_at, class_id, classes!class_id(class_name)').order('created_at', { ascending: false }).limit(10),
+      supabase.from('announcements').select('id, content, created_at, class_id, classes(name)').order('created_at', { ascending: false }).limit(10),
       []
     ),
     safeQuery(
-      supabase.from('assignments').select('id, title, description, due_date, class_id, classes!class_id(class_name)').order('due_date', { ascending: true }).limit(20),
+      supabase.from('assignments').select('id, title, description, due_date, class_id, classes(name)').order('due_date', { ascending: true }).limit(20),
       []
     ),
     safeQuery(supabase.from('user_subject_mastery').select('*').eq('user_id', userId).order('mastery_score', { ascending: true }).limit(3), []),
@@ -863,26 +1012,45 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     });
   }
 
-  // 3. Overdue assignments
+  // 3. Teacher assignments — surface ALL pending assignments with tiered urgency
   const allRelevantAssignments = (assignmentsRes as any[]).filter((a: any) => enrolledClassIds.has(a.class_id));
+  console.log('[DEBUG dailyBriefing] relevant assignments count:', allRelevantAssignments.length);
+  console.log('[DEBUG dailyBriefing] relevant assignment ids:', allRelevantAssignments.map((a: any) => a.id).slice(0, 10));
   allRelevantAssignments.forEach((a: any) => {
-    if (!a.due_date) return;
-    const due = new Date(a.due_date);
-    const now = new Date();
-    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 1) {
-      allTasks.push({
-        type: 'assignment',
-        id: `assignment_${a.id}`,
-        title: a.title,
-        description: a.description || 'Complete and submit this assignment.',
-        urgency: diffDays <= 0 ? 'critical' : 'high',
-        actionRoute: `/class/${a.class_id}`,
-        actionLabel: 'Go to Assignment',
-        completed: isCompleted('assignment', a.id),
-        taskType: 'assignment',
-      });
+    const checkId = `assignment_${a.id}`;
+    const isDone = completedAssignmentIds.has(checkId);
+    console.log('[DEBUG dailyBriefing] checking assignment', a.id, '->', checkId, 'done?', isDone);
+    if (isDone) return;
+    let urgency: TodayTask['urgency'] = 'normal';
+    let dueLabel = '';
+    if (a.due_date) {
+      const due = new Date(a.due_date);
+      const now = new Date();
+      const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) { urgency = 'critical'; dueLabel = 'Overdue'; }
+      else if (diffDays <= 1) { urgency = 'high'; dueLabel = 'Due soon'; }
+      else if (diffDays <= 3) { urgency = 'normal'; dueLabel = `Due in ${diffDays} days`; }
+      else { urgency = 'low'; dueLabel = `Due in ${diffDays} days`; }
     }
+    allTasks.push({
+      type: 'assignment',
+      id: `assignment_${a.id}`,
+      title: a.title,
+      description: (a.description || 'Complete and submit this assignment.') + (dueLabel ? ` (${dueLabel})` : ''),
+      urgency,
+      actionRoute: `/class/${a.class_id}`,
+      actionLabel: 'Go to Assignment',
+      completed: false,
+      taskType: 'assignment',
+    });
+  });
+
+  // Sort: critical assignments first, then high, then other tasks by urgency
+  const urgencyOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+  allTasks.sort((a, b) => {
+    if (a.type === 'assignment' && b.type !== 'assignment') return -1;
+    if (b.type === 'assignment' && a.type !== 'assignment') return 1;
+    return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
   });
 
   // Build legacy single todayTask (first pending for backward compat)

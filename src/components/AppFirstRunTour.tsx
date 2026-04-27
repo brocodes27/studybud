@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BarChart3, CalendarCheck, CheckCircle2, Flame, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const GLOBAL_ACTIVE_KEY = 'tour:global:v1:active';
 
@@ -63,11 +64,33 @@ export function AppFirstRunTour() {
   useEffect(() => {
     if (!user?.id || !onboardingCompleted || !storageKey) return;
     if (localStorage.getItem(storageKey)) return;
-    const timer = window.setTimeout(() => {
-      localStorage.setItem(GLOBAL_ACTIVE_KEY, '1');
-      setOpen(true);
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (cancelled) return;
+      // If the user already has activity in the DB, skip the tour so it
+      // does not reappear after clearing browser cache/cookies.
+      try {
+        const { count } = await supabase
+          .from('task_completions_v2')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if ((count || 0) > 0) {
+          localStorage.setItem(storageKey, 'completed');
+          return;
+        }
+      } catch {
+        // fall through to default behaviour
+      }
+      if (!cancelled) {
+        localStorage.setItem(GLOBAL_ACTIVE_KEY, '1');
+        setOpen(true);
+      }
     }, 700);
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [user?.id, onboardingCompleted, storageKey]);
 
   useEffect(() => {

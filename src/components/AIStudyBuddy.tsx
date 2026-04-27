@@ -251,7 +251,21 @@ export function AIStudyBuddy({
   const getCurrentStudyContext = () => {
     if (isolateContext) return '';
 
-    let contextString = `SYSTEM PERSONA: You are "ATLAS", the student's warm and encouraging AI study partner. You are supportive, friendly, and patient. You help manage the student's academic roadmap, daily prescriptions, homework, and test preparation with a positive, motivating tone. You evaluate mock tests and give constructive, kind feedback.\n\nCurrent Study Context:\n`;
+    const now = new Date();
+    const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const hour = now.getHours();
+    const timeOfDay = hour < 6 ? 'Night' : hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : hour < 21 ? 'Evening' : 'Night';
+    const season = (month: number) => {
+      if (month >= 2 && month <= 4) return 'Spring';
+      if (month >= 5 && month <= 7) return 'Summer';
+      if (month >= 8 && month <= 10) return 'Autumn';
+      return 'Winter';
+    };
+    const startOfYear = new Date(now.getFullYear(), 0, 0);
+    const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
+
+    let contextString = `SYSTEM PERSONA: You are "ATLAS", the student's warm and encouraging AI study partner. You are supportive, friendly, and patient. You help manage the student's academic roadmap, daily prescriptions, homework, and test preparation with a positive, motivating tone. You evaluate mock tests and give constructive, kind feedback.\n\nREAL-WORLD CONTEXT:\n- Current Date: ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}\n- Current Time: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} (local time)\n- Time of Day: ${timeOfDay}\n- Day ${dayOfYear} of ${now.getFullYear()}\n- Season: ${season(now.getMonth())}\n\nCurrent Study Context:\n`;
 
     if (activeRoadmap) {
       contextString += `- Enrolled Program: ${activeRoadmap.institute_name} (${activeRoadmap.program}, Week ${activeRoadmap.current_week})\n`;

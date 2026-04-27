@@ -4,8 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
-const TABS = ['Overview', 'Students', 'Resources', 'Announcements', 'Assignments', 'Daily Log & Mock Test', 'Student Responses', 'Weaknesses', 'AI Insights', 'Notifications'];
+const TABS = ['Class Workflow', 'Students', 'Assignments', 'Resources', 'Strengths & Weaknesses'];
 
 const TeacherClassDashboard: React.FC = () => {
   const { id } = useParams();
@@ -15,7 +16,7 @@ const TeacherClassDashboard: React.FC = () => {
   const [resources, setResources] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [tab, setTab] = useState('Overview');
+  const [tab, setTab] = useState('Class Workflow');
   const [loadingData, setLoadingData] = useState(true);
   // For AI Insights
   const [aiSummary, setAiSummary] = useState<string>('');
@@ -55,6 +56,8 @@ const TeacherClassDashboard: React.FC = () => {
   const [sessionSubject, setSessionSubject] = useState('Physics');
   const [sessionTopics, setSessionTopics] = useState('');
   const [sessionHomework, setSessionHomework] = useState('');
+  const [homeworkEnabled, setHomeworkEnabled] = useState(false);
+  const [homeworkType, setHomeworkType] = useState<'practice' | 'prove-it' | 'reading' | 'worksheet'>('practice');
   const [sessionDuration, setSessionDuration] = useState(60);
   const [loggingSession, setLoggingSession] = useState(false);
   const [sessionLogError, setSessionLogError] = useState('');
@@ -72,8 +75,8 @@ const TeacherClassDashboard: React.FC = () => {
     setLoggingSession(true);
     try {
       const topicsArray = sessionTopics.split(',').map(t => t.trim()).filter(Boolean);
-      const { data: members } = await supabase.from('class_members').select('student_id').eq('class_id', id);
-      const studentIds = (members || []).map((m: any) => m.student_id).filter(Boolean);
+      const { data: members } = await supabase.from('class_members').select('user_id').eq('class_id', id);
+      const studentIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
       if (studentIds.length === 0) {
         setSessionLogError('No students enrolled in this class.');
         setLoggingSession(false);
@@ -82,8 +85,7 @@ const TeacherClassDashboard: React.FC = () => {
       const { data: roadmaps } = await supabase
         .from('student_roadmaps')
         .select('id, user_id')
-        .in('user_id', studentIds)
-        .eq('is_active', true);
+        .in('user_id', studentIds);
       const roadmapRows = (roadmaps || []).map((r: any) => ({
         roadmap_id: r.id,
         teacher_id: user.id,
@@ -94,15 +96,57 @@ const TeacherClassDashboard: React.FC = () => {
         duration_minutes: sessionDuration,
       }));
       if (roadmapRows.length === 0) {
-        setSessionLogError('No students have an active study roadmap. Ask them to complete onboarding first.');
+        const noTemplate = !classInfo?.template_id && !classInfo?.custom_curriculum;
+        setSessionLogError(
+          noTemplate
+            ? 'Students in this class have no study roadmap. Link a coaching template in the Curriculum tab first.'
+            : 'Some students have not received a study roadmap. Ask them to complete onboarding or re-join the class.'
+        );
         setLoggingSession(false);
         return;
       }
-      const { error } = await supabase.from('class_sessions').insert(roadmapRows);
+
+      if (homeworkEnabled && sessionHomework.trim()) {
+        const due = new Date();
+        due.setDate(due.getDate() + 1);
+        const homeworkTitle = homeworkType === 'prove-it'
+          ? `Prove-It Homework: ${topicsArray[0] || sessionSubject}`
+          : `${sessionSubject} Homework: ${topicsArray[0] || 'Class Practice'}`;
+        const homeworkDescription = [
+          `Teacher-assigned homework from today's class.`,
+          `Type: ${homeworkType.replace('-', ' ')}`,
+          `Topics taught: ${topicsArray.join(', ')}`,
+          '',
+          sessionHomework.trim(),
+        ].join('\n');
+        const { error: homeworkError } = await supabase.from('assignments').insert({
+          class_id: id,
+          title: homeworkTitle,
+          description: homeworkDescription,
+          due_date: due.toISOString(),
+          file_url: null,
+        });
+        if (homeworkError) throw homeworkError;
+      }
+
+      const { error } = await supabase.rpc('log_class_sessions', {
+        p_rows: roadmapRows,
+      });
       if (error) throw error;
-      setSessionLogSuccess(`Class logged for ${roadmapRows.length} student${roadmapRows.length > 1 ? 's' : ''}! Prescriptions will auto-regenerate.`);
+      setSessionLogSuccess(homeworkEnabled && sessionHomework.trim()
+        ? `Class logged and homework assigned to ${roadmapRows.length} student${roadmapRows.length > 1 ? 's' : ''}. Homework will appear before AI tasks.`
+        : `Class logged for ${roadmapRows.length} student${roadmapRows.length > 1 ? 's' : ''}. AI tasks will adapt to today's lesson.`
+      );
       setSessionTopics('');
       setSessionHomework('');
+      setHomeworkEnabled(false);
+
+      const { data: assignmentData } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('class_id', id)
+        .order('created_at', { ascending: false });
+      setAssignments(assignmentData || []);
     } catch (err: any) {
       setSessionLogError(err?.message || 'Failed to log class session.');
     } finally {
@@ -117,6 +161,7 @@ const TeacherClassDashboard: React.FC = () => {
   const [attemptsLoading, setAttemptsLoading] = useState(false);
   const [attemptsError, setAttemptsError] = useState<string | null>(null);
   const [attemptProfiles, setAttemptProfiles] = useState<Record<string, { full_name?: string; email?: string }>>({});
+  const [behaviorProfiles, setBehaviorProfiles] = useState<Record<string, any>>({});
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [attemptModal, setAttemptModal] = useState<any | null>(null);
   const [responseGroupMode, setResponseGroupMode] = useState<'assignment' | 'student'>('assignment');
@@ -234,14 +279,13 @@ const TeacherClassDashboard: React.FC = () => {
       // Also log to class_sessions for each student's roadmap
       const topicsArray = dailyTopics.split(',').map(t => t.trim()).filter(Boolean);
       if (topicsArray.length > 0) {
-        const { data: members } = await supabase.from('class_members').select('student_id').eq('class_id', id);
-        const studentIds = (members || []).map((m: any) => m.student_id).filter(Boolean);
+        const { data: members } = await supabase.from('class_members').select('user_id').eq('class_id', id);
+        const studentIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
         if (studentIds.length > 0) {
           const { data: roadmaps } = await supabase
             .from('student_roadmaps')
             .select('id, user_id')
-            .in('user_id', studentIds)
-            .eq('is_active', true);
+            .in('user_id', studentIds);
           const roadmapRows = (roadmaps || []).map((r: any) => ({
             roadmap_id: r.id,
             teacher_id: user.id,
@@ -252,7 +296,7 @@ const TeacherClassDashboard: React.FC = () => {
             duration_minutes: 0,
           }));
           if (roadmapRows.length > 0) {
-            await supabase.from('class_sessions').insert(roadmapRows);
+            await supabase.rpc('log_class_sessions', { p_rows: roadmapRows });
           }
         }
       }
@@ -343,10 +387,10 @@ const TeacherClassDashboard: React.FC = () => {
     fetchAll();
   }, [user, id]);
 
-  // Fetch Student Responses when tab is opened
+  // Fetch student response data for strengths and weaknesses
   useEffect(() => {
     const fetchAttempts = async () => {
-      if (tab !== 'Student Responses' || !user || !id) return;
+      if (tab !== 'Strengths & Weaknesses' || !user || !id) return;
       setAttemptsLoading(true);
       setAttemptsError(null);
       try {
@@ -363,6 +407,7 @@ const TeacherClassDashboard: React.FC = () => {
         if (userIds.length === 0) {
           setAttempts([]);
           setAttemptProfiles({});
+          setBehaviorProfiles({});
           setAttemptsLoading(false);
           return;
         }
@@ -384,6 +429,16 @@ const TeacherClassDashboard: React.FC = () => {
           const map: Record<string, { full_name?: string; email?: string }> = {};
           profiles.forEach((p: any) => { map[p.id] = { full_name: p.full_name, email: p.email }; });
           setAttemptProfiles(map);
+        }
+        const { data: behaviorData, error: behaviorErr } = await supabase
+          .from('student_behavioral_profiles')
+          .select('*')
+          .in('user_id', userIds);
+        if (behaviorErr) console.error('Error fetching behavioral profiles:', behaviorErr);
+        if (Array.isArray(behaviorData)) {
+          const map: Record<string, any> = {};
+          behaviorData.forEach((p: any) => { map[p.user_id] = p; });
+          setBehaviorProfiles(map);
         }
       } catch (e: any) {
         setAttemptsError(e.message || 'Failed to fetch attempts');
@@ -599,44 +654,57 @@ const TeacherClassDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 animate-fade-in pb-20">
+    <div className="min-h-screen bg-[#FAF8F5] pb-20">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <div className="mb-12 border-b-8 border-white/10 pb-8">
+        <div className="mb-8 pb-8 border-b border-[#E8E4DF]">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-4 mb-2">
-                <div className="bg-neo-accent p-3 border border-white/10 shadow-neo -rotate-2">
-                  <BookOpen className="h-8 w-8 text-white stroke-[3px]" />
+              <div className="flex items-center gap-4 mb-3">
+                <div className="bg-[#8B7355]/10 p-3 rounded-2xl">
+                  <BookOpen className="h-8 w-8 text-[#8B7355] stroke-[2.5px]" />
                 </div>
-                <h1 className="text-4xl font-black text-slate-100 uppercase tracking-tighter italic">{classInfo?.name || 'Class'}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-[#2D2A26]">{classInfo?.name || 'Class'}</h1>
+                  <p className="text-sm text-[#8A8279] mt-0.5">{classInfo?.subject || 'No subject set'}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3 ml-1">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-100/60">CLASS_CODE:</span>
-                <span className="text-sm font-black text-white bg-slate-900 px-3 py-1 -rotate-1 shadow-neo select-all">{classInfo?.id}</span>
+              <div className="flex items-center gap-3 ml-1 flex-wrap">
+                {classInfo?.class_code && (
+                  <div className="flex items-center gap-1.5 bg-[#F5F0E8] rounded-lg px-2.5 py-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-[#8A8279]">Code:</span>
+                    <code className="text-xs font-mono font-bold text-[#2D2A26]">{classInfo.class_code}</code>
+                  </div>
+                )}
+                {classInfo?.invite_link && (
+                  <div className="flex items-center gap-1.5 bg-[#F5F0E8] rounded-lg px-2.5 py-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-[#8A8279]">Invite:</span>
+                    <code className="text-xs font-mono font-bold text-[#2D2A26] truncate max-w-[140px]">{window.location.origin}/join/{classInfo.invite_link}</code>
+                  </div>
+                )}
+                {classInfo?.curriculum_source === 'template' && (
+                  <span className="text-[10px] font-bold bg-[#8B7355]/10 text-[#8B7355] px-2 py-1 rounded-md">Template Linked</span>
+                )}
+                {classInfo?.curriculum_source === 'upload' && (
+                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md">Custom Curriculum</span>
+                )}
               </div>
             </div>
 
-            <div className="flex gap-2 p-2 bg-slate-800 border border-white/10 shadow-neo">
-              <div className="text-xs font-black uppercase tracking-widest text-slate-100/40 flex flex-col justify-center px-2 text-right leading-tight">
-                <div>SESSION</div>
-                <div>STATUS</div>
-              </div>
-              <div className="bg-neo-secondary text-slate-100 font-black uppercase px-4 py-2 text-xl border border-white/10 flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 border border-white/10 rounded-full animate-pulse" />
-                LIVE
-              </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-[#E8E4DF] shadow-sm">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm font-bold text-[#2D2A26]">Active</span>
             </div>
           </div>
         </div>
 
-        <div className="mb-12 overflow-x-auto pb-4">
-          <div className="flex gap-4 min-w-max px-1">
+        <div className="mb-8 overflow-x-auto pb-2">
+          <div className="flex gap-2 min-w-max px-1">
             {TABS.map(t => (
               <button
                 key={t}
-                className={`px-6 py-3 font-black uppercase tracking-widest text-sm transition-all border border-white/10 ${tab === t
-                  ? 'bg-neo-accent text-white shadow-neo -translate-y-1'
-                  : 'bg-slate-800 text-slate-100 hover:bg-neo-secondary hover:shadow-neo hover:-translate-y-0.5'
+                className={`px-4 py-2.5 font-bold text-sm rounded-[14px] transition-all whitespace-nowrap ${tab === t
+                  ? 'bg-[#2D2A26] text-white shadow-sm'
+                  : 'bg-white text-[#8A8279] border border-[#E8E4DF] hover:text-[#2D2A26] hover:shadow-sm'
                   }`}
                 onClick={() => setTab(t)}
               >
@@ -648,57 +716,98 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Overview Tab */}
         {tab === 'Overview' && (
-          <div className="bg-slate-800 p-8 border border-white/10 shadow-neo mb-6">
-            <div className="mb-8 text-2xl font-black text-slate-100 uppercase tracking-tighter italic flex items-center gap-3 border-b-4 border-white/10 pb-4">
-              <BarChart2 className="h-8 w-8 text-slate-100 stroke-[3px]" />
-              COMMAND_CENTER_OVERVIEW
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <BarChart2 className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Class Overview
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-[#F5F0E8] rounded-xl p-5">
+                  <p className="text-xs font-bold text-[#8A8279] uppercase tracking-wide mb-1">Students</p>
+                  <p className="text-3xl font-bold text-[#2D2A26]">{students.length}</p>
+                </div>
+                <div className="bg-[#F5F0E8] rounded-xl p-5">
+                  <p className="text-xs font-bold text-[#8A8279] uppercase tracking-wide mb-1">Resources</p>
+                  <p className="text-3xl font-bold text-[#2D2A26]">{resources.length}</p>
+                </div>
+                <div className="bg-[#F5F0E8] rounded-xl p-5">
+                  <p className="text-xs font-bold text-[#8A8279] uppercase tracking-wide mb-1">Assignments</p>
+                  <p className="text-3xl font-bold text-[#2D2A26]">{assignments.length}</p>
+                </div>
+                <div className="bg-[#F5F0E8] rounded-xl p-5">
+                  <p className="text-xs font-bold text-[#8A8279] uppercase tracking-wide mb-1">Announcements</p>
+                  <p className="text-3xl font-bold text-[#2D2A26]">{announcements.length}</p>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div className="bg-slate-900 p-6 border border-white/10 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                <div className="text-xs font-black uppercase tracking-widest text-slate-100/60 mb-2">Total Students</div>
-                <div className="text-5xl font-black text-slate-100">{students.length}</div>
-              </div>
-              <div className="bg-neo-secondary p-6 border border-white/10 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                <div className="text-xs font-black uppercase tracking-widest text-slate-100/60 mb-2">Resources</div>
-                <div className="text-5xl font-black text-slate-100">{resources.length}</div>
-              </div>
-              <div className="bg-neo-muted p-6 border border-white/10 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                <div className="text-xs font-black uppercase tracking-widest text-slate-100/60 mb-2">Assignments</div>
-                <div className="text-5xl font-black text-slate-100">{assignments.length}</div>
-              </div>
-              <div className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                <div className="text-xs font-black uppercase tracking-widest text-slate-100/60 mb-2">Announcements</div>
-                <div className="text-5xl font-black text-slate-100">{announcements.length}</div>
-              </div>
+
+            {/* Curriculum Info Card */}
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-[#2D2A26] mb-4 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Curriculum
+              </h2>
+              {classInfo?.curriculum_source === 'template' ? (
+                <div className="flex items-center gap-3 bg-[#8B7355]/5 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-[#8B7355]/10 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-[#8B7355]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#2D2A26]">Linked to Coaching Template</p>
+                    <p className="text-xs text-[#8A8279]">Students joining this class will automatically receive the linked roadmap.</p>
+                  </div>
+                </div>
+              ) : classInfo?.curriculum_source === 'upload' ? (
+                <div className="flex items-center gap-3 bg-emerald-50 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#2D2A26]">Custom Curriculum Uploaded</p>
+                    <p className="text-xs text-[#8A8279]">A custom curriculum is attached to this class.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-[#F8FAFF] rounded-xl p-4">
+                  <div className="w-10 h-10 bg-[#E8E4DF] rounded-lg flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5 text-[#8A8279]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#2D2A26]">No Curriculum Linked</p>
+                    <p className="text-xs text-[#8A8279]">Link a template or upload a curriculum so students get a roadmap on join.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Students Tab */}
         {tab === 'Students' && (
-          <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
-            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-              <Users className="h-8 w-8 stroke-[3px]" />
-              ENROLLED_CADETS
+          <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+              Enrolled Students
             </h3>
             {students.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                <p className="font-bold text-slate-100 uppercase tracking-widest">NO STUDENTS ENROLLED IN THIS SECTOR.</p>
+              <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-[#F8FAFF] rounded-xl">
+                <p className="font-bold text-[#8A8279]">No students enrolled yet.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left border border-white/10">
-                  <thead className="bg-slate-900 text-white uppercase font-black tracking-wider">
+                <table className="min-w-full text-left">
+                  <thead className="bg-[#F5F0E8] text-[#8A8279] text-xs font-bold uppercase tracking-wide">
                     <tr>
-                      <th className="px-6 py-4">CADET_NAME</th>
-                      <th className="px-6 py-4">CONTACT_VECTOR</th>
+                      <th className="px-4 py-3 rounded-l-xl">Student</th>
+                      <th className="px-4 py-3 rounded-r-xl">Email</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y-4 divide-black font-bold">
+                  <tbody className="divide-y divide-[#E8E4DF] font-medium">
                     {students.map((s: any) => (
-                      <tr key={s.id} className="hover:bg-neo-secondary transition-colors group">
-                        <td className="px-6 py-4 text-slate-100 group-hover:underline decoration-2 underline-offset-4">{s.full_name || 'UNKNOWN_CADET'}</td>
-                        <td className="px-6 py-4 text-slate-100 font-mono text-sm">{s.email}</td>
+                      <tr key={s.id} className="hover:bg-[#F8FAFF] transition-colors">
+                        <td className="px-4 py-4 text-[#2D2A26] font-bold">{s.full_name || 'Unnamed Student'}</td>
+                        <td className="px-4 py-4 text-[#8A8279] text-sm">{s.email}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -710,30 +819,27 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Resources Tab */}
         {tab === 'Resources' && (
-          <div className="space-y-8">
-            <div className="bg-slate-900 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-6 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <Upload className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                UPLOAD_RESOURCE_MATERIAL
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <Upload className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Upload Resource
               </h3>
-              <form onSubmit={handleResourceUpload} className="space-y-6">
+              <form onSubmit={handleResourceUpload} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">RESOURCE_TITLE</label>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Resource Title</label>
                   <input
                     type="text"
-                    placeholder="E.G. CHAPTER 5 NOTES"
+                    placeholder="Example: Chapter 5 notes"
                     value={resourceTitle}
                     onChange={(e) => setResourceTitle(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                     required
                   />
                 </div>
 
-                <div className="flex gap-8">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-6 h-6 border border-white/10 flex items-center justify-center ${resourceType === 'link' ? 'bg-neo-accent' : 'bg-slate-800'}`}>
-                      {resourceType === 'link' && <div className="w-2 h-2 bg-slate-800" />}
-                    </div>
+                <div className="flex gap-2 bg-[#F8FAFF] p-1 rounded-[14px]">
+                  <label className={`flex-1 text-center py-2 rounded-xl text-sm font-bold cursor-pointer transition-all ${resourceType === 'link' ? 'bg-white text-[#8B7355] shadow-sm' : 'text-[#8A8279]'}`}>
                     <input
                       type="radio"
                       name="resourceType"
@@ -742,12 +848,9 @@ const TeacherClassDashboard: React.FC = () => {
                       onChange={() => setResourceType('link')}
                       className="hidden"
                     />
-                    <span className="font-black uppercase tracking-widest group-hover:underline">EXTERNAL_LINK</span>
+                    Link
                   </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-6 h-6 border border-white/10 flex items-center justify-center ${resourceType === 'file' ? 'bg-neo-accent' : 'bg-slate-800'}`}>
-                      {resourceType === 'file' && <div className="w-2 h-2 bg-slate-800" />}
-                    </div>
+                  <label className={`flex-1 text-center py-2 rounded-xl text-sm font-bold cursor-pointer transition-all ${resourceType === 'file' ? 'bg-white text-[#8B7355] shadow-sm' : 'text-[#8A8279]'}`}>
                     <input
                       type="radio"
                       name="resourceType"
@@ -756,29 +859,29 @@ const TeacherClassDashboard: React.FC = () => {
                       onChange={() => setResourceType('file')}
                       className="hidden"
                     />
-                    <span className="font-black uppercase tracking-widest group-hover:underline">FILE_UPLOAD</span>
+                    File Upload
                   </label>
                 </div>
 
                 {resourceType === 'link' ? (
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">URL_VECTOR</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">URL</label>
                     <input
                       type="url"
-                      placeholder="HTTPS://..."
+                      placeholder="https://..."
                       value={resourceUrl}
                       onChange={(e) => setResourceUrl(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                       required
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">ATTACH_FILE</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Attach File</label>
                     <input
                       type="file"
                       onChange={(e) => setResourceFile(e.target.files ? e.target.files[0] : null)}
-                      className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 file:mr-4 file:py-2 file:px-4 file:border file:border-white/10 file:text-xs file:font-black file:bg-neo-secondary hover:file:bg-slate-900 hover:file:text-white transition-all"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] file:mr-4 file:py-2 file:px-4 file:border-0 file:text-xs file:font-bold file:bg-white file:text-[#8B7355]"
                       required
                     />
                   </div>
@@ -787,37 +890,37 @@ const TeacherClassDashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={uploadingResource}
-                  className="bg-slate-900 text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-transparent hover:bg-neo-accent hover:text-white hover:border-white/10 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
                 >
-                  {uploadingResource ? 'UPLOADING...' : 'DEPLOY_RESOURCE'}
+                  {uploadingResource ? 'Uploading...' : 'Upload Resource'}
                 </button>
               </form>
             </div>
 
-            <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <FileText className="h-8 w-8 stroke-[3px]" />
-                CLASS_RESOURCES
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Class Resources
               </h3>
               {resources.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                  <p className="font-bold text-slate-100 uppercase tracking-widest">NO RESOURCES DEPLOYED.</p>
+                <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-[#F8FAFF] rounded-xl">
+                  <p className="font-bold text-[#8A8279]">No resources uploaded yet.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {resources.map((r: any) => (
-                    <div key={r.id} className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all flex items-center justify-between group">
+                    <div key={r.id} className="bg-[#F8FAFF] rounded-xl p-4 border border-[#E8E4DF] flex items-center justify-between group">
                       <div>
-                        <h4 className="font-black text-lg text-slate-100 uppercase leading-tight group-hover:underline decoration-2 underline-offset-2">{r.title}</h4>
-                        <p className="text-xs font-bold text-slate-100/40 mt-1 uppercase tracking-wider">{new Date(r.created_at).toLocaleDateString()}</p>
+                        <h4 className="font-bold text-[#2D2A26] leading-tight">{r.title}</h4>
+                        <p className="text-xs font-medium text-[#8A8279] mt-1">{new Date(r.created_at).toLocaleDateString()}</p>
                       </div>
                       <a
                         href={r.url || r.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-neo-secondary p-3 border border-white/10 hover:bg-slate-900 hover:text-white transition-colors"
+                        className="bg-white p-2.5 rounded-lg text-[#8B7355] hover:bg-[#8B7355] hover:text-white transition-colors"
                       >
-                        <LinkIcon className="h-5 w-5 stroke-[3px]" />
+                        <LinkIcon className="h-5 w-5 stroke-[2.5px]" />
                       </a>
                     </div>
                   ))}
@@ -829,41 +932,41 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Announcements Tab */}
         {tab === 'Announcements' && (
-          <div className="space-y-8">
-            <div className="bg-slate-900 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-6 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <Bell className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                BROADCAST_ANNOUNCEMENT
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <Bell className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Broadcast Announcement
               </h3>
-              <form onSubmit={handlePostAnnouncement} className="space-y-6">
-                {announcementError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{announcementError}</div>}
+              <form onSubmit={handlePostAnnouncement} className="space-y-5">
+                {announcementError && <div className="bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">{announcementError}</div>}
                 <textarea
-                  placeholder="TRANSMIT MESSAGE TO ENTIRE CLASS..."
+                  placeholder="Write a message to the entire class..."
                   value={announcementContent}
                   onChange={(e) => setAnnouncementContent(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[150px]"
+                  className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50 min-h-[140px]"
                   required
                 />
                 <button
                   type="submit"
                   disabled={postingAnnouncement}
-                  className="bg-slate-900 text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-transparent hover:bg-neo-secondary hover:text-slate-100 hover:border-white/10 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+                  className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
                 >
-                  {postingAnnouncement ? 'TRANSMITTING...' : 'BROADCAST_MESSAGE'}
+                  {postingAnnouncement ? 'Posting...' : 'Post Announcement'}
                 </button>
               </form>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {announcements.map((a: any) => (
-                <div key={a.id} className="bg-slate-800 p-6 border border-white/10 shadow-neo">
-                  <p className="text-slate-100 font-bold text-lg whitespace-pre-wrap leading-relaxed">{a.message}</p>
-                  <p className="text-xs font-black text-slate-100/40 mt-4 uppercase tracking-widest border-t-2 border-white/10/10 pt-2">{new Date(a.created_at).toLocaleString()}</p>
+                <div key={a.id} className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-5 shadow-sm">
+                  <p className="text-[#2D2A26] font-medium whitespace-pre-wrap leading-relaxed">{a.message}</p>
+                  <p className="text-xs font-bold text-[#8A8279] mt-4 border-t border-[#E8E4DF] pt-3">{new Date(a.created_at).toLocaleString()}</p>
                 </div>
               ))}
               {announcements.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                  <p className="font-bold text-slate-100 uppercase tracking-widest">NO BROADCASTS TRANSMITTED.</p>
+                <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-white rounded-2xl">
+                  <p className="font-bold text-[#8A8279]">No announcements posted yet.</p>
                 </div>
               )}
             </div>
@@ -872,38 +975,38 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Assignments Tab */}
         {tab === 'Assignments' && (
-          <div className="space-y-8">
-            <div className="bg-slate-900 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-6 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <FileText className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                CREATE_ASSIGNMENT
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Create Assignment
               </h3>
               <form onSubmit={handlePostAssignment} className="space-y-6">
-                {assignmentError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{assignmentError}</div>}
+                {assignmentError && <div className="bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">{assignmentError}</div>}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setAssignmentMode('prove-it')}
-                    className={`p-4 border border-white/10 font-black uppercase tracking-widest text-sm transition-all ${assignmentMode === 'prove-it' ? 'bg-neo-accent text-white shadow-neo' : 'bg-slate-800 text-slate-100/70 hover:bg-slate-700'}`}
+                    className={`p-3 rounded-[14px] font-bold text-sm transition-all ${assignmentMode === 'prove-it' ? 'bg-[#2D2A26] text-white shadow-sm' : 'bg-[#F8FAFF] text-[#8A8279] hover:text-[#2D2A26]'}`}
                   >
-                    ASSIGN_PROVE_IT
+                    Assign Prove-It
                   </button>
                   <button
                     type="button"
                     onClick={() => setAssignmentMode('standard')}
-                    className={`p-4 border border-white/10 font-black uppercase tracking-widest text-sm transition-all ${assignmentMode === 'standard' ? 'bg-neo-accent text-white shadow-neo' : 'bg-slate-800 text-slate-100/70 hover:bg-slate-700'}`}
+                    className={`p-3 rounded-[14px] font-bold text-sm transition-all ${assignmentMode === 'standard' ? 'bg-[#2D2A26] text-white shadow-sm' : 'bg-[#F8FAFF] text-[#8A8279] hover:text-[#2D2A26]'}`}
                   >
-                    STANDARD_TASK
+                    Standard Task
                   </button>
                 </div>
                 {assignmentMode === 'prove-it' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-800 p-5 border border-white/10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#F5F0E8] rounded-2xl p-4 border border-[#E8E4DF]">
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">JEE_SUBJECT</label>
+                      <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Subject</label>
                       <select
                         value={proveItSubject}
                         onChange={(e) => setProveItSubject(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                        className="w-full px-4 py-3 bg-white rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all"
                       >
                         <option>JEE Physics</option>
                         <option>JEE Chemistry</option>
@@ -911,54 +1014,54 @@ const TeacherClassDashboard: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TOPIC_TO_PROVE</label>
+                      <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Topic</label>
                       <input
                         type="text"
-                        placeholder="E.G. ROTATIONAL DYNAMICS"
+                        placeholder="Example: Rotational dynamics"
                         value={proveItTopic}
                         onChange={(e) => setProveItTopic(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
+                        className="w-full px-4 py-3 bg-white rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                       />
                     </div>
                   </div>
                 )}
                 {assignmentMode === 'standard' && <div>
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TITLE</label>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Title</label>
                   <input
                     type="text"
-                    placeholder="E.G. MID-TERM PROJECT"
+                    placeholder="Example: Mid-term project"
                     value={assignmentTitle}
                     onChange={(e) => setAssignmentTitle(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20"
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                     required
                   />
                 </div>}
                 {assignmentMode === 'standard' && <div>
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">DESCRIPTION</label>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Description</label>
                   <textarea
-                    placeholder="DETAILS & INSTRUCTIONS..."
+                    placeholder="Details and instructions..."
                     value={assignmentDesc}
                     onChange={(e) => setAssignmentDesc(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[100px]"
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50 min-h-[100px]"
                   />
                 </div>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">DUE_DATE</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Due Date</label>
                     <input
                       type="date"
                       value={assignmentDueDate}
                       onChange={(e) => setAssignmentDueDate(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all"
                     />
                   </div>
                   {assignmentMode === 'standard' && <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">ATTACHMENT</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Attachment</label>
                     <input
                       type="file"
                       onChange={(e) => setAssignmentFile(e.target.files ? e.target.files[0] : null)}
-                      className="w-full px-4 py-3 bg-slate-800 border border-white/10 font-bold text-slate-100 file:mr-4 file:py-2 file:px-4 file:border file:border-white/10 file:text-xs file:font-black file:bg-neo-secondary hover:file:bg-slate-900 hover:file:text-white transition-all"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] file:mr-4 file:py-2 file:px-4 file:border-0 file:text-xs file:font-bold file:bg-white file:text-[#8B7355]"
                     />
                   </div>}
                 </div>
@@ -966,76 +1069,81 @@ const TeacherClassDashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={postingAssignment}
-                  className="bg-slate-900 text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-transparent hover:bg-neo-accent hover:text-white hover:border-white/10 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+                  className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
                 >
-                  {postingAssignment ? 'CREATING...' : assignmentMode === 'prove-it' ? 'ASSIGN_PROVE_IT_CHALLENGE' : 'INITIALIZE_ASSIGNMENT'}
+                  {postingAssignment ? 'Creating...' : assignmentMode === 'prove-it' ? 'Assign Prove-It Challenge' : 'Create Assignment'}
                 </button>
               </form>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {assignments.map((a: any) => (
-                <div key={a.id} className="bg-slate-800 p-6 border border-white/10 shadow-neo relative group hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all">
+                <div key={a.id} className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-5 shadow-sm relative group hover:shadow-md transition-all">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-8">
-                      <h4 className="text-2xl font-black text-slate-100 uppercase italic">{a.title}</h4>
-                      <p className="text-slate-100/80 font-medium mt-2 whitespace-pre-wrap border-l-4 border-neo-secondary pl-4 py-1 bg-slate-900/50">{a.description}</p>
+                      <h4 className="text-lg font-bold text-[#2D2A26]">{a.title}</h4>
+                      <p className="text-[#8A8279] text-sm font-medium mt-2 whitespace-pre-wrap border-l-4 border-[#8B7355]/20 pl-4 py-1 bg-[#F8FAFF] rounded-r-lg">{a.description}</p>
                       {a.due_date && (
-                        <p className="text-xs font-black text-slate-100/60 mt-4 flex items-center gap-2 uppercase tracking-widest">
-                          <Clock className="h-4 w-4 stroke-[3px]" />
-                          DEADLINE: {new Date(a.due_date).toLocaleDateString()}
+                        <p className="text-xs font-bold text-[#8A8279] mt-4 flex items-center gap-2">
+                          <Clock className="h-4 w-4 stroke-[2.5px]" />
+                          Due {new Date(a.due_date).toLocaleDateString()}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => handleDeleteAssignment(a)}
-                      className="text-slate-100 hover:bg-red-500 hover:text-white p-2 border border-transparent hover:border-white/10 transition-colors"
-                      title="DELETE_ASSIGNMENT"
+                      className="text-[#8A8279] hover:bg-red-50 hover:text-red-600 p-2 rounded-lg transition-colors"
+                      title="Delete assignment"
                     >
-                      <Trash2 className="h-6 w-6 stroke-[3px]" />
+                      <Trash2 className="h-5 w-5 stroke-[2.5px]" />
                     </button>
                   </div>
                   {a.file_url && (
-                    <div className="mt-6 pt-4 border-t-4 border-white/10/10">
+                    <div className="mt-4 pt-4 border-t border-[#E8E4DF]">
                       <a
                         href={a.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-neo-secondary text-slate-100 font-black uppercase text-xs px-4 py-2 border border-white/10 hover:bg-slate-900 hover:text-white transition-colors tracking-widest shadow-neo"
+                        className="inline-flex items-center gap-2 bg-[#F5F0E8] text-[#8B7355] font-bold text-xs px-4 py-2 rounded-xl hover:bg-[#8B7355] hover:text-white transition-colors"
                       >
-                        <Download className="h-4 w-4 stroke-[3px]" />
-                        DOWNLOAD_ASSET
+                        <Download className="h-4 w-4 stroke-[2.5px]" />
+                        Download
                       </a>
                     </div>
                   )}
                 </div>
               ))}
               {assignments.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                  <p className="font-bold text-slate-100 uppercase tracking-widest">NO ASSIGNMENTS ACTIVE.</p>
+                <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-white rounded-2xl">
+                  <p className="font-bold text-[#8A8279]">No assignments active.</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Daily Log & Mock Test Tab */}
-        {tab === 'Daily Log & Mock Test' && (
-          <div className="space-y-8">
-            {/* Class Session Logger */}
-            <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <GraduationCap className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                LOG_TODAY&apos;S_CLASS
-              </h3>
-              <form onSubmit={handleLogClassSession} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Class Workflow Tab */}
+        {tab === 'Class Workflow' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="bg-[#8B7355]/10 p-3 rounded-2xl">
+                  <GraduationCap className="h-6 w-6 text-[#8B7355] stroke-[2.5px]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#2D2A26]">What did you teach today?</h2>
+                  <p className="text-sm text-[#8A8279] mt-1">Log today’s lesson, optionally assign homework, then students receive homework before AI-generated tasks.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleLogClassSession} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Subject</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Subject</label>
                     <select
                       value={sessionSubject}
                       onChange={(e) => setSessionSubject(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all"
                     >
                       {['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'].map(s => (
                         <option key={s} value={s}>{s}</option>
@@ -1043,107 +1151,142 @@ const TeacherClassDashboard: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Duration (min)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Duration</label>
                     <input
                       type="number"
                       min={15}
                       max={180}
                       value={sessionDuration}
                       onChange={(e) => setSessionDuration(parseInt(e.target.value))}
-                      className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                      className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all"
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Topics Covered (comma-separated)</label>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">What did you teach in class?</label>
                   <textarea
                     value={sessionTopics}
                     onChange={(e) => setSessionTopics(e.target.value)}
-                    placeholder="E.G. Kinematics 1D, Equations of Motion, Graphical Analysis..."
-                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[100px]"
+                    placeholder="Example: Kinematics 1D, equations of motion, graphical analysis..."
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50 min-h-[120px]"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">Homework / DPP Assigned</label>
-                  <textarea
-                    value={sessionHomework}
-                    onChange={(e) => setSessionHomework(e.target.value)}
-                    placeholder="E.G. HC Verma Chap 3 Q1-15, DPP Sheet 7..."
-                    className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[80px]"
-                  />
+
+                <div className="bg-[#F5F0E8] rounded-2xl p-4 border border-[#E8E4DF]">
+                  <p className="text-sm font-bold text-[#2D2A26] mb-3">Do you want to give homework?</p>
+                  <div className="flex gap-2 mb-4">
+                    <button type="button" onClick={() => setHomeworkEnabled(true)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${homeworkEnabled ? 'bg-[#2D2A26] text-white' : 'bg-white text-[#8A8279]'}`}>Yes</button>
+                    <button type="button" onClick={() => setHomeworkEnabled(false)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${!homeworkEnabled ? 'bg-[#2D2A26] text-white' : 'bg-white text-[#8A8279]'}`}>No</button>
+                  </div>
+
+                  {homeworkEnabled && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Homework type</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {[
+                            ['practice', 'Practice'],
+                            ['prove-it', 'Prove-It'],
+                            ['reading', 'Reading'],
+                            ['worksheet', 'Worksheet'],
+                          ].map(([value, label]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setHomeworkType(value as typeof homeworkType)}
+                              className={`py-2 px-3 rounded-xl text-sm font-bold transition-all ${homeworkType === value ? 'bg-[#8B7355] text-white' : 'bg-white text-[#8A8279]'}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Homework details</label>
+                        <textarea
+                          value={sessionHomework}
+                          onChange={(e) => setSessionHomework(e.target.value)}
+                          placeholder="Example: HC Verma Ch 3 Q1-15, DPP Sheet 7, or a concept to Prove-It..."
+                          className="w-full px-4 py-3 bg-white rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50 min-h-[90px]"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {sessionLogError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{sessionLogError}</div>}
-                {sessionLogSuccess && <div className="bg-green-100 border border-white/10 text-green-900 font-bold p-4 uppercase flex items-center gap-2"><CheckCircle2 className="w-5 h-5" />{sessionLogSuccess}</div>}
+
+                {sessionLogError && <div className="bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">{sessionLogError}</div>}
+                {sessionLogSuccess && <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold p-4 rounded-xl flex items-center gap-2"><CheckCircle2 className="w-5 h-5" />{sessionLogSuccess}</div>}
                 <button
                   type="submit"
-                  disabled={loggingSession}
-                  className="bg-neo-accent text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-white/10 hover:bg-slate-800 hover:text-slate-100 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+                  disabled={loggingSession || (homeworkEnabled && !sessionHomework.trim())}
+                  className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
                 >
                   {loggingSession ? (
-                    <><Loader2 className="h-6 w-6 animate-spin stroke-[3px]" />LOGGING...</>
+                    <><Loader2 className="h-5 w-5 animate-spin stroke-[2.5px]" />Saving...</>
                   ) : (
-                    <><GraduationCap className="h-6 w-6 stroke-[3px]" />LOG_CLASS_SESSION</>
+                    <><GraduationCap className="h-5 w-5 stroke-[2.5px]" />Save Class Workflow</>
                   )}
                 </button>
               </form>
             </div>
 
             {/* Mock Test Generator */}
-            <div className="bg-slate-800 p-8 border border-white/10 shadow-neo">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-                <Brain className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                AI_MOCK_TEST_GENERATOR
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+                <Brain className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Optional AI Mock Test
               </h3>
               <form onSubmit={handleGenerateDailyMockTest} className="space-y-6">
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">TOPICS_COVERED_TODAY</label>
+                <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Topics for mock test</label>
                 <textarea
                   value={dailyTopics}
                   onChange={(e) => setDailyTopics(e.target.value)}
-                  placeholder="E.G. NEWTON'S LAWS, INERTIA, MOMENTUM..."
-                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all placeholder:text-slate-100/20 min-h-[150px]"
+                  placeholder="Example: Newton's laws, inertia, momentum..."
+                  className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50 min-h-[120px]"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 text-slate-100/60">QUESTION_COUNT</label>
+                <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Question count</label>
                 <input
                   type="number"
                   min={1}
                   max={20}
                   value={mockQuestionCount}
                   onChange={(e) => setMockQuestionCount(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-slate-900 border border-white/10 font-bold text-slate-100 focus:outline-none focus:shadow-neo transition-all"
+                  className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all"
                 />
               </div>
 
-              {mockGenError && <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-4 uppercase">{mockGenError}</div>}
-              {mockSuccessMsg && <div className="bg-green-100 border border-white/10 text-green-900 font-bold p-4 uppercase">{mockSuccessMsg}</div>}
+              {mockGenError && <div className="bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">{mockGenError}</div>}
+              {mockSuccessMsg && <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold p-4 rounded-xl">{mockSuccessMsg}</div>}
 
               <button
                 type="submit"
                 disabled={generatingMock}
-                className="bg-neo-accent text-white px-8 py-4 font-black uppercase tracking-widest text-lg border border-white/10 hover:bg-slate-800 hover:text-slate-100 hover:shadow-neo active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+                className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
               >
                 {generatingMock ? (
                   <>
-                    <Loader2 className="h-6 w-6 animate-spin stroke-[3px]" />
-                    GENERATING...
+                    <Loader2 className="h-5 w-5 animate-spin stroke-[2.5px]" />
+                    Generating...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-6 w-6 stroke-[3px]" />
-                    GENERATE_&_DEPLOY_MOCK
+                    <Sparkles className="h-5 w-5 stroke-[2.5px]" />
+                    Generate Mock Test
                   </>
                 )}
               </button>
             </form>
 
             {mockPreview && (
-              <div className="mt-12 pt-8 border-t-8 border-white/10">
-                <h4 className="text-xl font-black text-slate-100 uppercase mb-4">PREVIEW_OUTPUT</h4>
-                <div className="bg-slate-900 p-6 border border-white/10 font-mono text-sm text-slate-100 whitespace-pre-wrap">
+              <div className="mt-8 pt-6 border-t border-[#E8E4DF]">
+                <h4 className="text-sm font-bold text-[#2D2A26] mb-4">Preview</h4>
+                <div className="bg-[#F8FAFF] rounded-xl p-5 border border-[#E8E4DF] font-mono text-sm text-[#2D2A26] whitespace-pre-wrap">
                   {mockPreview}
                 </div>
               </div>
@@ -1154,24 +1297,24 @@ const TeacherClassDashboard: React.FC = () => {
 
         {/* Student Responses Tab */}
         {tab === 'Student Responses' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-              <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic flex items-center gap-3">
-                <FileText className="h-8 w-8 text-slate-100 stroke-[3px]" />
-                STUDENT_RESPONSES
+              <h3 className="text-lg font-bold text-[#2D2A26] flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+                Student Responses
               </h3>
-              <div className="flex bg-slate-800 border border-white/10 p-1 shadow-neo">
+              <div className="flex bg-[#F8FAFF] border border-[#E8E4DF] p-1 rounded-[14px]">
                 <button
                   onClick={() => setResponseGroupMode('assignment')}
-                  className={`px-6 py-2 font-black uppercase tracking-widest text-sm transition-all ${responseGroupMode === 'assignment' ? 'bg-neo-accent text-white border border-white/10' : 'text-slate-100/40 hover:text-slate-100'}`}
+                  className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${responseGroupMode === 'assignment' ? 'bg-white text-[#8B7355] shadow-sm' : 'text-[#8A8279]'}`}
                 >
-                  BY_ASSIGNMENT
+                  By Assignment
                 </button>
                 <button
                   onClick={() => setResponseGroupMode('student')}
-                  className={`px-6 py-2 font-black uppercase tracking-widest text-sm transition-all ${responseGroupMode === 'student' ? 'bg-neo-accent text-white border border-white/10' : 'text-slate-100/40 hover:text-slate-100'}`}
+                  className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${responseGroupMode === 'student' ? 'bg-white text-[#8B7355] shadow-sm' : 'text-[#8A8279]'}`}
                 >
-                  BY_STUDENT
+                  By Student
                 </button>
               </div>
             </div>
@@ -1182,7 +1325,7 @@ const TeacherClassDashboard: React.FC = () => {
               </div>
             )}
             {attemptsError && (
-              <div className="bg-red-100 border border-white/10 text-red-900 font-bold p-6 uppercase shadow-neo">
+              <div className="bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">
                 {attemptsError}
               </div>
             )}
@@ -1200,62 +1343,62 @@ const TeacherClassDashboard: React.FC = () => {
 
                     if (groupedByAssignment.length === 0 && otherAttempts.length === 0) {
                       return (
-                        <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                          <p className="font-bold text-slate-100 uppercase tracking-widest">NO RESPONSES RECORDED.</p>
+                        <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-white rounded-2xl">
+                          <p className="font-bold text-[#8A8279]">No responses recorded yet.</p>
                         </div>
                       );
                     }
 
                     return (
-                      <div className="space-y-12">
+                      <div className="space-y-6">
                         {groupedByAssignment.map((g) => (
-                          <div key={g.assignment.id} className="space-y-4">
-                            <div className="flex items-center justify-between border-b-4 border-white/10 pb-2">
-                              <h3 className="text-xl font-black text-slate-100 uppercase italic flex items-center gap-2">
-                                <FileText className="h-6 w-6 stroke-[3px]" />
+                          <div key={g.assignment.id} className="space-y-3">
+                            <div className="flex items-center justify-between border-b border-[#E8E4DF] pb-2">
+                              <h3 className="text-base font-bold text-[#2D2A26] flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-[#8B7355] stroke-[2.5px]" />
                                 {g.assignment.title}
                               </h3>
-                              <div className="text-xs font-bold text-slate-100/60 uppercase tracking-widest">
+                              <div className="text-xs font-bold text-[#8A8279]">
                                 {g.assignment.created_at ? new Date(g.assignment.created_at).toLocaleDateString() : ''}
                               </div>
                             </div>
-                            <div className="bg-slate-800 border border-white/10 shadow-neo overflow-x-auto">
+                            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] shadow-sm overflow-x-auto">
                               <table className="min-w-full text-left">
-                                <thead className="bg-slate-900 text-white uppercase font-black tracking-wider">
+                                <thead className="bg-[#F5F0E8] text-[#8A8279] text-xs font-bold uppercase tracking-wide">
                                   <tr>
-                                    <th className="px-6 py-4">DATE</th>
-                                    <th className="px-6 py-4">CADET</th>
-                                    <th className="px-6 py-4">SCORE</th>
-                                    <th className="px-6 py-4">Q_COUNT</th>
-                                    <th className="px-6 py-4 text-right">ACTIONS</th>
+                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3">Student</th>
+                                    <th className="px-4 py-3">Score</th>
+                                    <th className="px-4 py-3">Questions</th>
+                                    <th className="px-4 py-3 text-right">Actions</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y-4 divide-black font-bold">
+                                <tbody className="divide-y divide-[#E8E4DF] font-medium">
                                   {g.attempts.map((a: any, i: number) => {
                                     const prof = attemptProfiles[a.user_id] || {};
                                     const name = prof.full_name || prof.email || a.user_id;
                                     return (
-                                      <tr key={a.id || i} className="hover:bg-slate-900 transition-colors">
-                                        <td className="px-6 py-4 text-slate-100">{a.exam_date ? new Date(a.exam_date).toLocaleDateString() : '-'}</td>
-                                        <td className="px-6 py-4 text-slate-100">
+                                      <tr key={a.id || i} className="hover:bg-[#F8FAFF] transition-colors">
+                                        <td className="px-4 py-4 text-[#8A8279]">{a.exam_date ? new Date(a.exam_date).toLocaleDateString() : '-'}</td>
+                                        <td className="px-4 py-4 text-[#2D2A26] font-bold">
                                           <button
                                             onClick={() => {
                                               const s = students.find(st => st.id === a.user_id || st.user_id === a.user_id);
                                               if (s) setViewingStudent(s);
                                             }}
-                                            className="hover:underline decoration-2 underline-offset-4 uppercase"
+                                            className="hover:underline decoration-2 underline-offset-4"
                                           >
                                             {name}
                                           </button>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-100 font-mono bg-neo-green/20">{a.total_score} / {a.max_score}</td>
-                                        <td className="px-6 py-4 text-slate-100">{a.questions_count || '-'}</td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-4 py-4 text-[#2D2A26] font-mono">{a.total_score} / {a.max_score}</td>
+                                        <td className="px-4 py-4 text-[#8A8279]">{a.questions_count || '-'}</td>
+                                        <td className="px-4 py-4 text-right">
                                           <button
-                                            className="inline-flex items-center gap-2 bg-slate-800 text-slate-100 px-4 py-2 border border-white/10 hover:bg-slate-900 hover:text-white transition-all shadow-neo"
+                                            className="inline-flex items-center gap-2 bg-[#F5F0E8] text-[#8B7355] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#8B7355] hover:text-white transition-all"
                                             onClick={() => { setAttemptModal(a); setShowAttemptModal(true); }}
                                           >
-                                            <Eye className="w-4 h-4 stroke-[3px]" /> VIEW
+                                            <Eye className="w-4 h-4 stroke-[2.5px]" /> View
                                           </button>
                                         </td>
                                       </tr>
@@ -1277,32 +1420,32 @@ const TeacherClassDashboard: React.FC = () => {
 
                     if (groupedByStudent.length === 0) {
                       return (
-                        <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                          <p className="font-bold text-slate-100 uppercase tracking-widest">NO RESPONSES RECORDED.</p>
+                        <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-white rounded-2xl">
+                          <p className="font-bold text-[#8A8279]">No responses recorded yet.</p>
                         </div>
                       );
                     }
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {groupedByStudent.map((g) => (
                           <div
                             key={g.student.id || g.student.user_id}
-                            className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-neo transition-all cursor-pointer group flex items-center gap-4"
+                            className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center gap-4"
                             onClick={() => setViewingStudent(g.student)}
                           >
-                            <div className="w-16 h-16 bg-neo-secondary border border-white/10 flex items-center justify-center text-slate-100 font-black text-2xl group-hover:bg-neo-accent group-hover:text-white transition-colors">
+                            <div className="w-12 h-12 bg-[#F5F0E8] rounded-xl flex items-center justify-center text-[#8B7355] font-bold text-lg">
                               {g.student.full_name?.[0] || g.student.email?.[0] || '?'}
                             </div>
                             <div className="flex-1 overflow-hidden">
-                              <h3 className="text-xl font-black text-slate-100 uppercase truncate group-hover:underline decoration-2 underline-offset-2">
+                              <h3 className="text-base font-bold text-[#2D2A26] truncate">
                                 {g.student.full_name || g.student.email}
                               </h3>
                               <div className="flex items-center gap-2 mt-2">
-                                <span className="bg-slate-900 text-white text-xs font-bold px-2 py-1 uppercase">{g.attempts.length} EXAMS</span>
+                                <span className="bg-[#F5F0E8] text-[#8B7355] text-xs font-bold px-2 py-1 rounded-md">{g.attempts.length} exams</span>
                               </div>
                             </div>
-                            <Eye className="w-6 h-6 text-slate-100 stroke-[3px]" />
+                            <Eye className="w-5 h-5 text-[#8A8279] stroke-[2.5px]" />
                           </div>
                         ))}
                       </div>
@@ -1314,42 +1457,60 @@ const TeacherClassDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Weaknesses Tab */}
-        {tab === 'Weaknesses' && (
-          <div className="space-y-8">
-            <h3 className="text-2xl font-black text-slate-100 uppercase tracking-tighter italic mb-8 flex items-center gap-3 border-b-4 border-white/10 pb-4">
-              <AlertCircle className="h-8 w-8 text-neo-secondary stroke-[3px]" />
-              WEAKNESS_ANALYSIS
+        {/* Strengths & Weaknesses Tab */}
+        {tab === 'Strengths & Weaknesses' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold text-[#2D2A26] mb-5 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
+              Strengths & Weaknesses
             </h3>
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map((s: any) => {
                 const studentAttempts = (attempts || []).filter(a => (a.user_id === s.user_id || a.user_id === s.id) && a.student_weaknesses);
-                if (studentAttempts.length === 0) return null;
+                const allStudentAttempts = (attempts || []).filter(a => a.user_id === s.user_id || a.user_id === s.id);
+                const behavior = behaviorProfiles[s.user_id || s.id];
+                const avgScore = allStudentAttempts.length
+                  ? Math.round((allStudentAttempts.reduce((acc, at) => acc + ((at.total_score || 0) / (at.max_score || 1)), 0) / allStudentAttempts.length) * 100)
+                  : null;
                 return (
                   <div
                     key={s.id || s.user_id}
-                    className="bg-slate-800 p-6 border border-white/10 shadow-neo hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-pointer group flex items-center justify-between"
+                    className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
                     onClick={() => setViewingStudent(s)}
                   >
-                    <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 bg-slate-900 border border-white/10 flex items-center justify-center text-slate-100 font-black text-2xl">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-[#F5F0E8] rounded-xl flex items-center justify-center text-[#8B7355] font-bold text-lg">
                         {s.full_name?.[0] || s.email?.[0] || '?'}
                       </div>
                       <div>
-                        <h4 className="text-xl font-black text-slate-100 uppercase group-hover:underline decoration-2 underline-offset-2">{s.full_name || s.email}</h4>
-                        <p className="text-sm font-bold text-slate-100/60 uppercase tracking-widest mt-1">{studentAttempts.length} ANALYSES_LOGGED</p>
+                        <h4 className="text-base font-bold text-[#2D2A26]">{s.full_name || s.email}</h4>
+                        <p className="text-sm font-medium text-[#8A8279] mt-1">{allStudentAttempts.length} responses recorded</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-black text-slate-100 bg-neo-secondary border border-white/10 px-3 py-1 uppercase tracking-widest animate-pulse">NEEDS_ATTENTION</span>
-                      <Eye className="w-6 h-6 text-slate-100 stroke-[3px]" />
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs font-bold text-[#8B7355] bg-[#F5F0E8] px-3 py-1 rounded-full">
+                        {studentAttempts.length > 0 ? `${studentAttempts.length} weakness notes` : 'No weakness notes'}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
+                        {avgScore !== null ? `${avgScore}% avg` : 'No score yet'}
+                      </span>
                     </div>
+                    {(behavior?.strong_subjects?.length > 0 || behavior?.weak_subjects?.length > 0) && (
+                      <div className="mt-4 grid grid-cols-1 gap-2 text-xs">
+                        {behavior?.strong_subjects?.length > 0 && (
+                          <p className="text-emerald-700 font-semibold">Strong: {behavior.strong_subjects.slice(0, 3).join(', ')}</p>
+                        )}
+                        {behavior?.weak_subjects?.length > 0 && (
+                          <p className="text-[#8B7355] font-semibold">Weak: {behavior.weak_subjects.slice(0, 3).join(', ')}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              {students.every(s => !(attempts || []).some(a => (a.user_id === s.user_id || a.user_id === s.id) && a.student_weaknesses)) && (
-                <div className="text-center py-12 border border-dashed border-white/10/20 bg-slate-900">
-                  <p className="font-bold text-slate-100 uppercase tracking-widest">NO WEAKNESS DATA DETECTED.</p>
+              {students.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-white rounded-2xl">
+                  <p className="font-bold text-[#8A8279]">No students enrolled yet.</p>
                 </div>
               )}
             </div>
@@ -1373,7 +1534,7 @@ const TeacherClassDashboard: React.FC = () => {
                      Since we installed @tailwindcss/typography without custom config, prose-invert forces white.
                      Instead, let's just use 'prose' and ensure text is black.
                   */}
-                <div className="prose prose-lg max-w-none prose-headings:font-black prose-headings:uppercase prose-p:font-medium prose-strong:font-black prose-a:text-neo-accent" dangerouslySetInnerHTML={{ __html: marked(aiSummary) as string }} />
+                <div className="prose prose-lg max-w-none prose-headings:font-black prose-headings:uppercase prose-p:font-medium prose-strong:font-black prose-a:text-neo-accent" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(aiSummary) as string) }} />
               </div>
             )}
           </div>
@@ -1480,37 +1641,37 @@ const TeacherClassDashboard: React.FC = () => {
       {/* Student Detail Modal */}
       {viewingStudent && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-none" onClick={() => setViewingStudent(null)}></div>
-          <div className="relative bg-slate-800 w-full max-w-4xl max-h-[90vh] overflow-hidden border border-white/10 shadow-neo flex flex-col">
-            <div className="p-8 border-b-4 border-white/10 flex items-center justify-between bg-neo-accent">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 bg-slate-800 border border-white/10 flex items-center justify-center text-slate-100 font-black text-3xl shadow-neo">
+          <div className="absolute inset-0 bg-[#2D2A26]/40 backdrop-blur-sm" onClick={() => setViewingStudent(null)}></div>
+          <div className="relative bg-[#FAF8F5] w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[28px] border border-[#E8E4DF] shadow-2xl flex flex-col">
+            <div className="p-6 border-b border-[#E8E4DF] flex items-center justify-between bg-white">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-[#F5F0E8] rounded-2xl flex items-center justify-center text-[#8B7355] font-bold text-2xl">
                   {viewingStudent.full_name?.[0] || viewingStudent.email?.[0] || '?'}
                 </div>
                 <div>
-                  <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter text-shadow-sm">{viewingStudent.full_name || viewingStudent.email}</h3>
-                  <p className="text-slate-100 font-bold bg-slate-800/50 px-2 mt-1 inline-block border border-white/10">{viewingStudent.email}</p>
+                  <h3 className="text-2xl font-bold text-[#2D2A26]">{viewingStudent.full_name || viewingStudent.email}</h3>
+                  <p className="text-sm font-medium text-[#8A8279] mt-1">{viewingStudent.email}</p>
                 </div>
               </div>
               <button
                 onClick={() => setViewingStudent(null)}
-                className="p-2 bg-slate-900 text-white hover:bg-slate-800 hover:text-slate-100 border border-white/10 transition-colors shadow-neo"
+                className="p-2 bg-[#F5F0E8] text-[#8B7355] hover:bg-[#8B7355] hover:text-white rounded-xl transition-colors"
               >
-                <XCircle className="w-8 h-8 stroke-[3px]" />
+                <XCircle className="w-6 h-6 stroke-[2.5px]" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-900">
-              <div className="grid grid-cols-2 gap-8">
-                <div className="bg-slate-800 p-6 border border-white/10 shadow-neo">
-                  <div className="text-slate-100/60 font-black uppercase tracking-widest text-xs mb-2">TOTAL_ASSESSMENTS</div>
-                  <div className="text-5xl font-black text-slate-100">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl p-5 border border-[#E8E4DF]">
+                  <div className="text-[#8A8279] font-bold uppercase tracking-wide text-xs mb-1">Assessments</div>
+                  <div className="text-3xl font-bold text-[#2D2A26]">
                     {(attempts || []).filter(a => a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id).length}
                   </div>
                 </div>
-                <div className="bg-slate-800 p-6 border border-white/10 shadow-neo">
-                  <div className="text-slate-100/60 font-black uppercase tracking-widest text-xs mb-2">PERFORMANCE_INDEX</div>
-                  <div className="text-5xl font-black text-slate-100">
+                <div className="bg-white rounded-2xl p-5 border border-[#E8E4DF]">
+                  <div className="text-[#8A8279] font-bold uppercase tracking-wide text-xs mb-1">Average Score</div>
+                  <div className="text-3xl font-bold text-[#2D2A26]">
                     {(() => {
                       const satts = (attempts || []).filter(a => a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id);
                       if (satts.length === 0) return 'N/A';
@@ -1519,44 +1680,89 @@ const TeacherClassDashboard: React.FC = () => {
                     })()}
                   </div>
                 </div>
+                <div className="bg-white rounded-2xl p-5 border border-[#E8E4DF]">
+                  <div className="text-[#8A8279] font-bold uppercase tracking-wide text-xs mb-1">Strength</div>
+                  <div className="text-xl font-bold text-emerald-700">
+                    {(() => {
+                      const satts = (attempts || []).filter(a => a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id);
+                      if (satts.length === 0) return 'Building profile';
+                      const avg = satts.reduce((acc, at) => acc + (at.total_score / at.max_score), 0) / satts.length;
+                      if (avg >= 0.8) return 'Strong mastery';
+                      if (avg >= 0.6) return 'Steady progress';
+                      return 'Needs support';
+                    })()}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-6">
-                <h4 className="text-2xl font-black text-slate-100 uppercase italic tracking-tighter flex items-center gap-3 border-b-4 border-white/10 pb-2">
-                  <AlertCircle className="w-6 h-6 stroke-[3px]" />
-                  IDENTIFIED_WEAKNESSES
+                <h4 className="text-lg font-bold text-[#2D2A26] flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-[#8B7355] stroke-[2.5px]" />
+                  What we know
                 </h4>
-                <div className="space-y-6">
+                {(() => {
+                  const behavior = behaviorProfiles[viewingStudent.user_id || viewingStudent.id];
+                  if (!behavior) return null;
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+                        <h5 className="text-sm font-bold text-emerald-800 mb-3">Overall strengths Ranjan Sir has observed</h5>
+                        {behavior.strong_subjects?.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {behavior.strong_subjects.map((item: string) => (
+                              <span key={item} className="px-3 py-1 bg-white text-emerald-700 rounded-full text-xs font-bold">{item}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-emerald-700/70 font-medium">No long-term strengths recorded yet.</p>
+                        )}
+                      </div>
+                      <div className="bg-[#F5F0E8] rounded-2xl p-5 border border-[#E8E4DF]">
+                        <h5 className="text-sm font-bold text-[#8B7355] mb-3">Overall weaknesses Ranjan Sir has observed</h5>
+                        {behavior.weak_subjects?.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {behavior.weak_subjects.map((item: string) => (
+                              <span key={item} className="px-3 py-1 bg-white text-[#8B7355] rounded-full text-xs font-bold">{item}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-[#8B7355]/70 font-medium">No long-term weaknesses recorded yet.</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div className="space-y-4">
                   {(attempts || [])
                     .filter(a => (a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id) && a.student_weaknesses)
                     .map((at, idx) => (
-                      <div key={at.id || idx} className="bg-slate-800 p-6 border border-white/10 shadow-neo">
-                        <div className="flex justify-between items-start mb-4 border-b-2 border-dashed border-white/10 pb-2">
-                          <span className="font-black text-lg text-slate-100 uppercase">
-                            {(assignments || []).find(as => as.id === at.assignment_id)?.title || 'MOCK_TEST'}
+                      <div key={at.id || idx} className="bg-white rounded-2xl p-5 border border-[#E8E4DF]">
+                        <div className="flex justify-between items-start mb-3 border-b border-[#E8E4DF] pb-3">
+                          <span className="font-bold text-[#2D2A26]">
+                            {(assignments || []).find(as => as.id === at.assignment_id)?.title || 'Mock Test'}
                           </span>
-                          <span className="font-bold text-slate-100/40 text-sm">
+                          <span className="font-medium text-[#8A8279] text-sm">
                             {new Date(at.exam_date).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-slate-100 font-medium leading-relaxed whitespace-pre-wrap">
+                        <p className="text-[#8A8279] font-medium leading-relaxed whitespace-pre-wrap">
                           {at.student_weaknesses}
                         </p>
                       </div>
                     ))}
                   {(attempts || []).filter(a => (a.user_id === viewingStudent.id || a.user_id === viewingStudent.user_id) && a.student_weaknesses).length === 0 && (
-                    <div className="text-center py-8 font-bold text-slate-100/40 uppercase">NO WEAKNESSES LOGGED.</div>
+                    <div className="text-center py-8 font-bold text-[#8A8279] bg-white rounded-2xl border border-[#E8E4DF]">No weaknesses logged yet.</div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t-4 border-white/10 bg-slate-800">
+            <div className="p-5 border-t border-[#E8E4DF] bg-white">
               <button
                 onClick={() => setViewingStudent(null)}
-                className="w-full bg-slate-900 text-white font-black uppercase tracking-widest py-4 border border-transparent hover:bg-slate-800 hover:text-slate-100 hover:border-white/10 hover:shadow-neo transition-all"
+                className="w-full bg-[#2D2A26] text-white font-bold py-3 rounded-[14px] hover:shadow-md transition-all"
               >
-                CLOSE_ANALYSIS
+                Close Analysis
               </button>
             </div>
           </div>

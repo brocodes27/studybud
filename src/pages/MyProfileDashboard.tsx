@@ -22,6 +22,9 @@ import {
   Zap,
   Network,
   FileText,
+  Users,
+  GraduationCap,
+  BarChart2,
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
@@ -126,8 +129,9 @@ const SECTIONS = [
 ];
 
 export default function MyProfileDashboard() {
-  const { user } = useAuth() as any;
+  const { user, role } = useAuth() as any;
   const { showToast } = useToast();
+  const effectiveRole = typeof role === 'string' ? role.trim().toLowerCase() : user?.user_metadata?.role?.trim?.().toLowerCase?.();
   const [profile, setProfile] = useState<BehavioralProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -135,11 +139,56 @@ export default function MyProfileDashboard() {
   const [editForm, setEditForm] = useState<Partial<BehavioralProfile>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['study_patterns']));
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [ownsClasses, setOwnsClasses] = useState(false);
+  const isTeacherProfile = effectiveRole === 'teacher' || ownsClasses;
 
   useEffect(() => {
     if (!user?.id) return;
-    loadProfile();
-  }, [user?.id]);
+    let cancelled = false;
+
+    async function resolveProfileMode() {
+      if (effectiveRole === 'teacher') {
+        setOwnsClasses(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data: profileRows } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .limit(1);
+
+      if (cancelled) return;
+
+      const dbRole = typeof profileRows?.[0]?.role === 'string' ? profileRows[0].role.trim().toLowerCase() : null;
+
+      if (dbRole === 'teacher') {
+        setOwnsClasses(true);
+        setLoading(false);
+        return;
+      }
+
+      const { count } = await supabase
+        .from('classes')
+        .select('*', { count: 'exact', head: true })
+        .eq('teacher_id', user.id);
+
+      if (cancelled) return;
+
+      if ((count || 0) > 0) {
+        setOwnsClasses(true);
+        setLoading(false);
+        return;
+      }
+
+      setOwnsClasses(false);
+      loadProfile();
+    }
+
+    resolveProfileMode();
+    return () => { cancelled = true; };
+  }, [user?.id, effectiveRole]);
 
   const loadProfile = async () => {
     setLoading(true);
@@ -307,6 +356,10 @@ export default function MyProfileDashboard() {
         <div className="w-8 h-8 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (isTeacherProfile) {
+    return <TeacherRanjanDashboard userId={user?.id} />;
   }
 
   if (!profile) {
@@ -888,6 +941,191 @@ function KnowledgeMapContent({ userId }: { userId: string }) {
           <p className="text-xs text-[#64748B]">{n.content}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function TeacherRanjanDashboard({ userId }: { userId?: string }) {
+  const [loading, setLoading] = useState(true);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [sessionCount, setSessionCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTeacherStats() {
+      if (!userId) return;
+      setLoading(true);
+
+      const { data: classRows } = await supabase
+        .from('classes')
+        .select('id, name, subject, class_code, curriculum_source, created_at')
+        .eq('teacher_id', userId)
+        .order('created_at', { ascending: false });
+
+      const loadedClasses = classRows || [];
+      const classIds = loadedClasses.map((c: any) => c.id);
+
+      const classesWithCounts = await Promise.all(
+        loadedClasses.map(async (cls: any) => {
+          const { count } = await supabase
+            .from('class_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('class_id', cls.id);
+
+          return {
+            ...cls,
+            student_count: count || 0,
+          };
+        })
+      );
+
+      if (classIds.length > 0) {
+        const [{ count: assignments }, { count: sessions }] = await Promise.all([
+          supabase.from('assignments').select('*', { count: 'exact', head: true }).in('class_id', classIds),
+          supabase.from('class_sessions').select('*', { count: 'exact', head: true }).in('class_id', classIds),
+        ]);
+
+        if (!cancelled) {
+          setAssignmentCount(assignments || 0);
+          setSessionCount(sessions || 0);
+        }
+      } else if (!cancelled) {
+        setAssignmentCount(0);
+        setSessionCount(0);
+      }
+
+      if (!cancelled) {
+        setClasses(classesWithCounts);
+        setLoading(false);
+      }
+    }
+
+    loadTeacherStats();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const totalStudents = classes.reduce((sum, cls) => sum + (cls.student_count || 0), 0);
+  const templateClasses = classes.filter(cls => cls.curriculum_source === 'template').length;
+  const customClasses = classes.filter(cls => cls.curriculum_source === 'upload' || cls.curriculum_source === 'custom').length;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF9] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F8FAF9] py-8 px-4">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="bg-white rounded-[28px] border border-[#0A192F]/10 p-6 md:p-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8B7355] to-[#00D1FF] flex items-center justify-center shrink-0">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-extrabold text-[#0A192F] tracking-tight">What Ranjan Sir Knows for Teachers</h1>
+                <p className="text-sm text-[#64748B] mt-2 max-w-2xl leading-relaxed">
+                  Ranjan Sir tracks how you are building classes, organizing curricula, assigning work, and growing student participation.
+                </p>
+              </div>
+            </div>
+            <a
+              href="/my-classes"
+              className="bg-[#0A192F] text-white font-bold text-sm px-5 py-3 rounded-xl hover:bg-[#1E293B] transition-colors text-center"
+            >
+              Build Classes
+            </a>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Classes built', value: classes.length, icon: GraduationCap, tone: 'text-[#8B7355]', bg: 'bg-[#8B7355]/10' },
+            { label: 'Students reached', value: totalStudents, icon: Users, tone: 'text-[#00D1FF]', bg: 'bg-[#00D1FF]/10' },
+            { label: 'Assignments created', value: assignmentCount, icon: FileText, tone: 'text-[#6366F1]', bg: 'bg-[#6366F1]/10' },
+            { label: 'Class sessions logged', value: sessionCount, icon: BarChart2, tone: 'text-emerald-600', bg: 'bg-emerald-50' },
+          ].map(item => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="bg-white rounded-2xl border border-[#0A192F]/10 p-5">
+                <div className={`w-10 h-10 ${item.bg} rounded-xl flex items-center justify-center mb-4`}>
+                  <Icon className={`w-5 h-5 ${item.tone}`} />
+                </div>
+                <div className="text-3xl font-extrabold text-[#0A192F]">{item.value}</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-[#64748B] mt-1">{item.label}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-[24px] border border-[#0A192F]/10 p-6">
+            <h2 className="text-lg font-extrabold text-[#0A192F] mb-5 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[#8B7355]" />
+              Class-building memory
+            </h2>
+            {classes.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-[#0A192F]/10 rounded-2xl">
+                <p className="font-bold text-[#0A192F]">No classes built yet.</p>
+                <p className="text-sm text-[#64748B] mt-1">Create your first class so Ranjan Sir can start tracking your classroom system.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {classes.slice(0, 6).map(cls => (
+                  <a
+                    key={cls.id}
+                    href={`/teacher/class/${cls.id}`}
+                    className="block bg-[#F8FAFF] rounded-2xl border border-[#0A192F]/5 p-4 hover:border-[#00D1FF]/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-extrabold text-[#0A192F]">{cls.name}</h3>
+                        <p className="text-sm text-[#64748B] mt-1">{cls.subject || 'General class'} · {cls.student_count || 0} students</p>
+                      </div>
+                      <span className="text-[10px] font-bold bg-white text-[#8B7355] px-2 py-1 rounded-lg uppercase">
+                        {cls.curriculum_source || 'manual'}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-white rounded-[24px] border border-[#0A192F]/10 p-6">
+              <h2 className="text-lg font-extrabold text-[#0A192F] mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#00D1FF]" />
+                Ranjan Sir notices
+              </h2>
+              <div className="space-y-3 text-sm font-medium text-[#64748B]">
+                <p>{templateClasses} classes use ready-made templates.</p>
+                <p>{customClasses} classes use custom or uploaded curriculum.</p>
+                <p>{classes.length > 0 ? 'Your teacher profile is based on class setup, student reach, assignments, and classroom workflow.' : 'Your teacher profile will start once you create classes and invite students.'}</p>
+              </div>
+            </div>
+
+            <div className="bg-[#0A192F] rounded-[24px] p-6 text-white">
+              <h2 className="text-lg font-extrabold mb-3">Next best action</h2>
+              <p className="text-sm text-white/70 leading-relaxed mb-5">
+                {classes.length === 0
+                  ? 'Create a class, choose a curriculum source, and share the invite code with students.'
+                  : totalStudents === 0
+                    ? 'Share class codes with students so Ranjan Sir can begin reporting participation.'
+                    : 'Open a class dashboard to log today’s lesson, create assignments, and review student responses.'}
+              </p>
+              <a href={classes.length > 0 ? `/teacher/class/${classes[0].id}` : '/my-classes'} className="inline-flex bg-white text-[#0A192F] font-bold text-sm px-4 py-3 rounded-xl">
+                Continue
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

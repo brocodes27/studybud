@@ -40,7 +40,13 @@ export class AIService {
         contextualSystemPrompt = `You are ATLAS, the student's friendly AI study partner. Your mission is to provide warm, encouraging, and effective coaching.`;
       }
 
-      const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\nUSER PROMPT: ${prompt}`;
+      // Inject real-world temporal awareness so the LLM always knows "today"
+      const now = new Date();
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const realWorldContext = `Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}.`;
+
+      const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\n${realWorldContext}\n\nUSER PROMPT: ${prompt}`;
 
       contents.push({
         role: 'user',
