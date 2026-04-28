@@ -43,6 +43,21 @@ export default function Onboarding() {
   const [currentWeek, setCurrentWeek] = useState<number>(1);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const [classCode, setClassCode] = useState<string>('');
+  const [accountType, setAccountType] = useState<string>('b2c_student');
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user) return;
+      const { data } = await supabase.from('user_profiles').select('account_type').eq('id', user.id).single();
+      if (data?.account_type) {
+        setAccountType(data.account_type);
+        if (data.account_type === 'school_student') {
+          setInstituteChoice('join_class');
+        }
+      }
+    }
+    loadProfile();
+  }, [user]);
 
   const examTypes: ExamType[] = [
     { code: 'jee', name: 'JEE (Mains + Advanced)', description: 'Joint Entrance Examination for IITs and NITs', total_score_max: 360 }
@@ -93,8 +108,11 @@ export default function Onboarding() {
         const { error: goalError } = await supabase.from('user_study_goals').upsert(goalPayload);
         if (goalError) throw goalError;
 
-        if (instituteChoice === 'join_class' && classCode.trim()) {
-          const trimmed = classCode.trim();
+        if (accountType === 'school_student' || instituteChoice === 'join_class') {
+          const trimmed = (accountType === 'school_student' ? classCode : classCode).trim();
+          if (!trimmed) {
+            throw new Error('Please enter a class code or invite link to join your school class.');
+          }
           let result;
           if (trimmed.length <= 10 && !trimmed.includes('/')) {
             result = await supabase.rpc('join_class', { p_class_code: trimmed });
@@ -104,7 +122,7 @@ export default function Onboarding() {
           }
           if (result.error) throw new Error(result.error.message);
         } else {
-          // Trigger Roadmap Engine Onboarding Edge Function
+          // Trigger Roadmap Engine Onboarding Edge Function (B2C only)
           await supabase.functions.invoke('roadmap-onboarding', {
             body: {
               template_id: instituteChoice === 'template' ? activeTemplateId : null,
@@ -442,15 +460,17 @@ export default function Onboarding() {
 
               <div className="space-y-5">
 
-                {/* Mode Toggle */}
+                {/* Mode Toggle — school students only see Join a Class */}
                 <div className="bg-[#F8FAFF] p-1 rounded-[14px] flex">
-                  <button
-                    onClick={() => setInstituteChoice('template')}
-                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'template' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                  >
-                    <Layers className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                    Coaching Roadmap
-                  </button>
+                  {accountType !== 'school_student' && (
+                    <button
+                      onClick={() => setInstituteChoice('template')}
+                      className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'template' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                    >
+                      <Layers className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                      Coaching Roadmap
+                    </button>
+                  )}
                   <button
                     onClick={() => setInstituteChoice('join_class')}
                     className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'join_class' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
@@ -458,13 +478,15 @@ export default function Onboarding() {
                     <MapPin className="w-4 h-4 inline mr-1.5 -mt-0.5" />
                     Join a Class
                   </button>
-                  <button
-                    onClick={() => setInstituteChoice('custom')}
-                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                  >
-                    <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                    Self Study
-                  </button>
+                  {accountType !== 'school_student' && (
+                    <button
+                      onClick={() => setInstituteChoice('custom')}
+                      className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                    >
+                      <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                      Self Study
+                    </button>
+                  )}
                 </div>
 
                 {/* Join Class Input */}

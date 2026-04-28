@@ -379,12 +379,44 @@ export async function ensureBehavioralProfile(userId: string): Promise<{ success
   }
 }
 
-export async function generateDailyPrescription(_userId: string, roadmapId: string): Promise<boolean> {
+export async function generateDailyPrescription(userId: string, roadmapId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('generate-daily-prescription', {
-      body: { roadmap_id: roadmapId, target_date: getTodayDateStr() },
+    const todayStr = getTodayDateStr();
+
+    // 1) Deterministic planner (backend source of truth)
+    const { data, error } = await supabase.functions.invoke('plan-daily-mission', {
+      body: { roadmap_id: roadmapId, target_date: todayStr },
     });
-    return !error && data?.success;
+    if (error || !data?.success || !data?.plan) return false;
+
+    const plan = data.plan;
+    const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
+    const totalMinutes = tasks.reduce((sum: number, t: any) => sum + (Number(t?.duration_min) || Number(t?.estimated_minutes) || 0), 0);
+
+    // 2) Persist as today's prescription (used by dashboards + parent/admin reporting)
+    const { error: upsertErr } = await supabase
+      .from('daily_prescriptions')
+      .upsert(
+        {
+          user_id: userId,
+          roadmap_id: roadmapId,
+          prescription_date: todayStr,
+          tasks,
+          total_estimated_minutes: totalMinutes,
+          implementation_intentions: plan.implementation_intentions || [],
+          context_snapshot: plan.context_snapshot || {},
+          status: 'active',
+          generated_by: 'deterministic_engine_v1',
+          prescription_source: {
+            planner: 'plan-daily-mission',
+            version: 1,
+            generated_at: new Date().toISOString(),
+          },
+        } as any,
+        { onConflict: 'user_id,prescription_date' }
+      );
+
+    return !upsertErr;
   } catch {
     return false;
   }
@@ -508,6 +540,21 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       // If no prescription for today, generate one locally from the coaching template
       if (!prescription && activeRoadmap.template_id) {
         try {
+          // Preferred path: use backend deterministic planner and persist the result.
+          const generated = await generateDailyPrescription(userId, roadmapId);
+          if (generated) {
+            const { data: freshPrescription } = await supabase
+              .from('daily_prescriptions')
+              .select('*')
+              .eq('user_id', userId)
+              .eq('prescription_date', todayStr)
+              .limit(1)
+              .maybeSingle();
+            if (freshPrescription) prescription = freshPrescription;
+          }
+
+          // Fallback only if planner/persist failed (kept for rollout resilience)
+          if (!prescription) {
           // Fetch weak areas and behavioral profile for personalization
           const [{ data: weakAreasFallback }, { data: profileFallback }] = await Promise.all([
             supabase.from('user_subject_mastery')
@@ -766,6 +813,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
                 prescription = inserted;
               }
             }
+          }
           }
         } catch {
           // Template fetch failed — continue without prescription

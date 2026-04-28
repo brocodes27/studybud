@@ -1,15 +1,19 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCors } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
+  const cors = getCors(req)
+  const corsHeaders = cors.headers
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {

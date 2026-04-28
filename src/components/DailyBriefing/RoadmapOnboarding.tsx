@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, GraduationCap, Clock, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
+import { BookOpen, GraduationCap, Clock, ChevronRight, Sparkles, Loader2, School, Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface CoachingTemplate {
@@ -22,18 +22,38 @@ export function RoadmapOnboarding({ userId, onComplete }: Props) {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [enrolling, setEnrolling] = useState(false);
+  const [isSchoolStudent, setIsSchoolStudent] = useState(false);
+  const [schoolInfo, setSchoolInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase
-      .from('coaching_templates')
-      .select('id, institute_name, program, year_level, description, total_weeks')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setTemplates((data || []) as CoachingTemplate[]);
+    async function init() {
+      // Check if user is a school student (has active school roadmap or account_type)
+      const { data: profile } = await supabase.from('user_profiles').select('account_type').eq('id', userId).single();
+      const { data: schoolRoadmap } = await supabase
+        .from('student_roadmaps')
+        .select('id, institute_name, class_id')
+        .eq('user_id', userId)
+        .eq('scope', 'school')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (profile?.account_type === 'school_student' || schoolRoadmap) {
+        setIsSchoolStudent(true);
+        setSchoolInfo(schoolRoadmap?.institute_name || 'Your School');
         setLoading(false);
-      });
-  }, []);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('coaching_templates')
+        .select('id, institute_name, program, year_level, description, total_weeks')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      setTemplates((data || []) as CoachingTemplate[]);
+      setLoading(false);
+    }
+    init();
+  }, [userId]);
 
   const handleEnroll = async () => {
     if (!selectedId || enrolling) return;
@@ -42,16 +62,16 @@ export function RoadmapOnboarding({ userId, onComplete }: Props) {
     const template = templates.find(t => t.id === selectedId);
     if (!template) return;
 
-    const { error } = await supabase.from('student_roadmaps').insert({
-      user_id: userId,
-      template_id: template.id,
-      institute_name: template.institute_name,
-      program: template.program,
-      year_level: template.year_level,
-      batch_name: `${template.program} ${new Date().getFullYear()}`,
-      start_date: new Date().toISOString().split('T')[0],
-      current_week: 1,
-      is_active: true,
+    // Use the canonical Edge Function instead of direct insert
+    const { error } = await supabase.functions.invoke('roadmap-onboarding', {
+      body: {
+        template_id: template.id,
+        institute_name: template.institute_name,
+        program: template.program,
+        year_level: template.year_level,
+        batch_name: `${template.program} ${new Date().getFullYear()}`,
+        current_week: 1,
+      }
     });
 
     if (!error) {
@@ -73,6 +93,31 @@ export function RoadmapOnboarding({ userId, onComplete }: Props) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-[#8B7355]" />
+      </div>
+    );
+  }
+
+  if (isSchoolStudent) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center px-4 pt-12 md:pt-20 pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-lg text-center"
+        >
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#8B7355]/10 mb-4">
+            <Lock className="w-7 h-7 text-[#8B7355]" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#2D2A26] mb-2">School Roadmap Active</h1>
+          <p className="text-sm text-[#8A8279] max-w-sm mx-auto mb-6">
+            You are enrolled in <span className="font-semibold text-[#2D2A26]">{schoolInfo}</span>. Your teacher manages your study roadmap, so self-selection is disabled.
+          </p>
+          <div className="flex items-center justify-center gap-2 text-xs text-[#8B7355] bg-[#8B7355]/5 rounded-xl px-4 py-3">
+            <School className="w-4 h-4" />
+            <span className="font-medium">Curriculum locked by your school</span>
+          </div>
+        </motion.div>
       </div>
     );
   }

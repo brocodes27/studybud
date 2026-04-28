@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCors } from "../_shared/cors.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -8,11 +9,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
-};
+// CORS handled per-request via getCors()
 // CBSE pattern map (synced with assemble-papers)
 const CBSE_PATTERNS: Record<string, { sections: { type: string; count: number; marks_each: number }[] }> = {
   // Class 10
@@ -185,9 +182,17 @@ async function generateWithGemini(prompt) {
   return JSON.parse(match[0]);
 }
 serve(async (req)=>{
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === "OPTIONS") {
     return new Response("ok", {
       headers: corsHeaders
+    });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
   if (req.method !== "POST") {

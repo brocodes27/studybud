@@ -4,21 +4,24 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { callGemini } from '../_shared/gemini.ts';
+import { getCors } from '../_shared/cors.ts';
 
 type FetchPayload = {
   subjects: string[]; // CUET domain subject names
   year?: string; // e.g., "2025"
 };
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
 Deno.serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {

@@ -3,6 +3,7 @@
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { getCors } from '../_shared/cors.ts';
 
 type Payload = {
   class: string;
@@ -14,11 +15,7 @@ type Payload = {
   update_mode?: 'mark' | 'reschedule'; // default 'mark' -> mark monthly tasks as rescheduled on overlapping dates
 };
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// CORS handled per-request via getCors()
 
 function toISODate(d: Date) { return d.toISOString().split('T')[0]; }
 
@@ -30,7 +27,15 @@ async function verifyUserAndGetId(authHeader: string, supabaseUrl: string, servi
 }
 
 Deno.serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

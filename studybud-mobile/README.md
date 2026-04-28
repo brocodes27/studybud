@@ -79,7 +79,7 @@ The app connects to the same Supabase backend as the web app:
 - **Auth**: `@supabase/supabase-js`
 - **API**: Supabase Edge Functions
   - `generate-study-plan` - Creates AI study plans
-  - `openai-proxy` - AI features
+  - `ai-proxy` - AI features (Gemini backend)
 
 ## Design System
 

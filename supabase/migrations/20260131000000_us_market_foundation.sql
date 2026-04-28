@@ -292,11 +292,51 @@ CREATE INDEX IF NOT EXISTS idx_group_feed_recent ON group_activity_feed(group_id
 
 -- User study goals
 ALTER TABLE user_study_goals ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_study_goals'
+      AND policyname = 'Users can manage their own goals'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can manage their own goals" ON public.user_study_goals';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can manage their own goals" ON user_study_goals
   FOR ALL USING (auth.uid() = user_id);
 
 -- User gamification
 ALTER TABLE user_gamification ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can view all gamification'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can view all gamification" ON public.user_gamification';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can update their own gamification'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can update their own gamification" ON public.user_gamification';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_gamification'
+      AND policyname = 'Users can insert their own gamification'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can insert their own gamification" ON public.user_gamification';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can view all gamification" ON user_gamification
   FOR SELECT USING (true);
 CREATE POLICY "Users can update their own gamification" ON user_gamification
@@ -306,6 +346,26 @@ CREATE POLICY "Users can insert their own gamification" ON user_gamification
 
 -- XP transactions
 ALTER TABLE xp_transactions ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'xp_transactions'
+      AND policyname = 'Users can view their own XP'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can view their own XP" ON public.xp_transactions';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'xp_transactions'
+      AND policyname = 'Users can insert their own XP'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can insert their own XP" ON public.xp_transactions';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can view their own XP" ON xp_transactions
   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own XP" ON xp_transactions
@@ -313,16 +373,60 @@ CREATE POLICY "Users can insert their own XP" ON xp_transactions
 
 -- Activity log
 ALTER TABLE user_activity_log ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_activity_log'
+      AND policyname = 'Users can manage their own activity'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can manage their own activity" ON public.user_activity_log';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can manage their own activity" ON user_activity_log
   FOR ALL USING (auth.uid() = user_id);
 
 -- Achievements (public read)
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'achievements'
+      AND policyname = 'Anyone can read achievements'
+  ) THEN
+    EXECUTE 'DROP POLICY "Anyone can read achievements" ON public.achievements';
+  END IF;
+END $$;
+
 CREATE POLICY "Anyone can read achievements" ON achievements
   FOR SELECT USING (true);
 
 -- User achievements
 ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_achievements'
+      AND policyname = 'Users can view all achievements'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can view all achievements" ON public.user_achievements';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_achievements'
+      AND policyname = 'Users can unlock their own achievements'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can unlock their own achievements" ON public.user_achievements';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can view all achievements" ON user_achievements
   FOR SELECT USING (true);
 CREATE POLICY "Users can unlock their own achievements" ON user_achievements
@@ -330,16 +434,68 @@ CREATE POLICY "Users can unlock their own achievements" ON user_achievements
 
 -- Daily check-ins
 ALTER TABLE daily_checkins ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'daily_checkins'
+      AND policyname = 'Users can manage their own check-ins'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can manage their own check-ins" ON public.daily_checkins';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can manage their own check-ins" ON daily_checkins
   FOR ALL USING (auth.uid() = user_id);
 
 -- Subject mastery
 ALTER TABLE user_subject_mastery ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'user_subject_mastery'
+      AND policyname = 'Users can manage their own mastery'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can manage their own mastery" ON public.user_subject_mastery';
+  END IF;
+END $$;
+
 CREATE POLICY "Users can manage their own mastery" ON user_subject_mastery
   FOR ALL USING (auth.uid() = user_id);
 
 -- Study groups (members can view their groups)
 ALTER TABLE study_groups ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'study_groups'
+      AND policyname = 'Public groups visible to all'
+  ) THEN
+    EXECUTE 'DROP POLICY "Public groups visible to all" ON public.study_groups';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'study_groups'
+      AND policyname = 'Members can view their groups'
+  ) THEN
+    EXECUTE 'DROP POLICY "Members can view their groups" ON public.study_groups';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'study_groups'
+      AND policyname = 'Users can create groups'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can create groups" ON public.study_groups';
+  END IF;
+END $$;
+
 CREATE POLICY "Public groups visible to all" ON study_groups
   FOR SELECT USING (is_public = true);
 CREATE POLICY "Members can view their groups" ON study_groups
@@ -350,6 +506,26 @@ CREATE POLICY "Users can create groups" ON study_groups
   FOR INSERT WITH CHECK (auth.uid() = created_by);
 
 ALTER TABLE study_group_members ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'study_group_members'
+      AND policyname = 'Members can view group members'
+  ) THEN
+    EXECUTE 'DROP POLICY "Members can view group members" ON public.study_group_members';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'study_group_members'
+      AND policyname = 'Users can join groups'
+  ) THEN
+    EXECUTE 'DROP POLICY "Users can join groups" ON public.study_group_members';
+  END IF;
+END $$;
+
 CREATE POLICY "Members can view group members" ON study_group_members
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM study_group_members sgm WHERE sgm.group_id = group_id AND sgm.user_id = auth.uid())
@@ -358,6 +534,18 @@ CREATE POLICY "Users can join groups" ON study_group_members
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 ALTER TABLE group_activity_feed ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'group_activity_feed'
+      AND policyname = 'Members can view group feed'
+  ) THEN
+    EXECUTE 'DROP POLICY "Members can view group feed" ON public.group_activity_feed';
+  END IF;
+END $$;
+
 CREATE POLICY "Members can view group feed" ON group_activity_feed
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM study_group_members WHERE group_id = group_activity_feed.group_id AND user_id = auth.uid())

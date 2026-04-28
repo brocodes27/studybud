@@ -24,6 +24,7 @@ import SubscriptionPage from './components/SubscriptionPage';
 const AdminPanel = lazy(() => import('./pages/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const TeacherPortal = lazy(() => import('./pages/TeacherPortal'));
 const MyClasses = lazy(() => import('./pages/MyClasses'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const ClassPage = lazy(() => import('./pages/ClassPage').then(m => ({ default: m.ClassPage })));
 const TeacherClassDashboard = lazy(() => import('./pages/TeacherClassDashboard'));
 const AtlasWorkspace = lazy(() => import('./pages/AtlasWorkspace').then(m => ({ default: m.AtlasWorkspace })));
@@ -209,6 +210,7 @@ function AppContent() {
                 <Route path="class/:id" element={<TeacherClassDashboard />} />
               </Route>
               <Route path="/my-classes" element={<MyClasses />} />
+              <Route path="/parent" element={<ParentDashboard />} />
               <Route path="/class/:id" element={<ClassPage />} />
 
               {/* Prove-It Mode — Socratic Mastery */}

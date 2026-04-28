@@ -1,12 +1,8 @@
 import { isUserPremium } from './_utils_subscription.ts';
 import { callGemini } from '../_shared/gemini.ts';
+import { getCors } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Vary": "Origin"
-};
+// CORS handled per-request via getCors()
 
 interface StudyPlanRequest {
   class: string;
@@ -16,10 +12,18 @@ interface StudyPlanRequest {
 }
 
 Deno.serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
+    });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 

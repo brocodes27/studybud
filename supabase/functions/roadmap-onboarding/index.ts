@@ -1,14 +1,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCors } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
+  const cors = getCors(req)
+  const corsHeaders = cors.headers
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -26,19 +30,34 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    // Reject school students — they must use join_class()
+    const { data: profile } = await supabaseClient
+      .from('user_profiles')
+      .select('account_type')
+      .eq('id', user.id)
+      .single()
+    if (profile?.account_type === 'school_student') {
+      return new Response(JSON.stringify({ error: 'School students must join a class via invite code. Roadmap self-selection is disabled.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const { template_id, institute_name, batch_name, year_level, current_week, custom_overrides = {} } = await req.json()
 
-    let testCalendar = []
+    let testCalendar: any[] = []
+    let templateRecord: any = null
     if (template_id) {
        const { data: template, error: tmplErr } = await supabaseClient
          .from('coaching_templates')
          .select('*')
          .eq('id', template_id)
          .single()
-         
+
        if (tmplErr || !template) {
          return new Response(JSON.stringify({ error: 'Template not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
        }
+       templateRecord = template
        testCalendar = template.test_calendar || []
     }
 
@@ -49,7 +68,7 @@ serve(async (req: Request) => {
         template_id: template_id || null,
         institute_name: institute_name || 'Self Study',
         batch_name: batch_name || 'Standard',
-        program: 'JEE',
+        program: templateRecord?.program || 'JEE',
         year_level: year_level,
         start_date: new Date().toISOString().split('T')[0],
         current_week: current_week || 1,

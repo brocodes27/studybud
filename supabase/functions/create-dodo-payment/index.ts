@@ -1,18 +1,21 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCors } from "../_shared/cors.ts";
 
 const DODO_API_KEY = Deno.env.get('DODO_PAYMENTS_API_KEY');
 const PRODUCT_ID = Deno.env.get('DODO_PRODUCT_ID') || 'pdt_default';
-const RETURN_URL = Deno.env.get('DODO_RETURN_URL') || 'https://studybud.pro/atlas';
-
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const RETURN_URL = Deno.env.get('DODO_RETURN_URL') || 'https://elevenfolks.com/atlas';
 
 serve(async (req) => {
+    const cors = getCors(req);
+    const corsHeaders = cors.headers;
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
+    }
+    if (!cors.allowed) {
+        return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
 
     if (req.method !== 'POST') {

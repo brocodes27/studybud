@@ -1,10 +1,6 @@
 // @ts-nocheck
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Vary": "Origin"
-};
+import { getCors } from "../_shared/cors.ts";
+// CORS handled per-request via getCors()
 
 interface MaterializeRequest {
   plan_id: string;
@@ -12,8 +8,16 @@ interface MaterializeRequest {
 }
 
 Deno.serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {

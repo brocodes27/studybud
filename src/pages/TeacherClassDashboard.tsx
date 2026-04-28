@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2, CalendarCheck } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
-const TABS = ['Class Workflow', 'Students', 'Assignments', 'Resources', 'Strengths & Weaknesses'];
+const TABS = ['Class Workflow', 'Attendance', 'Students', 'Assignments', 'Resources', 'Strengths & Weaknesses'];
 
 const TeacherClassDashboard: React.FC = () => {
   const { id } = useParams();
@@ -62,6 +62,112 @@ const TeacherClassDashboard: React.FC = () => {
   const [loggingSession, setLoggingSession] = useState(false);
   const [sessionLogError, setSessionLogError] = useState('');
   const [sessionLogSuccess, setSessionLogSuccess] = useState('');
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceStatus, setAttendanceStatus] = useState<Record<string, string>>({});
+  const [attendanceNotes, setAttendanceNotes] = useState<Record<string, string>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [attendanceMessage, setAttendanceMessage] = useState('');
+  const [attendanceError, setAttendanceError] = useState('');
+
+  const setAllAttendance = (status: string) => {
+    const next: Record<string, string> = {};
+    students.forEach((student: any) => {
+      next[student.id] = status;
+    });
+    setAttendanceStatus(next);
+  };
+
+  const fetchAttendanceForDate = async () => {
+    if (!id || students.length === 0) return;
+    setAttendanceLoading(true);
+    setAttendanceError('');
+    setAttendanceMessage('');
+    try {
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('class_attendance_sessions')
+        .select('id')
+        .eq('class_id', id)
+        .eq('session_date', attendanceDate)
+        .maybeSingle();
+      if (sessionError) throw sessionError;
+
+      if (!sessionRow?.id) {
+        setAllAttendance('present');
+        setAttendanceNotes({});
+        return;
+      }
+
+      const { data: records, error: recordsError } = await supabase
+        .from('class_attendance_records')
+        .select('student_id, status, notes')
+        .eq('attendance_session_id', sessionRow.id);
+      if (recordsError) throw recordsError;
+
+      const statusMap: Record<string, string> = {};
+      const notesMap: Record<string, string> = {};
+      students.forEach((student: any) => {
+        statusMap[student.id] = 'present';
+      });
+      (records || []).forEach((record: any) => {
+        statusMap[record.student_id] = record.status || 'present';
+        notesMap[record.student_id] = record.notes || '';
+      });
+      setAttendanceStatus(statusMap);
+      setAttendanceNotes(notesMap);
+    } catch (err: any) {
+      setAttendanceError(err?.message || 'Failed to load attendance.');
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!user || !id) return;
+    if (students.length === 0) {
+      setAttendanceError('No students enrolled in this class.');
+      return;
+    }
+    setAttendanceSaving(true);
+    setAttendanceError('');
+    setAttendanceMessage('');
+    try {
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('class_attendance_sessions')
+        .upsert({
+          class_id: id,
+          teacher_id: user.id,
+          session_date: attendanceDate,
+          subject: sessionSubject,
+          topics_covered: sessionTopics.split(',').map(t => t.trim()).filter(Boolean),
+          duration_minutes: sessionDuration,
+        }, { onConflict: 'class_id,session_date' })
+        .select('id')
+        .single();
+      if (sessionError) throw sessionError;
+
+      const rows = students.map((student: any) => ({
+        attendance_session_id: sessionRow.id,
+        class_id: id,
+        student_id: student.id,
+        status: attendanceStatus[student.id] || 'present',
+        notes: attendanceNotes[student.id] || null,
+        marked_by: user.id,
+      }));
+
+      const { error: recordsError } = await supabase
+        .from('class_attendance_records')
+        .upsert(rows, { onConflict: 'attendance_session_id,student_id' });
+      if (recordsError) throw recordsError;
+
+      await Promise.all(students.map((student: any) => supabase.rpc('refresh_student_attendance_profile', { p_student_id: student.id })));
+      setAttendanceMessage('Attendance saved. Ranjan Sir will use this signal for catch-up and risk analysis.');
+    } catch (err: any) {
+      setAttendanceError(err?.message || 'Failed to save attendance.');
+    } finally {
+      setAttendanceSaving(false);
+    }
+  };
 
   const handleLogClassSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,9 +191,13 @@ const TeacherClassDashboard: React.FC = () => {
       const { data: roadmaps } = await supabase
         .from('student_roadmaps')
         .select('id, user_id')
-        .in('user_id', studentIds);
+        .in('user_id', studentIds)
+        .eq('scope', 'school')
+        .eq('class_id', id)
+        .eq('is_active', true);
       const roadmapRows = (roadmaps || []).map((r: any) => ({
         roadmap_id: r.id,
+        class_id: id,
         teacher_id: user.id,
         session_date: new Date().toISOString().split('T')[0],
         subject: sessionSubject,
@@ -493,6 +603,10 @@ const TeacherClassDashboard: React.FC = () => {
     if (tab === 'AI Insights') fetchAiSummary();
   }, [tab, students, resources]);
 
+  useEffect(() => {
+    if (tab === 'Attendance') fetchAttendanceForDate();
+  }, [tab, attendanceDate, students.length]);
+
   // Resource upload handler (teacher only)
   const handleResourceUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -779,6 +893,130 @@ const TeacherClassDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Attendance Tab */}
+        {tab === 'Attendance' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="bg-[#8B7355]/10 p-3 rounded-2xl">
+                    <CalendarCheck className="h-6 w-6 text-[#8B7355] stroke-[2.5px]" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-[#2D2A26]">Class Attendance</h2>
+                    <p className="text-sm text-[#8A8279] mt-1">Mark attendance so Ranjan Sir can adapt catch-up tasks and risk analysis.</p>
+                  </div>
+                </div>
+                <input
+                  type="date"
+                  value={attendanceDate}
+                  onChange={(e) => setAttendanceDate(e.target.value)}
+                  className="px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-bold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Subject</label>
+                  <select
+                    value={sessionSubject}
+                    onChange={(e) => setSessionSubject(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
+                  >
+                    {['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Duration</label>
+                  <input
+                    type="number"
+                    min={15}
+                    max={180}
+                    value={sessionDuration}
+                    onChange={(e) => setSessionDuration(parseInt(e.target.value))}
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#8A8279]">Topics covered</label>
+                  <input
+                    type="text"
+                    value={sessionTopics}
+                    onChange={(e) => setSessionTopics(e.target.value)}
+                    placeholder="Kinematics, graphs..."
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {['present', 'absent', 'late', 'excused'].map(status => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setAllAttendance(status)}
+                    className="px-4 py-2 rounded-xl bg-[#F5F0E8] text-[#2D2A26] font-bold text-sm hover:bg-[#2D2A26] hover:text-white transition-colors capitalize"
+                  >
+                    Mark all {status}
+                  </button>
+                ))}
+              </div>
+
+              {attendanceLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#8B7355]" />
+                </div>
+              ) : students.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-[#E8E4DF] bg-[#F8FAFF] rounded-xl">
+                  <p className="font-bold text-[#8A8279]">No students enrolled yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {students.map((student: any) => (
+                    <div key={student.id} className="grid grid-cols-1 lg:grid-cols-[1fr_220px_1fr] gap-3 items-center bg-[#F8FAFF] border border-[#E8E4DF] rounded-2xl p-4">
+                      <div>
+                        <p className="font-bold text-[#2D2A26]">{student.full_name || 'Unnamed Student'}</p>
+                        <p className="text-xs font-medium text-[#8A8279]">{student.email}</p>
+                      </div>
+                      <select
+                        value={attendanceStatus[student.id] || 'present'}
+                        onChange={(e) => setAttendanceStatus(prev => ({ ...prev, [student.id]: e.target.value }))}
+                        className="px-4 py-3 bg-white rounded-[14px] border border-[#E8E4DF] font-bold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 capitalize"
+                      >
+                        <option value="present">Present</option>
+                        <option value="absent">Absent</option>
+                        <option value="late">Late</option>
+                        <option value="excused">Excused</option>
+                        <option value="left_early">Left early</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={attendanceNotes[student.id] || ''}
+                        onChange={(e) => setAttendanceNotes(prev => ({ ...prev, [student.id]: e.target.value }))}
+                        placeholder="Optional note"
+                        className="px-4 py-3 bg-white rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {attendanceError && <div className="mt-6 bg-red-50 border border-red-100 text-red-600 font-bold p-4 rounded-xl">{attendanceError}</div>}
+              {attendanceMessage && <div className="mt-6 bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold p-4 rounded-xl flex items-center gap-2"><CheckCircle2 className="w-5 h-5" />{attendanceMessage}</div>}
+              <button
+                type="button"
+                onClick={handleSaveAttendance}
+                disabled={attendanceSaving || students.length === 0}
+                className="mt-6 bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50"
+              >
+                {attendanceSaving ? <><Loader2 className="h-5 w-5 animate-spin stroke-[2.5px]" />Saving...</> : <><CalendarCheck className="h-5 w-5 stroke-[2.5px]" />Save Attendance</>}
+              </button>
             </div>
           </div>
         )}

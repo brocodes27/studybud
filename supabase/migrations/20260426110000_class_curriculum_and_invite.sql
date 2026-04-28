@@ -20,6 +20,24 @@ ALTER TABLE public.class_sessions
 CREATE INDEX IF NOT EXISTS idx_class_sessions_class_id ON public.class_sessions(class_id);
 
 -- 3. Update create_class RPC to accept optional template_id and return invite_link
+-- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
+-- Drop any existing overload(s) first to avoid "cannot change return type" errors.
+DO $$
+DECLARE r record;
+BEGIN
+    FOR r IN
+        SELECT n.nspname AS schema_name,
+               p.proname AS func_name,
+               pg_get_function_identity_arguments(p.oid) AS args
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname = 'create_class'
+    LOOP
+        EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
+    END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION create_class(p_name TEXT, p_subject TEXT DEFAULT NULL, p_template_id UUID DEFAULT NULL)
 RETURNS TABLE(id UUID, class_code TEXT, invite_link TEXT) AS $$
 DECLARE
@@ -67,6 +85,24 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. Update join_class RPC to accept class_code and auto-create student_roadmap
+-- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
+-- Drop any existing overload(s) first to avoid "cannot change return type" errors.
+DO $$
+DECLARE r record;
+BEGIN
+    FOR r IN
+        SELECT n.nspname AS schema_name,
+               p.proname AS func_name,
+               pg_get_function_identity_arguments(p.oid) AS args
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname = 'join_class'
+    LOOP
+        EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
+    END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION join_class(p_class_code TEXT)
 RETURNS TABLE(class_id UUID, roadmap_id UUID) AS $$
 DECLARE
@@ -87,9 +123,9 @@ BEGIN
     END IF;
 
     -- Insert class membership
-    INSERT INTO public.class_members (class_id, user_id)
+    INSERT INTO public.class_members (class_id, student_id)
     VALUES (target_class.id, auth.uid())
-    ON CONFLICT (class_id, user_id) DO NOTHING;
+    ON CONFLICT (class_id, student_id) DO NOTHING;
 
     -- If the class has a linked template, auto-create a student roadmap
     IF target_class.template_id IS NOT NULL THEN
@@ -166,6 +202,24 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 5. Also support joining by invite_link
+-- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
+-- Drop any existing overload(s) first to avoid "cannot change return type" errors.
+DO $$
+DECLARE r record;
+BEGIN
+    FOR r IN
+        SELECT n.nspname AS schema_name,
+               p.proname AS func_name,
+               pg_get_function_identity_arguments(p.oid) AS args
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND p.proname = 'join_class_by_invite'
+    LOOP
+        EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
+    END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION join_class_by_invite(p_invite_link TEXT)
 RETURNS TABLE(class_id UUID, roadmap_id UUID) AS $$
 DECLARE

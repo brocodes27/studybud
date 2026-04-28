@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, X, Loader2, GraduationCap, Settings, Lock, Layers, Upload, FileText, Copy, Check } from 'lucide-react';
+import { Plus, Users, BookOpen, X, Loader2, GraduationCap, Lock, Layers, Upload, Copy, Check } from 'lucide-react';
 
 interface CoachingTemplate {
   id: string;
@@ -93,10 +93,20 @@ const TeacherPanel: React.FC = () => {
       setCreating(false);
       return;
     }
+    if (curriculumSource === 'custom' || (!selectedTemplateId && !customJson.trim())) {
+      setCreateError('Please select a coaching template or upload a custom curriculum JSON.');
+      setCreating(false);
+      return;
+    }
 
     let templateId: string | null = null;
     if (curriculumSource === 'template') {
       templateId = selectedTemplateId;
+      if (!templateId) {
+        setCreateError('Please select a coaching template.');
+        setCreating(false);
+        return;
+      }
     } else if (curriculumSource === 'upload') {
       try {
         JSON.parse(customJson);
@@ -364,14 +374,6 @@ const TeacherPanel: React.FC = () => {
                           <Upload className="w-4 h-4" />
                           Upload JSON
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setCurriculumSource('custom')}
-                          className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${curriculumSource === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                        >
-                          <FileText className="w-4 h-4" />
-                          Build Manually
-                        </button>
                       </div>
                     </div>
 
@@ -418,12 +420,6 @@ const TeacherPanel: React.FC = () => {
                       </div>
                     )}
 
-                    {curriculumSource === 'custom' && (
-                      <div className="bg-[#F5F0E8] rounded-xl p-4 text-center">
-                        <p className="text-sm font-bold text-[#2D2A26]">Coming Soon</p>
-                        <p className="text-xs text-[#8A8279] mt-1">Interactive week-by-week builder will be available in the next update.</p>
-                      </div>
-                    )}
 
                     {createError && (
                       <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm font-bold text-red-600">

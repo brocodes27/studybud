@@ -1,16 +1,20 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCors } from '../_shared/cors.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || ''
 
 serve(async (req) => {
+  const cors = getCors(req)
+  const corsHeaders = cors.headers
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -158,6 +162,11 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle(),
+      supabaseClient
+        .from('student_behavioral_profiles')
+        .select('attendance_rate_30d, consecutive_absences, late_arrival_count_30d, last_absent_at, attendance_risk_level')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ]);
 
     // Unpack settled results (fall back to empty data on rejection)
@@ -172,6 +181,7 @@ serve(async (req) => {
     const videosRes = pick(7);
     const memoriesRes = pick(8);
     const roadmapRes = pick(9);
+    const attendanceProfileRes = pick(10);
 
     // Log any fetch failures for observability (doesn't block response)
     settled.forEach((s, i) => {
@@ -195,6 +205,18 @@ serve(async (req) => {
     const roadmap = (roadmapRes as any).data;
     if (roadmap) {
       sections.push(`Active Curriculum: ${roadmap.institute_name} (${roadmap.program}), Week ${roadmap.current_week}`);
+    }
+
+    const attendanceProfile = (attendanceProfileRes as any).data;
+    if (attendanceProfile) {
+      const rate = Math.round(Number(attendanceProfile.attendance_rate_30d ?? 1) * 100);
+      sections.push(
+        `Attendance Signals:\n` +
+          `- 30-day attendance: ${rate}%\n` +
+          `- Consecutive absences: ${attendanceProfile.consecutive_absences ?? 0}\n` +
+          `- Late arrivals in 30 days: ${attendanceProfile.late_arrival_count_30d ?? 0}\n` +
+          `- Risk level: ${attendanceProfile.attendance_risk_level || 'low'}${attendanceProfile.last_absent_at ? `\n- Last absent: ${attendanceProfile.last_absent_at}` : ''}`
+      );
     }
 
     // Recent completions (legacy)

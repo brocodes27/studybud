@@ -1,13 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCors } from "../_shared/cors.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
-};
 function computeDailyCycle(yyyymmdd) {
   const now = yyyymmdd ? new Date(Date.UTC(Number(yyyymmdd.slice(0, 4)), Number(yyyymmdd.slice(5, 7)) - 1, Number(yyyymmdd.slice(8, 10)))) : new Date();
   const y = now.getUTCFullYear();
@@ -111,9 +107,15 @@ async function getDistinctCombos() {
   return fb;
 }
 serve(async (req)=>{
-  if (req.method === "OPTIONS") return new Response("ok", {
-    headers: corsHeaders
-  });
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method !== "POST") return new Response(JSON.stringify({
     error: "Method not allowed"
   }), {

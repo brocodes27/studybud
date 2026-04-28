@@ -1,15 +1,19 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCors } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -27,11 +31,11 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const { roadmap_id, test_name, base64_image, manual_weaknesses, score_obtained, score_total } = await req.json()
-    
+    const { roadmap_id, test_name, base64_image, manual_weaknesses, score_obtained, score_total, attempts } = await req.json()
+
     let weak_topics = manual_weaknesses || []
-    
-    // If we have an image, ask Gemini to parse it for mistakes
+
+    // ── Legacy: If we have an image, ask Gemini to parse it for mistakes ──
     if (base64_image && (!manual_weaknesses || manual_weaknesses.length === 0)) {
       const messages: GeminiMessage[] = [
         {
@@ -50,7 +54,7 @@ serve(async (req: Request) => {
       weak_topics = parsed.weak_topics
     }
 
-    // Prepare test result record
+    // ── Insert test result ──
     const resultRecord = {
       user_id: user.id,
       roadmap_id,
@@ -62,33 +66,54 @@ serve(async (req: Request) => {
       status: 'analyzed'
     }
 
-    // Insert into DB
     const { data: testResult, error: insertError } = await supabaseClient
       .from('test_results')
       .insert(resultRecord)
       .select()
       .single()
 
-    // If table test_results isn't available, we'll pretend it succeeded for the Edge Function execution if it's missing (schema mismatch handle locally)
     if (insertError && !insertError.message.includes('relation "test_results" does not exist')) {
         throw insertError
     }
-    
-    // Invoke generate-correction-sprint internally so the user naturally gets a sprint back
+
+    const resultId = testResult?.id || crypto.randomUUID();
+
+    // ── NEW: Per-question telemetry ──
+    let classified = null;
+    if (attempts && Array.isArray(attempts) && attempts.length > 0) {
+      try {
+        const { data: clsRes } = await supabaseClient.functions.invoke('classify-test-error', {
+          body: { test_result_id: resultId, attempts }
+        });
+        if (clsRes?.success) {
+          classified = clsRes.classified;
+          // Override weak_topics with deterministic classification output if available
+          if (clsRes.weak_topics && clsRes.weak_topics.length > 0) {
+            weak_topics = clsRes.weak_topics;
+            // Also update the test_results row with enriched weak_topics
+            await supabaseClient.from('test_results').update({ weak_topics }).eq('id', resultId);
+          }
+        }
+      } catch (e) {
+        console.warn('classify-test-error invocation failed, continuing with legacy weak_topics:', e);
+      }
+    }
+
+    // ── Invoke generate-correction-sprint (now deterministic, reads from test_attempt_questions) ──
     let sprint = null
     const { data: sprintRes, error: sprintErr } = await supabaseClient.functions.invoke('generate-correction-sprint', {
       body: {
-        test_result_id: testResult?.id || crypto.randomUUID(), 
-        roadmap_id, 
+        test_result_id: resultId,
+        roadmap_id,
         weak_topics
       }
     })
-    
+
     if (sprintRes && !sprintErr) {
         sprint = sprintRes.sprint
     }
 
-    return new Response(JSON.stringify({ success: true, testResult, sprint }), {
+    return new Response(JSON.stringify({ success: true, testResult, sprint, classified_attempts: classified }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

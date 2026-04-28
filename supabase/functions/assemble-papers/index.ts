@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCors } from "../_shared/cors.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
@@ -8,11 +9,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
-};
+// CORS handled per-request via getCors()
 // CBSE Exam Patterns (Section-wise distribution)
 const CBSE_PATTERNS = {
   // ========== CLASS 10 (Secondary) - 80 marks ==========
@@ -498,6 +495,8 @@ async function insertGeneratedQuestions(pool_id: string, items: any[]) {
   if (error) throw new Error(error.message);
 }
 serve(async (req)=>{
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   let stage = "start";
   try {
     if (req.method === "OPTIONS") {
@@ -506,6 +505,12 @@ serve(async (req)=>{
         "authorization, x-client-info, apikey, content-type";
       return new Response("ok", {
         headers: { ...corsHeaders, "Access-Control-Allow-Headers": reqHeaders },
+      });
+    }
+    if (!cors.allowed) {
+      return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (req.method !== "POST") {

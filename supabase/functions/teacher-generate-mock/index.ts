@@ -1,18 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callGemini } from "../_shared/gemini.ts";
-
-// Add CORS headers
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-};
+import { getCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
+    const cors = getCors(req);
+    const corsHeaders = cors.headers;
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
+    }
+    if (!cors.allowed) {
+        return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
 
     try {

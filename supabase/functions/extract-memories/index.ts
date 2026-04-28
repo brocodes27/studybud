@@ -12,12 +12,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { callGeminiJSON, callGeminiEmbedding, GeminiMessage } from '../_shared/gemini.ts';
+import { getCors } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// CORS handled per-request via getCors()
 
 interface ChatTurn {
   role: 'user' | 'assistant' | 'system';
@@ -74,7 +71,15 @@ Return ONLY valid JSON:
 If nothing extractable, return: { "memories": [] }`;
 
 serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,

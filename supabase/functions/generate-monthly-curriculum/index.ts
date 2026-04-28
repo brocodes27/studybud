@@ -4,6 +4,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { callGemini } from '../_shared/gemini.ts';
+import { getCors } from '../_shared/cors.ts';
 
 type Payload = {
   aim?: 'cbse' | 'jee';
@@ -13,11 +14,7 @@ type Payload = {
   curriculum_id?: string; // optional explicit curriculum id
 };
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// CORS handled per-request via getCors()
 
 function firstDayOfMonth(month?: string) {
   const now = new Date();
@@ -48,8 +45,16 @@ async function verifyUserAndGetId(authHeader: string, supabaseUrl: string, servi
 }
 
 Deno.serve(async (req: Request) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: 'CORS origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   let stage = 'start';

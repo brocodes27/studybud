@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCors } from "../_shared/cors.ts";
 
 // PayPal credentials from environment variables
 const PAYPAL_CLIENT_ID = Deno.env.get('PAYPAL_CLIENT_ID');
 const PAYPAL_CLIENT_SECRET = Deno.env.get('PAYPAL_CLIENT_SECRET');
 const PAYPAL_BASE_URL = Deno.env.get('PAYPAL_BASE_URL') || 'https://api-m.sandbox.paypal.com'; // Use sandbox for testing
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Get PayPal access token
 async function getPayPalAccessToken() {
@@ -78,9 +73,17 @@ async function createPayPalSubscription(accessToken: string, userData: any, curr
 }
 
 serve(async (req) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   if (req.method !== 'POST') {

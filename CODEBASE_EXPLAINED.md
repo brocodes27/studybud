@@ -31,7 +31,7 @@ A Vite + React web app (PWA) and an Expo/React‑Native mobile app that use a Su
 1) User signs in via Supabase Auth.
 2) Frontend reads/writes rows from Postgres (Supabase JS client) for “normal” CRUD.
 3) For AI / payments / content generation, frontend calls Supabase Edge Functions.
-4) Edge Functions verify the Supabase JWT (when required), then call external providers (OpenAI, Tavily, Razorpay, PayPal, etc.), then store results back into Supabase tables and/or Storage.
+4) Edge Functions verify the Supabase JWT (when required), then call external providers (Gemini, Tavily, Razorpay, PayPal, etc.), then store results back into Supabase tables and/or Storage.
 
 ---
 
@@ -148,7 +148,7 @@ This section lists user-visible features and their implementation wiring.
   - `supabase/functions/generate-study-plan/index.ts`
     - Verifies Supabase JWT by calling `{SUPABASE_URL}/auth/v1/user`.
     - Checks premium/free tier limits.
-    - Calls OpenAI (model `gpt-4o`) to generate a structured plan JSON.
+    - Uses the deterministic planner (`plan-daily-mission`) and a Gemini voice layer (`voice-daily-mission`) to generate the daily mission experience.
     - Stores into `public.exam_plans`.
   - Premium helper:
     - `supabase/functions/generate-study-plan/_utils_subscription.ts`.
@@ -194,8 +194,8 @@ This section lists user-visible features and their implementation wiring.
 - Client wrapper:
   - `src/lib/aiService.ts` calls Gemini API directly.
 - Edge Function:
-  - `supabase/functions/openai-proxy/index.ts`
-  - Verifies Supabase JWT then forwards the request to OpenAI using server env `OPENAI_API_KEY`.
+  - `supabase/functions/ai-proxy/index.ts`
+  - Verifies Supabase JWT then forwards the request to Gemini using server env `GEMINI_API_KEY`.
 
 ### 6.7 Meeting notes (speech-to-text + screenshots)
 - UI:
@@ -245,7 +245,7 @@ This section lists user-visible features and their implementation wiring.
      - For English, a final local fallback generator ensures the section can reach 50 items.
 - Web-search Edge Function:
   - `supabase/functions/cuet-web-search/index.ts`
-  - Uses Tavily + OpenAI to normalize web results into strict JSON questions.
+  - Uses Tavily + Gemini to normalize web results into strict JSON questions.
 - Optional CUET syllabus fetch:
   - `supabase/functions/cuet-syllabus-fetch/index.ts`
   - Populates `public.cuet_syllabi` (see migrations).
@@ -330,7 +330,7 @@ Functions observed from code scans include:
   - `generate-flashcards`
   - `format-notes-with-ai`
   - `generate-questions-from-notes`
-  - `openai-proxy`
+  - `ai-proxy`
   - `openai-embeddings-proxy` (folder present)
 - CUET tools:
   - `cuet-web-search`
@@ -388,12 +388,12 @@ See `scripts/README.md` for the canonical flow. Highlights:
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_GOOGLE_CLIENT_ID`
 - Some features also reference:
-  - `VITE_OPENAI_API_KEY` (note: some client code still uses it directly for embeddings/TTS; you may want to standardize this via server proxies).
+  - `GEMINI_API_KEY` (server-side secret used by AI edge functions; never expose in the client).
 
 ### Supabase Edge Functions (server-side)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
 - `TAVILY_API_KEY` (for CUET web search + syllabus fetch)
 - Payments:
   - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
@@ -411,7 +411,7 @@ See `scripts/README.md` for the canonical flow. Highlights:
 1) User signs in.
 2) User goes to Create Plan page.
 3) Frontend calls `generate-study-plan` Edge Function.
-4) Function verifies JWT, checks premium/free tier, calls OpenAI, stores plan.
+4) Function verifies JWT, checks premium/free tier, calls Gemini (or uses deterministic engines), stores results.
 5) User sees the plan and can use it to generate flashcards/tests.
 
 ### Flow B: Generate and take a practice test
@@ -442,7 +442,7 @@ See `scripts/README.md` for the canonical flow. Highlights:
 ## 13) Known gaps / things to verify
 These are not “errors”, just places where the scanned repo doesn’t show the full story:
 - Some tables referenced in frontend (e.g., `flashcards`, `practice_tests`, `cuet_questions`) do not appear in the visible migration set. They likely exist in the Supabase project already or are created by older migrations not present here.
-- Some AI calls happen via Edge Functions (good) while a few utilities still use client-side keys (e.g., embeddings/TTS in `src/lib/openaiService.ts`). If you want a single security model, you can route all OpenAI calls through Edge Functions.
+- AI calls happen via Edge Functions (good). Keep all provider keys server-side (use `ai-proxy` and shared helpers).
 
 ---
 

@@ -7,12 +7,7 @@ export interface ChatMessage {
 
 export class AIService {
   private static instance: AIService;
-  private apiKey: string;
-  private model: string = 'gemini-3-flash-preview';
-
-  private constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-  }
+  private constructor() {}
 
   static getInstance(): AIService {
     if (!AIService.instance) {
@@ -53,40 +48,17 @@ export class AIService {
         parts: [{ text: fullPrompt }]
       });
 
-      console.log('Calling Gemini API with model:', this.model);
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          }
-        })
+      const { data, error } = await supabase.functions.invoke('ai-proxy', {
+        body: { action: 'generate_chat_completion', payload: { prompt: fullPrompt, systemPrompt: contextualSystemPrompt, useRAG } }
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Gemini API specific error:', errorData);
-        throw new Error(`Gemini API Error: ${response.status} - ${JSON.stringify(errorData)}`);
-      }
-
-      const data = await response.json();
-      console.log('Gemini API raw response data:', data);
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      console.log('Extracted response text:', responseText);
-
-      // Proactively save important insights back to knowledge base
+      if (error) throw error;
+      const responseText = data?.result || '';
       if (useRAG && responseText.length > 200) {
         this.saveToKnowledgeBase(responseText, 'chat');
       }
-
       return responseText;
     } catch (error: any) {
-      console.error('Gemini Service Error:', error);
+      console.error('Chat completion error:', error);
       throw error;
     }
   }
@@ -127,132 +99,42 @@ export class AIService {
 
       const data = await response.json();
 
-      // Guard: edge function sometimes returns HTTP 200 with an empty response
-      // (e.g. Gemini was rate-limited or safety-blocked). Treat that as failure
-      // and fall back to the simple chat completion path.
       if (!data?.response || typeof data.response !== 'string' || data.response.trim() === '') {
-        console.warn('Empathetic Chat: empty response from orchestrator, falling back.', data);
-        const fallbackResponse = await this.generateChatCompletion(message, studyContext, true);
-        return {
-          response: fallbackResponse,
-          emotion_detected: data?.emotion_detected || 'neutral',
-          pedagogical_mode: data?.pedagogical_mode || 'socratic'
-        };
+        throw new Error('Orchestrator returned empty response');
       }
-
       return data;
     } catch (error) {
       console.error('Empathetic Chat Error:', error);
-      // Fallback to static RAG if edge function fails
-      const fallbackResponse = await this.generateChatCompletion(message, studyContext, true);
-      return {
-        response: fallbackResponse,
-        emotion_detected: 'neutral',
-        pedagogical_mode: 'socratic'
-      };
+      throw error;
     }
   }
 
   async analyzeImagesWithVision(images: string[], prompt?: string, systemPrompt?: string, maxTokens: number = 2048): Promise<string> {
     try {
-      const parts: any[] = [{ text: prompt || 'Analyze this image.' }];
-      if (systemPrompt) {
-        parts.unshift({ text: `SYSTEM_INSTRUCTION: ${systemPrompt}` });
-      }
-
-      for (const base64Data of images) {
-        const data = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
-        const mimeType = base64Data.includes(';') ? base64Data.split(';')[0].split(':')[1] : 'image/jpeg';
-
-        parts.push({
-          inline_data: {
-            mime_type: mimeType,
-            data: data
-          }
-        });
-      }
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: maxTokens,
-          }
-        })
+      const { data: resp, error } = await supabase.functions.invoke('ai-proxy', {
+        body: { action: 'analyze_images', payload: { images, prompt, systemPrompt, maxTokens } }
       });
-
-      if (!response.ok) {
-        throw new Error(`Gemini Vision Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (error) throw error;
+      return (resp as any)?.result || '';
     } catch (error) {
-      console.error('Gemini Vision Error:', error);
+      console.error('Vision analysis error:', error);
       throw error;
     }
   }
 
   async transcribeAndAnalyzeAudio(base64Audio: string, prompt: string): Promise<{ transcript: string, feedback: string }> {
     try {
-      console.log('Gemini Audio Processing Started...');
-      const data = base64Audio.includes(',') ? base64Audio.split(',')[1] : base64Audio;
-      const mimeType = base64Audio.includes(';') ? base64Audio.split(';')[0].split(':')[1] : 'audio/webm';
-
-      const parts: any[] = [
-        { text: prompt },
-        {
-          inline_data: {
-            mime_type: mimeType,
-            data: data
-          }
-        }
-      ];
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 4096,
-          }
-        })
+      const { data: resp, error } = await supabase.functions.invoke('ai-proxy', {
+        body: { action: 'transcribe_audio', payload: { base64Audio, prompt } }
       });
-
-      console.log('Sending audio prompt:', JSON.stringify(parts, null, 2));
-
-      if (!response.ok) {
-        const err = await response.json();
-        console.error('Gemini Audio Error details:', err);
-        throw new Error(`Gemini Audio Error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-      console.log('Gemini Audio Raw Response:', textResponse);
-
-      // We expect the AI to return a specific format like:
-      // TRANSCRIPT: [...]
-      // FEEDBACK: [...]
-      const transcriptMatch = textResponse.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\s*ANALYSIS:|$)/i);
-      const feedbackMatch = textResponse.match(/ANALYSIS:\s*([\s\S]*)/i);
-
+      if (error) throw error;
+      const result = (resp as any)?.result || {};
       return {
-        transcript: transcriptMatch ? transcriptMatch[1].trim() : 'Transcript unavailable',
-        feedback: feedbackMatch ? feedbackMatch[1].trim() : textResponse
+        transcript: result.transcript || 'Transcript unavailable',
+        feedback: result.feedback || result.textResponse || ''
       };
     } catch (error) {
-      console.error('Gemini Audio Processing Failed:', error);
+      console.error('Audio processing error:', error);
       throw error;
     }
   }
@@ -308,28 +190,13 @@ export class AIService {
 
   async getEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${this.apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: {
-              parts: [{ text: text.replace(/\n/g, " ") }],
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Gemini Embedding Error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.embedding.values;
+      const { data, error } = await supabase.functions.invoke('ai-proxy', {
+        body: { action: 'get_embedding', payload: { text } }
+      });
+      if (error) throw error;
+      return data?.result || new Array(768).fill(0);
     } catch (error) {
-      console.error("Failed to get embedding:", error);
-      // Fallback to zero vector (768 dim) if API fails
+      console.error('Embedding error:', error);
       return new Array(768).fill(0);
     }
   }

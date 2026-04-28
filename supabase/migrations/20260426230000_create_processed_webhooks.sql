@@ -14,6 +14,18 @@ CREATE INDEX IF NOT EXISTS idx_processed_webhooks_event_id ON processed_webhooks
 -- RLS: disable for service role access from edge functions
 ALTER TABLE processed_webhooks ENABLE ROW LEVEL SECURITY;
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'processed_webhooks'
+      AND policyname = 'Allow service role full access'
+  ) THEN
+    EXECUTE 'DROP POLICY "Allow service role full access" ON public.processed_webhooks';
+  END IF;
+END $$;
+
 CREATE POLICY "Allow service role full access" ON processed_webhooks
     FOR ALL
     TO service_role

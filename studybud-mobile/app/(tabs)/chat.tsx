@@ -66,26 +66,28 @@ export default function ChatScreen() {
                 });
             }
 
-            const response = await fetch(`${supabaseUrl}/functions/v1/openai-proxy`, {
+            // We no longer use OpenAI. Route all chat to ai-proxy (Gemini backend).
+            const response = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`,
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o', // Vision needs gpt-4o
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a helpful AI study assistant. Help students with their studies, provide explanations, and answer questions about various subjects. You can analyze images of handwritten notes, diagrams, or textbook questions. Be encouraging and educational.',
+                    action: currentImage?.base64 ? 'analyze_images' : 'generate_chat_completion',
+                    payload: currentImage?.base64
+                      ? {
+                          systemPrompt:
+                            'You are a helpful AI study assistant. Help students with their studies, provide explanations, and answer questions about various subjects. You can analyze images of handwritten notes, diagrams, or textbook questions. Be encouraging and educational.',
+                          prompt: currentInput || 'Analyze this image and help the student.',
+                          images: [`data:image/jpeg;base64,${currentImage.base64}`],
+                        }
+                      : {
+                          systemPrompt:
+                            'You are a helpful AI study assistant. Help students with their studies, provide explanations, and answer questions about various subjects. Be encouraging and educational.',
+                          prompt: currentInput,
+                          temperature: 0.7,
                         },
-                        {
-                            role: 'user',
-                            content: userContent,
-                        },
-                    ],
-                    max_completion_tokens: 1000,
-                    temperature: 0.7,
                 }),
             });
 
@@ -96,7 +98,7 @@ export default function ChatScreen() {
             }
 
             const data = await response.json();
-            const aiText = data?.choices?.[0]?.message?.content || 'Sorry, I couldn\'t generate a response.';
+            const aiText = data?.result || 'Sorry, I couldn\'t generate a response.';
 
             const aiMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -149,7 +151,7 @@ export default function ChatScreen() {
                     </View>
                     <View>
                         <Text style={styles.headerTitle}>AI Study Buddy</Text>
-                        <Text style={styles.headerSubtitle}>Powered by GPT-4</Text>
+                        <Text style={styles.headerSubtitle}>Powered by ElevenFolks AI</Text>
                     </View>
                 </View>
             </LinearGradient>

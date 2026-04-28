@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { getCors } from "../_shared/cors.ts";
 
 // Load Razorpay credentials from environment variables
 const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
@@ -6,16 +7,18 @@ const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
 // IMPORTANT: Set your Razorpay plan_id in the environment or replace below
 const PLAN_ID = 'plan_QlYEtRWPX0ddUj';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // or "http://localhost:5173" for local dev
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 serve(async (req) => {
+  const cors = getCors(req);
+  const corsHeaders = cors.headers;
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (!cors.allowed) {
+    return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   if (req.method !== 'POST') {
