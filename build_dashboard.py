@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import os
+
+content = """import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -10,7 +12,9 @@ const TABS = [
   'Mastery Control Panel',
   'Daily Teaching Loop',
   'Student Readiness',
-  'Groups & Interventions'
+  'Groups & Interventions',
+  'Reports',
+  'Class Management'
 ];
 
 const SKILL_COLUMNS = ['Kinematics', 'Dynamics', 'Thermodynamics', 'Waves', 'Electromagnetism', 'Optics'];
@@ -94,86 +98,38 @@ const TeacherClassDashboard: React.FC = () => {
   const [attemptProfiles, setAttemptProfiles] = useState<Record<string, { full_name?: string; email?: string }>>({});
   const [behaviorProfiles, setBehaviorProfiles] = useState<Record<string, any>>({});
 
-  const [studentMasteries, setStudentMasteries] = useState<Record<string, any[]>>({});
-  const [studentStreaks, setStudentStreaks] = useState<Record<string, any>>({});
-
-  // Real Data generation for UI
+  // Mock Data generation for UI
   const [heatmapData, setHeatmapData] = useState<any>({});
   const [readinessData, setReadinessData] = useState<any>({});
-  
-  // Action Feedback state
-  const [actionSuccess, setActionSuccess] = useState('');
-
-  const handleAssignAction = async (title: string, description: string) => {
-    if (!user || !id) return;
-    try {
-      const due = new Date();
-      due.setDate(due.getDate() + 2); // 2 days from now
-      await supabase.from('assignments').insert({
-        class_id: id,
-        title,
-        description,
-        due_date: due.toISOString(),
-      });
-      setActionSuccess(`Successfully dispatched: ${title}`);
-      setTimeout(() => setActionSuccess(''), 4000);
-    } catch (err: any) {
-      console.error(err);
-      alert('Failed to dispatch action: ' + err.message);
-    }
-  };
 
   useEffect(() => {
+    // Generate mock heatmap and readiness data based on students
     const newHeatmap: any = {};
     const newReadiness: any = {};
+    const statuses = Object.keys(STATUS_COLORS);
     
-    students.forEach((s) => {
+    students.forEach((s, i) => {
       newHeatmap[s.id] = {};
-      const masteries = studentMasteries[s.id] || [];
-      const profile = behaviorProfiles[s.id] || {};
-      const streakObj = studentStreaks[s.id] || {};
-      
       SKILL_COLUMNS.forEach(skill => {
-        const skillRecord = masteries.find(m => m.subdomain === skill || m.domain === skill);
+        // Pseudo-random but deterministic based on index
+        const rand = (s.full_name?.length || 5) + i + skill.length;
         let status = 'Unknown';
-        if (skillRecord) {
-           const score = Number(skillRecord.mastery_score || 0);
-           if (score >= 80) status = 'Mastered';
-           else if (score >= 50) status = 'Fragile';
-           else status = 'Stuck';
-        }
+        if (rand % 5 === 0) status = 'Stuck';
+        else if (rand % 3 === 0) status = 'Fragile';
+        else if (rand % 2 === 0) status = 'Mastered';
         newHeatmap[s.id][skill] = status;
       });
 
-      // Calculate avg mastery across skills or overall
-      const avgMastery = masteries.length > 0
-        ? masteries.reduce((sum, m) => sum + Number(m.mastery_score || 0), 0) / masteries.length
-        : 0;
-
-      const flags: string[] = [];
-      if (profile.weak_subjects && profile.weak_subjects.length > 0) {
-        flags.push(`Weak: ${profile.weak_subjects[0]}`);
-      }
-      if (profile.attendance_risk_level === 'high') {
-        flags.push('Risk: Attendance');
-      }
-      if (profile.avg_plan_adherence_pct && Number(profile.avg_plan_adherence_pct) < 40) {
-        flags.push('Low Adherence');
-      }
-      if (profile.stress_signals && Object.keys(profile.stress_signals).length > 0) {
-         flags.push('Stress Flags');
-      }
-
       newReadiness[s.id] = {
-        mastery: Math.round(avgMastery),
-        streak: streakObj.current_streak || 0,
-        speed: profile.typical_session_duration_min ? Math.round(profile.typical_session_duration_min / 30 * 10) / 10 : 0, 
-        flags: flags
+        mastery: 40 + (i * 7 % 50), // 40-90
+        streak: (i * 3) % 14,
+        speed: 1.5 + (i % 3), // mins per question
+        flags: i % 4 === 0 ? ['stuck often'] : i % 5 === 0 ? ['paused a lot'] : []
       };
     });
     setHeatmapData(newHeatmap);
     setReadinessData(newReadiness);
-  }, [students, studentMasteries, behaviorProfiles, studentStreaks]);
+  }, [students]);
 
   const setAllAttendance = (status: string) => {
     const next: Record<string, string> = {};
@@ -328,11 +284,11 @@ const TeacherClassDashboard: React.FC = () => {
       const preview = questions.map((q: any, i: number) => {
         const head = `${i + 1}. [${q.marks} marks] ${q.question}`;
         if (q.type === 'mcq' && Array.isArray(q.options)) {
-          const opts = q.options.map((o: string, idx: number) => `   (${String.fromCharCode(65 + idx)}) ${o}`).join('\n');
-          return `${head}\n${opts}`;
+          const opts = q.options.map((o: string, idx: number) => `   (${String.fromCharCode(65 + idx)}) ${o}`).join('\\n');
+          return `${head}\\n${opts}`;
         }
         return head;
-      }).join('\n\n');
+      }).join('\\n\\n');
       setMockPreview(preview);
       setMockSuccessMsg('Exit Ticket (Auto-check) generated successfully! Sent to all students.');
     } catch (err: any) {
@@ -371,29 +327,8 @@ const TeacherClassDashboard: React.FC = () => {
         if (userIds.length > 0) {
           const { data: studentProfiles } = await supabase.from('user_profiles').select('id, full_name, email').in('id', userIds);
           setStudents(studentProfiles || []);
-
-          const { data: behaviorData } = await supabase.from('student_behavioral_profiles').select('*').in('user_id', userIds);
-          const bmap: Record<string, any> = {};
-          (behaviorData || []).forEach((b: any) => { bmap[b.user_id] = b; });
-          setBehaviorProfiles(bmap);
-
-          const { data: masteryData } = await supabase.from('user_subject_mastery').select('*').in('user_id', userIds);
-          const mmap: Record<string, any[]> = {};
-          (masteryData || []).forEach((m: any) => { 
-             if (!mmap[m.user_id]) mmap[m.user_id] = [];
-             mmap[m.user_id].push(m);
-          });
-          setStudentMasteries(mmap);
-
-          const { data: streaksData } = await supabase.from('study_streaks').select('*').in('user_id', userIds);
-          const smap: Record<string, any> = {};
-          (streaksData || []).forEach((s: any) => { smap[s.user_id] = s; });
-          setStudentStreaks(smap);
         } else {
           setStudents([]);
-          setBehaviorProfiles({});
-          setStudentMasteries({});
-          setStudentStreaks({});
         }
 
         const { data: resourceData } = await supabase.from('class_resources').select('*').eq('class_id', id);
@@ -419,48 +354,6 @@ const TeacherClassDashboard: React.FC = () => {
       </div>
     );
   }
-
-  // Calculate Dynamic Priorities
-  const getWeakestSkills = () => {
-    const skillScores: Record<string, { total: number, count: number, stuckCount: number, fragileCount: number }> = {};
-    SKILL_COLUMNS.forEach(skill => {
-      skillScores[skill] = { total: 0, count: 0, stuckCount: 0, fragileCount: 0 };
-    });
-    
-    Object.values(heatmapData).forEach((studentData: any) => {
-      Object.entries(studentData).forEach(([skill, status]) => {
-        if (skillScores[skill]) {
-          skillScores[skill].count++;
-          if (status === 'Stuck') skillScores[skill].stuckCount++;
-          if (status === 'Fragile') skillScores[skill].fragileCount++;
-          
-          if (status === 'Mastered') skillScores[skill].total += 100;
-          else if (status === 'Fragile') skillScores[skill].total += 60;
-          else if (status === 'Stuck') skillScores[skill].total += 30;
-        }
-      });
-    });
-
-    const sortedSkills = Object.keys(skillScores).sort((a, b) => {
-      const avgA = skillScores[a].count > 0 ? skillScores[a].total / skillScores[a].count : 100;
-      const avgB = skillScores[b].count > 0 ? skillScores[b].total / skillScores[b].count : 100;
-      return avgA - avgB;
-    });
-
-    return sortedSkills.map(skill => ({
-      skill,
-      avg: skillScores[skill].count > 0 ? skillScores[skill].total / skillScores[skill].count : 100,
-      stuckCount: skillScores[skill].stuckCount,
-      fragileCount: skillScores[skill].fragileCount,
-      fragilePct: skillScores[skill].count > 0 ? Math.round((skillScores[skill].fragileCount / skillScores[skill].count) * 100) : 0
-    }));
-  };
-
-  const weakestSkills = getWeakestSkills();
-  const priority1 = weakestSkills[0] || { skill: 'Kinematics', fragilePct: 70, stuckCount: 0, fragileCount: 0 };
-  const priority2 = weakestSkills[1] || { skill: 'Rotational Dynamics', fragilePct: 0, stuckCount: 5, fragileCount: 0 };
-  
-  const classParticipationPct = students.length > 0 ? Math.round(Object.keys(attendanceStatus).filter(k => attendanceStatus[k] === 'present').length / students.length * 100) : 85;
 
   if (role !== 'teacher') {
     return (
@@ -517,13 +410,6 @@ const TeacherClassDashboard: React.FC = () => {
           </div>
         </div>
 
-        {actionSuccess && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex justify-between items-center animate-fade-in">
-            <span className="font-bold">{actionSuccess}</span>
-            <button onClick={() => setActionSuccess('')}><XCircle className="w-5 h-5 text-emerald-600 hover:text-emerald-800" /></button>
-          </div>
-        )}
-
         {/* 1) Mastery Control Panel */}
         {tab === 'Mastery Control Panel' && (
           <div className="space-y-6 animate-fade-in">
@@ -538,11 +424,9 @@ const TeacherClassDashboard: React.FC = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <span className="bg-red-500 text-white text-xs font-black px-2 py-1 rounded-md">PRIORITY 1</span>
                   </div>
-                  <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">{priority1.fragilePct}% of class is fragile in {priority1.skill}</h3>
-                  <p className="text-sm text-[#8A8279] mb-4">Largest impact on overall class mastery.</p>
-                  <button 
-                    onClick={() => handleAssignAction(`10-min Concept Rebuild: ${priority1.skill}`, `Targeted review material for ${priority1.skill}`)}
-                    className="w-full bg-white border border-red-200 text-red-600 font-bold py-2 rounded-lg text-sm hover:bg-red-50 transition-colors">
+                  <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">70% of class is fragile in Kinematics</h3>
+                  <p className="text-sm text-[#8A8279] mb-4">Largest impact on upcoming exam.</p>
+                  <button className="w-full bg-white border border-red-200 text-red-600 font-bold py-2 rounded-lg text-sm hover:bg-red-50 transition-colors">
                     + 10-min Concept Rebuild
                   </button>
                 </div>
@@ -550,11 +434,9 @@ const TeacherClassDashboard: React.FC = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <span className="bg-amber-500 text-white text-xs font-black px-2 py-1 rounded-md">PRIORITY 2</span>
                   </div>
-                  <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">{priority2.stuckCount} students stuck on {priority2.skill}</h3>
+                  <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">5 students stuck on Rotational Dynamics</h3>
                   <p className="text-sm text-[#8A8279] mb-4">High risk of falling permanently behind.</p>
-                  <button 
-                    onClick={() => handleAssignAction(`Practice Sprint: ${priority2.skill}`, `Remedial practice problems for ${priority2.skill}`)}
-                    className="w-full bg-white border border-amber-200 text-amber-700 font-bold py-2 rounded-lg text-sm hover:bg-amber-50 transition-colors">
+                  <button className="w-full bg-white border border-amber-200 text-amber-700 font-bold py-2 rounded-lg text-sm hover:bg-amber-50 transition-colors">
                     + Assign Practice Sprint
                   </button>
                 </div>
@@ -564,9 +446,7 @@ const TeacherClassDashboard: React.FC = () => {
                   </div>
                   <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">Review Yesterday's Exit Ticket</h3>
                   <p className="text-sm text-[#8A8279] mb-4">Common misconception: Vector resolution.</p>
-                  <button 
-                    onClick={() => setTab('Daily Teaching Loop')}
-                    className="w-full bg-white border border-blue-200 text-blue-600 font-bold py-2 rounded-lg text-sm hover:bg-blue-50 transition-colors">
+                  <button className="w-full bg-white border border-blue-200 text-blue-600 font-bold py-2 rounded-lg text-sm hover:bg-blue-50 transition-colors">
                     + Open Results
                   </button>
                 </div>
@@ -614,7 +494,7 @@ const TeacherClassDashboard: React.FC = () => {
                               <div 
                                 className={`w-full h-8 rounded-md ${color} opacity-90 hover:opacity-100 cursor-pointer transition-all border border-black/5`}
                                 title={`${s.full_name} - ${skill}: ${status}`}
-                                onClick={() => alert(`Evidence for ${s.full_name} in ${skill}:\n- 3 Wrong questions\n- 15 mins spent stuck`)}
+                                onClick={() => alert(`Evidence for ${s.full_name} in ${skill}:\\n- 3 Wrong questions\\n- 15 mins spent stuck`)}
                               />
                             </td>
                           );
@@ -697,9 +577,7 @@ const TeacherClassDashboard: React.FC = () => {
                   <h2 className="text-xl font-extrabold text-[#2D2A26]">Step 3 & 4: Results & 1-Click Correction</h2>
                   <p className="text-sm text-[#8A8279]">See who broke where, and assign remedial tasks instantly.</p>
                 </div>
-                <button 
-                  onClick={() => handleAssignAction('1-Click Correction Sprint', 'Remedial topics from latest exit ticket for entire class.')}
-                  className="bg-red-50 text-red-600 border border-red-200 px-5 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
+                <button className="bg-red-50 text-red-600 border border-red-200 px-5 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
                   <Target className="w-4 h-4" /> 1-Click Correction Sprint
                 </button>
               </div>
@@ -707,13 +585,13 @@ const TeacherClassDashboard: React.FC = () => {
               <div className="bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl p-6 text-center">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
                   <div>
-                    <h4 className="text-xs font-black uppercase text-[#8A8279] tracking-wider mb-3">Priority Interventions</h4>
+                    <h4 className="text-xs font-black uppercase text-[#8A8279] tracking-wider mb-3">Common Errors</h4>
                     <ul className="space-y-2">
                       <li className="bg-white p-3 rounded-lg border border-[#E8E4DF] shadow-sm font-medium text-sm text-[#2D2A26]">
-                        <span className="text-red-500 font-bold mr-2">{priority1.fragilePct}%</span> need review in {priority1.skill}
+                        <span className="text-red-500 font-bold mr-2">45%</span> failed vector addition
                       </li>
                       <li className="bg-white p-3 rounded-lg border border-[#E8E4DF] shadow-sm font-medium text-sm text-[#2D2A26]">
-                        <span className="text-amber-500 font-bold mr-2">{priority2.stuckCount}</span> students stuck in {priority2.skill}
+                        <span className="text-amber-500 font-bold mr-2">30%</span> sign errors in gravity
                       </li>
                     </ul>
                   </div>
@@ -721,19 +599,19 @@ const TeacherClassDashboard: React.FC = () => {
                     <h4 className="text-xs font-black uppercase text-[#8A8279] tracking-wider mb-3">Broken Skills</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-[#E8E4DF]">
-                        <span className="text-sm font-bold text-[#2D2A26]">{priority1.skill}</span>
-                        <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded">{priority1.stuckCount + priority1.fragileCount} Students</span>
+                        <span className="text-sm font-bold text-[#2D2A26]">Resolving Components</span>
+                        <span className="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded">12 Students</span>
                       </div>
                       <div className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-[#E8E4DF]">
-                        <span className="text-sm font-bold text-[#2D2A26]">{priority2.skill}</span>
-                        <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded">{priority2.stuckCount + priority2.fragileCount} Students</span>
+                        <span className="text-sm font-bold text-[#2D2A26]">Free Body Diagrams</span>
+                        <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded">8 Students</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col justify-center items-center bg-emerald-50 rounded-xl border border-emerald-100 p-4">
-                    <span className="text-3xl font-black text-emerald-600 mb-1">{classParticipationPct}%</span>
+                    <span className="text-3xl font-black text-emerald-600 mb-1">85%</span>
                     <span className="text-sm font-bold text-emerald-800">Class Participation</span>
-                    <p className="text-xs text-emerald-600/80 mt-2 text-center">In recent classes.</p>
+                    <p className="text-xs text-emerald-600/80 mt-2 text-center">In yesterday's exit ticket.</p>
                   </div>
                 </div>
               </div>
@@ -818,11 +696,9 @@ const TeacherClassDashboard: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[#8A8279] mb-4">Mastery &lt; 50%. Needs foundational rebuild.</p>
                 <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
-                  {students.filter(s => (readinessData[s.id]?.mastery || 0) < 50).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
+                  {students.slice(0, 3).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
-                  onClick={() => handleAssignAction('Concept Pack (10m + 10m)', 'Foundational rebuild for Concept Weak group.')}
-                  className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-bold py-3 rounded-xl transition-colors text-sm">
+                <button className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Concept Pack (10m + 10m)
                 </button>
               </div>
@@ -835,11 +711,9 @@ const TeacherClassDashboard: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[#8A8279] mb-4">Speed &gt; 2.5m/Q. Needs timed drills.</p>
                 <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
-                  {students.filter(s => (readinessData[s.id]?.speed || 0) > 2.5).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
+                  {students.slice(3, 7).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
-                  onClick={() => handleAssignAction('Timed Practice Pack', 'Timed drills for Speed Weak group.')}
-                  className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl transition-colors text-sm">
+                <button className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Timed Practice Pack
                 </button>
               </div>
@@ -852,20 +726,114 @@ const TeacherClassDashboard: React.FC = () => {
                 </h3>
                 <p className="text-xs text-[#8A8279] mb-4">High speed, low accuracy. Needs reflection.</p>
                 <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
-                  {students.filter(s => (readinessData[s.id]?.speed || 0) < 2.0 && (readinessData[s.id]?.mastery || 0) >= 50 && (readinessData[s.id]?.mastery || 0) < 80).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
+                  {students.slice(7, 9).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
-                  onClick={() => handleAssignAction('Reflection Pack (5m)', 'Reflection and error analysis for Careless Mistakes group.')}
-                  className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition-colors text-sm">
+                <button className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Reflection Pack (5m)
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* 5) Reports */}
+        {tab === 'Reports' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weekly Report */}
+              <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+                <h2 className="text-xl font-extrabold text-[#2D2A26] mb-4 flex items-center gap-2">
+                  <BarChart2 className="w-6 h-6 text-[#8B7355]" /> Investor/School Weekly Report
+                </h2>
+                <div className="space-y-4">
+                  <div className="bg-[#F8FAFF] p-4 rounded-xl border border-[#E8E4DF]">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-bold text-[#8A8279] uppercase tracking-wide">Coverage vs Plan</span>
+                      <span className="text-lg font-black text-[#2D2A26]">82%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div className="bg-[#8B7355] h-2 rounded-full" style={{ width: '82%' }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center">
+                      <div className="text-2xl font-black text-emerald-600 mb-1">+12%</div>
+                      <div className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Mastery Up</div>
+                    </div>
+                    <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-center">
+                      <div className="text-2xl font-black text-red-600 mb-1">4</div>
+                      <div className="text-xs font-bold text-red-800 uppercase tracking-wide">At-Risk Students</div>
+                    </div>
+                  </div>
+
+                  <button className="w-full mt-2 bg-slate-900 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-black transition-colors">
+                    <Download className="w-4 h-4" /> Download PDF Report
+                  </button>
+                </div>
+              </div>
+
+              {/* Parent Summary */}
+              <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+                <h2 className="text-xl font-extrabold text-[#2D2A26] mb-4 flex items-center gap-2">
+                  <Mail className="w-6 h-6 text-[#8B7355]" /> Parent-Safe Summaries
+                </h2>
+                <p className="text-sm text-[#8A8279] mb-4">Auto-generated, positive framing 10-min read for parents.</p>
+                
+                <div className="bg-[#F5F0E8] p-4 rounded-xl border border-[#E8E4DF] mb-4">
+                  <select className="w-full bg-white px-3 py-2 rounded-lg border border-[#E8E4DF] font-bold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20">
+                    {students.map(s => <option key={s.id}>{s.full_name}</option>)}
+                  </select>
+                  
+                  <div className="mt-4 space-y-3 bg-white p-4 rounded-lg shadow-sm border border-[#E8E4DF]">
+                    <div>
+                      <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">What improved:</span>
+                      <p className="text-sm font-medium text-[#2D2A26]">Excellent progress in Kinematics fundamentals. Participation is up.</p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-amber-600 uppercase tracking-wider">Current focus:</span>
+                      <p className="text-sm font-medium text-[#2D2A26]">Working on applying formulas to 2D motion problems.</p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-blue-600 uppercase tracking-wider">How you can help (10m):</span>
+                      <p className="text-sm font-medium text-[#2D2A26]">Ask them to explain the concept of 'vector resolution' using a real-world example like throwing a ball.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button className="w-full bg-white border-2 border-[#E8E4DF] text-[#2D2A26] font-bold py-3 rounded-xl flex justify-center items-center gap-2 hover:bg-[#F8FAFF] transition-colors">
+                  <Mail className="w-4 h-4" /> Email All Parents
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6) Class Management (Old Tools) */}
+        {tab === 'Class Management' && (
+          <div className="space-y-6 animate-fade-in opacity-70 hover:opacity-100 transition-opacity duration-300">
+             <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-[#2D2A26] mb-4">Legacy Admin Tools</h2>
+                <p className="text-sm text-[#8A8279] mb-4">Upload resources, assignments, announcements, and mark attendance.</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl text-center font-bold text-[#2D2A26]">Attendance</div>
+                  <div className="p-4 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl text-center font-bold text-[#2D2A26]">Resources</div>
+                  <div className="p-4 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl text-center font-bold text-[#2D2A26]">Announcements</div>
+                  <div className="p-4 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl text-center font-bold text-[#2D2A26]">Assignments</div>
+                </div>
+             </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 };
 
 export default TeacherClassDashboard;
+"""
+
+with open('/Users/aryansingh/Developer/studybud/src/pages/TeacherClassDashboard.tsx', 'w') as f:
+    f.write(content)
+
+print("Dashboard updated successfully.")

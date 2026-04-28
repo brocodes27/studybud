@@ -25,6 +25,7 @@ export interface TodayTask {
   actionLabel: string;
   completed: boolean;
   implementationIntentions?: Array<{ trigger: string; action: string; duration_min: number; completed?: boolean }>;
+  steps?: Array<{ label: string; durationMin?: number }>;
   prescriptionId?: string;
   sprintId?: string;
   taskOrder?: number;

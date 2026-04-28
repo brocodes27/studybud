@@ -23,6 +23,8 @@ import { RoadmapOnboarding } from './RoadmapOnboarding';
 import { LearnerModelCard } from './LearnerModelCard';
 import { WhatChangedCard } from './WhatChangedCard';
 import { ConversationalBriefing } from './ConversationalBriefing';
+import { TaskFocusView } from './TaskFocusView';
+import type { TodayTask } from '../../lib/dailyBriefing';
 
 type BriefingState = 'loading' | 'generating' | 'briefing' | 'task' | 'complete' | 'explore' | 'error';
 
@@ -43,6 +45,8 @@ export function DailyBriefing() {
   const [showTestModal, setShowTestModal] = useState(false);
   const [roadmapId, setRoadmapId] = useState<string | null>(null);
   const [completionMeta, setCompletionMeta] = useState<{ xpEarned?: number; levelUp?: boolean; newLevel?: number }>({});
+  const [focusedTask, setFocusedTask] = useState<TodayTask | null>(null);
+  const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const { track } = useAnalytics();
   const isLoadingRef = useRef(false);
 
@@ -341,7 +345,7 @@ export function DailyBriefing() {
               {errorMsg || 'Something went wrong. This usually happens when new features are being rolled out.'}
             </p>
             <button
-              onClick={loadBriefing}
+              onClick={() => loadBriefing()}
               className="flex items-center gap-2 bg-[#2D2A26] hover:bg-[#3D3833] text-white font-bold text-sm py-3 px-6 rounded-xl shadow-md transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
@@ -365,6 +369,8 @@ export function DailyBriefing() {
               onAllComplete={handleAllTasksComplete}
               onRefresh={() => loadBriefing(true)}
               onReschedule={handleReschedule}
+              onStartFocus={(task) => setFocusedTask(task)}
+              completedTaskId={completedTaskId}
             />
           </motion.div>
         )}
@@ -404,6 +410,28 @@ export function DailyBriefing() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Focus Mode Overlay */}
+      {focusedTask && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[60] bg-[#F5F0E8] overflow-auto"
+        >
+          <div className="min-h-screen p-6">
+            <TaskFocusView
+              task={focusedTask}
+              userId={user.id}
+              onComplete={() => {
+                if (focusedTask) setCompletedTaskId(focusedTask.id);
+                setFocusedTask(null);
+                loadBriefing(true);
+              }}
+              onBack={() => setFocusedTask(null)}
+            />
+          </div>
+        </motion.div>
+      )}
 
       <TestUploadModal
         userId={user?.id}

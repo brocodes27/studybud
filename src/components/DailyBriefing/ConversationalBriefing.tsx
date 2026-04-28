@@ -2,13 +2,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Brain, CheckCircle2, Lightbulb,
-  AlertTriangle, Flame, Target, BookOpen, Upload, MessageCircle, Send,
+  AlertTriangle, Flame, Target, BookOpen, Upload, MessageCircle, Send, Timer,
 } from 'lucide-react';
 import type { DailyBriefingData, TodayTask } from '../../lib/dailyBriefing';
-import { markTaskCompleted } from '../../lib/dailyBriefing';
 import { supabase } from '../../lib/supabase';
 import { TaskOutputUpload } from './TaskOutputUpload';
-import { useToast } from '../../hooks/useToast';
 import { remember, type ChatTurn } from '../../lib/memory';
 import { AgentWorkstream } from './AgentWorkstream';
 import type { AgentRunReport } from '../../lib/agentOrchestrator';
@@ -57,6 +55,8 @@ interface Props {
   onAllComplete: () => void;
   onRefresh: () => void;
   onReschedule: () => void;
+  onStartFocus?: (task: TodayTask, idx: number) => void;
+  completedTaskId?: string | null;
 }
 
 const taskIcon: Record<string, any> = {
@@ -80,13 +80,14 @@ export function ConversationalBriefing({
   onAllComplete,
   onRefresh,
   onReschedule, // agent now handles rescheduling via regenerate_plan tool
+  onStartFocus,
+  completedTaskId,
 }: Props) {
-  const { showToast } = useToast();
   void onReschedule; // agent now handles rescheduling via regenerate_plan tool
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [localTasks, setLocalTasks] = useState<TodayTask[]>(data.todayTasks);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  // completingTaskId state removed — task completion now only happens in FocusRun timer
   const [agentReport, setAgentReport] = useState<AgentRunReport | null>(null);
   const [isAgentThinking, setIsAgentThinking] = useState(false);
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
@@ -94,6 +95,7 @@ export function ConversationalBriefing({
   const conversationHistory = useRef<Array<{ role: 'user' | 'model'; content: string }>>([]);
   const initializedRef = useRef(false);
   const isTurnInProgress = useRef(false);
+  const prevCompletedRef = useRef<string | null>(null);
 
   // Sync localTasks when upstream data changes
   useEffect(() => {
@@ -323,6 +325,29 @@ export function ConversationalBriefing({
   };
 
   // -----------------------------------------------------------------------
+  // Auto-surface next task when a task is completed externally (e.g. via Focus timer)
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    if (!completedTaskId || completedTaskId === prevCompletedRef.current) return;
+    prevCompletedRef.current = completedTaskId;
+
+    const idx = localTasks.findIndex((t) => t.id === completedTaskId);
+    if (idx === -1) return;
+
+    // Mark completed locally so surfaceNextTask skips it
+    const updated = [...localTasks];
+    if (!updated[idx].completed) {
+      updated[idx] = { ...updated[idx], completed: true };
+      setLocalTasks(updated);
+    }
+
+    // Small delay so UI updates feel natural
+    const timer = setTimeout(() => surfaceNextTask(idx), 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedTaskId]);
+
+  // -----------------------------------------------------------------------
   // Task interaction helpers
   // -----------------------------------------------------------------------
   const surfaceNextTask = (afterIdx: number) => {
@@ -344,39 +369,6 @@ export function ConversationalBriefing({
 
     const next = remaining[0];
     appendAgent({ kind: 'task', task: next.t, taskIndex: next.i });
-  };
-
-  const handleComplete = async (idx: number, task: TodayTask) => {
-    if (task.completed) return;
-    setCompletingTaskId(task.id);
-    appendStudent('Done', { mine: false });
-
-    const sourceType =
-      task.type === 'prescription' ? 'prescription' as const :
-      task.type === 'correction_sprint' ? 'sprint' as const :
-      task.type === 'assignment' ? 'assignment' as const :
-      'weak_area' as const;
-    const sourceId = task.prescriptionId || task.sprintId || task.id;
-    const result = await markTaskCompleted(
-      userId, sourceType, sourceId,
-      task.taskOrder || 0, task.durationMin, undefined,
-      { taskTitle: task.title, subject: task.subject }
-    );
-    setCompletingTaskId(null);
-
-    if (!result.success) {
-      showToast(result.error || 'Could not save completion', 'error');
-      return;
-    }
-
-    const updated = [...localTasks];
-    updated[idx] = { ...updated[idx], completed: true };
-    setLocalTasks(updated);
-
-    if (result.xpEarned) {
-      appendAgent({ kind: 'plan', text: `+${result.xpEarned} XP earned.` });
-    }
-    surfaceNextTask(idx);
   };
 
   const handleSkip = (idx: number) => {
@@ -430,7 +422,6 @@ export function ConversationalBriefing({
       const idx = m.taskIndex;
       const Icon = taskIcon[t.taskType || t.type] || BookOpen;
       const isUploading = uploadingIdx === idx;
-      const isCompleting = completingTaskId === t.id;
       const current = localTasks[idx] || t;
       return (
         <AgentBubble key={m.id}>
@@ -465,14 +456,14 @@ export function ConversationalBriefing({
           </AnimatePresence>
           {!current.completed && !isUploading && (
             <div className="flex flex-wrap gap-1.5 mt-2">
-              <ChipButton
-                primary
-                disabled={!!isCompleting}
-                onClick={() => handleComplete(idx, current)}
-                icon={isCompleting ? undefined : CheckCircle2}
-              >
-                {isCompleting ? 'Saving…' : 'Mark done'}
-              </ChipButton>
+              {onStartFocus && (
+                <ChipButton
+                  onClick={() => onStartFocus(current, idx)}
+                  icon={Timer}
+                >
+                  Start Focus
+                </ChipButton>
+              )}
               {current.type === 'prescription' && !current.outputSubmitted && (
                 <ChipButton onClick={() => setUploadingIdx(idx)} icon={Upload}>Submit work</ChipButton>
               )}

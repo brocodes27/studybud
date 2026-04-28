@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Play,
-  Pause,
   CheckCircle,
   BookOpen,
   Timer,
@@ -11,13 +10,15 @@ import {
   ChevronRight,
   Bot,
   Send,
-  Zap,
-  Clock
+  Zap
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { motion } from 'framer-motion';
+import { PreflightCard } from '../components/DailyBriefing/PreflightCard';
+import { FocusRun, type SessionStep } from '../components/DailyBriefing/FocusRun';
+import { SessionDebrief } from '../components/DailyBriefing/SessionDebrief';
 
 interface StudyPlan {
   id: string;
@@ -57,6 +58,7 @@ export function StudySession() {
       content: "Hey there! I'm Atlas, your study buddy. I'm here to help you tackle today's topic together — no pressure, we've got this! What would you like to start with? A quick explanation, a practice problem, or just chat about the topic?"
     }
   ]);
+  const [flowPhase, setFlowPhase] = useState<'reading' | 'preflight' | 'focus' | 'debrief'>('reading');
 
   useEffect(() => {
     fetchStudyPlan();
@@ -110,7 +112,28 @@ export function StudySession() {
     }
   };
 
-  const completeTask = async () => {
+  const deriveSteps = (): SessionStep[] => {
+    if (currentTask.practice_questions && currentTask.practice_questions.length > 0) {
+      return currentTask.practice_questions.map((q) => ({ label: q }));
+    }
+    const sentences = currentTask.description
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 10);
+    if (sentences.length >= 2) {
+      return sentences.slice(0, 5).map((s) => ({ label: s }));
+    }
+    return [{ label: 'Work through the topic' }, { label: 'Self-check understanding' }];
+  };
+
+  const getExamType = (): 'cbse' | 'jee' | 'general' => {
+    const s = studyPlan?.subject?.toLowerCase() || '';
+    if (s.includes('jee')) return 'jee';
+    if (s.includes('cbse')) return 'cbse';
+    return 'general';
+  };
+
+  const completeTask = async (extra?: { confidence?: number; reflection?: string; score?: string; wrongQuestions?: string[] }) => {
     if (!studyPlan) return;
     const currentTask = studyPlan.plan.daily_schedule[currentDay];
 
@@ -121,7 +144,7 @@ export function StudySession() {
         day_number: currentTask.day,
         topic: currentTask.topic,
         duration_minutes: Math.floor(studyTime / 60),
-        notes: notes
+        notes: notes + (extra?.reflection ? `\nReflection: ${extra.reflection}` : '')
       });
 
       await supabase.from('task_completions').upsert(
@@ -138,6 +161,7 @@ export function StudySession() {
       setIsStudying(false);
       setStudyTime(0);
       setNotes('');
+      setFlowPhase('reading');
 
       showToast('Session recorded successfully', 'success');
 
@@ -220,79 +244,129 @@ export function StudySession() {
         <section className="w-[65%] overflow-y-auto custom-scrollbar bg-white relative">
           <div className="max-w-3xl mx-auto py-16 px-12">
             <article className="space-y-10">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-[#00D1FF] font-bold tracking-[0.2em] text-xs uppercase">Core Concept</span>
-                  {isCompleted && (
-                    <span className="px-2 py-0.5 bg-[#34D399]/10 text-[#34D399] text-xs font-bold border border-[#34D399]/20 rounded-full">
-                      Completed
-                    </span>
-                  )}
-                </div>
-                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-[#0A192F]">
-                  {currentTask.topic}
-                </h1>
-              </div>
-
-              <div className="space-y-8">
-                <div className="bg-[#00D1FF]/5 border-l-4 border-[#00D1FF] p-8 rounded-r-2xl text-xl text-[#0A192F] leading-relaxed font-medium">
-                  {currentTask.description}
-                </div>
-
-                {currentTask.practice_questions && currentTask.practice_questions.length > 0 && (
+              {flowPhase === 'reading' && (
+                <>
                   <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Practice Questions</h3>
-                    <div className="grid gap-3">
-                      {currentTask.practice_questions.map((q, idx) => (
-                        <div key={idx} className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-5 rounded-[16px] flex items-start gap-4 hover:border-[#00D1FF]/20 transition-all">
-                          <div className="w-6 h-6 rounded-full bg-[#00D1FF]/10 flex items-center justify-center text-xs font-extrabold text-[#00D1FF] shrink-0 mt-0.5">
-                            {idx + 1}
-                          </div>
-                          <p className="text-base font-medium text-[#0A192F] leading-snug">{q}</p>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-3">
+                      <span className="text-[#00D1FF] font-bold tracking-[0.2em] text-xs uppercase">Core Concept</span>
+                      {isCompleted && (
+                        <span className="px-2 py-0.5 bg-[#34D399]/10 text-[#34D399] text-xs font-bold border border-[#34D399]/20 rounded-full">
+                          Completed
+                        </span>
+                      )}
                     </div>
+                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-[#0A192F]">
+                      {currentTask.topic}
+                    </h1>
                   </div>
-                )}
-              </div>
 
-              {/* Action Area */}
-              <div className="pt-12 flex flex-col items-center gap-6">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setIsStudying(!isStudying)}
-                    className={`flex items-center gap-3 px-8 py-4 rounded-[16px] font-bold text-base transition-all shadow-lg ${isStudying
-                        ? 'bg-amber-500 text-white shadow-amber-500/20 hover:-translate-y-0.5'
-                        : 'bg-[#00D1FF] text-[#0A192F] shadow-float-cyan hover:-translate-y-0.5 active:scale-95'
-                      }`}
-                  >
-                    {isStudying ? <><Pause className="h-5 w-5 fill-white" /> Pause Focus</> : <><Play className="h-5 w-5 fill-[#0A192F]" /> Start Focus</>}
-                  </button>
+                  <div className="space-y-8">
+                    <div className="bg-[#00D1FF]/5 border-l-4 border-[#00D1FF] p-8 rounded-r-2xl text-xl text-[#0A192F] leading-relaxed font-medium">
+                      {currentTask.description}
+                    </div>
 
-                  <button
-                    onClick={completeTask}
-                    className="flex items-center gap-3 bg-[#0A192F] text-white px-8 py-4 rounded-[16px] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95"
-                  >
-                    <CheckCircle className="h-5 w-5 stroke-[2.5px]" />
-                    Mark Complete
-                  </button>
-                </div>
+                    {currentTask.practice_questions && currentTask.practice_questions.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-widest">Practice Questions</h3>
+                        <div className="grid gap-3">
+                          {currentTask.practice_questions.map((q, idx) => (
+                            <div key={idx} className="bg-[#F8FAFF] border-2 border-[#0A192F]/5 p-5 rounded-[16px] flex items-start gap-4 hover:border-[#00D1FF]/20 transition-all">
+                              <div className="w-6 h-6 rounded-full bg-[#00D1FF]/10 flex items-center justify-center text-xs font-extrabold text-[#00D1FF] shrink-0 mt-0.5">
+                                {idx + 1}
+                              </div>
+                              <p className="text-base font-medium text-[#0A192F] leading-snug">{q}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                <p className="text-xs font-medium text-[#64748B]">Timer tracks your focus time automatically</p>
-              </div>
+                  {/* Action Area */}
+                  <div className="pt-12 flex flex-col items-center gap-6">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => setFlowPhase('preflight')}
+                        className="flex items-center gap-3 px-8 py-4 rounded-[16px] font-bold text-base transition-all shadow-lg bg-[#00D1FF] text-[#0A192F] shadow-float-cyan hover:-translate-y-0.5 active:scale-95"
+                      >
+                        <Play className="h-5 w-5 fill-[#0A192F]" /> Start Focus
+                      </button>
+
+                      <button
+                        onClick={() => completeTask()}
+                        className="flex items-center gap-3 bg-[#0A192F] text-white px-8 py-4 rounded-[16px] font-bold text-base transition-all hover:-translate-y-0.5 active:scale-95"
+                      >
+                        <CheckCircle className="h-5 w-5 stroke-[2.5px]" />
+                        Mark Complete
+                      </button>
+                    </div>
+
+                    <p className="text-xs font-medium text-[#64748B]">Timer tracks your focus time automatically</p>
+                  </div>
+                </>
+              )}
+
+              {flowPhase === 'preflight' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <PreflightCard
+                    goal={`Today: master ${currentTask.topic}`}
+                    steps={deriveSteps()}
+                    successCriteria="Complete all questions or explain the concept in 60 seconds"
+                    materials={['Notebook', 'Pen', 'Formula sheet']}
+                    estimatedMin={25}
+                    onStart={() => { setFlowPhase('focus'); setIsStudying(true); }}
+                    onNotReady={() => setFlowPhase('reading')}
+                  />
+                </motion.div>
+              )}
+
+              {flowPhase === 'focus' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="space-y-6"
+                >
+                  <FocusRun
+                    steps={deriveSteps()}
+                    totalMinutes={25}
+                    onComplete={() => { setIsStudying(false); setFlowPhase('debrief'); }}
+                    onAbandon={() => { setIsStudying(false); setFlowPhase('reading'); }}
+                  />
+                </motion.div>
+              )}
+
+              {flowPhase === 'debrief' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <SessionDebrief
+                    taskTitle={currentTask.topic}
+                    subject={studyPlan.subject}
+                    examType={getExamType()}
+                    onSubmit={(data) => { completeTask(data); }}
+                    onGenerateCorrectionSprint={() => showToast('Correction sprint queued', 'info')}
+                  />
+                </motion.div>
+              )}
 
               {/* Footer Nav */}
               <nav className="mt-20 pt-8 border-t border-[#0A192F]/5 flex justify-between items-center">
                 <button
                   onClick={() => setCurrentDay(Math.max(0, currentDay - 1))}
-                  disabled={currentDay === 0}
+                  disabled={currentDay === 0 || flowPhase !== 'reading'}
                   className="flex items-center gap-2 text-sm font-bold text-[#64748B] hover:text-[#0A192F] disabled:opacity-0 transition-all"
                 >
                   <ChevronLeft className="h-4 w-4" /> Previous
                 </button>
                 <button
                   onClick={() => setCurrentDay(Math.min(studyPlan.plan.daily_schedule.length - 1, currentDay + 1))}
-                  disabled={currentDay === studyPlan.plan.daily_schedule.length - 1}
+                  disabled={currentDay === studyPlan.plan.daily_schedule.length - 1 || flowPhase !== 'reading'}
                   className="flex items-center gap-2 text-sm font-bold text-[#64748B] hover:text-[#0A192F] disabled:opacity-0 transition-all"
                 >
                   Next <ChevronRight className="h-4 w-4" />
