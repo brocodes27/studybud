@@ -13,6 +13,23 @@ export interface ClassUpdate {
   metadata?: any;
 }
 
+export interface MissionVariant {
+  mode: 'low' | 'normal' | 'beast';
+  label: string;
+  durationMin: number;
+  taskLimit?: number;
+  description: string;
+}
+
+export interface ActiveIntervention {
+  id: string;
+  triggerType: string;
+  severity: string;
+  interventionLevel: number;
+  actionType: string;
+  actionPayload: Record<string, any>;
+}
+
 export interface TodayTask {
   type: TaskType;
   id: string;
@@ -33,6 +50,11 @@ export interface TodayTask {
   resources?: string[];
   outputSubmitted?: boolean;
   taskType?: string;
+  whyToday?: string;
+  proofRequired?: boolean;
+  interventionId?: string | null;
+  missionVariants?: MissionVariant[];
+  activeIntervention?: ActiveIntervention | null;
 }
 
 export interface CorrectionSprint {
@@ -839,6 +861,28 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
   );
   const todayCompletions = new Set((completionsRes as any[]).map((c: any) => `${c.source_type}:${c.source_id}:${c.task_order}`));
 
+  const activeInterventions = await safeQuery(
+    supabase
+      .from('interventions')
+      .select('id, trigger_type, severity, intervention_level, action_type, action_payload')
+      .eq('student_user_id', userId)
+      .eq('status', 'active')
+      .order('intervention_level', { ascending: false })
+      .order('created_at', { ascending: false }),
+    []
+  );
+  const primaryIntervention = (activeInterventions as any[])[0] || null;
+  const activeInterventionForTask: ActiveIntervention | null = primaryIntervention
+    ? {
+        id: primaryIntervention.id,
+        triggerType: primaryIntervention.trigger_type,
+        severity: primaryIntervention.severity,
+        interventionLevel: primaryIntervention.intervention_level,
+        actionType: primaryIntervention.action_type,
+        actionPayload: primaryIntervention.action_payload || {},
+      }
+    : null;
+
   // ------------------------------------------------------------------
   // B2. Fetch all-time assignment completions so finished teacher
   //     assignments don't reappear tomorrow.
@@ -1018,6 +1062,11 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
         sprintId: correctionSprint.id,
         taskOrder: order,
         taskType: 'correction',
+        whyToday: t.why_today || t.details || t.description,
+        proofRequired: Boolean(t.proof_required || primaryIntervention?.action_payload?.proof_required),
+        interventionId: primaryIntervention?.id || null,
+        activeIntervention: activeInterventionForTask,
+        missionVariants: t.mission_variants || t.missionVariants || [],
       });
     });
   }
@@ -1057,6 +1106,11 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
         taskOrder: order,
         taskType: t.type || 'study',
         outputSubmitted: submittedOrders.has(order),
+        whyToday: t.why_today || t.whyToday || t.details || t.description,
+        proofRequired: Boolean(t.proof_required || primaryIntervention?.action_payload?.proof_required),
+        interventionId: primaryIntervention?.id || null,
+        activeIntervention: activeInterventionForTask,
+        missionVariants: t.mission_variants || t.missionVariants || [],
       });
     });
   }

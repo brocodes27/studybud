@@ -143,6 +143,58 @@ serve(async (req: Request) => {
       }
     }
 
+    const { data: activeInterventions } = await sb
+      .from('interventions')
+      .select('id, intervention_level, action_type, action_payload, trigger_type, severity')
+      .eq('student_user_id', user.id)
+      .eq('status', 'active')
+      .order('intervention_level', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const activeIntervention = (activeInterventions || [])[0] || null;
+
+    tasks = tasks.map((task: any) => {
+      const duration = Number(task.duration_min || task.estimated_minutes || 30);
+      const lowDuration = Math.max(12, Math.round(duration * 0.45));
+      const normalDuration = duration;
+      const beastDuration = Math.round(duration * 1.45);
+      const proofRequired = Boolean(activeIntervention?.action_payload?.proof_required);
+      const trigger = activeIntervention?.trigger_type
+        ? `Intervention: ${activeIntervention.trigger_type.replaceAll('_', ' ')}.`
+        : null;
+
+      return {
+        ...task,
+        proof_required: proofRequired,
+        intervention_id: activeIntervention?.id || null,
+        why_today: [
+          trigger,
+          task.details || task.description || `${task.subject || 'Study'} is next in your roadmap.`,
+        ].filter(Boolean).join(' '),
+        mission_variants: [
+          {
+            mode: 'low',
+            label: 'Low energy',
+            durationMin: lowDuration,
+            taskLimit: 1,
+            description: 'Do the smallest version that keeps the chain alive.',
+          },
+          {
+            mode: 'normal',
+            label: 'Normal',
+            durationMin: normalDuration,
+            description: 'Do the mission exactly as prescribed.',
+          },
+          {
+            mode: 'beast',
+            label: 'Beast mode',
+            durationMin: beastDuration,
+            description: 'Add one extra retrieval check or timed mini-set after completion.',
+          },
+        ],
+      };
+    });
+
     const totalMin = tasks.reduce((sum:number,t:any)=>sum+(t.duration_min||0),0);
     const preferredTime = profile?.preferred_time||'evening';
     const typicalDuration = profile?.typical_session_duration_min||90;
