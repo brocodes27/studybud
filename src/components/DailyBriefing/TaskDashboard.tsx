@@ -29,6 +29,8 @@ const taskTypeConfig: Record<string, { icon: any; label: string; color: string; 
 };
 
 function getTaskReason(task: TodayTask, data: DailyBriefingData) {
+  if (task.whyToday) return task.whyToday;
+
   if (task.type === 'correction_sprint') {
     return 'This is here because a recent mistake pattern needs repair before it hardens into a habit.';
   }
@@ -78,6 +80,12 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
   const handleToggleTask = async (index: number) => {
     const task = localTasks[index];
     if (task.completed) return; // Don't allow un-completing
+
+    if (task.proofRequired && !task.outputSubmitted) {
+      setUploadingTask(index);
+      showToast('Upload proof first so Ranjan Sir can count this repair properly.', 'info');
+      return;
+    }
 
     setCompletingTask(task.id);
 
@@ -135,7 +143,7 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
         task.taskOrder || 0,
         task.durationMin,
         undefined,
-        { taskTitle: task.title, subject: task.subject }
+        { taskTitle: task.title, subject: task.subject, notes: task.proofRequired ? 'proof uploaded' : undefined }
       );
       
       if (result.success && result.xpEarned) {
@@ -275,6 +283,9 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
                       {task.outputSubmitted && (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">SUBMITTED</span>
                       )}
+                      {task.proofRequired && !task.outputSubmitted && (
+                        <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full">PROOF REQUIRED</span>
+                      )}
                     </div>
                     <h3 className={`text-sm font-bold mb-0.5 ${task.completed ? 'text-[#B5AEA5] line-through' : 'text-[#2D2A26]'}`}>
                       {task.title}
@@ -326,6 +337,38 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
                             <p className="text-[11px] text-[#1E3A8A] leading-relaxed">{getTaskReason(task, data)}</p>
                           </div>
                         </div>
+
+                        {task.proofRequired && (
+                          <div className="mb-3 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-bold text-amber-700">
+                            <Upload className="w-3.5 h-3.5" />
+                            Proof required before this task counts as repaired.
+                          </div>
+                        )}
+
+                        {task.missionVariants && task.missionVariants.length > 0 && (
+                          <div className="mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {task.missionVariants.map((variant) => (
+                              <div
+                                key={variant.mode}
+                                className={`rounded-xl border p-3 ${
+                                  variant.mode === 'normal'
+                                    ? 'bg-[#F5F0E8] border-[#8B7355]/20'
+                                    : 'bg-white border-[#E8E2D9]'
+                                }`}
+                              >
+                                <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A8279]">
+                                  {variant.label}
+                                </div>
+                                <div className="mt-1 text-sm font-bold text-[#2D2A26]">
+                                  {variant.durationMin} min
+                                </div>
+                                <p className="mt-1 text-xs text-[#8A8279] leading-relaxed">
+                                  {variant.description}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Resources */}
                         {task.resources && task.resources.length > 0 && (

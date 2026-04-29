@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Clock, BookOpen, Brain, Zap, Target, Flame, Lightbulb } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, BookOpen, Brain, Zap, Target, Flame, Lightbulb, Upload } from 'lucide-react';
 import type { TodayTask } from '../../lib/dailyBriefing';
 import { markTaskCompleted } from '../../lib/dailyBriefing';
 import { useToast } from '../../hooks/useToast';
@@ -193,6 +193,18 @@ export function TaskFocusView({ task, userId, onComplete, onBack }: TaskFocusVie
               <div className="text-[11px] font-bold text-[#8A8279] uppercase tracking-wider mb-2">Instructions</div>
               <p className="text-sm text-[#3D3833] leading-relaxed">{task.description}</p>
             </div>
+
+            {task.proofRequired && (
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-6">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1">
+                  <Upload className="w-3.5 h-3.5" />
+                  Proof required
+                </div>
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  This task is part of an intervention. Complete the focus run and submit the debrief so it can be counted as repaired.
+                </p>
+              </div>
+            )}
 
             {/* Implementation Intentions Checklist */}
             {intentions.length > 0 && (
