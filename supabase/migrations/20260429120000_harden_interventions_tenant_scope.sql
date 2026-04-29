@@ -80,8 +80,10 @@ ALTER TABLE public.interventions
 
 DROP INDEX IF EXISTS public.interventions_student_user_id_trigger_type_action_type_status_key;
 
+DROP INDEX IF EXISTS public.idx_interventions_one_active_action;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
-  ON public.interventions(student_user_id, trigger_type, action_type)
+  ON public.interventions(student_user_id, class_id, trigger_type, action_type)
   WHERE status = 'active';
 
 DROP POLICY IF EXISTS interventions_insert_system_or_teacher ON public.interventions;
@@ -210,7 +212,7 @@ BEGIN
     auth.uid(),
     v_created_by_type
   )
-  ON CONFLICT (student_user_id, trigger_type, action_type) WHERE status = 'active'
+  ON CONFLICT (student_user_id, class_id, trigger_type, action_type) WHERE status = 'active'
   DO UPDATE SET
     class_id = COALESCE(EXCLUDED.class_id, public.interventions.class_id),
     roadmap_id = COALESCE(EXCLUDED.roadmap_id, public.interventions.roadmap_id),

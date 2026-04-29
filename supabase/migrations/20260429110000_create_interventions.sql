@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_interventions_roadmap_status
   ON public.interventions(roadmap_id, status, created_at DESC);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
-  ON public.interventions(student_user_id, trigger_type, action_type)
+  ON public.interventions(student_user_id, class_id, trigger_type, action_type)
   WHERE status = 'active';
 
 ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
@@ -271,7 +271,7 @@ BEGIN
     auth.uid(),
     v_created_by_type
   )
-  ON CONFLICT (student_user_id, trigger_type, action_type) WHERE status = 'active'
+  ON CONFLICT (student_user_id, class_id, trigger_type, action_type) WHERE status = 'active'
   DO UPDATE SET
     class_id = COALESCE(EXCLUDED.class_id, public.interventions.class_id),
     roadmap_id = COALESCE(EXCLUDED.roadmap_id, public.interventions.roadmap_id),
