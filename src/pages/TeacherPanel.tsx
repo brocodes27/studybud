@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, BookOpen, X, Loader2, GraduationCap, Lock, Layers, Upload, Copy, Check } from 'lucide-react';
+import { Plus, Users, BookOpen, X, Loader2, GraduationCap, Lock, Layers, Upload, Copy, Check, FileText } from 'lucide-react';
 
 interface CoachingTemplate {
   id: string;
@@ -24,10 +24,12 @@ const TeacherPanel: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<{ code: string; link: string } | null>(null);
-  const [curriculumSource, setCurriculumSource] = useState<'template' | 'upload' | 'custom'>('template');
+  const [curriculumSource, setCurriculumSource] = useState<'template' | 'upload' | 'file'>('template');
   const [templates, setTemplates] = useState<CoachingTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [customJson, setCustomJson] = useState('');
+  const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const navigate = useNavigate();
 
@@ -50,7 +52,7 @@ const TeacherPanel: React.FC = () => {
       if (!user) return;
       const { data, error } = await supabase
         .from('classes')
-        .select('id, name, teacher_id, subject, class_code, invite_link, curriculum_source, template_id')
+        .select('id, name, teacher_id, subject, class_code, invite_link, curriculum_source, template_id, curriculum_file_url')
         .eq('teacher_id', user.id);
 
       if (error) {
@@ -93,28 +95,46 @@ const TeacherPanel: React.FC = () => {
       setCreating(false);
       return;
     }
-    if (curriculumSource === 'custom' || (!selectedTemplateId && !customJson.trim())) {
-      setCreateError('Please select a coaching template or upload a custom curriculum JSON.');
+    if (curriculumSource === 'template' && !selectedTemplateId) {
+      setCreateError('Please select a coaching template.');
+      setCreating(false);
+      return;
+    }
+    if (curriculumSource === 'upload' && !customJson.trim()) {
+      setCreateError('Please paste a valid curriculum JSON.');
+      setCreating(false);
+      return;
+    }
+    if (curriculumSource === 'file' && !curriculumFile) {
+      setCreateError('Please upload a curriculum PDF or document.');
       setCreating(false);
       return;
     }
 
-    let templateId: string | null = null;
-    if (curriculumSource === 'template') {
-      templateId = selectedTemplateId;
-      if (!templateId) {
-        setCreateError('Please select a coaching template.');
+    let templateId: string | null = curriculumSource === 'template' ? selectedTemplateId : null;
+
+    let curriculumFileUrl: string | null = null;
+    if (curriculumSource === 'file' && curriculumFile) {
+      setUploadingFile(true);
+      const fileExt = curriculumFile.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('curriculums')
+        .upload(filePath, curriculumFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+      if (uploadError) {
+        setCreateError('Failed to upload curriculum file: ' + uploadError.message);
+        setUploadingFile(false);
         setCreating(false);
         return;
       }
-    } else if (curriculumSource === 'upload') {
-      try {
-        JSON.parse(customJson);
-      } catch {
-        setCreateError('Invalid JSON curriculum. Please fix and try again.');
-        setCreating(false);
-        return;
-      }
+      const { data: publicUrlData } = supabase.storage
+        .from('curriculums')
+        .getPublicUrl(filePath);
+      curriculumFileUrl = publicUrlData?.publicUrl || null;
+      setUploadingFile(false);
     }
 
     const { data, error } = await supabase.rpc('create_class', {
@@ -138,6 +158,13 @@ const TeacherPanel: React.FC = () => {
       }).eq('id', created.id);
     }
 
+    if (curriculumSource === 'file' && curriculumFileUrl) {
+      await supabase.from('classes').update({
+        curriculum_source: 'file',
+        curriculum_file_url: curriculumFileUrl,
+      }).eq('id', created.id);
+    }
+
     setCreateSuccess({ code: created.class_code, link: created.invite_link });
     setClasses((prev: any[]) => [...prev, {
       id: created.id,
@@ -146,12 +173,14 @@ const TeacherPanel: React.FC = () => {
       class_code: created.class_code,
       invite_link: created.invite_link,
       curriculum_source: curriculumSource === 'template' ? 'template' : curriculumSource,
+      curriculum_file_url: curriculumFileUrl,
       student_count: 0,
       template_id: templateId,
     }]);
     setNewClassName('');
     setNewClassSubject('');
     setCustomJson('');
+    setCurriculumFile(null);
     setCreating(false);
   };
 
@@ -173,6 +202,7 @@ const TeacherPanel: React.FC = () => {
     setCreateError(null);
     setCurriculumSource('template');
     setCustomJson('');
+    setCurriculumFile(null);
   };
 
   if (loading) {
@@ -287,7 +317,18 @@ const TeacherPanel: React.FC = () => {
                     <span className="text-[10px] font-bold bg-[#8B7355]/10 text-[#8B7355] px-2 py-1 rounded-md">Template</span>
                   )}
                   {cls.curriculum_source === 'upload' && (
-                    <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md">Custom Upload</span>
+                    <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md">Custom JSON</span>
+                  )}
+                  {cls.curriculum_source === 'file' && cls.curriculum_file_url && (
+                    <a
+                      href={cls.curriculum_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1"
+                    >
+                      <FileText className="w-3 h-3" /> Curriculum
+                    </a>
                   )}
                   {cls.invite_link && (
                     <button
@@ -372,7 +413,15 @@ const TeacherPanel: React.FC = () => {
                           className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${curriculumSource === 'upload' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
                         >
                           <Upload className="w-4 h-4" />
-                          Upload JSON
+                          Paste JSON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCurriculumSource('file')}
+                          className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all flex items-center justify-center gap-1.5 ${curriculumSource === 'file' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                        >
+                          <FileText className="w-4 h-4" />
+                          Upload File
                         </button>
                       </div>
                     </div>
@@ -420,6 +469,35 @@ const TeacherPanel: React.FC = () => {
                       </div>
                     )}
 
+                    {curriculumSource === 'file' && (
+                      <div>
+                        <label className="block text-sm font-bold text-[#2D2A26] mb-1.5">Upload Curriculum PDF or Document</label>
+                        <div className="w-full bg-[#F8FAFF] rounded-[14px] border border-dashed border-[#E8E4DF] px-4 py-6 text-center hover:border-[#8B7355]/30 transition-colors">
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => setCurriculumFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="curriculum-file-input"
+                          />
+                          <label htmlFor="curriculum-file-input" className="cursor-pointer flex flex-col items-center gap-2">
+                            <Upload className="w-6 h-6 text-[#8A8279]" />
+                            <span className="text-sm font-bold text-[#2D2A26]">
+                              {curriculumFile ? curriculumFile.name : 'Click to select PDF or DOC'}
+                            </span>
+                            <span className="text-xs text-[#8A8279]">
+                              {curriculumFile ? `${(curriculumFile.size / 1024).toFixed(1)} KB` : 'Supports PDF, DOC, DOCX'}
+                            </span>
+                          </label>
+                        </div>
+                        {uploadingFile && (
+                          <p className="text-xs text-[#00D1FF] mt-2 font-bold flex items-center gap-1.5">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Uploading file...
+                          </p>
+                        )}
+                      </div>
+                    )}
+
 
                     {createError && (
                       <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm font-bold text-red-600">
@@ -429,7 +507,7 @@ const TeacherPanel: React.FC = () => {
 
                     <button
                       type="submit"
-                      disabled={creating || (curriculumSource === 'template' && !selectedTemplateId) || (curriculumSource === 'upload' && !customJson.trim())}
+                      disabled={creating || uploadingFile || (curriculumSource === 'template' && !selectedTemplateId) || (curriculumSource === 'upload' && !customJson.trim()) || (curriculumSource === 'file' && !curriculumFile)}
                       className="w-full bg-[#2D2A26] text-white py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {creating ? (

@@ -123,6 +123,7 @@ interface TaskCompletionOptions {
   taskTitle?: string;
   subject?: string;
   notes?: string;
+  interventionId?: string | null;
 }
 
 function getGreeting(): string {
@@ -334,6 +335,23 @@ export async function markTaskCompleted(
     }
 
     if (!success) return { success: false, error: failureReason || 'Could not save task completion' };
+
+    if (options?.interventionId) {
+      const { error: resolveError } = await supabase.rpc('resolve_intervention', {
+        p_intervention_id: options.interventionId,
+        p_status: 'resolved',
+        p_outcome: 'completed_from_daily_mission',
+        p_outcome_metric: {
+          source_type: sourceType,
+          source_id: sourceId,
+          task_order: taskOrder,
+          completed_at: new Date().toISOString(),
+        },
+      });
+      if (resolveError) {
+        console.warn('resolve_intervention failed:', resolveError.message);
+      }
+    }
 
     void supabase.rpc('refresh_behavioral_profile', { p_user_id: userId });
 

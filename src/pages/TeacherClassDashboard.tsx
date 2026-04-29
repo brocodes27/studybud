@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2, CalendarCheck, Zap, Target, Activity, Flag, Mail } from 'lucide-react';
+import { fetchClassExecutionMetrics, type ClassExecutionMetrics } from '../lib/classExecutionMetrics';
+import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2, CalendarCheck, Zap, Target, Activity, Flag, Mail, ShieldCheck, Gauge, ClipboardCheck } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
@@ -13,7 +14,69 @@ const TABS = [
   'Groups & Interventions'
 ];
 
-const SKILL_COLUMNS = ['Kinematics', 'Dynamics', 'Thermodynamics', 'Waves', 'Electromagnetism', 'Optics'];
+// Map known JEE sub-domains back to their parent subject for filtering
+const DOMAIN_TO_SUBJECT: Record<string, string> = {
+  'Mechanics': 'Physics',
+  'Electrodynamics': 'Physics',
+  'Modern Physics': 'Physics',
+  'Physical Chemistry': 'Chemistry',
+  'Organic Chemistry': 'Chemistry',
+  'Inorganic Chemistry': 'Chemistry',
+  'Calculus': 'Mathematics',
+  'Algebra': 'Mathematics',
+  'Coordinate Geometry': 'Mathematics',
+};
+
+const FALLBACK_SKILLS: Record<string, string[]> = {
+  'Physics': ['Kinematics', 'Dynamics', 'Thermodynamics', 'Waves', 'Electromagnetism', 'Optics'],
+  'Chemistry': ['Physical Chemistry', 'Organic Chemistry', 'Inorganic Chemistry', 'Mole Concept', 'Equilibrium', 'Electrochemistry'],
+  'Mathematics': ['Calculus', 'Algebra', 'Coordinate Geometry', 'Limits', 'Probability', 'Matrices'],
+};
+
+function masteryBelongsToSubject(m: any, subject: string): boolean {
+  if (!subject) return true;
+  const s = subject.toLowerCase().trim();
+  const d = (m.domain || '').toString().toLowerCase().trim();
+  const sub = (m.subdomain || '').toString().toLowerCase().trim();
+
+  // Direct match on domain or subdomain
+  if (d === s || sub === s) return true;
+  if (s.includes(d) || d.includes(s)) return true;
+
+  // Mapped domain-to-subject
+  const mapped = DOMAIN_TO_SUBJECT[m.domain]?.toLowerCase();
+  if (mapped && (mapped === s || s.includes(mapped))) return true;
+
+  // Keyword fallback for known subjects
+  if (s.includes('physics')) {
+    const keywords = ['kinematics','dynamics','thermodynamics','waves','electromagnetism','optics','mechanics','electrodynamics','modern physics','electrostatics','magnetism','emi','gravitation','atoms','nuclei','semiconductors','current electricity','ac circuits','photoelectric'];
+    if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
+  }
+  if (s.includes('chem')) {
+    const keywords = ['mole concept','equilibrium','electrochemistry','organic','inorganic','physical chem','goc','hydrocarbons','haloalkanes','amines','alcohols','bonding','periodic','coordination','p-block','chemical kinetics','thermodynamics'];
+    if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
+  }
+  if (s.includes('math')) {
+    const keywords = ['calculus','algebra','geometry','limits','derivatives','integrals','probability','matrices','complex numbers','differential equations','quadratic','sequences','straight lines','circles','parabola','ellipse','hyperbola'];
+    if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
+  }
+
+  return false;
+}
+
+function getSkillColumns(subject: string, allMasteries: Record<string, any[]>): string[] {
+  if (!subject) return [];
+  const normalized = subject.toLowerCase().trim();
+  const relevant = Object.values(allMasteries).flat().filter(m => masteryBelongsToSubject(m, subject));
+  const fromData = [...new Set(relevant.map(m => m.subdomain || m.domain).filter(Boolean))];
+  if (fromData.length > 0) return fromData;
+
+  for (const [key, skills] of Object.entries(FALLBACK_SKILLS)) {
+    if (normalized.includes(key.toLowerCase())) return [...skills];
+  }
+  return [];
+}
+
 const STATUS_COLORS = {
   'Mastered': 'bg-emerald-500',
   'Fragile': 'bg-amber-400',
@@ -31,6 +94,8 @@ const TeacherClassDashboard: React.FC = () => {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [tab, setTab] = useState('Mastery Control Panel');
   const [loadingData, setLoadingData] = useState(true);
+  const [executionMetrics, setExecutionMetrics] = useState<ClassExecutionMetrics | null>(null);
+  const [executionLoading, setExecutionLoading] = useState(false);
 
   // AI Insights
   const [aiSummary, setAiSummary] = useState<string>('');
@@ -68,7 +133,7 @@ const TeacherClassDashboard: React.FC = () => {
   const [mockSuccessMsg, setMockSuccessMsg] = useState('');
 
   // Class Session Logger state
-  const [sessionSubject, setSessionSubject] = useState('Physics');
+  const [sessionSubject, setSessionSubject] = useState(classInfo?.subject || 'General');
   const [sessionTopics, setSessionTopics] = useState('');
   const [sessionHomework, setSessionHomework] = useState('');
   const [homeworkEnabled, setHomeworkEnabled] = useState(false);
@@ -123,17 +188,59 @@ const TeacherClassDashboard: React.FC = () => {
     }
   };
 
+  const loadExecutionMetrics = useCallback(async () => {
+    if (!id) return;
+    setExecutionLoading(true);
+    try {
+      const metrics = await fetchClassExecutionMetrics(id);
+      setExecutionMetrics(metrics);
+    } finally {
+      setExecutionLoading(false);
+    }
+  }, [id]);
+
+  const refreshClassInterventions = useCallback(async () => {
+    if (!id) return;
+    setExecutionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('refresh-class-interventions', {
+        body: { class_id: id },
+      });
+      if (error) throw error;
+      await loadExecutionMetrics();
+    } catch (err: any) {
+      setSessionLogError(err?.message || 'Failed to refresh intervention queue.');
+      setExecutionLoading(false);
+    }
+  }, [id, loadExecutionMetrics]);
+
+  useEffect(() => {
+    if (classInfo?.subject && sessionSubject === 'General') {
+      setSessionSubject(classInfo.subject);
+    }
+  }, [classInfo?.subject, sessionSubject]);
+
+  useEffect(() => {
+    if (tab === 'Daily Teaching Loop') {
+      loadExecutionMetrics();
+    }
+  }, [tab, loadExecutionMetrics]);
+
+  const skillColumns = useMemo(() => getSkillColumns(classInfo?.subject || '', studentMasteries), [classInfo?.subject, studentMasteries]);
+
   useEffect(() => {
     const newHeatmap: any = {};
     const newReadiness: any = {};
-    
+    const classSubject = classInfo?.subject || '';
+
     students.forEach((s) => {
       newHeatmap[s.id] = {};
-      const masteries = studentMasteries[s.id] || [];
+      const allMasteries = studentMasteries[s.id] || [];
+      const masteries = classSubject ? allMasteries.filter(m => masteryBelongsToSubject(m, classSubject)) : allMasteries;
       const profile = behaviorProfiles[s.id] || {};
       const streakObj = studentStreaks[s.id] || {};
-      
-      SKILL_COLUMNS.forEach(skill => {
+
+      skillColumns.forEach(skill => {
         const skillRecord = masteries.find(m => m.subdomain === skill || m.domain === skill);
         let status = 'Unknown';
         if (skillRecord) {
@@ -145,14 +252,19 @@ const TeacherClassDashboard: React.FC = () => {
         newHeatmap[s.id][skill] = status;
       });
 
-      // Calculate avg mastery across skills or overall
+      // Calculate avg mastery across subject-relevant skills only
       const avgMastery = masteries.length > 0
         ? masteries.reduce((sum, m) => sum + Number(m.mastery_score || 0), 0) / masteries.length
         : 0;
 
       const flags: string[] = [];
       if (profile.weak_subjects && profile.weak_subjects.length > 0) {
-        flags.push(`Weak: ${profile.weak_subjects[0]}`);
+        // Only flag weak subjects relevant to this class
+        const classSubj = classSubject.toLowerCase();
+        const relevantWeak = profile.weak_subjects.find((ws: string) =>
+          classSubj ? ws.toLowerCase().includes(classSubj) || classSubj.includes(ws.toLowerCase()) : true
+        );
+        if (relevantWeak) flags.push(`Weak: ${relevantWeak}`);
       }
       if (profile.attendance_risk_level === 'high') {
         flags.push('Risk: Attendance');
@@ -167,13 +279,13 @@ const TeacherClassDashboard: React.FC = () => {
       newReadiness[s.id] = {
         mastery: Math.round(avgMastery),
         streak: streakObj.current_streak || 0,
-        speed: profile.typical_session_duration_min ? Math.round(profile.typical_session_duration_min / 30 * 10) / 10 : 0, 
+        speed: profile.typical_session_duration_min ? Math.round(profile.typical_session_duration_min / 30 * 10) / 10 : 0,
         flags: flags
       };
     });
     setHeatmapData(newHeatmap);
     setReadinessData(newReadiness);
-  }, [students, studentMasteries, behaviorProfiles, studentStreaks]);
+  }, [students, studentMasteries, behaviorProfiles, studentStreaks, classInfo, skillColumns]);
 
   const setAllAttendance = (status: string) => {
     const next: Record<string, string> = {};
@@ -273,8 +385,6 @@ const TeacherClassDashboard: React.FC = () => {
     setLoggingSession(true);
     try {
       const topicsArray = sessionTopics.split(',').map(t => t.trim()).filter(Boolean);
-      const { data: members } = await supabase.from('class_members').select('user_id').eq('class_id', id);
-      const studentIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
       
       if (homeworkEnabled && sessionHomework.trim()) {
         const due = new Date();
@@ -294,6 +404,7 @@ const TeacherClassDashboard: React.FC = () => {
       
       // Also pre-fill daily topics for auto-check
       setDailyTopics(topicsArray.join(', '));
+      await refreshClassInterventions();
       
     } catch (err: any) {
       setSessionLogError(err?.message || 'Failed to log class session.');
@@ -423,7 +534,7 @@ const TeacherClassDashboard: React.FC = () => {
   // Calculate Dynamic Priorities
   const getWeakestSkills = () => {
     const skillScores: Record<string, { total: number, count: number, stuckCount: number, fragileCount: number }> = {};
-    SKILL_COLUMNS.forEach(skill => {
+    skillColumns.forEach(skill => {
       skillScores[skill] = { total: 0, count: 0, stuckCount: 0, fragileCount: 0 };
     });
     
@@ -457,8 +568,8 @@ const TeacherClassDashboard: React.FC = () => {
   };
 
   const weakestSkills = getWeakestSkills();
-  const priority1 = weakestSkills[0] || { skill: 'Kinematics', fragilePct: 70, stuckCount: 0, fragileCount: 0 };
-  const priority2 = weakestSkills[1] || { skill: 'Rotational Dynamics', fragilePct: 0, stuckCount: 5, fragileCount: 0 };
+  const priority1 = weakestSkills[0] || { skill: skillColumns[0] || 'General', fragilePct: 0, stuckCount: 0, fragileCount: 0 };
+  const priority2 = weakestSkills[1] || { skill: skillColumns[1] || 'General', fragilePct: 0, stuckCount: 0, fragileCount: 0 };
   
   const classParticipationPct = students.length > 0 ? Math.round(Object.keys(attendanceStatus).filter(k => attendanceStatus[k] === 'present').length / students.length * 100) : 85;
 
@@ -593,7 +704,7 @@ const TeacherClassDashboard: React.FC = () => {
                   <thead>
                     <tr>
                       <th className="p-3 border-b-2 border-[#E8E4DF] text-sm font-black text-[#8A8279] uppercase tracking-wider sticky left-0 bg-white z-10 w-48 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Student</th>
-                      {SKILL_COLUMNS.map(skill => (
+                      {skillColumns.map(skill => (
                         <th key={skill} className="p-3 border-b-2 border-[#E8E4DF] text-xs font-bold text-[#2D2A26] text-center min-w-[100px] leading-tight">
                           {skill}
                         </th>
@@ -606,7 +717,7 @@ const TeacherClassDashboard: React.FC = () => {
                         <td className="p-3 text-sm font-bold text-[#2D2A26] sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] truncate max-w-[12rem]" title={s.full_name}>
                           {s.full_name || s.email}
                         </td>
-                        {SKILL_COLUMNS.map(skill => {
+                        {skillColumns.map(skill => {
                           const status = heatmapData[s.id]?.[skill] || 'Unknown';
                           const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS];
                           return (
@@ -623,7 +734,7 @@ const TeacherClassDashboard: React.FC = () => {
                     ))}
                     {students.length === 0 && (
                       <tr>
-                        <td colSpan={SKILL_COLUMNS.length + 1} className="text-center p-8 text-[#8A8279] font-medium">
+                        <td colSpan={skillColumns.length + 1} className="text-center p-8 text-[#8A8279] font-medium">
                           No students enrolled. Heatmap unavailable.
                         </td>
                       </tr>
@@ -638,6 +749,46 @@ const TeacherClassDashboard: React.FC = () => {
         {/* 2) Daily Teaching Loop */}
         {tab === 'Daily Teaching Loop' && (
           <div className="space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Mission Completion</span>
+                  <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.missionCompletionRate ?? 0}%</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">
+                  {executionMetrics?.completedTasks ?? 0}/{executionMetrics?.totalTasks ?? 0} tasks closed today
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Backlog Pressure</span>
+                  <Gauge className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.backlogCount ?? 0}</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">Open backlog items across class</p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Live Risk Queue</span>
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.unresolvedRiskCount ?? 0}</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">Active AI interventions</p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Teacher Time Saved</span>
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.teacherActionsSaved ?? 0}</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">Agent-created actions awaiting review</p>
+              </div>
+            </div>
+
             {/* Step 1 & 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden">
@@ -665,6 +816,7 @@ const TeacherClassDashboard: React.FC = () => {
                     {loggingSession ? 'Saving...' : 'Log Lesson'}
                   </button>
                   {sessionLogSuccess && <p className="text-emerald-600 text-sm font-bold mt-2">{sessionLogSuccess}</p>}
+                  {sessionLogError && <p className="text-red-600 text-sm font-bold mt-2">{sessionLogError}</p>}
                 </form>
               </div>
 
@@ -687,6 +839,62 @@ const TeacherClassDashboard: React.FC = () => {
                   </button>
                   {mockSuccessMsg && <p className="text-emerald-600 text-sm font-bold mt-2">{mockSuccessMsg}</p>}
                 </form>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#2D2A26]">Execution Risk Queue</h2>
+                  <p className="text-sm text-[#8A8279]">Students who need a rescue block, proof check, or teacher review.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={refreshClassInterventions}
+                  disabled={executionLoading}
+                  className="bg-[#F5F0E8] text-[#2D2A26] border border-[#E8E4DF] px-5 py-2.5 rounded-xl font-bold hover:bg-[#E8E4DF] transition-colors flex items-center gap-2 disabled:opacity-60"
+                >
+                  {executionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
+                  Refresh Risks
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(executionMetrics?.riskQueue || []).slice(0, 5).map((item) => (
+                  <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl p-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="font-black text-[#2D2A26]">{item.studentName}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full ${
+                          item.severity === 'critical' || item.severity === 'high'
+                            ? 'bg-red-100 text-red-700'
+                            : item.severity === 'medium'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          L{item.interventionLevel} {item.severity}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-[#2D2A26] capitalize">{item.triggerType.replace(/_/g, ' ')}</p>
+                      <p className="text-xs text-[#8A8279] mt-1">
+                        Backlog {item.backlogCount} | missed {item.missedDaysStreak} days | action {item.actionType.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAssignAction(`Rescue: ${item.studentName}`, item.actionPayload?.message || `${item.actionType.replace(/_/g, ' ')} from execution risk queue.`)}
+                      className="bg-[#2D2A26] text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-md transition-all"
+                    >
+                      Dispatch
+                    </button>
+                  </div>
+                ))}
+                {(!executionMetrics || executionMetrics.riskQueue.length === 0) && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 text-center">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-emerald-800">No active execution risks right now.</p>
+                  </div>
+                )}
               </div>
             </div>
 

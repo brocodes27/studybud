@@ -102,7 +102,7 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
       task.taskOrder || 0,
       task.durationMin,
       undefined,
-      { taskTitle: task.title, subject: task.subject }
+      { taskTitle: task.title, subject: task.subject, interventionId: task.interventionId }
     );
 
     if (result.success) {
@@ -143,7 +143,12 @@ export function TaskDashboard({ data, userId, onBack, onAllComplete, onRefresh }
         task.taskOrder || 0,
         task.durationMin,
         undefined,
-        { taskTitle: task.title, subject: task.subject, notes: task.proofRequired ? 'proof uploaded' : undefined }
+        {
+          taskTitle: task.title,
+          subject: task.subject,
+          notes: task.proofRequired ? 'proof uploaded' : undefined,
+          interventionId: task.interventionId,
+        }
       );
       
       if (result.success && result.xpEarned) {

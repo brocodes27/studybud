@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Plus, Users, X, Copy, Check } from 'lucide-react';
+import { BookOpen, Plus, Users, X, Copy, Check, FileText, Upload, Loader2 } from 'lucide-react';
 
 interface Class {
     id: string;
@@ -11,12 +11,16 @@ interface Class {
     class_code?: string;
     invite_link?: string;
     curriculum_source?: string;
+    curriculum_file_url?: string;
 }
 
 const MyClasses = () => {
     const { user, role } = useAuth() as any;
     const [classes, setClasses] = useState<Class[]>([]);
     const [className, setClassName] = useState('');
+    const [classSubject, setClassSubject] = useState('');
+    const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+    const [uploadingFile, setUploadingFile] = useState(false);
     const [joinCode, setJoinCode] = useState('');
     const [joinMode, setJoinMode] = useState<'code' | 'link'>('code');
     const [error, setError] = useState('');
@@ -34,11 +38,11 @@ const MyClasses = () => {
 
         let query;
         if (role === 'teacher') {
-            query = supabase.from('classes').select('id, name, subject, class_code, invite_link, curriculum_source').eq('teacher_id', user.id);
+            query = supabase.from('classes').select('id, name, subject, class_code, invite_link, curriculum_source, curriculum_file_url').eq('teacher_id', user.id);
         } else {
             query = supabase
                 .from('class_members')
-                .select('classes(id, name, subject, class_code, invite_link, curriculum_source)')
+                .select('classes(id, name, subject, class_code, invite_link, curriculum_source, curriculum_file_url)')
                 .eq('user_id', user.id);
         }
 
@@ -65,14 +69,56 @@ const MyClasses = () => {
             setError('Class name is required.');
             return;
         }
+        if (!classSubject.trim()) {
+            setError('Subject is required.');
+            return;
+        }
+        if (!curriculumFile) {
+            setError('Curriculum file (PDF or DOC) is required.');
+            return;
+        }
 
-        const { data, error } = await supabase.rpc('create_class', { p_name: className.trim() });
+        let curriculumFileUrl: string | null = null;
+        if (curriculumFile) {
+            setUploadingFile(true);
+            const fileExt = curriculumFile.name.split('.').pop();
+            const filePath = `${crypto.randomUUID()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('curriculums')
+                .upload(filePath, curriculumFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                });
+            if (uploadError) {
+                setError('Failed to upload curriculum file: ' + uploadError.message);
+                setUploadingFile(false);
+                return;
+            }
+            const { data: publicUrlData } = supabase.storage
+                .from('curriculums')
+                .getPublicUrl(filePath);
+            curriculumFileUrl = publicUrlData?.publicUrl || null;
+            setUploadingFile(false);
+        }
+
+        const { data, error } = await supabase.rpc('create_class', {
+            p_name: className.trim(),
+            p_subject: classSubject.trim(),
+        });
 
         if (error || !data || data.length === 0) {
             setError('Failed to create class.');
             console.error(error);
         } else {
+            if (curriculumFileUrl) {
+                await supabase.from('classes').update({
+                    curriculum_source: 'file',
+                    curriculum_file_url: curriculumFileUrl,
+                }).eq('id', data[0].id);
+            }
             setClassName('');
+            setClassSubject('');
+            setCurriculumFile(null);
             fetchClasses();
         }
     };
@@ -155,20 +201,58 @@ const MyClasses = () => {
                             <Plus className="h-5 w-5 text-[#00D1FF] stroke-[2.5px]" />
                             Create New Class
                         </h2>
-                        <form onSubmit={handleCreateClass} className="flex flex-col sm:flex-row gap-3">
-                            <input
-                                type="text"
-                                placeholder="e.g. JEE Advanced Physics"
-                                value={className}
-                                onChange={(e) => setClassName(e.target.value)}
-                                className="flex-1 px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
-                            />
-                            <button
-                                type="submit"
-                                className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all"
-                            >
-                                Create
-                            </button>
+                        <form onSubmit={handleCreateClass} className="flex flex-col gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="e.g. JEE Advanced Physics"
+                                    value={className}
+                                    onChange={(e) => setClassName(e.target.value)}
+                                    className="flex-1 px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
+                                />
+                                <select
+                                    value={classSubject}
+                                    onChange={(e) => setClassSubject(e.target.value)}
+                                    className="px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 appearance-none min-w-[180px]"
+                                    required
+                                >
+                                    <option value="">Select Subject</option>
+                                    <option value="Mathematics">Mathematics</option>
+                                    <option value="Physics">Physics</option>
+                                    <option value="Chemistry">Chemistry</option>
+                                    <option value="Biology">Biology</option>
+                                    <option value="Computer Science">Computer Science</option>
+                                    <option value="English">English</option>
+                                </select>
+                                <button
+                                    type="submit"
+                                    disabled={uploadingFile}
+                                    className="bg-[#2D2A26] text-white px-6 py-3 font-bold rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {uploadingFile ? (
+                                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</span>
+                                    ) : 'Create'}
+                                </button>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <div className="flex-1">
+                                    <div className="w-full bg-[#F8FAFF] rounded-[14px] border border-dashed border-[#E8E4DF] px-4 py-3 text-center hover:border-[#8B7355]/30 transition-colors">
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            onChange={(e) => setCurriculumFile(e.target.files?.[0] || null)}
+                                            className="hidden"
+                                            id="myclasses-curriculum-file"
+                                        />
+                                        <label htmlFor="myclasses-curriculum-file" className="cursor-pointer flex items-center justify-center gap-2">
+                                            <Upload className="w-4 h-4 text-[#8A8279]" />
+                                            <span className="text-sm font-medium text-[#2D2A26]">
+                                                {curriculumFile ? curriculumFile.name : 'Upload curriculum PDF/DOC *'}
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 )}
@@ -303,6 +387,17 @@ const MyClasses = () => {
                                         )}
                                         {c.curriculum_source === 'upload' && (
                                             <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md">Custom Curriculum</span>
+                                        )}
+                                        {c.curriculum_source === 'file' && c.curriculum_file_url && (
+                                            <a
+                                                href={c.curriculum_file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(c.curriculum_file_url, '_blank'); }}
+                                                className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+                                            >
+                                                <FileText className="w-3 h-3" /> Curriculum File
+                                            </a>
                                         )}
                                     </div>
 

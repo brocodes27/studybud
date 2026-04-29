@@ -92,15 +92,31 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
+    const authHeader = req.headers.get('Authorization') || '';
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { data: authData, error: authError } = await sb.auth.getUser(token);
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { class_id } = await req.json().catch(() => ({}));
     if (!class_id) throw new Error('class_id required');
 
     const { data: classRow, error: classErr } = await sb
       .from('classes')
-      .select('id')
+      .select('id, teacher_id')
       .eq('id', class_id)
       .single();
     if (classErr || !classRow) throw new Error('Class not found');
+    if (classRow.teacher_id !== authData.user.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { data: members, error: memberErr } = await sb
       .from('class_members')

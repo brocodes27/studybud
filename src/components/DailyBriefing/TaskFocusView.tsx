@@ -115,6 +115,7 @@ export function TaskFocusView({ task, userId, onComplete, onBack }: TaskFocusVie
       {
         taskTitle: task.title,
         subject: task.subject,
+        interventionId: task.interventionId,
         notes: `Confidence: ${data.confidence}/5. Voice reflection: ${data.voiceTranscript || 'none'}. AI analysis: ${data.analysis || 'none'}`,
       }
     );

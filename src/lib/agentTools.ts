@@ -97,7 +97,7 @@ async function markTaskComplete(
     task.taskOrder || 0,
     task.durationMin,
     undefined,
-    { taskTitle: task.title, subject: task.subject }
+    { taskTitle: task.title, subject: task.subject, interventionId: task.interventionId }
   );
 
   if (!result.success) {
