@@ -168,6 +168,7 @@ const TeacherClassDashboard: React.FC = () => {
   
   // Action Feedback state
   const [actionSuccess, setActionSuccess] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const handleAssignAction = async (title: string, description: string) => {
     if (!user || !id) return;
@@ -181,6 +182,7 @@ const TeacherClassDashboard: React.FC = () => {
         due_date: due.toISOString(),
       });
       setActionSuccess(`Successfully dispatched: ${title}`);
+      setActionError('');
       setTimeout(() => setActionSuccess(''), 4000);
     } catch (err: any) {
       console.error(err);
@@ -208,11 +210,35 @@ const TeacherClassDashboard: React.FC = () => {
       });
       if (error) throw error;
       await loadExecutionMetrics();
+      setActionError('');
     } catch (err: any) {
-      setSessionLogError(err?.message || 'Failed to refresh intervention queue.');
+      setActionError(err?.message || 'Failed to refresh intervention queue.');
       setExecutionLoading(false);
     }
   }, [id, loadExecutionMetrics]);
+
+  const handleResolveIntervention = async (interventionId: string, status: 'resolved' | 'dismissed') => {
+    setExecutionLoading(true);
+    setActionError('');
+    try {
+      const { error } = await supabase.rpc('resolve_intervention', {
+        p_intervention_id: interventionId,
+        p_status: status,
+        p_outcome: status === 'resolved' ? 'teacher_confirmed' : 'teacher_dismissed',
+        p_outcome_metric: {
+          source: 'teacher_control_room',
+          resolved_at: new Date().toISOString(),
+        },
+      });
+      if (error) throw error;
+      setActionSuccess(status === 'resolved' ? 'Intervention marked resolved.' : 'Intervention dismissed.');
+      setTimeout(() => setActionSuccess(''), 4000);
+      await loadExecutionMetrics();
+    } catch (err: any) {
+      setActionError(err?.message || 'Failed to update intervention.');
+      setExecutionLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (classInfo?.subject && sessionSubject === 'General') {
@@ -634,6 +660,12 @@ const TeacherClassDashboard: React.FC = () => {
             <button onClick={() => setActionSuccess('')}><XCircle className="w-5 h-5 text-emerald-600 hover:text-emerald-800" /></button>
           </div>
         )}
+        {actionError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex justify-between items-center animate-fade-in">
+            <span className="font-bold">{actionError}</span>
+            <button onClick={() => setActionError('')}><XCircle className="w-5 h-5 text-red-600 hover:text-red-800" /></button>
+          </div>
+        )}
 
         {/* 1) Mastery Control Panel */}
         {tab === 'Mastery Control Panel' && (
@@ -749,7 +781,26 @@ const TeacherClassDashboard: React.FC = () => {
         {/* 2) Daily Teaching Loop */}
         {tab === 'Daily Teaching Loop' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-[#2D2A26] rounded-2xl p-6 text-white shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50 mb-2">Agentic Execution Control</p>
+                  <h2 className="text-2xl font-black tracking-tight">Monitor, adapt, prove, resolve.</h2>
+                  <p className="text-sm text-white/70 mt-2 max-w-2xl">This loop turns class activity into measurable interventions: risks are detected, missions adapt, proof is required, and teacher actions close the record.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={refreshClassInterventions}
+                  disabled={executionLoading}
+                  className="bg-white text-[#2D2A26] px-5 py-3 rounded-xl font-black hover:bg-[#F5F0E8] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {executionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
+                  Refresh Control Room
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
               <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Mission Completion</span>
@@ -786,6 +837,26 @@ const TeacherClassDashboard: React.FC = () => {
                 </div>
                 <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.teacherActionsSaved ?? 0}</div>
                 <p className="text-xs font-bold text-[#8A8279] mt-1">Agent-created actions awaiting review</p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Resolution Rate</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.interventionResolutionRate ?? 0}%</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">
+                  {executionMetrics?.resolvedInterventionCount ?? 0}/{executionMetrics?.totalInterventionCount ?? 0} interventions closed
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">High Risk</span>
+                  <Flag className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.highRiskCount ?? 0}</div>
+                <p className="text-xs font-bold text-[#8A8279] mt-1">Critical or high-severity students</p>
               </div>
             </div>
 
@@ -846,7 +917,7 @@ const TeacherClassDashboard: React.FC = () => {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                 <div>
                   <h2 className="text-xl font-extrabold text-[#2D2A26]">Execution Risk Queue</h2>
-                  <p className="text-sm text-[#8A8279]">Students who need a rescue block, proof check, or teacher review.</p>
+                  <p className="text-sm text-[#8A8279]">Every row explains the signal, the action, and the control available to the teacher.</p>
                 </div>
                 <button
                   type="button"
@@ -876,17 +947,34 @@ const TeacherClassDashboard: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-sm font-bold text-[#2D2A26] capitalize">{item.triggerType.replace(/_/g, ' ')}</p>
+                      <p className="text-sm text-[#5F574F] mt-1">{item.recommendedAction}</p>
                       <p className="text-xs text-[#8A8279] mt-1">
                         Backlog {item.backlogCount} | missed {item.missedDaysStreak} days | action {item.actionType.replace(/_/g, ' ')}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAssignAction(`Rescue: ${item.studentName}`, item.actionPayload?.message || `${item.actionType.replace(/_/g, ' ')} from execution risk queue.`)}
-                      className="bg-[#2D2A26] text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-md transition-all"
-                    >
-                      Dispatch
-                    </button>
+                    <div className="flex flex-wrap gap-2 md:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleAssignAction(`Rescue: ${item.studentName}`, item.recommendedAction)}
+                        className="bg-[#2D2A26] text-white px-4 py-2 rounded-xl text-sm font-bold hover:shadow-md transition-all"
+                      >
+                        Dispatch
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResolveIntervention(item.id, 'resolved')}
+                        className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-100 transition-colors"
+                      >
+                        Resolve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResolveIntervention(item.id, 'dismissed')}
+                        className="bg-white text-[#8A8279] border border-[#E8E4DF] px-4 py-2 rounded-xl text-sm font-bold hover:text-[#2D2A26] transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {(!executionMetrics || executionMetrics.riskQueue.length === 0) && (

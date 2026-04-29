@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { AlertCircle, CalendarCheck, ClipboardList, GraduationCap, Loader2, Target, Users } from 'lucide-react';
+import { AlertCircle, CalendarCheck, CheckCircle2, ClipboardList, GraduationCap, Loader2, ShieldCheck, Target, Users } from 'lucide-react';
 
 const ParentDashboard: React.FC = () => {
   const { user, role, loading } = useAuth() as any;
@@ -10,6 +10,7 @@ const ParentDashboard: React.FC = () => {
   const [behavior, setBehavior] = useState<Record<string, any>>({});
   const [tests, setTests] = useState<Record<string, any[]>>({});
   const [prescriptions, setPrescriptions] = useState<Record<string, any>>({});
+  const [interventions, setInterventions] = useState<Record<string, any[]>>({});
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState('');
 
@@ -38,15 +39,17 @@ const ParentDashboard: React.FC = () => {
           setBehavior({});
           setTests({});
           setPrescriptions({});
+          setInterventions({});
           return;
         }
 
         const today = new Date().toISOString().split('T')[0];
-        const [profileRes, behaviorRes, testsRes, prescriptionRes] = await Promise.all([
+        const [profileRes, behaviorRes, testsRes, prescriptionRes, interventionRes] = await Promise.all([
           supabase.from('user_profiles').select('id, full_name, email').in('id', ids),
           supabase.from('student_behavioral_profiles').select('*').in('user_id', ids),
           supabase.from('test_results').select('*').in('user_id', ids).order('created_at', { ascending: false }).limit(20),
           supabase.from('daily_prescriptions').select('*').in('user_id', ids).eq('prescription_date', today),
+          supabase.from('interventions').select('*').in('student_user_id', ids).order('created_at', { ascending: false }).limit(30),
         ]);
 
         const profileMap: Record<string, any> = {};
@@ -67,6 +70,15 @@ const ParentDashboard: React.FC = () => {
         const prescriptionMap: Record<string, any> = {};
         (prescriptionRes.data || []).forEach((row: any) => { prescriptionMap[row.user_id] = row; });
         setPrescriptions(prescriptionMap);
+
+        const interventionMap: Record<string, any[]> = {};
+        if (!interventionRes.error) {
+          (interventionRes.data || []).forEach((row: any) => {
+            if (!interventionMap[row.student_user_id]) interventionMap[row.student_user_id] = [];
+            interventionMap[row.student_user_id].push(row);
+          });
+        }
+        setInterventions(interventionMap);
       } catch (err: any) {
         setError(err?.message || 'Failed to load parent dashboard.');
       } finally {
@@ -76,6 +88,33 @@ const ParentDashboard: React.FC = () => {
 
     fetchParentData();
   }, [user?.id]);
+
+  const parentSummary = useMemo(() => {
+    let totalTasks = 0;
+    let completedTasks = 0;
+    let activeInterventions = 0;
+    let highRiskStudents = 0;
+
+    studentIds.forEach((studentId: string) => {
+      const tasks = Array.isArray(prescriptions[studentId]?.tasks) ? prescriptions[studentId].tasks : [];
+      totalTasks += tasks.length;
+      completedTasks += tasks.filter((task: any) => task.completed).length;
+      const active = (interventions[studentId] || []).filter((row: any) => row.status === 'active');
+      activeInterventions += active.length;
+      const risk = behavior[studentId]?.attendance_risk_level;
+      if (risk === 'high' || active.some((row: any) => row.severity === 'critical' || row.severity === 'high')) {
+        highRiskStudents += 1;
+      }
+    });
+
+    return {
+      missionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      totalTasks,
+      completedTasks,
+      activeInterventions,
+      highRiskStudents,
+    };
+  }, [behavior, interventions, prescriptions, studentIds]);
 
   if (loading || loadingData) {
     return (
@@ -118,8 +157,36 @@ const ParentDashboard: React.FC = () => {
             <p className="text-sm text-[#8A8279] max-w-xl mx-auto">Ask your child or institute admin to connect your parent account. Once linked, you’ll see attendance, daily missions, tests, and weekly progress summaries here.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {studentIds.map((studentId: string) => {
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-5 shadow-sm">
+                <ClipboardList className="h-5 w-5 text-[#8B7355] mb-3" />
+                <p className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Mission Rate</p>
+                <p className="text-3xl font-black text-[#2D2A26] mt-1">{parentSummary.missionRate}%</p>
+                <p className="text-xs text-[#8A8279] mt-1">{parentSummary.completedTasks}/{parentSummary.totalTasks} tasks closed today</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-5 shadow-sm">
+                <ShieldCheck className="h-5 w-5 text-blue-600 mb-3" />
+                <p className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Active Supports</p>
+                <p className="text-3xl font-black text-[#2D2A26] mt-1">{parentSummary.activeInterventions}</p>
+                <p className="text-xs text-[#8A8279] mt-1">AI interventions currently watching progress</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-5 shadow-sm">
+                <AlertCircle className="h-5 w-5 text-red-600 mb-3" />
+                <p className="text-xs font-black uppercase tracking-wider text-[#8A8279]">High Risk</p>
+                <p className="text-3xl font-black text-[#2D2A26] mt-1">{parentSummary.highRiskStudents}</p>
+                <p className="text-xs text-[#8A8279] mt-1">students needing urgent support</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-5 shadow-sm">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 mb-3" />
+                <p className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Status</p>
+                <p className="text-3xl font-black text-[#2D2A26] mt-1">{parentSummary.highRiskStudents > 0 ? 'Watch' : 'Stable'}</p>
+                <p className="text-xs text-[#8A8279] mt-1">based on attendance, missions, and support flags</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {studentIds.map((studentId: string) => {
               const profile = profiles[studentId] || {};
               const b = behavior[studentId] || {};
               const latestTest = tests[studentId]?.[0];
@@ -127,6 +194,8 @@ const ParentDashboard: React.FC = () => {
               const tasks = Array.isArray(prescription?.tasks) ? prescription.tasks : [];
               const completed = tasks.filter((task: any) => task.completed).length;
               const attendanceRate = Math.round(Number(b.attendance_rate_30d ?? 1) * 100);
+              const activeInterventions = (interventions[studentId] || []).filter((row: any) => row.status === 'active');
+              const topIntervention = activeInterventions[0];
 
               return (
                 <div key={studentId} className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm space-y-5">
@@ -170,14 +239,38 @@ const ParentDashboard: React.FC = () => {
                   <div className="bg-[#FAF8F5] rounded-xl p-4 border border-[#E8E4DF]">
                     <p className="text-sm font-bold text-[#2D2A26] mb-1">Ranjan Sir summary</p>
                     <p className="text-sm text-[#8A8279] leading-relaxed">
-                      {attendanceRate < 85
-                        ? `${profile.full_name || 'Your child'} needs attendance support first. Ranjan Sir will prioritize missed-class catch-up before new work.`
-                        : `${profile.full_name || 'Your child'} is maintaining healthy attendance. Keep watching daily mission completion and recent test corrections.`}
+                      {topIntervention
+                        ? `${profile.full_name || 'Your child'} has an active ${String(topIntervention.trigger_type || 'support').replace(/_/g, ' ')} support. The next milestone is to complete the assigned proof or rescue task.`
+                        : attendanceRate < 85
+                          ? `${profile.full_name || 'Your child'} needs attendance support first. Ranjan Sir will prioritize missed-class catch-up before new work.`
+                          : `${profile.full_name || 'Your child'} is maintaining healthy attendance. Keep watching daily mission completion and recent test corrections.`}
                     </p>
+                  </div>
+
+                  <div className="rounded-xl p-4 border border-blue-100 bg-blue-50">
+                    <p className="text-sm font-bold text-[#2D2A26] mb-2">Active AI support</p>
+                    {activeInterventions.length > 0 ? (
+                      <div className="space-y-2">
+                        {activeInterventions.slice(0, 2).map((row: any) => (
+                          <div key={row.id} className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-blue-900 capitalize">{String(row.trigger_type || 'support').replace(/_/g, ' ')}</p>
+                              <p className="text-xs text-blue-800/70 capitalize">{String(row.action_type || 'action').replace(/_/g, ' ')}</p>
+                            </div>
+                            <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${row.severity === 'critical' || row.severity === 'high' ? 'bg-red-100 text-red-700' : 'bg-white text-blue-700'}`}>
+                              {row.severity || 'watch'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-blue-800/75">No active intervention. Daily mission and attendance are the main signals to watch.</p>
+                    )}
                   </div>
                 </div>
               );
-            })}
+              })}
+            </div>
           </div>
         )}
       </div>
