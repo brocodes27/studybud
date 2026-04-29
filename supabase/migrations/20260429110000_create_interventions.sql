@@ -31,8 +31,7 @@ CREATE TABLE IF NOT EXISTS public.interventions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at TIMESTAMPTZ,
   outcome TEXT,
-  outcome_metric JSONB NOT NULL DEFAULT '{}'::jsonb,
-  UNIQUE (student_user_id, trigger_type, action_type, status)
+  outcome_metric JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
 CREATE INDEX IF NOT EXISTS idx_interventions_student_status
@@ -43,6 +42,10 @@ CREATE INDEX IF NOT EXISTS idx_interventions_class_status
 
 CREATE INDEX IF NOT EXISTS idx_interventions_roadmap_status
   ON public.interventions(roadmap_id, status, created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
+  ON public.interventions(student_user_id, trigger_type, action_type)
+  WHERE status = 'active';
 
 ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
 
@@ -70,15 +73,13 @@ CREATE POLICY interventions_insert_system_or_teacher
   ON public.interventions
   FOR INSERT
   WITH CHECK (
-    created_by_type = 'system'
-    OR created_by = auth.uid()
-    OR (
-      class_id IS NOT NULL
-      AND EXISTS (
-        SELECT 1 FROM public.classes c
-        WHERE c.id = interventions.class_id
-          AND c.teacher_id = auth.uid()
-      )
+    class_id IS NOT NULL
+    AND created_by = auth.uid()
+    AND created_by_type IN ('teacher', 'mentor')
+    AND EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c.id = interventions.class_id
+        AND c.teacher_id = auth.uid()
     )
   );
 
@@ -87,14 +88,19 @@ CREATE POLICY interventions_update_teacher
   ON public.interventions
   FOR UPDATE
   USING (
-    auth.uid() = student_user_id
-    OR (
-      class_id IS NOT NULL
-      AND EXISTS (
-        SELECT 1 FROM public.classes c
-        WHERE c.id = interventions.class_id
-          AND c.teacher_id = auth.uid()
-      )
+    class_id IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c.id = interventions.class_id
+        AND c.teacher_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    class_id IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM public.classes c
+      WHERE c.id = interventions.class_id
+        AND c.teacher_id = auth.uid()
     )
   );
 
@@ -113,10 +119,35 @@ CREATE OR REPLACE FUNCTION public.upsert_intervention(
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, auth
 AS $$
 DECLARE
   v_id UUID;
+  v_is_service_role BOOLEAN;
+  v_is_class_teacher BOOLEAN;
+  v_created_by_type TEXT;
 BEGIN
+  v_is_service_role := auth.role() = 'service_role';
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.classes c
+    WHERE c.id = p_class_id
+      AND c.teacher_id = auth.uid()
+  ) INTO v_is_class_teacher;
+
+  IF NOT v_is_service_role AND NOT v_is_class_teacher THEN
+    RAISE EXCEPTION 'Not authorized to upsert intervention';
+  END IF;
+
+  IF v_is_service_role THEN
+    v_created_by_type := COALESCE(p_created_by_type, 'system');
+  ELSE
+    v_created_by_type := CASE
+      WHEN p_created_by_type = 'mentor' THEN 'mentor'
+      ELSE 'teacher'
+    END;
+  END IF;
+
   INSERT INTO public.interventions (
     student_user_id,
     class_id,
@@ -141,9 +172,9 @@ BEGIN
     p_action_type,
     COALESCE(p_action_payload, '{}'::jsonb),
     auth.uid(),
-    p_created_by_type
+    v_created_by_type
   )
-  ON CONFLICT (student_user_id, trigger_type, action_type, status)
+  ON CONFLICT (student_user_id, trigger_type, action_type) WHERE status = 'active'
   DO UPDATE SET
     class_id = COALESCE(EXCLUDED.class_id, public.interventions.class_id),
     roadmap_id = COALESCE(EXCLUDED.roadmap_id, public.interventions.roadmap_id),
@@ -169,16 +200,48 @@ CREATE OR REPLACE FUNCTION public.resolve_intervention(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, auth
 AS $$
+DECLARE
+  v_student_user_id UUID;
+  v_class_id UUID;
+  v_is_authorized BOOLEAN;
 BEGIN
+  IF p_status NOT IN ('resolved', 'failed', 'dismissed') THEN
+    RAISE EXCEPTION 'Invalid intervention status: %', p_status;
+  END IF;
+
+  SELECT student_user_id, class_id
+  INTO v_student_user_id, v_class_id
+  FROM public.interventions
+  WHERE id = p_intervention_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Intervention not found: %', p_intervention_id;
+  END IF;
+
+  v_is_authorized := auth.role() = 'service_role'
+    OR auth.uid() = v_student_user_id
+    OR (
+      v_class_id IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM public.classes c
+        WHERE c.id = v_class_id
+          AND c.teacher_id = auth.uid()
+      )
+    );
+
+  IF NOT v_is_authorized THEN
+    RAISE EXCEPTION 'Not authorized to resolve intervention';
+  END IF;
+
   UPDATE public.interventions
   SET
     status = p_status,
     outcome = p_outcome,
     outcome_metric = COALESCE(p_outcome_metric, '{}'::jsonb),
     resolved_at = NOW()
-  WHERE id = p_intervention_id
-    AND p_status IN ('resolved', 'failed', 'dismissed');
+  WHERE id = p_intervention_id;
 END;
 $$;
 
