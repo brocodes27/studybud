@@ -1,54 +1,3 @@
-CREATE TABLE IF NOT EXISTS public.interventions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL,
-  roadmap_id UUID REFERENCES public.student_roadmaps(id) ON DELETE SET NULL,
-  trigger_type TEXT NOT NULL CHECK (trigger_type IN (
-    'missed_mission',
-    'subject_avoidance',
-    'shrinking_sessions',
-    'backlog_growth',
-    'test_avoidance',
-    'correction_sprint_stalled',
-    'attendance_risk',
-    'proof_pending'
-  )),
-  trigger_source TEXT,
-  severity TEXT NOT NULL DEFAULT 'low' CHECK (severity IN ('low', 'medium', 'high', 'critical')),
-  intervention_level INTEGER NOT NULL CHECK (intervention_level BETWEEN 1 AND 4),
-  action_type TEXT NOT NULL CHECK (action_type IN (
-    'compress_plan',
-    'rescue_block',
-    'proof_required',
-    'correction_sprint_priority',
-    'teacher_review',
-    'parent_summary'
-  )),
-  action_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'failed', 'dismissed')),
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_by_type TEXT NOT NULL DEFAULT 'system' CHECK (created_by_type IN ('system', 'teacher', 'mentor')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  resolved_at TIMESTAMPTZ,
-  outcome TEXT,
-  outcome_metric JSONB NOT NULL DEFAULT '{}'::jsonb
-);
-
-CREATE INDEX IF NOT EXISTS idx_interventions_student_status
-  ON public.interventions(student_user_id, status, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_interventions_class_status
-  ON public.interventions(class_id, status, severity, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_interventions_roadmap_status
-  ON public.interventions(roadmap_id, status, created_at DESC);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
-  ON public.interventions(student_user_id, trigger_type, action_type)
-  WHERE status = 'active';
-
-ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
-
 CREATE OR REPLACE FUNCTION public.intervention_student_in_class(
   p_class_id UUID,
   p_student_user_id UUID
@@ -126,24 +75,14 @@ BEGIN
 END;
 $$;
 
-DROP POLICY IF EXISTS interventions_select_student ON public.interventions;
-CREATE POLICY interventions_select_student
-  ON public.interventions
-  FOR SELECT
-  USING (auth.uid() = student_user_id);
+ALTER TABLE public.interventions
+  DROP CONSTRAINT IF EXISTS interventions_student_user_id_trigger_type_action_type_status_key;
 
-DROP POLICY IF EXISTS interventions_select_teacher ON public.interventions;
-CREATE POLICY interventions_select_teacher
-  ON public.interventions
-  FOR SELECT
-  USING (
-    class_id IS NOT NULL
-    AND EXISTS (
-      SELECT 1 FROM public.classes c
-      WHERE c.id = interventions.class_id
-        AND c.teacher_id = auth.uid()
-    )
-  );
+DROP INDEX IF EXISTS public.interventions_student_user_id_trigger_type_action_type_status_key;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
+  ON public.interventions(student_user_id, trigger_type, action_type)
+  WHERE status = 'active';
 
 DROP POLICY IF EXISTS interventions_insert_system_or_teacher ON public.interventions;
 CREATE POLICY interventions_insert_system_or_teacher
