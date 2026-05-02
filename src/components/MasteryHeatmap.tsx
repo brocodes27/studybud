@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ChevronRight, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
+import { useMLIntelligence } from '../hooks/useMLIntelligence';
+import { ChevronRight, BarChart3, TrendingUp, Sparkles, Zap, Brain, Activity } from 'lucide-react';
 
 interface MasteryData {
     domain: string;
@@ -18,6 +19,17 @@ export function MasteryHeatmap() {
     const [examType, setExamType] = useState('sat');
     const [diagnosing, setDiagnosing] = useState(false);
     const [diagnosis, setDiagnosis] = useState<any>(null);
+
+    const ml = useMLIntelligence();
+
+    const tierConfig = {
+        anoetic: { label: 'Anoetic', color: '#F472B6', desc: 'Learning fundamentals', icon: Brain },
+        noetic: { label: 'Noetic', color: '#00D1FF', desc: 'Building understanding', icon: Activity },
+        autonoetic: { label: 'Autonoetic', color: '#34D399', desc: 'Independent mastery', icon: Sparkles },
+    };
+    const tier = ml.dominantTier as keyof typeof tierConfig;
+    const tierInfo = tierConfig[tier] ?? tierConfig.anoetic;
+    const TierIcon = tierInfo.icon;
 
     const handleDiagnose = async (domain: string, subdomain: string) => {
         setDiagnosing(true);
@@ -112,6 +124,42 @@ export function MasteryHeatmap() {
                 </div>
             </div>
 
+            {/* ML Intelligence Badges */}
+            <div className="neo-card flex flex-wrap items-center gap-3 p-4">
+                {/* Cognitive Tier */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#0A192F]/5 rounded-[10px] border border-[#0A192F]/10">
+                    <TierIcon className="h-4 w-4" style={{ color: tierInfo.color }} />
+                    <div>
+                        <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Cognitive Tier</p>
+                        <p className="text-sm font-extrabold" style={{ color: tierInfo.color }}>{tierInfo.label}</p>
+                    </div>
+                </div>
+
+                {/* Mastery Level (theta-proxy from avg mastery) */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#0A192F]/5 rounded-[10px] border border-[#0A192F]/10">
+                    <Activity className="h-4 w-4 text-[#00D1FF]" />
+                    <div>
+                        <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Mastery Level θ</p>
+                        <p className="text-sm font-extrabold text-[#0A192F]">{(ml.avgMastery * 4 - 2).toFixed(2)}</p>
+                    </div>
+                </div>
+
+                {/* Learning Velocity */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#0A192F]/5 rounded-[10px] border border-[#0A192F]/10">
+                    <TrendingUp className={`h-4 w-4 ${ml.velocityTier === 'momentum' ? 'text-[#34D399]' : ml.velocityTier === 'building' ? 'text-[#00D1FF]' : ml.velocityTier === 'stalled' ? 'text-[#F472B6]' : 'text-[#64748B]'}`} />
+                    <div>
+                        <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Velocity</p>
+                        <p className="text-sm font-extrabold capitalize" style={{ color: ml.velocityTier === 'momentum' ? '#34D399' : ml.velocityTier === 'building' ? '#00D1FF' : ml.velocityTier === 'stalled' ? '#F472B6' : '#64748B' }}>{ml.velocityTier}</p>
+                    </div>
+                </div>
+
+                {/* ML Active badge */}
+                <div className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-[#34D399]/10 border border-[#34D399]/30 rounded-[10px]">
+                    <Zap className="h-3.5 w-3.5 text-[#34D399]" />
+                    <p className="text-xs font-bold text-[#34D399]">BKT + IRT Active</p>
+                </div>
+            </div>
+
             {/* Heatmap Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {domains.length === 0 ? (
@@ -170,7 +218,11 @@ export function MasteryHeatmap() {
                                                 <span className="text-[9px] text-white/60">Accuracy:</span>
                                                 <span className="text-xs font-bold">{sub.mastery_score.toFixed(1)}%</span>
                                             </div>
-                                            {isWeak && <p className="text-[9px] text-red-300 mt-1 mt-1 border-t border-white/10 pt-1">Click for AI Gap Diagnosis</p>}
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[9px] text-white/60">Mastery:</span>
+                                                <span className="text-xs font-bold text-[#34D399]">{(ml.cognitiveProfiles.find(p => p.kc_id === sub.subdomain)?.p_mastery ?? sub.mastery_score / 100).toFixed(2)}</span>
+                                            </div>
+                                            {isWeak && <p className="text-[9px] text-red-300 mt-1 border-t border-white/10 pt-1">Click for AI Gap Diagnosis</p>}
                                         </div>
                                     </div>
                                 )})}

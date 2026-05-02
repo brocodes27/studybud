@@ -56,157 +56,214 @@ serve(async (req: Request) => {
     const { roadmap_id, target_date } = await req.json();
     const date = target_date || new Date().toISOString().split('T')[0];
 
-    const { data:roadmap } = await sb.from('student_roadmaps').select('*').eq('id', roadmap_id).single();
-    if (!roadmap) throw new Error('Roadmap not found');
+    // ── Step 1: Fetch all school-scope roadmaps for this user (multi-class support)
+    const { data: allRoadmaps } = await sb.from('student_roadmaps')
+      .select('id, current_week, template_id')
+      .eq('user_id', user.id)
+      .eq('scope', 'school');
 
-    const [sRes, pRes, wRes, tRes, tplRes] = await Promise.all([
-      sb.from('class_sessions').select('subject,topics_covered,homework_assigned').eq('roadmap_id',roadmap_id).eq('session_date',date),
-      sb.from('student_behavioral_profiles').select('*').eq('user_id',user.id).maybeSingle(),
-      sb.from('user_subject_mastery').select('domain,subdomain,mastery_score,questions_attempted,questions_correct').eq('user_id',user.id).order('mastery_score',{ascending:true}).limit(5),
-      sb.from('upcoming_tests').select('*').eq('roadmap_id',roadmap_id).eq('status','upcoming').gte('test_date',date).order('test_date',{ascending:true}).limit(1),
-      sb.from('coaching_templates').select('weekly_schedule').eq('id',roadmap.template_id).maybeSingle(),
+    let primaryRoadmap: any = null;
+    let roadmapIds: string[] = [];
+
+    if (roadmap_id) {
+      const found = (allRoadmaps || []).find((r: any) => r.id === roadmap_id);
+      primaryRoadmap = found || { id: roadmap_id, current_week: 1, template_id: null };
+      roadmapIds = (allRoadmaps || []).map((r: any) => r.id);
+    } else if ((allRoadmaps || []).length > 0) {
+      primaryRoadmap = allRoadmaps![0];
+      roadmapIds = (allRoadmaps || []).map((r: any) => r.id);
+    } else {
+      return new Response(JSON.stringify({ error: 'No roadmaps found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ── Step 2: Fetch unified schedule from all roadmaps via RPC
+    const { data: unifiedSched } = await sb.rpc('get_unified_weekly_schedule', { p_user_id: user.id });
+
+    // ── Step 3: Get class_ids from coaching_templates to query sessions by class_id
+    const templateIds = (allRoadmaps || []).map((r: any) => r.template_id).filter(Boolean);
+    const { data: templateClassData } = templateIds.length > 0
+      ? await sb.from('coaching_templates').select('id, class_id').in('id', templateIds)
+      : { data: [] };
+    const classIds = [...new Set((templateClassData || []).map((t: any) => t.class_id).filter(Boolean))];
+
+    // ── Step 4: Parallel queries for behavioral, mastery, tests, sessions, BPP
+    const [profile, weakAreas, nextTest, sessionData, bppData] = await Promise.all([
+      sb.from('student_behavioral_profiles').select('*').eq('user_id', user.id).maybeSingle(),
+      sb.from('user_subject_mastery').select('domain,subdomain,mastery_score,questions_attempted,questions_correct').eq('user_id', user.id).order('mastery_score',{ascending:true}).limit(5),
+      sb.from('upcoming_tests').select('*').in('roadmap_id', roadmapIds).eq('status','upcoming').gte('test_date', date).order('test_date',{ascending:true}).limit(1),
+      classIds.length > 0
+        ? sb.from('class_attendance_sessions').select('id, subject, topics_covered, class_id').in('class_id', classIds).eq('session_date', date)
+        : Promise.resolve({ data: [] }),
+      classIds.length > 0
+        ? (async () => {
+            const sessionIds = (sessionData?.data || []).map((s: any) => s.id);
+            if (sessionIds.length === 0) return { data: [] };
+            return sb.from('class_session_bpp').select('id, class_session_id, question_count').in('class_session_id', sessionIds).eq('processed', true);
+          })()
+        : Promise.resolve({ data: [] }),
     ]);
 
-    const profile = pRes.data;
-    const weakAreas = wRes.data||[];
-    const nextTest = (tRes.data||[])[0]||null;
-    const template = tplRes.data;
-    const dow = new Date(date).getDay();
-    const daysUntil = nextTest ? Math.ceil((new Date(nextTest.test_date).getTime()-new Date(date).getTime())/(86400000)) : null;
-
+    // ── Step 5: Compute weak areas
     const weakMap = new Map();
-    weakAreas.forEach((w:any)=>{ const k=`${w.domain}${w.subdomain?' — '+w.subdomain:''}`; weakMap.set(k,{mastery:Math.round((w.mastery_score||0)*100),accuracy:w.questions_attempted>0?Math.round((w.questions_correct/w.questions_attempted)*100):0}); });
+    (weakAreas.data||[]).forEach((w:any)=>{ const k=`${w.domain}${w.subdomain?' — '+w.subdomain:''}`; weakMap.set(k,{mastery:Math.round((w.mastery_score||0)*100),accuracy:w.questions_attempted>0?Math.round((w.questions_correct/w.questions_attempted)*100):0}); });
     const weakest = Array.from(weakMap.entries()).slice(0,3).map(([key,v]:[string,any])=>({key,...v}));
+
+    const dow = new Date(date).getDay();
+    const nextTestRow = (nextTest.data||[])[0]||null;
+    const daysUntil = nextTestRow ? Math.ceil((new Date(nextTestRow.test_date).getTime()-new Date(date).getTime())/) : null;
 
     let types = [...ROTATION[dow]];
     if (daysUntil!==null && daysUntil<=3) types=['timed_set','timed_set','timed_set'];
     else if (daysUntil!==null && daysUntil<=7) types=['timed_set','retrieval_check','timed_set'];
 
-    const streak = profile?.missed_days_streak||0;
-    const backlog = profile?.backlog_count||0;
+    const streak = profile?.data?.missed_days_streak||0;
+    const backlog = profile?.data?.backlog_count||0;
     if (streak>2) types[0]='confidence_builder';
     if (backlog>5) types.push('backlog_sweep');
 
+    // ── Step 6: Build tasks from unified schedule
     let tasks: any[] = [];
-    const sched = template?.weekly_schedule;
+    const sched = (unifiedSched || []) as any[];
 
-    if (sched && Array.isArray(sched)) {
-      const we = sched.find((w:any)=>w.week===roadmap.current_week);
+    if (sched.length > 0) {
+      const currentWeek = primaryRoadmap.current_week || 1;
+      const we = sched.find((w: any) => w.week === currentWeek)
+              || sched.sort((a: any, b: any) => a.week - b.week)[0];
       if (we) {
-        const subs = ['physics','chemistry','mathematics'].filter((s:string)=>we[s]);
-        tasks = subs.map((subj:string,i:number)=>{
-          const td = we[subj]; const st = td.subtopics||[];
-          const tt = types[i]||'review_notes'; const m=META[tt];
-          const sn = subj.charAt(0).toUpperCase()+subj.slice(1);
-          const wm = weakest.find((w:any)=>w.key.toLowerCase().includes(sn.toLowerCase())||w.key.toLowerCase().includes(td.topic.toLowerCase()))||null;
-          return { order:i+1, title:`${sn}: ${td.topic}`, subject:sn, type:tt, duration_min:m.duration,
-            details: buildDesc(m,sn,td.topic,st,wm,nextTest,daysUntil),
-            difficulty: wm?(wm.mastery<40?'easy':wm.mastery<70?'medium':'hard'):'medium',
-            resources: td.resources||['Class notes','NCERT'], topic: td.topic, subtopics: st };
-        });
+        const subjectKeys = ['physics_topic', 'chemistry_topic', 'mathematics_topic'];
+        const subjectNames = ['Physics', 'Chemistry', 'Mathematics'];
+        tasks = subjectKeys.map((topicKey, i) => {
+          const topic = we[topicKey] as string;
+          if (!topic) return null;
+          const subtopicKey = topicKey.replace('_topic', '_subtopics');
+          const st: string[] = (we[subtopicKey] || []) as string[];
+          const tt = types[i]||'review_notes';
+          const m = META[tt];
+          const sn = subjectNames[i];
+          const wm = weakest.find((w: any) => w.key.toLowerCase().includes(sn.toLowerCase()) || w.key.toLowerCase().includes(topic.toLowerCase())) || null;
+          return {
+            order: i+1,
+            title: `${sn}: ${topic}`,
+            subject: sn,
+            type: tt,
+            duration_min: m.duration,
+            details: buildDesc(m, sn, topic, st, wm, nextTestRow, daysUntil),
+            difficulty: wm ? (wm.mastery<40 ? 'easy' : wm.mastery<70 ? 'medium' : 'hard') : 'medium',
+            resources: ['Class notes', 'NCERT'],
+            topic,
+            subtopics: st,
+          };
+        }).filter(Boolean);
       }
     }
 
     if (!tasks.length) {
       const defaults = ['Physics — Mechanics','Chemistry — Organic','Mathematics — Calculus'];
-      tasks = defaults.map((t:string,i:number)=>{
-        const [sn,topic] = t.split(' — ');
-        const tt = types[i]||'review_notes'; const m=META[tt];
-        const wm = weakest.find((w:any)=>w.key.toLowerCase().includes(sn.toLowerCase()))||null;
-        return { order:i+1, title:t, subject:sn, type:tt, duration_min:m.duration,
-          details: buildDesc(m,sn,topic,[],wm,nextTest,daysUntil), difficulty:'medium', resources:['Class notes'], topic, subtopics: [] };
+      tasks = defaults.map((t, i) => {
+        const [sn, topic] = t.split(' — ');
+        const tt = types[i]||'review_notes';
+        const m = META[tt];
+        const wm = weakest.find((w: any) => w.key.toLowerCase().includes(sn.toLowerCase())) || null;
+        return {
+          order: i+1, title: t, subject: sn, type: tt, duration_min: m.duration,
+          details: buildDesc(m, sn, topic, [], wm, nextTestRow, daysUntil),
+          difficulty: 'medium', resources: ['Class notes'], topic, subtopics: [],
+        };
       });
     }
 
-    // ── Enrich tasks with specific question metadata when available ──
-    if (tasks.length > 0) {
-      const topicTags = tasks.map((t: any) => t.topic).filter(Boolean);
-      if (topicTags.length > 0) {
-        try {
-          const { data: questions } = await sb.from('question_metadata')
-            .select('id, question_text, difficulty, kc_id, tags, marks, expected_time_sec')
-            .in('tags', topicTags)
-            .limit(topicTags.length * 3);
-          if (questions && questions.length > 0) {
-            tasks = tasks.map((t: any) => {
-              const matched = questions.filter((q: any) => q.tags?.includes(t.topic));
-              if (matched.length > 0) {
-                const qList = matched.slice(0, 3).map((q: any, i: number) => `Q${i + 1} [${q.difficulty}, ${q.marks}m, ~${Math.round((q.expected_time_sec || 120) / 60)}min]: ${q.question_text?.substring(0, 80) || 'See question metadata'}...`).join('\n');
-                return { ...t, details: `${t.details}\n\n📚 Specific Questions:\n${qList}`, question_refs: matched.slice(0, 3).map((q: any) => q.id) };
-              }
-              return t;
-            });
-          }
-        } catch (e) {
-          console.warn('question_metadata enrichment failed:', e);
-        }
+    // ── Step 7: Enrich with BPP questions (today's content gets priority)
+    const todaySessions = (sessionData.data || []) as any[];
+    const bppSessions = (bppData.data || []) as any[];
+
+    if (tasks.length > 0 && bppSessions.length > 0) {
+      const bppSessionIds = bppSessions.map((b: any) => b.id);
+      const { data: bppQuestions } = await sb
+        .from('question_metadata')
+        .select('id, question_text, difficulty, tags')
+        .in('bpp_session_id', bppSessionIds)
+        .limit(20);
+      if (bppQuestions && bppQuestions.length > 0) {
+        const qList = bppQuestions.slice(0, 5).map((q: any, i: number) =>
+          `Q${i+1} [${q.difficulty||'medium'}, BPP]: ${(q.question_text||'').substring(0,100)}...`
+        ).join('\n');
+        tasks[0] = {
+          ...tasks[0],
+          details: `${tasks[0].details}\n\nToday's BPP Questions:\n${qList}`,
+          bpp_question_refs: bppQuestions.slice(0, 5).map((q: any) => q.id),
+        };
       }
     }
 
-    const { data: activeInterventions } = await sb
+    // ── Step 8: General question metadata enrichment
+    const topicTags = tasks.map((t: any) => t.topic).filter(Boolean);
+    if (topicTags.length > 0) {
+      try {
+        const { data: questions } = await sb.from('question_metadata')
+          .select('id, question_text, difficulty, tags, marks, expected_time_sec')
+          .in('tags', topicTags)
+          .limit(topicTags.length * 3);
+        if (questions && questions.length > 0) {
+          tasks = tasks.map((t: any) => {
+            const matched = (questions as any[]).filter((q: any) => q.tags?.includes(t.topic));
+            if (matched.length > 0) {
+              return { ...t, question_refs: [...(t.question_refs || []), ...matched.slice(0, 3).map((q: any) => q.id)] };
+            }
+            return t;
+          });
+        }
+      } catch (e) {
+        console.warn('question_metadata enrichment failed:', e);
+      }
+    }
+
+    // ── Step 9: Interventions
+    const { data: interventions } = await sb
       .from('interventions')
       .select('id, intervention_level, action_type, action_payload, trigger_type, severity')
       .eq('student_user_id', user.id)
       .eq('status', 'active')
       .order('intervention_level', { ascending: false })
-      .order('created_at', { ascending: false })
       .limit(1);
-    const activeIntervention = (activeInterventions || [])[0] || null;
+    const activeIntervention = (interventions||[])[0] || null;
 
     tasks = tasks.map((task: any) => {
-      const duration = Number(task.duration_min || task.estimated_minutes || 30);
-      const lowDuration = Math.max(12, Math.round(duration * 0.45));
-      const normalDuration = duration;
-      const beastDuration = Math.round(duration * 1.45);
+      const duration = Number(task.duration_min || 30);
       const proofRequired = Boolean(activeIntervention?.action_payload?.proof_required);
-      const trigger = activeIntervention?.trigger_type
-        ? `Intervention: ${activeIntervention.trigger_type.replaceAll('_', ' ')}.`
-        : null;
-
+      const trigger = activeIntervention?.trigger_type ? `Intervention: ${activeIntervention.trigger_type.replaceAll('_', ' ')}.` : null;
       return {
         ...task,
         proof_required: proofRequired,
         intervention_id: activeIntervention?.id || null,
-        why_today: [
-          trigger,
-          task.details || task.description || `${task.subject || 'Study'} is next in your roadmap.`,
-        ].filter(Boolean).join(' '),
+        why_today: [trigger, task.details || `${task.subject || 'Study'} is next in your roadmap.`].filter(Boolean).join(' '),
         mission_variants: [
-          {
-            mode: 'low',
-            label: 'Low energy',
-            durationMin: lowDuration,
-            taskLimit: 1,
-            description: 'Do the smallest version that keeps the chain alive.',
-          },
-          {
-            mode: 'normal',
-            label: 'Normal',
-            durationMin: normalDuration,
-            description: 'Do the mission exactly as prescribed.',
-          },
-          {
-            mode: 'beast',
-            label: 'Beast mode',
-            durationMin: beastDuration,
-            description: 'Add one extra retrieval check or timed mini-set after completion.',
-          },
+          { mode: 'low', label: 'Low energy', durationMin: Math.max(12, Math.round(duration * 0.45)), taskLimit: 1, description: 'Do the smallest version that keeps the chain alive.' },
+          { mode: 'normal', label: 'Normal', durationMin: duration, description: 'Do the mission exactly as prescribed.' },
+          { mode: 'beast', label: 'Beast mode', durationMin: Math.round(duration * 1.45), description: 'Add one extra retrieval check or timed mini-set after completion.' },
         ],
       };
     });
 
-    const totalMin = tasks.reduce((sum:number,t:any)=>sum+(t.duration_min||0),0);
-    const preferredTime = profile?.preferred_time||'evening';
-    const typicalDuration = profile?.typical_session_duration_min||90;
-    const firstSubject = tasks[0]?.subject||'your first subject';
-    const intentions = buildIntentions(preferredTime,typicalDuration,firstSubject);
+    const totalMin = tasks.reduce((sum: number, t: any) => sum + (t.duration_min || 0), 0);
+    const preferredTime = profile?.data?.preferred_time || 'evening';
+    const typicalDuration = profile?.data?.typical_session_duration_min || 90;
+    const firstSubject = tasks[0]?.subject || 'your first subject';
+    const intentions = buildIntentions(preferredTime, typicalDuration, firstSubject);
 
-    const contextSnapshot = { roadmap_week: roadmap.current_week, today_sessions: sRes.data||[], next_test: nextTest?{name:nextTest.test_name,date:nextTest.test_date,days_until:daysUntil}:null, behavioral_profile: profile||{}, weak_areas: weakest, generated_by: 'deterministic_engine_v1' };
+    const contextSnapshot = {
+      roadmap_week: primaryRoadmap.current_week,
+      enrolled_classes: roadmapIds.length,
+      today_sessions: todaySessions,
+      next_test: nextTestRow ? { name: nextTestRow.test_name, date: nextTestRow.test_date, days_until: daysUntil } : null,
+      behavioral_profile: profile?.data || {},
+      weak_areas: weakest,
+      generated_by: 'deterministic_engine_v2',
+    };
 
     const plan = { total_estimated_minutes: totalMin, tasks, implementation_intentions: intentions, context_snapshot: contextSnapshot, source: 'deterministic' };
 
     return new Response(JSON.stringify({ success: true, plan }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error(error);
     return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }

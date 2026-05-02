@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, BadgeCheck, ChevronLeft, Lock, Share2, ShieldCheck, Sparkles, Trophy } from 'lucide-react';
+import { Award, BadgeCheck, ChevronLeft, Lock, Share2, ShieldCheck, Sparkles, Trophy, Brain, Cpu, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
+import { useMLIntelligence } from '../hooks/useMLIntelligence';
 
 const JEE_TREE = [
   {
@@ -47,6 +48,15 @@ export function MasteryTree() {
   const navigate = useNavigate();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
+  const ml = useMLIntelligence();
+
+  const tierConfig = {
+    anoetic: { label: 'Anoetic', color: '#F472B6' },
+    noetic: { label: 'Noetic', color: '#00D1FF' },
+    autonoetic: { label: 'Autonoetic', color: '#34D399' },
+  };
+  const tier = ml.dominantTier as keyof typeof tierConfig;
+  const tierInfo = tierConfig[tier] ?? tierConfig.anoetic;
 
   useEffect(() => {
     if (!user?.id) return;
@@ -122,6 +132,26 @@ export function MasteryTree() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">Avg Rigor</div>
               </div>
             </div>
+            {/* ML Intelligence Badge */}
+            {ml.cognitiveProfiles.length > 0 && (
+              <div className="flex items-center gap-3 px-4 py-2 bg-white/80 rounded-[12px] border border-[#0A192F]/10">
+                <Brain className="w-4 h-4" style={{ color: tierInfo.color }} />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">Cognitive Tier</p>
+                  <p className="text-sm font-extrabold" style={{ color: tierInfo.color }}>{tierInfo.label}</p>
+                </div>
+                <div className="w-px h-6 bg-[#0A192F]/10" />
+                <Cpu className="w-4 h-4 text-[#64748B]" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B]">θ Level</p>
+                  <p className="text-sm font-extrabold text-[#0A192F]">{(ml.avgMastery * 4 - 2).toFixed(2)}</p>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[8px]">
+                  <Zap className="w-3 h-3 text-[#34D399]" />
+                  <span className="text-[10px] font-bold text-[#34D399]">BKT+IRT</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

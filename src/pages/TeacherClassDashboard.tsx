@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fetchClassExecutionMetrics, type ClassExecutionMetrics } from '../lib/classExecutionMetrics';
 import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2, CalendarCheck, Zap, Target, Activity, Flag, Mail, ShieldCheck, Gauge, ClipboardCheck } from 'lucide-react';
+import { MLPipelineHealth } from '../components/MLPipelineHealth';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
@@ -151,6 +152,12 @@ const TeacherClassDashboard: React.FC = () => {
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceMessage, setAttendanceMessage] = useState('');
   const [attendanceError, setAttendanceError] = useState('');
+
+  // BPP Upload state
+  const [bppFile, setBppFile] = useState<File | null>(null);
+  const [bppUploading, setBppUploading] = useState(false);
+  const [bppResult, setBppResult] = useState<{ questions_extracted?: number; topics?: string[] } | null>(null);
+  const [bppError, setBppError] = useState('');
 
   // Student Responses
   const [attempts, setAttempts] = useState<any[]>([]);
@@ -409,9 +416,28 @@ const TeacherClassDashboard: React.FC = () => {
     e.preventDefault();
     if (!user || !id) return;
     setLoggingSession(true);
+    setSessionLogError('');
+    setSessionLogSuccess('');
+    setBppResult(null);
+    setBppError('');
     try {
       const topicsArray = sessionTopics.split(',').map(t => t.trim()).filter(Boolean);
-      
+
+      // Create or get today's class session
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('class_attendance_sessions')
+        .upsert({
+          class_id: id,
+          teacher_id: user.id,
+          session_date: new Date().toISOString().split('T')[0],
+          subject: sessionSubject,
+          topics_covered: topicsArray.length ? topicsArray : ['General'],
+          duration_minutes: sessionDuration,
+        }, { onConflict: 'class_id,session_date' })
+        .select('id')
+        .single();
+      if (sessionError) throw sessionError;
+
       if (homeworkEnabled && sessionHomework.trim()) {
         const due = new Date();
         due.setDate(due.getDate() + 1);
@@ -423,17 +449,74 @@ const TeacherClassDashboard: React.FC = () => {
         });
       }
 
-      setSessionLogSuccess(`Class logged successfully.`);
+      // Handle BPP upload if file selected
+      if (bppFile && sessionRow?.id) {
+        setBppUploading(true);
+        try {
+          // Upload to Supabase Storage
+          const fileExt = bppFile.name.split('.').pop() || 'pdf';
+          const storagePath = `bpp/${sessionRow.id}/${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('curriculums')
+            .upload(storagePath, bppFile);
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from('curriculums').getPublicUrl(storagePath);
+          const fileUrl = urlData.publicUrl;
+
+          // Record in class_session_bpp
+          const { data: bppRecord, error: bppRecordError } = await supabase
+            .from('class_session_bpp')
+            .insert({
+              class_session_id: sessionRow.id,
+              file_url: fileUrl,
+              file_name: bppFile.name,
+              file_size_bytes: bppFile.size,
+              created_by: user.id,
+            })
+            .select('id')
+            .single();
+          if (bppRecordError) throw bppRecordError;
+
+          // Convert PDF to images and extract questions
+          const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
+          const pages = await pdfFileToImageDataUrls(bppFile);
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-bpp-questions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              class_session_id: sessionRow.id,
+              file_url: fileUrl,
+              pages,
+            }),
+          });
+          const extractionResult = await res.json();
+          if (extractionResult.success) {
+            setBppResult({ questions_extracted: extractionResult.questions_extracted, topics: extractionResult.topics_identified });
+          } else {
+            setBppError(extractionResult.error || 'Extraction failed');
+          }
+        } catch (bppErr: any) {
+          setBppError(bppErr.message || 'BPP upload/extraction failed');
+        } finally {
+          setBppUploading(false);
+        }
+      }
+
+      setSessionLogSuccess(`Class logged successfully.${bppResult?.questions_extracted ? ` ${bppResult.questions_extracted} questions extracted from BPP.` : ''}`);
       setSessionTopics('');
       setSessionHomework('');
       setHomeworkEnabled(false);
-      
-      // Also pre-fill daily topics for auto-check
+      setBppFile(null);
       setDailyTopics(topicsArray.join(', '));
       await refreshClassInterventions();
-      
     } catch (err: any) {
-      setSessionLogError(err?.message || 'Failed to log class session.');
+      setSessionLogError(err.message || 'Failed to log class session.');
     } finally {
       setLoggingSession(false);
     }
@@ -781,6 +864,9 @@ const TeacherClassDashboard: React.FC = () => {
         {/* 2) Daily Teaching Loop */}
         {tab === 'Daily Teaching Loop' && (
           <div className="space-y-6 animate-fade-in">
+            {/* ML Pipeline Health Panel */}
+            <MLPipelineHealth />
+
             <div className="bg-[#2D2A26] rounded-2xl p-6 text-white shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
@@ -883,8 +969,43 @@ const TeacherClassDashboard: React.FC = () => {
                     placeholder="Homework (optional)"
                     className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
                   />
-                  <button type="submit" disabled={loggingSession} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:shadow-md transition-all">
-                    {loggingSession ? 'Saving...' : 'Log Lesson'}
+                  {/* BPP Upload */}
+                  <div className="rounded-[14px] border-2 border-dashed border-[#00D1FF]/30 bg-[#00D1FF]/5 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Upload className="w-4 h-4 text-[#00D1FF]" />
+                      <span className="text-sm font-bold text-[#2D2A26]">Upload Today's BPP</span>
+                      <span className="text-[10px] text-[#8A8279]">PDF → questions auto-extracted</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setBppFile(file);
+                        if (file) {
+                          // Auto-trigger BPP extraction after session is logged
+                        }
+                      }}
+                      className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#00D1FF]/10 file:text-[#00D1FF] hover:file:bg-[#00D1FF]/20 cursor-pointer"
+                    />
+                    {bppFile && (
+                      <p className="text-xs text-[#00D1FF] font-medium mt-2 truncate">{bppFile.name}</p>
+                    )}
+                  </div>
+                  {bppResult && (
+                    <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-[12px]">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      <p className="text-sm font-bold text-emerald-700">
+                        {bppResult.questions_extracted} questions extracted from BPP PDF!
+                        {bppResult.topics && bppResult.topics.length > 0 && ` Topics: ${bppResult.topics.join(', ')}`}
+                      </p>
+                    </div>
+                  )}
+                  {bppError && (
+                    <p className="text-red-600 text-sm font-medium">{bppError}</p>
+                  )}
+                  <button type="submit" disabled={loggingSession || bppUploading} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:shadow-md transition-all disabled:opacity-50">
+                    {loggingSession ? (bppUploading ? 'Extracting questions...' : 'Saving...') : 'Log Lesson & Extract BPP'}
                   </button>
                   {sessionLogSuccess && <p className="text-emerald-600 text-sm font-bold mt-2">{sessionLogSuccess}</p>}
                   {sessionLogError && <p className="text-red-600 text-sm font-bold mt-2">{sessionLogError}</p>}

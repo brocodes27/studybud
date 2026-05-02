@@ -7,11 +7,12 @@ import {
 } from 'recharts';
 import {
   Brain, TrendingUp, Clock, Target, Award,
-  Zap, Star, Activity, Users
+  Zap, Star, Activity, Users, CheckCircle2, AlertCircle, XCircle, Cpu
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { useToast } from '../hooks/useToast';
 import { FeatureGate } from './FeatureGate';
+import { useMLIntelligence } from '../hooks/useMLIntelligence';
 
 interface AnalyticsData {
   studyPatterns: {
@@ -56,6 +57,7 @@ export function AdvancedAnalytics() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('month');
+  const ml = useMLIntelligence();
 
   useEffect(() => {
     if (user) {
@@ -66,7 +68,95 @@ export function AdvancedAnalytics() {
   const fetchAnalyticsData = async () => {
     setLoadingData(true);
     try {
-      // Mock data based on the interface
+      // Build real AI insights from ML pipeline data
+      const aiInsights: AnalyticsData['aiInsights'] = [];
+
+      // Pipeline health insights
+      const irtHealth = ml.pipelineHealth['irt-calibrate'];
+      const bktHealth = ml.pipelineHealth['bkt-tune'];
+      const agentHealth = ml.pipelineHealth['agent-analyze-corrections'];
+      const scoreHealth = ml.pipelineHealth['train-score-model'];
+
+      if (ml.bktParams.length > 0) {
+        aiInsights.push({
+          type: 'strength',
+          title: `BKT Tuned for ${ml.bktParams.length} Knowledge Components`,
+          description: `Cohort-calibrated mastery parameters active across ${ml.bktParams.length} topics. Parameters adapt from real student response patterns.`,
+          actionItems: ['Mastery tracking improves with each interaction'],
+          priority: 'medium'
+        });
+      }
+
+      if (ml.irtCalibrations.length > 0) {
+        aiInsights.push({
+          type: 'achievement',
+          title: `IRT Calibration Complete (${ml.irtCalibrations.length} Questions)`,
+          description: 'Question difficulty and discrimination parameters calibrated from actual student response data. Adaptive question targeting is now data-driven.',
+          actionItems: ['Each question selected at your optimal difficulty zone'],
+          priority: 'high'
+        });
+      }
+
+      if (ml.scoreModel) {
+        aiInsights.push({
+          type: 'achievement',
+          title: `Score Prediction Model v${ml.scoreModel.model_version} Active`,
+          description: `Trained on ${ml.scoreModel.training_sample_size} labeled samples${ml.scoreModel.accuracy ? ` (${(ml.scoreModel.accuracy * 100).toFixed(0)}% accuracy)` : ''}. Estimates are personalized to your mastery profile.`,
+          actionItems: ['Predictions update with every practice session'],
+          priority: 'medium'
+        });
+      } else if (!ml.isLoading) {
+        aiInsights.push({
+          type: 'recommendation',
+          title: 'Score Model Training in Progress',
+          description: 'The regression model is accumulating labeled data. Once ≥100 samples are collected, score predictions will be personalized to your learning profile.',
+          actionItems: ['Complete more practice tests to train the model'],
+          priority: 'low'
+        });
+      }
+
+      if (ml.agentInsights.length > 0) {
+        const topInsight = ml.agentInsights[0];
+        aiInsights.push({
+          type: 'weakness',
+          title: `AI Correction Pattern: ${topInsight.root_cause_category}`,
+          description: `Detected ${topInsight.frequency}x in ${topInsight.affected_sessions} sessions. AI study buddy is self-correcting — this improves with every interaction.`,
+          actionItems: [topInsight.suggested_template_delta ?? 'AI learning from corrections in real-time'],
+          priority: 'medium'
+        });
+      }
+
+      if (ml.pipelineRuns.length === 0 && !ml.isLoading) {
+        aiInsights.push({
+          type: 'recommendation',
+          title: 'ML Pipeline Warming Up',
+          description: 'Intelligence pipelines are deployed but need response data to calibrate. First results appear after students complete 30+ interactions per question.',
+          actionItems: ['Students should start practicing to trigger calibration'],
+          priority: 'low'
+        });
+      }
+
+      // Pipeline status summary
+      const pipelineStatuses = [
+        { name: 'IRT Calibration', health: irtHealth },
+        { name: 'BKT Tuning', health: bktHealth },
+        { name: 'Agent Corrections', health: agentHealth },
+        { name: 'Score Model', health: scoreHealth },
+      ].filter(p => p.health !== 'never_run');
+
+      if (pipelineStatuses.length > 0) {
+        const allHealthy = pipelineStatuses.every(p => p.health === 'healthy');
+        const anyFailed = pipelineStatuses.some(p => p.health === 'stale');
+
+        aiInsights.push({
+          type: allHealthy ? 'achievement' : anyFailed ? 'weakness' : 'recommendation',
+          title: `ML Pipeline: ${allHealthy ? 'All Systems Operational' : anyFailed ? 'Some Pipelines Need Attention' : 'Pipelines Initializing'}`,
+          description: pipelineStatuses.map(p => `${p.name}: ${p.health}`).join(' · '),
+          actionItems: pipelineStatuses.filter(p => p.health !== 'healthy').map(p => `Check ${p.name} pipeline`),
+          priority: allHealthy ? 'low' : 'high'
+        });
+      }
+
       const mockData: AnalyticsData = {
         studyPatterns: Array.from({ length: 24 }, (_, i) => ({
           hour: i,
@@ -94,22 +184,13 @@ export function AdvancedAnalytics() {
             { timeOfDay: 'Evening', distractions: 3 }
           ]
         },
-        aiInsights: [
-          {
-            type: 'strength',
-            title: 'High Retention in STEM',
-            description: 'You are showing exceptional retention in Mathematical concepts.',
-            actionItems: ['Attempt advanced calculus level 2', 'Help a peer in the Physics group'],
-            priority: 'medium'
-          },
-          {
-            type: 'weakness',
-            title: 'Afternoon Slump Detected',
-            description: 'Your focus scores drop between 2 PM and 4 PM.',
-            actionItems: ['Schedule lighter reading during this time', 'Take a 15-minute active break'],
-            priority: 'high'
-          }
-        ],
+        aiInsights: aiInsights.length > 0 ? aiInsights : [{
+          type: 'recommendation' as const,
+          title: 'ML Pipeline Warming Up',
+          description: 'Intelligence systems deployed. Real insights will appear as student data accumulates.',
+          actionItems: ['More practice → smarter predictions'],
+          priority: 'low' as const
+        }],
         socialMetrics: {
           rank: 42,
           totalUsers: 12500,
@@ -208,6 +289,33 @@ export function AdvancedAnalytics() {
           </div>
         </div>
       </FeatureGate>
+
+      {/* ML Pipeline Status Panel */}
+      <div className="bg-slate-800 border border-[#34D399]/20 p-6 shadow-neo">
+        <h3 className="text-xl font-black text-slate-100 mb-4 flex items-center gap-2 uppercase italic">
+          <Cpu className="h-6 w-6 text-[#34D399]" />
+          Adaptive Intelligence Pipeline
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { name: 'IRT Calibration', health: ml.pipelineHealth['irt-calibrate'], count: ml.irtCalibrations.length, suffix: 'questions' },
+            { name: 'BKT Tuning', health: ml.pipelineHealth['bkt-tune'], count: ml.bktParams.length, suffix: 'KCs' },
+            { name: 'Agent Corrections', health: ml.pipelineHealth['agent-analyze-corrections'], count: ml.agentInsights.length, suffix: 'patterns' },
+            { name: 'Score Model', health: ml.pipelineHealth['train-score-model'], count: ml.scoreModel?.model_version ?? 0, suffix: `v${ml.scoreModel?.model_version ?? 0}` },
+          ].map((pipeline) => (
+            <div key={pipeline.name} className="p-4 border border-white/10 bg-slate-900">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-100/40">{pipeline.name}</span>
+                {pipeline.health === 'healthy' && <CheckCircle2 className="w-4 h-4 text-[#34D399]" />}
+                {pipeline.health === 'stale' && <AlertCircle className="w-4 h-4 text-amber-400" />}
+                {pipeline.health === 'never_run' && <XCircle className="w-4 h-4 text-slate-100/20" />}
+              </div>
+              <p className="text-2xl font-black italic text-[#34D399]">{pipeline.count}</p>
+              <p className="text-[10px] font-black uppercase text-slate-100/40">{pipeline.suffix}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Social Metrics */}
       <div className="bg-slate-800 border border-white/10 p-8 shadow-neo -rotate-1">

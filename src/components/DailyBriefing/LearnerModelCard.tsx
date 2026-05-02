@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Brain, Flame, Gauge, Moon, Target, TrendingUp } from 'lucide-react';
+import { Brain, Flame, Gauge, Moon, Target, TrendingUp, Zap, Activity, Sparkles } from 'lucide-react';
 import type { DailyBriefingData } from '../../lib/dailyBriefing';
+import { useMLIntelligence } from '../../hooks/useMLIntelligence';
 
 interface LearnerModelCardProps {
   data: DailyBriefingData;
@@ -19,6 +20,16 @@ function getLoadSignal(data: DailyBriefingData) {
 export function LearnerModelCard({ data }: LearnerModelCardProps) {
   const loadSignal = getLoadSignal(data);
   const weakSubjects = data.studentState.weakSubjects.slice(0, 3);
+  const ml = useMLIntelligence();
+
+  const tierConfig = {
+    anoetic: { label: 'Anoetic', color: '#F472B6', desc: 'Needs guided practice', icon: Brain },
+    noetic: { label: 'Noetic', color: '#00D1FF', desc: 'Building understanding', icon: Activity },
+    autonoetic: { label: 'Autonoetic', color: '#34D399', desc: 'Independent mastery', icon: Sparkles },
+  };
+  const tier = ml.dominantTier as keyof typeof tierConfig;
+  const tierInfo = tierConfig[tier] ?? tierConfig.anoetic;
+  const TierIcon = tierInfo.icon;
 
   const traits = [
     {
@@ -94,6 +105,37 @@ export function LearnerModelCard({ data }: LearnerModelCardProps) {
               : 'No major weak subjects have been isolated yet. More work samples will make the model sharper.'}
           </p>
         </div>
+
+        {/* ML Intelligence Section */}
+        {(ml.cognitiveProfiles.length > 0 || ml.velocityTier !== 'unknown') && (
+          <div className="mt-3 rounded-xl border border-[#34D399]/20 bg-[#34D399]/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-3.5 h-3.5 text-[#34D399]" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#34D399]">ML Intelligence Active</span>
+            </div>
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Cognitive tier */}
+              <div className="flex items-center gap-1.5">
+                <TierIcon className="w-3.5 h-3.5" style={{ color: tierInfo.color }} />
+                <span className="text-xs font-bold" style={{ color: tierInfo.color }}>{tierInfo.label}</span>
+                <span className="text-[10px] text-[#8A8279]">{tierInfo.desc}</span>
+              </div>
+              {/* Velocity */}
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-[#64748B]" />
+                <span className="text-xs font-semibold text-[#5D5A56] capitalize">{ml.velocityTier} pace</span>
+              </div>
+              {/* avg mastery */}
+              {ml.avgMastery > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-[#00D1FF]" />
+                  <span className="text-xs font-semibold text-[#5D5A56]">{(ml.avgMastery * 100).toFixed(0)}% avg mastery</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-[#8A8279]">BKT mastery tracking · IRT adaptive question selection · Daily behavioral adaptation</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

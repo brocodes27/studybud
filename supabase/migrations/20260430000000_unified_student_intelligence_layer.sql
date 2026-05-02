@@ -50,6 +50,9 @@ CREATE TRIGGER sync_kc_prereq_edges_trigger
 -- ============================================================
 -- 2. STUDENT TOPIC MASTERY (per-KC with confidence + evidence)
 -- ============================================================
+-- NOTE: Tables created with IF NOT EXISTS in case dashboard ran them already.
+-- Policies also use IF NOT EXISTS for same reason.
+
 CREATE TABLE IF NOT EXISTS public.student_topic_mastery (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -74,18 +77,26 @@ CREATE TABLE IF NOT EXISTS public.student_topic_mastery (
     UNIQUE(user_id, kc_id)
 );
 
-ALTER TABLE public.student_topic_mastery ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "topic_mastery_select_own" ON public.student_topic_mastery FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "topic_mastery_select_teacher" ON public.student_topic_mastery
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_topic_mastery.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "topic_mastery_modify_service" ON public.student_topic_mastery
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_topic_mastery ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_topic_mastery' AND policyname = 'topic_mastery_select_own') THEN
+    CREATE POLICY "topic_mastery_select_own" ON public.student_topic_mastery FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_topic_mastery' AND policyname = 'topic_mastery_select_teacher') THEN
+    CREATE POLICY "topic_mastery_select_teacher" ON public.student_topic_mastery
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_topic_mastery.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_topic_mastery' AND policyname = 'topic_mastery_modify_service') THEN
+    CREATE POLICY "topic_mastery_modify_service" ON public.student_topic_mastery FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_stm_user ON public.student_topic_mastery(user_id);
 CREATE INDEX IF NOT EXISTS idx_stm_kc ON public.student_topic_mastery(kc_id);
@@ -100,7 +111,7 @@ CREATE TABLE IF NOT EXISTS public.student_misconceptions (
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     kc_id uuid REFERENCES public.knowledge_components(id) ON DELETE SET NULL,
     misconception_label text NOT NULL,
-    misconception_category text NOT NULL DEFAULT 'conceptual' 
+    misconception_category text NOT NULL DEFAULT 'conceptual'
         CHECK (misconception_category IN ('conceptual', 'procedural', 'notation', 'formula', 'definition', 'careless')),
     triggering_question_pattern text,
     example_wrong_answer text,
@@ -119,17 +130,26 @@ CREATE TABLE IF NOT EXISTS public.student_misconceptions (
     UNIQUE(user_id, kc_id, misconception_label)
 );
 
-ALTER TABLE public.student_misconceptions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "misconceptions_select_own" ON public.student_misconceptions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "misconceptions_select_teacher" ON public.student_misconceptions
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_misconceptions.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "misconceptions_modify_service" ON public.student_misconceptions FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_misconceptions ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_misconceptions' AND policyname = 'misconceptions_select_own') THEN
+    CREATE POLICY "misconceptions_select_own" ON public.student_misconceptions FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_misconceptions' AND policyname = 'misconceptions_select_teacher') THEN
+    CREATE POLICY "misconceptions_select_teacher" ON public.student_misconceptions
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_misconceptions.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_misconceptions' AND policyname = 'misconceptions_modify_service') THEN
+    CREATE POLICY "misconceptions_modify_service" ON public.student_misconceptions FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_sm_user ON public.student_misconceptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sm_kc ON public.student_misconceptions(kc_id);
@@ -164,17 +184,26 @@ CREATE TABLE IF NOT EXISTS public.student_learning_velocity (
     UNIQUE(user_id, kc_id)
 );
 
-ALTER TABLE public.student_learning_velocity ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "velocity_select_own" ON public.student_learning_velocity FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "velocity_select_teacher" ON public.student_learning_velocity
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_learning_velocity.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "velocity_modify_service" ON public.student_learning_velocity FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_learning_velocity ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_learning_velocity' AND policyname = 'velocity_select_own') THEN
+    CREATE POLICY "velocity_select_own" ON public.student_learning_velocity FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_learning_velocity' AND policyname = 'velocity_select_teacher') THEN
+    CREATE POLICY "velocity_select_teacher" ON public.student_learning_velocity
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_learning_velocity.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_learning_velocity' AND policyname = 'velocity_modify_service') THEN
+    CREATE POLICY "velocity_modify_service" ON public.student_learning_velocity FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_slv_user ON public.student_learning_velocity(user_id);
 CREATE INDEX IF NOT EXISTS idx_slv_kc ON public.student_learning_velocity(kc_id);
@@ -211,20 +240,29 @@ CREATE TABLE IF NOT EXISTS public.student_avoidance_patterns (
     updated_at timestamptz DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_sap_unique ON public.student_avoidance_patterns 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sap_unique ON public.student_avoidance_patterns
     (user_id, avoidance_type, COALESCE(subject, ''), COALESCE(kc_id::text, ''), COALESCE(task_type, ''), COALESCE(difficulty_level, ''));
 
-ALTER TABLE public.student_avoidance_patterns ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "avoidance_select_own" ON public.student_avoidance_patterns FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "avoidance_select_teacher" ON public.student_avoidance_patterns
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_avoidance_patterns.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "avoidance_modify_service" ON public.student_avoidance_patterns FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_avoidance_patterns ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_avoidance_patterns' AND policyname = 'avoidance_select_own') THEN
+    CREATE POLICY "avoidance_select_own" ON public.student_avoidance_patterns FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_avoidance_patterns' AND policyname = 'avoidance_select_teacher') THEN
+    CREATE POLICY "avoidance_select_teacher" ON public.student_avoidance_patterns
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_avoidance_patterns.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_avoidance_patterns' AND policyname = 'avoidance_modify_service') THEN
+    CREATE POLICY "avoidance_modify_service" ON public.student_avoidance_patterns FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_sap_user ON public.student_avoidance_patterns(user_id);
 CREATE INDEX IF NOT EXISTS idx_sap_pattern ON public.student_avoidance_patterns(pattern_label);
@@ -255,17 +293,26 @@ CREATE TABLE IF NOT EXISTS public.student_twin_snapshots (
     UNIQUE(user_id, snapshot_version)
 );
 
-ALTER TABLE public.student_twin_snapshots ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "twin_select_own" ON public.student_twin_snapshots FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "twin_select_teacher" ON public.student_twin_snapshots
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_twin_snapshots.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "twin_modify_service" ON public.student_twin_snapshots FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_twin_snapshots ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_snapshots' AND policyname = 'twin_select_own') THEN
+    CREATE POLICY "twin_select_own" ON public.student_twin_snapshots FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_snapshots' AND policyname = 'twin_select_teacher') THEN
+    CREATE POLICY "twin_select_teacher" ON public.student_twin_snapshots
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_twin_snapshots.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_snapshots' AND policyname = 'twin_modify_service') THEN
+    CREATE POLICY "twin_modify_service" ON public.student_twin_snapshots FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_sts_user ON public.student_twin_snapshots(user_id);
 CREATE INDEX IF NOT EXISTS idx_sts_version ON public.student_twin_snapshots(user_id, snapshot_version DESC);
@@ -293,17 +340,26 @@ CREATE TABLE IF NOT EXISTS public.student_twin_summaries (
     UNIQUE(user_id, week_start)
 );
 
-ALTER TABLE public.student_twin_summaries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "summary_select_own" ON public.student_twin_summaries FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "summary_select_teacher" ON public.student_twin_summaries
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = student_twin_summaries.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "summary_modify_service" ON public.student_twin_summaries FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.student_twin_summaries ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_summaries' AND policyname = 'summary_select_own') THEN
+    CREATE POLICY "summary_select_own" ON public.student_twin_summaries FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_summaries' AND policyname = 'summary_select_teacher') THEN
+    CREATE POLICY "summary_select_teacher" ON public.student_twin_summaries
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = student_twin_summaries.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'student_twin_summaries' AND policyname = 'summary_modify_service') THEN
+    CREATE POLICY "summary_modify_service" ON public.student_twin_summaries FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_stsum_user ON public.student_twin_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_stsum_week ON public.student_twin_summaries(user_id, week_start DESC);
@@ -331,17 +387,26 @@ CREATE TABLE IF NOT EXISTS public.task_rationales (
     UNIQUE(user_id, task_source_type, task_source_id, valid_from)
 );
 
-ALTER TABLE public.task_rationales ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "rationale_select_own" ON public.task_rationales FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "rationale_select_teacher" ON public.task_rationales
-    FOR SELECT TO authenticated USING (
-        EXISTS (
-            SELECT 1 FROM public.classes c
-            JOIN public.student_roadmaps sr ON sr.class_id = c.id
-            WHERE sr.user_id = task_rationales.user_id AND c.teacher_id = auth.uid()
-        )
-    );
-CREATE POLICY "rationale_modify_service" ON public.task_rationales FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$
+BEGIN
+  ALTER TABLE public.task_rationales ENABLE ROW LEVEL SECURITY;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'task_rationales' AND policyname = 'rationale_select_own') THEN
+    CREATE POLICY "rationale_select_own" ON public.task_rationales FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'task_rationales' AND policyname = 'rationale_select_teacher') THEN
+    CREATE POLICY "rationale_select_teacher" ON public.task_rationales
+        FOR SELECT TO authenticated USING (
+            EXISTS (
+                SELECT 1 FROM public.classes c
+                JOIN public.student_roadmaps sr ON sr.class_id = c.id
+                WHERE sr.user_id = task_rationales.user_id AND c.teacher_id = auth.uid()
+            )
+        );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'task_rationales' AND policyname = 'rationale_modify_service') THEN
+    CREATE POLICY "rationale_modify_service" ON public.task_rationales FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_tr_user ON public.task_rationales(user_id);
 CREATE INDEX IF NOT EXISTS idx_tr_valid ON public.task_rationales(user_id, valid_from DESC) WHERE valid_until IS NULL;

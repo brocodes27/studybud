@@ -40,7 +40,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing required parameters: kc_id or is_correct.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json'} })
     }
 
-    // 1. Fetch current cognitive profile for this User & Component
+    // 1. Fetch current cognitive profile + tuned BKT params
     const { data: profile, error: selectError } = await supabaseClient
       .from('student_cognitive_profiles')
       .select('*')
@@ -50,18 +50,30 @@ serve(async (req) => {
 
     if (selectError) throw selectError
 
+    // Fetch cohort-tuned BKT params from bkt_kc_parameters
+    let tunedParams: { p_guess: number; p_slip: number; p_transit: number } | null = null
+    try {
+      const { data: params } = await supabaseClient
+        .rpc('get_bkt_params', { p_kc_id: kc_id })
+        .single()
+      if (params) tunedParams = params
+    } catch {
+      // Fallback to defaults if RPC fails (table not yet populated)
+    }
+
     let currentMastery = 0.1
-    let p_guess = 0.2
-    let p_slip = 0.1
-    let p_transit = 0.2
+    let p_guess = tunedParams?.p_guess ?? 0.2
+    let p_slip = tunedParams?.p_slip ?? 0.1
+    let p_transit = tunedParams?.p_transit ?? 0.2
     let interaction_count = 0
-    let cognitive_tier = 'anoetic' 
+    let cognitive_tier = 'anoetic'
 
     if (profile) {
       currentMastery = profile.p_mastery
-      p_guess = profile.p_guess
-      p_slip = profile.p_slip
-      p_transit = profile.p_transit
+      // Only override from profile if not already set from tuned params
+      p_guess = profile.p_guess > 0 && profile.p_guess < 0.5 ? profile.p_guess : p_guess
+      p_slip = profile.p_slip > 0 && profile.p_slip < 0.5 ? profile.p_slip : p_slip
+      p_transit = profile.p_transit > 0 && profile.p_transit < 0.5 ? profile.p_transit : p_transit
       interaction_count = profile.interaction_count
       cognitive_tier = profile.cognitive_tier
     }
