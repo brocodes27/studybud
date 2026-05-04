@@ -86,22 +86,24 @@ serve(async (req: Request) => {
       : { data: [] };
     const classIds = [...new Set((templateClassData || []).map((t: any) => t.class_id).filter(Boolean))];
 
-    // ── Step 4: Parallel queries for behavioral, mastery, tests, sessions, BPP
-    const [profile, weakAreas, nextTest, sessionData, bppData] = await Promise.all([
+    // ── Step 4: Parallel queries for behavioral, mastery, tests, sessions
+    const [profile, weakAreas, nextTest, sessionData] = await Promise.all([
       sb.from('student_behavioral_profiles').select('*').eq('user_id', user.id).maybeSingle(),
       sb.from('user_subject_mastery').select('domain,subdomain,mastery_score,questions_attempted,questions_correct').eq('user_id', user.id).order('mastery_score',{ascending:true}).limit(5),
       sb.from('upcoming_tests').select('*').in('roadmap_id', roadmapIds).eq('status','upcoming').gte('test_date', date).order('test_date',{ascending:true}).limit(1),
       classIds.length > 0
         ? sb.from('class_attendance_sessions').select('id, subject, topics_covered, class_id').in('class_id', classIds).eq('session_date', date)
         : Promise.resolve({ data: [] }),
-      classIds.length > 0
-        ? (async () => {
-            const sessionIds = (sessionData?.data || []).map((s: any) => s.id);
-            if (sessionIds.length === 0) return { data: [] };
-            return sb.from('class_session_bpp').select('id, class_session_id, question_count').in('class_session_id', sessionIds).eq('processed', true);
-          })()
-        : Promise.resolve({ data: [] }),
     ]);
+
+    // ── Step 4b: Fetch BPP data for today's sessions
+    const todaySessions = (sessionData.data || []) as any[];
+    let bppSessions: any[] = [];
+    if (todaySessions.length > 0) {
+      const sessionIds = todaySessions.map((s: any) => s.id);
+      const { data: bppData } = await sb.from('class_session_bpp').select('id, class_session_id, question_count').in('class_session_id', sessionIds).eq('processed', true);
+      bppSessions = (bppData || []) as any[];
+    }
 
     // ── Step 5: Compute weak areas
     const weakMap = new Map();
@@ -110,7 +112,7 @@ serve(async (req: Request) => {
 
     const dow = new Date(date).getDay();
     const nextTestRow = (nextTest.data||[])[0]||null;
-    const daysUntil = nextTestRow ? Math.ceil((new Date(nextTestRow.test_date).getTime()-new Date(date).getTime())/) : null;
+    const daysUntil = nextTestRow ? Math.ceil((new Date(nextTestRow.test_date).getTime()-new Date(date).getTime())/86400000) : null;
 
     let types = [...ROTATION[dow]];
     if (daysUntil!==null && daysUntil<=3) types=['timed_set','timed_set','timed_set'];
@@ -173,9 +175,6 @@ serve(async (req: Request) => {
     }
 
     // ── Step 7: Enrich with BPP questions (today's content gets priority)
-    const todaySessions = (sessionData.data || []) as any[];
-    const bppSessions = (bppData.data || []) as any[];
-
     if (tasks.length > 0 && bppSessions.length > 0) {
       const bppSessionIds = bppSessions.map((b: any) => b.id);
       const { data: bppQuestions } = await sb
