@@ -42,7 +42,7 @@ export interface AgentCorrectionInsight {
   confidence: number;
 }
 
-export interface IRT CalibrationInfo {
+export interface IRTCalibrationInfo {
   question_id: string;
   irt_difficulty: number;
   irt_discrimination: number;
@@ -72,7 +72,7 @@ export interface MLIntelligence {
   pipelineRuns: PipelineRun[];
   agentInsights: AgentCorrectionInsight[];
   bktParams: BKTParamInfo[];
-  irtCalibrations: IRT CalibrationInfo[];
+  irtCalibrations: IRTCalibrationInfo[];
   scoreModel: ScoreModelInfo | null;
   isLoading: boolean;
   error: string | null;
@@ -147,7 +147,7 @@ export function useMLIntelligence(userId?: string) {
         pipelineRuns: pipelineData as PipelineRun[],
         agentInsights: insightData as AgentCorrectionInsight[],
         bktParams: bktData as BKTParamInfo[],
-        irtCalibrations: irtData as IRT CalibrationInfo[],
+        irtCalibrations: irtData as IRTCalibrationInfo[],
         scoreModel: scoreModel.data as ScoreModelInfo | null,
         isLoading: false,
         error: null,
