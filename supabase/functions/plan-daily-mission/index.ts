@@ -37,6 +37,17 @@ function buildIntentions(preferredTime: string, duration: number, firstSubject: 
   ];
 }
 
+function normalizeList(value: any): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(',').map((v) => v.trim()).filter(Boolean);
+  return [];
+}
+
+function noteSummary(text: any): string | null {
+  if (!text || typeof text !== 'string') return null;
+  return text.replace(/\s+/g, ' ').trim().slice(0, 420);
+}
+
 serve(async (req: Request) => {
   const cors = getCors(req);
   const corsHeaders = cors.headers;
@@ -57,10 +68,18 @@ serve(async (req: Request) => {
     const date = target_date || new Date().toISOString().split('T')[0];
 
     // ── Step 1: Fetch all school-scope roadmaps for this user (multi-class support)
-    const { data: allRoadmaps } = await sb.from('student_roadmaps')
-      .select('id, current_week, template_id')
+    let { data: allRoadmaps } = await sb.from('student_roadmaps')
+      .select('id, current_week, template_id, class_id')
       .eq('user_id', user.id)
       .eq('scope', 'school');
+
+    if (!allRoadmaps || allRoadmaps.length === 0) {
+      const { data: classRoadmaps } = await sb.from('student_roadmaps')
+        .select('id, current_week, template_id, class_id')
+        .eq('user_id', user.id)
+        .not('class_id', 'is', null);
+      allRoadmaps = classRoadmaps || [];
+    }
 
     let primaryRoadmap: any = null;
     let roadmapIds: string[] = [];
@@ -84,7 +103,9 @@ serve(async (req: Request) => {
     const { data: templateClassData } = templateIds.length > 0
       ? await sb.from('coaching_templates').select('id, class_id').in('id', templateIds)
       : { data: [] };
-    const classIds = [...new Set((templateClassData || []).map((t: any) => t.class_id).filter(Boolean))];
+    const roadmapClassIds = (allRoadmaps || []).map((r: any) => r.class_id).filter(Boolean);
+    const templateClassIds = (templateClassData || []).map((t: any) => t.class_id).filter(Boolean);
+    const classIds = [...new Set([...roadmapClassIds, ...templateClassIds])];
 
     // ── Step 4: Parallel queries for behavioral, mastery, tests, sessions
     const [profile, weakAreas, nextTest, sessionData] = await Promise.all([
@@ -92,18 +113,11 @@ serve(async (req: Request) => {
       sb.from('user_subject_mastery').select('domain,subdomain,mastery_score,questions_attempted,questions_correct').eq('user_id', user.id).order('mastery_score',{ascending:true}).limit(5),
       sb.from('upcoming_tests').select('*').in('roadmap_id', roadmapIds).eq('status','upcoming').gte('test_date', date).order('test_date',{ascending:true}).limit(1),
       classIds.length > 0
-        ? sb.from('class_attendance_sessions').select('id, subject, topics_covered, class_id').in('class_id', classIds).eq('session_date', date)
+        ? sb.from('class_attendance_sessions').select('id, subject, topics_covered, class_id, teacher_notes, teacher_notes_interpreted').in('class_id', classIds).eq('session_date', date)
         : Promise.resolve({ data: [] }),
     ]);
 
-    // ── Step 4b: Fetch BPP data for today's sessions
     const todaySessions = (sessionData.data || []) as any[];
-    let bppSessions: any[] = [];
-    if (todaySessions.length > 0) {
-      const sessionIds = todaySessions.map((s: any) => s.id);
-      const { data: bppData } = await sb.from('class_session_bpp').select('id, class_session_id, question_count').in('class_session_id', sessionIds).eq('processed', true);
-      bppSessions = (bppData || []) as any[];
-    }
 
     // ── Step 5: Compute weak areas
     const weakMap = new Map();
@@ -123,11 +137,39 @@ serve(async (req: Request) => {
     if (streak>2) types[0]='confidence_builder';
     if (backlog>5) types.push('backlog_sweep');
 
-    // ── Step 6: Build tasks from unified schedule
+    // ── Step 6: Build tasks from today's teacher topics first, then unified schedule
     let tasks: any[] = [];
     const sched = (unifiedSched || []) as any[];
+    const classTopicTasks = todaySessions.flatMap((session: any) => {
+      const sessionTopics = normalizeList(session.topics_covered);
+      const notes = noteSummary(session.teacher_notes_interpreted || session.teacher_notes);
+      return sessionTopics.map((topic: string, idx: number) => {
+        const tt = types[idx % types.length] || 'review_notes';
+        const m = META[tt];
+        const subject = session.subject || 'Class';
+        const wm = weakest.find((w: any) => w.key.toLowerCase().includes(subject.toLowerCase()) || w.key.toLowerCase().includes(topic.toLowerCase())) || null;
+        return {
+          order: idx + 1,
+          title: `${subject}: ${topic}`,
+          subject,
+          type: tt,
+          duration_min: m.duration,
+          details: `${buildDesc(m, subject, topic, [], wm, nextTestRow, daysUntil)}${notes ? `\n\nFrom teacher notes:\n${notes}` : ''}`,
+          difficulty: wm ? (wm.mastery<40 ? 'easy' : wm.mastery<70 ? 'medium' : 'hard') : 'medium',
+          resources: notes ? ['Teacher notes', 'Class notes'] : ['Class notes'],
+          topic,
+          subtopics: [],
+          class_session_id: session.id,
+          source: 'class_session',
+        };
+      });
+    });
 
-    if (sched.length > 0) {
+    if (classTopicTasks.length > 0) {
+      tasks = classTopicTasks.slice(0, 3).map((task: any, idx: number) => ({ ...task, order: idx + 1 }));
+    }
+
+    if (!tasks.length && sched.length > 0) {
       const currentWeek = primaryRoadmap.current_week || 1;
       const we = sched.find((w: any) => w.week === currentWeek)
               || sched.sort((a: any, b: any) => a.week - b.week)[0];
@@ -174,23 +216,32 @@ serve(async (req: Request) => {
       });
     }
 
-    // ── Step 7: Enrich with BPP questions (today's content gets priority)
-    if (tasks.length > 0 && bppSessions.length > 0) {
-      const bppSessionIds = bppSessions.map((b: any) => b.id);
+    // ── Step 7: Enrich with teacher-note/DPP questions from today's class sessions
+    if (tasks.length > 0 && todaySessions.length > 0) {
+      const sessionIds = todaySessions.map((s: any) => s.id);
       const { data: bppQuestions } = await sb
         .from('question_metadata')
-        .select('id, question_text, difficulty, tags')
-        .in('bpp_session_id', bppSessionIds)
-        .limit(20);
+        .select('id, question_text, difficulty, tags, source_type, source_id')
+        .or(`source_id.in.(${sessionIds.join(',')}),bpp_session_id.in.(${sessionIds.join(',')})`)
+        .limit(30);
       if (bppQuestions && bppQuestions.length > 0) {
-        const qList = bppQuestions.slice(0, 5).map((q: any, i: number) =>
-          `Q${i+1} [${q.difficulty||'medium'}, BPP]: ${(q.question_text||'').substring(0,100)}...`
-        ).join('\n');
-        tasks[0] = {
-          ...tasks[0],
-          details: `${tasks[0].details}\n\nToday's BPP Questions:\n${qList}`,
-          bpp_question_refs: bppQuestions.slice(0, 5).map((q: any) => q.id),
-        };
+        tasks = tasks.map((task: any) => {
+          const matched = (bppQuestions as any[]).filter((q: any) => {
+            const tags = normalizeList(q.tags);
+            return q.source_id === task.class_session_id
+              || tags.some((tag: string) => tag.toLowerCase() === String(task.topic || '').toLowerCase())
+              || tags.some((tag: string) => tag.toLowerCase() === String(task.subject || '').toLowerCase());
+          }).slice(0, 5);
+          if (!matched.length) return task;
+          const qList = matched.map((q: any, i: number) =>
+            `Q${i+1} [${q.difficulty||'medium'}]: ${(q.question_text||'').substring(0,140)}${(q.question_text||'').length > 140 ? '...' : ''}`
+          ).join('\n');
+          return {
+            ...task,
+            details: `${task.details}\n\nPractice from today's topics/notes:\n${qList}`,
+            question_refs: [...(task.question_refs || []), ...matched.map((q: any) => q.id)],
+          };
+        });
       }
     }
 

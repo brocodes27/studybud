@@ -55,6 +55,7 @@ export interface TodayTask {
   interventionId?: string | null;
   missionVariants?: MissionVariant[];
   activeIntervention?: ActiveIntervention | null;
+  isBacklog?: boolean;
 }
 
 export interface CorrectionSprint {
@@ -102,6 +103,7 @@ export interface DailyBriefingData {
   classUpdate: ClassUpdate;
   todayTask: TodayTask;
   todayTasks: TodayTask[];
+  backlogTasks: TodayTask[];
   isTaskCompleted: boolean;
   allTasksCompleted: boolean;
   completedCount: number;
@@ -434,30 +436,36 @@ export async function generateDailyPrescription(userId: string, roadmapId: strin
     const tasks = Array.isArray(plan.tasks) ? plan.tasks : [];
     const totalMinutes = tasks.reduce((sum: number, t: any) => sum + (Number(t?.duration_min) || Number(t?.estimated_minutes) || 0), 0);
 
-    // 2) Persist as today's prescription (used by dashboards + parent/admin reporting)
-    const { error: upsertErr } = await supabase
-      .from('daily_prescriptions')
-      .upsert(
-        {
-          user_id: userId,
-          roadmap_id: roadmapId,
-          prescription_date: todayStr,
-          tasks,
-          total_estimated_minutes: totalMinutes,
-          implementation_intentions: plan.implementation_intentions || [],
-          context_snapshot: plan.context_snapshot || {},
-          status: 'active',
-          generated_by: 'deterministic_engine_v1',
-          prescription_source: {
-            planner: 'plan-daily-mission',
-            version: 1,
-            generated_at: new Date().toISOString(),
-          },
-        } as any,
-        { onConflict: 'user_id,prescription_date' }
-      );
+    const payload = {
+      user_id: userId,
+      roadmap_id: roadmapId,
+      prescription_date: todayStr,
+      tasks,
+      total_estimated_minutes: totalMinutes,
+      implementation_intentions: plan.implementation_intentions || [],
+      context_snapshot: plan.context_snapshot || {},
+      status: 'active',
+      generated_by: 'deterministic_engine_v1',
+      prescription_source: {
+        planner: 'plan-daily-mission',
+        version: 1,
+        generated_at: new Date().toISOString(),
+      },
+    } as any;
 
-    return !upsertErr;
+    const { data: existing } = await supabase
+      .from('daily_prescriptions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('prescription_date', todayStr)
+      .limit(1)
+      .maybeSingle();
+
+    const { error: persistErr } = existing?.id
+      ? await supabase.from('daily_prescriptions').update(payload).eq('id', existing.id)
+      : await supabase.from('daily_prescriptions').insert(payload);
+
+    return !persistErr;
   } catch {
     return false;
   }
@@ -579,7 +587,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       }
 
       // If no prescription for today, generate one locally from the coaching template
-      if (!prescription && activeRoadmap.template_id) {
+      if (!prescription && activeRoadmap && roadmapId) {
         try {
           // Preferred path: use backend deterministic planner and persist the result.
           const generated = await generateDailyPrescription(userId, roadmapId);
@@ -686,14 +694,14 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
             if (Array.isArray(schedule)) {
               const weekEntry = schedule.find((w: any) => w.week === activeRoadmap.current_week);
               if (weekEntry) {
-                const subjects = ['physics', 'chemistry', 'mathematics'].filter(s => weekEntry[s]);
+                const subjects = ['physics', 'chemistry', 'mathematics', 'social_science'].filter(s => weekEntry[s]);
 
                 todaySessions = subjects.map((subj, i) => {
                   const topicData = weekEntry[subj];
                   const subtopics = topicData.subtopics || [];
                   const taskType = todayTypes[i] || 'review_notes';
                   const meta = taskTypeLabels[taskType];
-                  const subjectName = subj.charAt(0).toUpperCase() + subj.slice(1);
+                  const subjectName = subj === 'social_science' ? 'Social Science' : subj.charAt(0).toUpperCase() + subj.slice(1);
 
                   // Build a personalized, actionable description
                   const subtopicList = subtopics.length > 0
@@ -1043,6 +1051,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
 
   // --- Build ALL tasks for today ---
   let allTasks: TodayTask[] = [];
+  let backlogTasks: TodayTask[] = [];
   let prescriptionIntentions: Array<{ trigger: string; action: string; duration_min: number; completed?: boolean }> = [];
   let activePrescriptionId: string | null = null;
 
@@ -1148,12 +1157,12 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       const due = new Date(a.due_date);
       const now = new Date();
       const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) { urgency = 'critical'; dueLabel = 'Overdue'; }
+      if (diffDays < 0) { urgency = 'critical'; dueLabel = `Backlog · ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} overdue`; }
       else if (diffDays <= 1) { urgency = 'high'; dueLabel = 'Due soon'; }
       else if (diffDays <= 3) { urgency = 'normal'; dueLabel = `Due in ${diffDays} days`; }
       else { urgency = 'low'; dueLabel = `Due in ${diffDays} days`; }
     }
-    allTasks.push({
+    const assignmentTask: TodayTask = {
       type: 'assignment',
       id: `assignment_${a.id}`,
       title: a.title,
@@ -1163,7 +1172,14 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       actionLabel: 'Go to Assignment',
       completed: false,
       taskType: 'assignment',
-    });
+      isBacklog: urgency === 'critical',
+    };
+
+    if (assignmentTask.isBacklog) {
+      backlogTasks.push(assignmentTask);
+    } else {
+      allTasks.push(assignmentTask);
+    }
   });
 
   // Sort: critical assignments first, then high, then other tasks by urgency
@@ -1212,7 +1228,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     preferredTime: behavior?.preferred_time || 'evening',
     typicalSessionDuration: behavior?.typical_session_duration_min || 90,
     weakSubjects: behavior?.weak_subjects || [],
-    backlogCount: behavior?.backlog_count || 0,
+    backlogCount: Math.max(behavior?.backlog_count || 0, backlogTasks.filter(t => !t.completed).length),
     missedDaysStreak: behavior?.missed_days_streak || 0,
   };
 
@@ -1240,6 +1256,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
     classUpdate,
     todayTask,
     todayTasks: allTasks,
+    backlogTasks,
     isTaskCompleted: todayTask.completed,
     allTasksCompleted: allDone,
     completedCount,

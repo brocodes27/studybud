@@ -204,7 +204,7 @@ export function DailyBriefing() {
   if (!user) return null;
 
   // Show onboarding when user has no roadmaps
-  if (allRoadmaps.length === 0 && state !== 'loading') {
+  if (allRoadmaps.length === 0 && state !== 'loading' && !data?.activeRoadmap) {
     return (
       <RoadmapOnboarding
         userId={user.id}

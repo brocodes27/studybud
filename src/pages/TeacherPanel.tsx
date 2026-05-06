@@ -163,6 +163,27 @@ const TeacherPanel: React.FC = () => {
         curriculum_source: 'file',
         curriculum_file_url: curriculumFileUrl,
       }).eq('id', created.id);
+      if (curriculumFile) {
+        const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
+        const pages = await pdfFileToImageDataUrls(curriculumFile);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const scanRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-curriculum-file`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData?.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            class_id: created.id,
+            pages,
+            subject: newClassSubject.trim(),
+          }),
+        });
+        const scanJson = await scanRes.json();
+        if (!scanRes.ok || !scanJson.success) {
+          setCreateError(scanJson.error || 'Class created, but curriculum scan failed.');
+        }
+      }
     }
 
     setCreateSuccess({ code: created.class_code, link: created.invite_link });
@@ -391,6 +412,7 @@ const TeacherPanel: React.FC = () => {
                         <option value="Physics">Physics</option>
                         <option value="Chemistry">Chemistry</option>
                         <option value="Biology">Biology</option>
+                        <option value="Social Science">Social Science</option>
                         <option value="Computer Science">Computer Science</option>
                         <option value="English">English</option>
                       </select>

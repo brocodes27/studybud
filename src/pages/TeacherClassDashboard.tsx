@@ -32,6 +32,7 @@ const FALLBACK_SKILLS: Record<string, string[]> = {
   'Physics': ['Kinematics', 'Dynamics', 'Thermodynamics', 'Waves', 'Electromagnetism', 'Optics'],
   'Chemistry': ['Physical Chemistry', 'Organic Chemistry', 'Inorganic Chemistry', 'Mole Concept', 'Equilibrium', 'Electrochemistry'],
   'Mathematics': ['Calculus', 'Algebra', 'Coordinate Geometry', 'Limits', 'Probability', 'Matrices'],
+  'Social Science': ['History: Nationalism', 'Geography: Resources', 'Civics: Democracy', 'Economics: Development', 'Political Science', 'SST'],
 };
 
 function masteryBelongsToSubject(m: any, subject: string): boolean {
@@ -58,10 +59,13 @@ function masteryBelongsToSubject(m: any, subject: string): boolean {
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
   if (s.includes('math')) {
-    const keywords = ['calculus','algebra','geometry','limits','derivatives','integrals','probability','matrices','complex numbers','differential equations','quadratic','sequences','straight lines','circles','parabola','ellipse','hyperbola'];
+    const keywords = ['limits','derivatives','integrals','calculus','algebra','coordinate geometry','probability','matrices','determinants','complex numbers','sequences','series','quadratic','trigonometry','functions'];
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
-
+  if (s.includes('social') || s.includes('sst') || s.includes('civic') || s.includes('history') || s.includes('geograph') || s.includes('political') || s.includes('economic')) {
+    const keywords = ['history','geography','civics','political science','economics','nationalism','democracy','resources','development','constitution','sst','social science'];
+    if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
+  }
   return false;
 }
 
@@ -140,6 +144,7 @@ const TeacherClassDashboard: React.FC = () => {
   const [homeworkEnabled, setHomeworkEnabled] = useState(false);
   const [homeworkType, setHomeworkType] = useState<'practice' | 'prove-it' | 'reading' | 'worksheet'>('practice');
   const [sessionDuration, setSessionDuration] = useState(60);
+  const [sessionTeacherNotes, setSessionTeacherNotes] = useState('');
   const [loggingSession, setLoggingSession] = useState(false);
   const [sessionLogError, setSessionLogError] = useState('');
   const [sessionLogSuccess, setSessionLogSuccess] = useState('');
@@ -153,11 +158,14 @@ const TeacherClassDashboard: React.FC = () => {
   const [attendanceMessage, setAttendanceMessage] = useState('');
   const [attendanceError, setAttendanceError] = useState('');
 
-  // BPP Upload state
-  const [bppFile, setBppFile] = useState<File | null>(null);
-  const [bppUploading, setBppUploading] = useState(false);
-  const [bppResult, setBppResult] = useState<{ questions_extracted?: number; topics?: string[] } | null>(null);
-  const [bppError, setBppError] = useState('');
+  // DPP Upload state
+  const [dppFile, setBppFile] = useState<File | null>(null);
+  const [teacherNotesFile, setTeacherNotesFile] = useState<File | null>(null);
+  const [dppUploading, setBppUploading] = useState(false);
+  const [notesInterpreting, setNotesInterpreting] = useState(false);
+  const [notesInterpretResult, setNotesInterpretResult] = useState<string | null>(null);
+  const [dppResult, setDppResult] = useState<{ questions_extracted?: number; topics?: string[] } | null>(null);
+  const [dppError, setDppError] = useState('');
 
   // Student Responses
   const [attempts, setAttempts] = useState<any[]>([]);
@@ -418,8 +426,8 @@ const TeacherClassDashboard: React.FC = () => {
     setLoggingSession(true);
     setSessionLogError('');
     setSessionLogSuccess('');
-    setBppResult(null);
-    setBppError('');
+    setDppResult(null);
+    setDppError('');
     try {
       const topicsArray = sessionTopics.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -433,10 +441,17 @@ const TeacherClassDashboard: React.FC = () => {
           subject: sessionSubject,
           topics_covered: topicsArray.length ? topicsArray : ['General'],
           duration_minutes: sessionDuration,
+          teacher_notes: sessionTeacherNotes.trim() || null,
         }, { onConflict: 'class_id,session_date' })
         .select('id')
         .single();
       if (sessionError) throw sessionError;
+
+      await supabase.rpc('update_curriculum_progress_from_session', {
+        p_session_id: sessionRow.id,
+        p_extra_topics: topicsArray,
+        p_source: 'class_session_log',
+      });
 
       if (homeworkEnabled && sessionHomework.trim()) {
         const due = new Date();
@@ -449,41 +464,41 @@ const TeacherClassDashboard: React.FC = () => {
         });
       }
 
-      // Handle BPP upload if file selected
-      if (bppFile && sessionRow?.id) {
+      // Handle DPP upload if file selected
+      if (dppFile && sessionRow?.id) {
         setBppUploading(true);
         try {
           // Upload to Supabase Storage
-          const fileExt = bppFile.name.split('.').pop() || 'pdf';
-          const storagePath = `bpp/${sessionRow.id}/${Date.now()}.${fileExt}`;
+          const fileExt = dppFile.name.split('.').pop() || 'pdf';
+          const storagePath = `dpp/${sessionRow.id}/${Date.now()}.${fileExt}`;
           const { error: uploadError } = await supabase.storage
             .from('curriculums')
-            .upload(storagePath, bppFile);
+            .upload(storagePath, dppFile);
           if (uploadError) throw uploadError;
 
           const { data: urlData } = supabase.storage.from('curriculums').getPublicUrl(storagePath);
           const fileUrl = urlData.publicUrl;
 
-          // Record in class_session_bpp
-          const { data: bppRecord, error: bppRecordError } = await supabase
-            .from('class_session_bpp')
+          // Record in class_session_dpp
+          const { data: dppRecord, error: dppRecordError } = await supabase
+            .from('class_session_dpp')
             .insert({
               class_session_id: sessionRow.id,
               file_url: fileUrl,
-              file_name: bppFile.name,
-              file_size_bytes: bppFile.size,
+              file_name: dppFile.name,
+              file_size_bytes: dppFile.size,
               created_by: user.id,
             })
             .select('id')
             .single();
-          if (bppRecordError) throw bppRecordError;
+          if (dppRecordError) throw dppRecordError;
 
           // Convert PDF to images and extract questions
           const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
-          const pages = await pdfFileToImageDataUrls(bppFile);
+          const pages = await pdfFileToImageDataUrls(dppFile);
 
           const { data: sessionData } = await supabase.auth.getSession();
-          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-bpp-questions`, {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-dpp-questions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -497,21 +512,81 @@ const TeacherClassDashboard: React.FC = () => {
           });
           const extractionResult = await res.json();
           if (extractionResult.success) {
-            setBppResult({ questions_extracted: extractionResult.questions_extracted, topics: extractionResult.topics_identified });
+            setDppResult({ questions_extracted: extractionResult.questions_extracted, topics: extractionResult.topics_identified });
+            await supabase.rpc('update_curriculum_progress_from_session', {
+              p_session_id: sessionRow.id,
+              p_extra_topics: extractionResult.topics_identified || [],
+              p_source: 'dpp_upload',
+            });
           } else {
-            setBppError(extractionResult.error || 'Extraction failed');
+            setDppError(extractionResult.error || 'Extraction failed');
           }
-        } catch (bppErr: any) {
-          setBppError(bppErr.message || 'BPP upload/extraction failed');
+        } catch (dppErr: any) {
+          setDppError(dppErr.message || 'DPP upload/extraction failed');
         } finally {
           setBppUploading(false);
         }
       }
 
-      setSessionLogSuccess(`Class logged successfully.${bppResult?.questions_extracted ? ` ${bppResult.questions_extracted} questions extracted from BPP.` : ''}`);
+      // Handle teacher notes PDF upload and AI interpretation
+      if (teacherNotesFile && sessionRow?.id) {
+        setNotesInterpreting(true);
+        try {
+          const fileExt = teacherNotesFile.name.split('.').pop() || 'pdf';
+          const storagePath = `teacher-notes/${sessionRow.id}/${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('curriculums')
+            .upload(storagePath, teacherNotesFile);
+          if (uploadError) throw uploadError;
+
+          const { data: urlData } = supabase.storage.from('curriculums').getPublicUrl(storagePath);
+          const fileUrl = urlData.publicUrl;
+
+          const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
+          const pages = await pdfFileToImageDataUrls(teacherNotesFile);
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interpret-teacher-notes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              class_session_id: sessionRow.id,
+              topics: topicsArray.length ? topicsArray : undefined,
+              subject: sessionSubject,
+              file_url: fileUrl,
+              pages,
+            }),
+          });
+          const interpretResult = await res.json();
+          if (interpretResult.success) {
+            setNotesInterpretResult(interpretResult.interpreted_text || 'Notes processed successfully');
+            // Update session with interpreted notes
+            await supabase.from('class_attendance_sessions').update({
+              teacher_notes_interpreted: interpretResult.study_tasks || interpretResult.interpreted_text,
+              teacher_notes_file_url: fileUrl,
+            }).eq('id', sessionRow.id);
+            await supabase.rpc('update_curriculum_progress_from_session', {
+              p_session_id: sessionRow.id,
+              p_extra_topics: interpretResult.topics_identified || [],
+              p_source: 'teacher_notes',
+            });
+          }
+        } catch (notesErr: any) {
+          console.error('Teacher notes interpretation failed:', notesErr);
+        } finally {
+          setNotesInterpreting(false);
+        }
+      }
+
+      setSessionLogSuccess(`Class logged successfully.${dppResult?.questions_extracted ? ` ${dppResult.questions_extracted} questions extracted from DPP.` : ''}`);
       setSessionTopics('');
       setSessionHomework('');
+      setSessionTeacherNotes('');
       setHomeworkEnabled(false);
+      setTeacherNotesFile(null);
       setBppFile(null);
       setDailyTopics(topicsArray.join(', '));
       await refreshClassInterventions();
@@ -969,11 +1044,17 @@ const TeacherClassDashboard: React.FC = () => {
                     placeholder="Homework (optional)"
                     className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
                   />
-                  {/* BPP Upload */}
+                  <textarea
+                    value={sessionTeacherNotes}
+                    onChange={(e) => setSessionTeacherNotes(e.target.value)}
+                    placeholder="Teacher notes: e.g., Many students struggled with sign conventions in relative velocity. Focus on conceptual clarity before formulas."
+                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
+                  />
+                  {/* DPP Upload */}
                   <div className="rounded-[14px] border-2 border-dashed border-[#00D1FF]/30 bg-[#00D1FF]/5 p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Upload className="w-4 h-4 text-[#00D1FF]" />
-                      <span className="text-sm font-bold text-[#2D2A26]">Upload Today's BPP</span>
+                      <span className="text-sm font-bold text-[#2D2A26]">Upload Today's DPP</span>
                       <span className="text-[10px] text-[#8A8279]">PDF → questions auto-extracted</span>
                     </div>
                     <input
@@ -983,29 +1064,52 @@ const TeacherClassDashboard: React.FC = () => {
                         const file = e.target.files?.[0] || null;
                         setBppFile(file);
                         if (file) {
-                          // Auto-trigger BPP extraction after session is logged
+                          // Auto-trigger DPP extraction after session is logged
                         }
                       }}
                       className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#00D1FF]/10 file:text-[#00D1FF] hover:file:bg-[#00D1FF]/20 cursor-pointer"
                     />
-                    {bppFile && (
-                      <p className="text-xs text-[#00D1FF] font-medium mt-2 truncate">{bppFile.name}</p>
+                    {dppFile && (
+                      <p className="text-xs text-[#00D1FF] font-medium mt-2 truncate">{dppFile.name}</p>
                     )}
                   </div>
-                  {bppResult && (
+                  {dppResult && (
                     <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-[12px]">
                       <Sparkles className="w-4 h-4 text-emerald-600" />
                       <p className="text-sm font-bold text-emerald-700">
-                        {bppResult.questions_extracted} questions extracted from BPP PDF!
-                        {bppResult.topics && bppResult.topics.length > 0 && ` Topics: ${bppResult.topics.join(', ')}`}
+                        {dppResult.questions_extracted} questions extracted from DPP!
+                        {dppResult.topics && dppResult.topics.length > 0 && ` Topics: ${dppResult.topics.join(', ')}`}
                       </p>
                     </div>
                   )}
-                  {bppError && (
-                    <p className="text-red-600 text-sm font-medium">{bppError}</p>
+                  {dppError && (
+                    <p className="text-red-600 text-sm font-medium">{dppError}</p>
                   )}
-                  <button type="submit" disabled={loggingSession || bppUploading} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:shadow-md transition-all disabled:opacity-50">
-                    {loggingSession ? (bppUploading ? 'Extracting questions...' : 'Saving...') : 'Log Lesson & Extract BPP'}
+                  {/* Teacher Notes PDF Upload */}
+                  <div className="rounded-[14px] border-2 border-dashed border-[#8B7355]/30 bg-[#8B7355]/5 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="w-4 h-4 text-[#8B7355]" />
+                      <span className="text-sm font-bold text-[#2D2A26]">Upload Teacher Notes (PDF)</span>
+                      <span className="text-[10px] text-[#8A8279]">AI interprets → generates study tasks</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => setTeacherNotesFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#8B7355]/10 file:text-[#8B7355] hover:file:bg-[#8B7355]/20 cursor-pointer"
+                    />
+                    {teacherNotesFile && (
+                      <p className="text-xs text-[#8B7355] font-medium mt-2 truncate">{teacherNotesFile.name}</p>
+                    )}
+                  </div>
+                  {notesInterpretResult && (
+                    <div className="flex items-center gap-2 p-3 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-[12px]">
+                      <Sparkles className="w-4 h-4 text-[#8B7355]" />
+                      <p className="text-sm font-bold text-[#8B7355]">Notes interpreted! Study tasks generated.</p>
+                    </div>
+                  )}
+                  <button type="submit" disabled={loggingSession || dppUploading || notesInterpreting} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:shadow-md transition-all disabled:opacity-50">
+                    {loggingSession ? (dppUploading || notesInterpreting ? 'Processing...' : 'Saving...') : 'Log Lesson & Process'}
                   </button>
                   {sessionLogSuccess && <p className="text-emerald-600 text-sm font-bold mt-2">{sessionLogSuccess}</p>}
                   {sessionLogError && <p className="text-red-600 text-sm font-bold mt-2">{sessionLogError}</p>}

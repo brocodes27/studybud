@@ -85,7 +85,32 @@ export interface MLIntelligence {
 export function useMLIntelligence(userId?: string) {
   const { user } = useAuth();
   const uid = userId || user?.id;
-  const [data, setData] = useState<MLIntelligence | null>(null);
+
+  // Default pipeline health to avoid undefined access before data loads
+  const defaultPipelineHealth: Record<string, 'healthy' | 'stale' | 'never_run'> = {
+    'irt-calibrate': 'never_run',
+    'bkt-tune': 'never_run',
+    'agent-analyze-corrections': 'never_run',
+    'train-score-model': 'never_run',
+  };
+
+  const defaultData: MLIntelligence = {
+    cognitiveProfiles: [],
+    learningVelocity: [],
+    pipelineRuns: [],
+    agentInsights: [],
+    bktParams: [],
+    irtCalibrations: [],
+    scoreModel: null,
+    isLoading: true,
+    error: null,
+    avgMastery: 0,
+    dominantTier: 'anoetic',
+    velocityTier: 'unknown',
+    pipelineHealth: defaultPipelineHealth,
+  };
+
+  const [data, setData] = useState<MLIntelligence>(defaultData);
   const [loading, setLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {

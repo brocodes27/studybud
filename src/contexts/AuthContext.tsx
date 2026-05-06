@@ -13,6 +13,7 @@ interface AuthContextType {
   trialStart: Date | null;
   trialActive: boolean;
   onboardingCompleted: boolean;
+  schoolId: string | null;
   refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, meta: any) => Promise<any>;
@@ -37,12 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [trialStart, setTrialStart] = useState<Date | null>(null);
   const [trialActive, setTrialActive] = useState<boolean>(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(true); // Default true to avoid flash, will be set correctly below
+  const [schoolId, setSchoolId] = useState<string | null>(null);
 
   const refreshProfile = async () => {
     if (!user) return;
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed')
+      .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id')
       .eq('id', user.id);
 
     if (profile && profile.length > 0) {
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTrialStart(p.created_at ? new Date(p.created_at) : null);
       setTrialActive(p.trial_active ?? false);
       setOnboardingCompleted(p.onboarding_completed ?? false);
+      setSchoolId(p.school_id ?? null);
     }
   };
 
@@ -119,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch role from user_profiles
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
-            .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed')
+            .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id')
             .eq('id', data.session.user.id);
 
           if (profileError) {
@@ -134,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
             setTrialActive(hasProfile ? (p?.trial_active ?? false) : false);
             setOnboardingCompleted(hasProfile ? (p?.onboarding_completed ?? false) : false);
+            setSchoolId(hasProfile ? (p?.school_id ?? null) : null);
           }
         } else {
           if (isMounted) {
@@ -144,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setFullName(null);
             setTrialStart(null);
             setTrialActive(false);
+            setSchoolId(null);
           }
         }
       } catch (err) {
@@ -155,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setFullName(null);
           setTrialStart(null);
           setTrialActive(false);
+          setSchoolId(null);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -173,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Optionally re-fetch role here if needed
         supabase
           .from('user_profiles')
-          .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed')
+          .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id')
           .eq('id', session.user.id)
           .then(({ data: profile, error }) => {
             if (error) {
@@ -194,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsPremium(false);
         setIsAdmin(false);
         setFullName(null);
+        setSchoolId(null);
       }
     });
 
@@ -237,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, session, loading, role, isPremium, isAdmin, fullName,
-      trialStart, trialActive, onboardingCompleted, refreshProfile,
+      trialStart, trialActive, onboardingCompleted, schoolId, refreshProfile,
       signIn, signUp, signOut, signInWithGoogle
     }}>
       {children}

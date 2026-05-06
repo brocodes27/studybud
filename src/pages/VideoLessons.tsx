@@ -71,6 +71,10 @@ const subjectVisuals: Record<string, SubjectVisual> = {
         color: 'bg-[#00D1FF]/10',
         icon: <Globe2 className="w-7 h-7 text-[#00D1FF] stroke-[2.5px]" />
     },
+    social_science: {
+        color: 'bg-[#8B5CF6]/10',
+        icon: <Globe2 className="w-7 h-7 text-[#8B5CF6] stroke-[2.5px]" />
+    },
     general: {
         color: 'bg-slate-100',
         icon: <Sparkles className="w-7 h-7 text-[#64748B] stroke-[2.5px]" />
@@ -84,6 +88,7 @@ const getSubjectVisual = (subject: string): SubjectVisual => {
     if (key.includes('chem')) return subjectVisuals.chemistry;
     if (key.includes('bio')) return subjectVisuals.biology;
     if (key.includes('geo') || key.includes('earth')) return subjectVisuals.geography;
+    if (key.includes('social') || key.includes('sst') || key.includes('civic') || key.includes('history') || key.includes('political') || key.includes('economic')) return subjectVisuals.social_science;
     return subjectVisuals.general;
 };
 

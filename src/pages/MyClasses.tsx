@@ -20,6 +20,7 @@ const MyClasses = () => {
     const [className, setClassName] = useState('');
     const [classSubject, setClassSubject] = useState('');
     const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
+    const [skipCurriculum, setSkipCurriculum] = useState(false);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [joinCode, setJoinCode] = useState('');
     const [joinMode, setJoinMode] = useState<'code' | 'link'>('code');
@@ -27,6 +28,7 @@ const MyClasses = () => {
     const [loading, setLoading] = useState(true);
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [scanningClassId, setScanningClassId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchClasses();
@@ -73,10 +75,6 @@ const MyClasses = () => {
             setError('Subject is required.');
             return;
         }
-        if (!curriculumFile) {
-            setError('Curriculum file (PDF or DOC) is required.');
-            return;
-        }
 
         let curriculumFileUrl: string | null = null;
         if (curriculumFile) {
@@ -115,10 +113,32 @@ const MyClasses = () => {
                     curriculum_source: 'file',
                     curriculum_file_url: curriculumFileUrl,
                 }).eq('id', data[0].id);
+                if (curriculumFile) {
+                    const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
+                    const pages = await pdfFileToImageDataUrls(curriculumFile);
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const scanRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-curriculum-file`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${sessionData?.session?.access_token}`,
+                        },
+                        body: JSON.stringify({
+                            class_id: data[0].id,
+                            pages,
+                            subject: classSubject.trim(),
+                        }),
+                    });
+                    const scanJson = await scanRes.json();
+                    if (!scanRes.ok || !scanJson.success) {
+                        setError(scanJson.error || 'Class created, but curriculum scan failed.');
+                    }
+                }
             }
             setClassName('');
             setClassSubject('');
             setCurriculumFile(null);
+            setSkipCurriculum(false);
             fetchClasses();
         }
     };
@@ -155,6 +175,40 @@ const MyClasses = () => {
         navigator.clipboard.writeText(code);
         setCopiedId(code);
         setTimeout(() => setCopiedId(null), 1500);
+    };
+
+    const handleScanCurriculum = async (classRow: Class) => {
+        if (!classRow.curriculum_file_url) return;
+        setError('');
+        setScanningClassId(classRow.id);
+        try {
+            const fileRes = await fetch(classRow.curriculum_file_url);
+            if (!fileRes.ok) throw new Error('Could not download curriculum file.');
+            const blob = await fileRes.blob();
+            const file = new File([blob], 'curriculum.pdf', { type: blob.type || 'application/pdf' });
+            const { pdfFileToImageDataUrls } = await import('../lib/pdfToImages');
+            const pages = await pdfFileToImageDataUrls(file);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const scanRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-curriculum-file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionData?.session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    class_id: classRow.id,
+                    pages,
+                    subject: classRow.subject || '',
+                }),
+            });
+            const scanJson = await scanRes.json();
+            if (!scanRes.ok || !scanJson.success) throw new Error(scanJson.error || 'Curriculum scan failed.');
+            await fetchClasses();
+        } catch (err: any) {
+            setError(err.message || 'Curriculum scan failed.');
+        } finally {
+            setScanningClassId(null);
+        }
     };
 
     return (
@@ -221,6 +275,7 @@ const MyClasses = () => {
                                     <option value="Physics">Physics</option>
                                     <option value="Chemistry">Chemistry</option>
                                     <option value="Biology">Biology</option>
+                                    <option value="Social Science">Social Science</option>
                                     <option value="Computer Science">Computer Science</option>
                                     <option value="English">English</option>
                                 </select>
@@ -240,17 +295,31 @@ const MyClasses = () => {
                                         <input
                                             type="file"
                                             accept=".pdf,.doc,.docx"
-                                            onChange={(e) => setCurriculumFile(e.target.files?.[0] || null)}
+                                            onChange={(e) => {
+                                                setCurriculumFile(e.target.files?.[0] || null);
+                                                if (e.target.files?.[0]) setSkipCurriculum(false);
+                                            }}
                                             className="hidden"
                                             id="myclasses-curriculum-file"
+                                            disabled={skipCurriculum}
                                         />
-                                        <label htmlFor="myclasses-curriculum-file" className="cursor-pointer flex items-center justify-center gap-2">
+                                        <label htmlFor="myclasses-curriculum-file" className={`cursor-pointer flex items-center justify-center gap-2 ${skipCurriculum ? 'opacity-40 pointer-events-none' : ''}`}>
                                             <Upload className="w-4 h-4 text-[#8A8279]" />
                                             <span className="text-sm font-medium text-[#2D2A26]">
-                                                {curriculumFile ? curriculumFile.name : 'Upload curriculum PDF/DOC *'}
+                                                {curriculumFile ? curriculumFile.name : 'Upload curriculum PDF/DOC (optional)'}
                                             </span>
                                         </label>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSkipCurriculum(!skipCurriculum);
+                                            if (!skipCurriculum) setCurriculumFile(null);
+                                        }}
+                                        className={`mt-2 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${skipCurriculum ? 'bg-[#00D1FF]/10 border-[#00D1FF] text-[#00D1FF]' : 'bg-white border-[#E8E4DF] text-[#8A8279] hover:border-[#8B7355]/30'}`}
+                                    >
+                                        {skipCurriculum ? 'Will add curriculum later' : 'Skip for now — add later'}
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -389,15 +458,26 @@ const MyClasses = () => {
                                             <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md">Custom Curriculum</span>
                                         )}
                                         {c.curriculum_source === 'file' && c.curriculum_file_url && (
-                                            <a
-                                                href={c.curriculum_file_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(c.curriculum_file_url, '_blank'); }}
-                                                className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
-                                            >
-                                                <FileText className="w-3 h-3" /> Curriculum File
-                                            </a>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(c.curriculum_file_url, '_blank'); }}
+                                                    className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+                                                >
+                                                    <FileText className="w-3 h-3" /> Curriculum File
+                                                </button>
+                                                {role === 'teacher' && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={scanningClassId === c.id}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleScanCurriculum(c); }}
+                                                        className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors inline-flex items-center gap-1 disabled:opacity-60"
+                                                    >
+                                                        {scanningClassId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                                        {scanningClassId === c.id ? 'Scanning...' : 'Scan Curriculum'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
 

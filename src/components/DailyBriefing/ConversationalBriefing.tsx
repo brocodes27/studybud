@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Brain, CheckCircle2, Lightbulb,
   AlertTriangle, Flame, Target, BookOpen, Upload, MessageCircle, Send, Timer,
-  Trophy, ShieldCheck, Star,
+  Trophy,
 } from 'lucide-react';
 import type { DailyBriefingData, TodayTask } from '../../lib/dailyBriefing';
 import { supabase } from '../../lib/supabase';
@@ -12,7 +12,7 @@ import { remember, type ChatTurn } from '../../lib/memory';
 import { AgentWorkstream } from './AgentWorkstream';
 import type { AgentRunReport } from '../../lib/agentOrchestrator';
 import { executeTool, type AgentContext, type ToolResult } from '../../lib/agentTools';
-import { buildStudentCommandCenter, type StudentCommandCenterModel, type StudentQuest } from '../../lib/studentRetentionCore';
+import { buildStudentCommandCenter, type StudentCommandCenterModel } from '../../lib/studentRetentionCore';
 
 /**
  * Conversational, agentic replacement for the card-grid Daily Briefing.
@@ -136,6 +136,15 @@ export function ConversationalBriefing({
         completed: t.completed,
         description: t.description?.slice(0, 200),
       })),
+      backlogTasks: data.backlogTasks.map((t, i) => ({
+        index: i,
+        type: t.type,
+        title: t.title,
+        subject: t.subject,
+        durationMin: t.durationMin,
+        completed: t.completed,
+        description: t.description?.slice(0, 200),
+      })),
       nextTest: nextTest ? {
         name: nextTest.test_name || nextTest.name,
         date: nextTest.test_date || nextTest.date,
@@ -166,7 +175,7 @@ export function ConversationalBriefing({
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
+      let token = sessionData?.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
       const context = overrideContext || buildAgentContext();
@@ -178,17 +187,25 @@ export function ConversationalBriefing({
         body.tool_results = toolResult;
       }
 
-      const res = await fetch(
+      const callAgent = (accessToken: string) => fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-turn`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify(body),
         }
       );
+
+      let res = await callAgent(token);
+      if (res.status === 401) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        token = refreshed.session?.access_token;
+        if (token) res = await callAgent(token);
+      }
 
       if (!res.ok) throw new Error(`Agent turn failed: ${res.status}`);
       const result = await res.json();
@@ -507,6 +524,7 @@ export function ConversationalBriefing({
     todayTasks: localTasks,
     recentSubmissions: data.recentSubmissions,
   });
+  const pendingBacklogTasks = data.backlogTasks.filter(t => !t.completed);
 
   // Before workstream finishes, show agent activity
   if (!agentReport) {
@@ -518,8 +536,48 @@ export function ConversationalBriefing({
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto flex flex-col h-[calc(100vh-140px)]">
+    <div className="w-full max-w-2xl mx-auto flex flex-col h-[calc(100vh-140px)]">
       <StudentCommandCenter model={commandCenter} />
+      {pendingBacklogTasks.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 text-amber-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <h3 className="text-sm font-black text-amber-900">Backlog</h3>
+                  <p className="text-[11px] font-semibold text-amber-700">
+                    Previous homework is parked here, separate from today&apos;s plan.
+                  </p>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-white/70 border border-amber-200 rounded-full px-2 py-1">
+                  {pendingBacklogTasks.length} pending
+                </span>
+              </div>
+              <div className="space-y-2">
+                {pendingBacklogTasks.slice(0, 3).map((task, idx) => (
+                  <div key={task.id} className="flex items-center justify-between gap-3 rounded-xl bg-white/70 border border-amber-100 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-[#2D2A26] truncate">{task.title}</p>
+                      <p className="text-[10px] font-semibold text-amber-700 truncate">{task.description}</p>
+                    </div>
+                    {onStartFocus && (
+                      <button
+                        onClick={() => onStartFocus(task, idx)}
+                        className="shrink-0 px-3 py-1.5 rounded-full bg-amber-600 text-white text-[10px] font-black hover:bg-amber-700 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Slim header */}
       <div className="flex items-center gap-3 px-1 mb-3">
@@ -555,19 +613,15 @@ export function ConversationalBriefing({
         </div>
       )}
 
-      {/* Chat thread */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-4 flex-1 min-h-0">
+      <div className="flex-1 min-h-0">
         <div
           ref={scrollRef}
-          className="overflow-y-auto space-y-3 pr-1 pb-4"
+          className="h-full overflow-y-auto space-y-3 px-1 pb-4"
           style={{ scrollbarGutter: 'stable' }}
         >
           <AnimatePresence initial={false}>
             {messages.map(renderMessage)}
           </AnimatePresence>
-        </div>
-        <div className="hidden lg:block">
-          <QuestRail model={commandCenter} />
         </div>
       </div>
 
@@ -702,94 +756,44 @@ function ChipButton({
 
 function StudentCommandCenter({ model }: { model: StudentCommandCenterModel }) {
   const modeStyle =
-    model.mode === 'comeback' ? 'bg-red-50 border-red-100 text-red-700' :
-    model.mode === 'repair' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-    model.mode === 'momentum' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-    'bg-blue-50 border-blue-100 text-blue-700';
+    model.mode === 'comeback' ? 'bg-red-50 text-red-700' :
+    model.mode === 'repair' ? 'bg-amber-50 text-amber-700' :
+    model.mode === 'momentum' ? 'bg-emerald-50 text-emerald-700' :
+    'bg-blue-50 text-blue-700';
 
   return (
-    <div className="bg-[#2D2A26] text-white rounded-3xl p-5 mb-5 shadow-sm overflow-hidden relative">
-      <div className="absolute right-0 top-0 w-40 h-40 bg-white/[0.04] rounded-bl-full" />
-      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${modeStyle}`}>
-              {model.mode} mode
-            </span>
-            <span className="text-[10px] font-black uppercase tracking-wider text-white/45">
-              Student Command Center
+    <div className="bg-white border border-[#E8E2D9] rounded-2xl px-3.5 py-3 mb-3 shadow-sm">
+      <div className="flex items-center gap-3">
+        <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${modeStyle}`}>
+          {model.mode}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[13px] font-black text-[#2D2A26] truncate">{model.identityTitle}</h2>
+            <span className="text-[10px] font-bold text-[#B5AEA5] shrink-0">
+              {model.completedCount}/{model.totalCount}
             </span>
           </div>
-          <h2 className="text-2xl font-black tracking-tight">{model.identityTitle}</h2>
-          <p className="text-sm text-white/70 mt-1 max-w-xl">{model.identityDetail}</p>
-          <p className="text-sm text-white/85 mt-3 font-semibold">{model.coachLine}</p>
+          <p className="text-[11px] font-semibold text-[#8A8279] truncate">{model.identityDetail}</p>
         </div>
-        <div className="md:w-36 shrink-0">
-          <div className="text-right mb-2">
-            <div className="text-3xl font-black">{model.progressPct}%</div>
-            <div className="text-[11px] font-bold text-white/50">{model.completedCount}/{model.totalCount} quests</div>
+        <div className="w-20 shrink-0">
+          <div className="flex items-center justify-end gap-2 mb-1">
+            <span className="text-[12px] font-black text-[#2D2A26]">{model.progressPct}%</span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-[#F5F0E8] rounded-full overflow-hidden">
             <motion.div
               initial={false}
               animate={{ width: `${model.progressPct}%` }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="h-full bg-white rounded-full"
+              className="h-full bg-[#8B7355] rounded-full"
             />
           </div>
         </div>
       </div>
-      <div className="relative mt-4 flex items-center gap-2 text-[12px] font-bold text-white/75">
-        <Trophy className="w-4 h-4 text-amber-300" />
+      <div className="mt-2 flex items-center gap-1.5 text-[10.5px] font-bold text-[#8A8279]">
+        <Trophy className="w-3.5 h-3.5 text-amber-500" />
         {model.rewardCue}
       </div>
-    </div>
-  );
-}
-
-function QuestRail({ model }: { model: StudentCommandCenterModel }) {
-  const quests = [model.primaryQuest, model.sideQuest, model.bossFight].filter(Boolean) as StudentQuest[];
-
-  return (
-    <div className="sticky top-3 space-y-3">
-      <div className="bg-white rounded-2xl border border-[#E8E2D9] p-4 shadow-sm">
-        <p className="text-[10px] font-black uppercase tracking-wider text-[#B5AEA5] mb-3">Quest Stack</p>
-        <div className="space-y-2.5">
-          {quests.map((quest) => (
-            <QuestMiniCard key={`${quest.label}-${quest.title}`} quest={quest} />
-          ))}
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl border border-[#E8E2D9] p-4 shadow-sm">
-        <p className="text-[10px] font-black uppercase tracking-wider text-[#B5AEA5] mb-2">Why stay today?</p>
-        <p className="text-xs font-semibold text-[#5D5A56] leading-relaxed">Every proof and completed quest updates your learner model, closes risks, and gives Ranjan Sir better memory for tomorrow.</p>
-      </div>
-    </div>
-  );
-}
-
-function QuestMiniCard({ quest }: { quest: StudentQuest }) {
-  const Icon =
-    quest.label === 'Boss Fight' ? ShieldCheck :
-    quest.label === 'Side Quest' ? Star :
-    Target;
-
-  return (
-    <div className={`rounded-2xl border p-3 ${quest.completed ? 'bg-emerald-50 border-emerald-100' : 'bg-[#FAF8F5] border-[#E8E2D9]'}`}>
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#8B7355]">
-          <Icon className="w-3.5 h-3.5" />
-          {quest.label}
-        </span>
-        {quest.completed && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
-      </div>
-      <p className="text-xs font-black text-[#2D2A26] leading-snug">{quest.title}</p>
-      <p className="text-[11px] font-semibold text-[#8A8279] mt-1">{quest.detail}</p>
-      {quest.proofRequired && (
-        <span className="inline-flex mt-2 text-[10px] font-black uppercase text-red-700 bg-red-50 border border-red-100 px-2 py-1 rounded-full">
-          proof unlock
-        </span>
-      )}
     </div>
   );
 }

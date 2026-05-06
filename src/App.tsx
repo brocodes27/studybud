@@ -36,6 +36,7 @@ const MasteryTree = lazy(() => import('./pages/MasteryTree').then(m => ({ defaul
 const SquadProveIt = lazy(() => import('./pages/SquadProveIt').then(m => ({ default: m.SquadProveIt })));
 const OutcomeDashboard = lazy(() => import('./pages/OutcomeDashboard').then(m => ({ default: m.OutcomeDashboard })));
 const MasteryReports = lazy(() => import('./pages/MasteryReports').then(m => ({ default: m.MasteryReports })));
+const SchoolAdminPanel = lazy(() => import('./pages/SchoolAdminPanel').then(m => ({ default: m.SchoolAdminPanel })));
 import { Crown, X } from 'lucide-react';
 
 function AppContent() {
@@ -45,8 +46,9 @@ function AppContent() {
   const { toasts, removeToast } = useToast();
   const location = useLocation();
   const effectiveRole = typeof role === 'string' ? role.trim().toLowerCase() : user?.user_metadata?.role?.trim?.().toLowerCase?.();
+  const isSchoolAdmin = effectiveRole === 'school_admin';
   const [ownsTeacherClasses, setOwnsTeacherClasses] = useState(false);
-  const isTeacherExperience = effectiveRole === 'teacher' || ownsTeacherClasses;
+  const isTeacherExperience = effectiveRole === 'teacher' || ownsTeacherClasses || isSchoolAdmin;
   const isImmersive = location.pathname === '/atlas';
 
   const isFullscreen = (() => {
@@ -188,8 +190,8 @@ function AppContent() {
             <Suspense fallback={<div className="w-full min-h-[50vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] animate-spin rounded-full" /></div>}>
             <Routes>
               {/* Core Experience */}
-              <Route path="/" element={isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
-              <Route path="/daily" element={isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+              <Route path="/" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+              <Route path="/daily" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
               <Route path="/atlas" element={<ErrorBoundary><AtlasWorkspace /></ErrorBoundary>} />
 
               {/* Curriculum Reference */}
@@ -211,6 +213,7 @@ function AppContent() {
               </Route>
               <Route path="/my-classes" element={<MyClasses />} />
               <Route path="/parent" element={<ParentDashboard />} />
+              <Route path="/school-admin" element={<SchoolAdminPanel />} />
               <Route path="/class/:id" element={<ClassPage />} />
 
               {/* Prove-It Mode — Socratic Mastery */}
@@ -222,8 +225,8 @@ function AppContent() {
               <Route path="/m/:slug" element={<ErrorBoundary><PublicReceipt /></ErrorBoundary>} />
 
               {/* Dashboard redirects */}
-              <Route path="/dashboard" element={isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
-              <Route path="/analytics" element={isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+              <Route path="/dashboard" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+              <Route path="/analytics" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
 
               {/* Legal */}
               <Route path="/privacy" element={<Privacy />} />

@@ -48,7 +48,7 @@ const TOOLS: ToolDefinition[] = [
       type: 'object',
       properties: {
         task_index: { type: 'integer', description: '0-based index of the task to mark complete' },
-        reflection_prompt: { type: 'string', description: 'One micro-reflection question to ask the student before moving on (optional)' },
+        reflection_prompt: { type: 'string', description: 'Optional reflection question — only use after the final task or if the student says they struggled. Do not ask after routine tasks.' },
       },
       required: ['task_index'],
     },
@@ -103,7 +103,7 @@ const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'ask_reflection',
-    description: 'Ask the student a micro-reflection question after task completion or at end of session. Stores in learner model.',
+    description: 'Ask the student a micro-reflection question ONLY after the final task of the session, or if the student explicitly says they struggled. Do not use after routine tasks.',
     parameters: {
       type: 'object',
       properties: {
@@ -155,7 +155,7 @@ ${tasks.map((t: any, i: number) => `${i}. [${t.completed ? 'DONE' : 'PENDING'}] 
 ## How You Behave
 1. ONE MESSAGE AT A TIME. Never dump multiple messages. Wait for the student to reply.
 2. When showing a task, use the \`present_task\` tool — don't just describe it in text.
-3. When a student finishes a task, ask ONE micro-reflection question before showing the next task.
+3. Reflection rule: ask at most ONE micro-reflection per session, and only after the final task or if the student explicitly says they struggled. Do not ask "how did you feel" after routine tasks.
 4. If they say "done" or "finished", mark the current task complete.
 5. If they need help with a concept, you have two options: explain briefly yourself, OR use \`open_mentor_chat\` if it's complex.
 6. If they have limited time, use \`regenerate_plan\` — don't just say "ok".
@@ -163,7 +163,7 @@ ${tasks.map((t: any, i: number) => `${i}. [${t.completed ? 'DONE' : 'PENDING'}] 
 8. Always offer 1-3 suggested replies to keep the flow moving.
 
 ## Conversation Flow (typical session)
-- Greeting → Check-in (how are you feeling?) → Present first pending task → Wait for student → Mark complete if done → Micro-reflection → Present next task → ... → Wrap up with reflection.
+- Greeting → Check-in (how are you feeling?) → Present first pending task → Wait for student → Mark complete if done → Present next task → ... → Wrap up with ONE reflection after the final task.
 - But you MUST adapt based on what the student actually says. No rigid script.
 
 ## Tool Calling Rules
