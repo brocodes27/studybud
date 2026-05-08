@@ -5,11 +5,13 @@ import { useToast } from '../hooks/useToast';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
-type OnboardingPath = 'select' | 'self-paced' | 'self-curriculum' | 'join-class' | 'auth';
-type AuthMode = 'signin' | 'signup';
+type OnboardingPath = 'select' | 'self-paced' | 'self-curriculum' | 'join-class';
 
 export function Auth() {
-  const [onboardingPath, setOnboardingPath] = useState<OnboardingPath>('select');
+  const [selectedPath, setSelectedPath] = useState<OnboardingPath | null>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [userRole, setUserRole] = useState<'student' | 'teacher'>('student');
+  const [loading, setLoading] = useState(false);
   const [classCode, setClassCode] = useState('');
   const [classLookupResult, setClassLookupResult] = useState<{
     class_name: string;
@@ -17,8 +19,6 @@ export function Auth() {
     role: 'student' | 'teacher';
     class_id: string;
   } | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -32,47 +32,13 @@ export function Auth() {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const handleClassCodeLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!classCode.trim()) return;
-
-    setCodeLoading(true);
-    try {
-      // Look up class by invite code
-      const { data, error } = await supabase
-        .from('classes')
-        .select('id, name, teacher:users!classes_teacher_id_fkey(full_name), invite_code')
-        .eq('invite_code', classCode.trim().toUpperCase())
-        .single();
-
-      if (error || !data) {
-        showToast('Invalid class code. Check and try again.', 'error');
-        setCodeLoading(false);
-        return;
-      }
-
-      setClassLookupResult({
-        class_id: data.id,
-        class_name: data.name,
-        teacher_name: data.teacher?.full_name || 'Teacher',
-        role: 'student' // Default, teacher codes handled differently
-      });
-      setOnboardingPath('auth');
-    } catch (err) {
-      showToast('Error looking up class code.', 'error');
-    } finally {
-      setCodeLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       if (isSignUp) {
-        // Sign up with determined role (from class or default to student)
-        const role = classLookupResult?.role || 'student';
+        const role = userRole;
         const { error } = await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
           grade: role === 'student' ? formData.grade : null,
@@ -82,7 +48,6 @@ export function Auth() {
 
         if (error) throw error;
 
-        // If joining via class code, add to class
         if (classLookupResult) {
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user) {
@@ -99,11 +64,9 @@ export function Auth() {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
 
-        // If joining via class code, add to class
         if (classLookupResult) {
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user) {
-            // Check if already enrolled
             const { data: existing } = await supabase
               .from('class_enrollments')
               .select('id')
@@ -124,13 +87,12 @@ export function Auth() {
         showToast('Welcome back!', 'success');
       }
 
-      // Navigate based on path
-      if (onboardingPath === 'join-class' || classLookupResult) {
-        navigate('/dashboard');
-      } else if (onboardingPath === 'self-curriculum') {
+      if (selectedPath === 'join-class' || classLookupResult) {
+        navigate(userRole === 'teacher' ? '/my-classes' : '/dashboard');
+      } else if (selectedPath === 'self-curriculum') {
         navigate('/onboarding/curriculum');
       } else {
-        navigate('/dashboard');
+        navigate(userRole === 'teacher' ? '/my-classes' : '/dashboard');
       }
     } catch (error: any) {
       showToast(error.message, 'error');
@@ -139,16 +101,46 @@ export function Auth() {
     }
   };
 
+  const handleClassCodeLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!classCode.trim()) return;
+
+    setCodeLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name, teacher:user_profiles!classes_teacher_id_fkey(full_name), class_code')
+        .eq('class_code', classCode.trim().toUpperCase())
+        .single();
+
+      if (error || !data) {
+        showToast('Invalid class code. Check and try again.', 'error');
+        setCodeLoading(false);
+        return;
+      }
+
+      setClassLookupResult({
+        class_id: data.id,
+        class_name: data.name,
+        teacher_name: data.teacher?.full_name || 'Teacher',
+        role: 'student'
+      });
+    } catch (err) {
+      showToast('Error looking up class code.', 'error');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
   const resetToSelection = () => {
-    setOnboardingPath('select');
+    setSelectedPath(null);
     setClassLookupResult(null);
     setClassCode('');
-    setIsSignUp(false);
+    setUserRole('student');
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#FAFBFF' }}>
-      {/* Mesh gradient background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] bg-[#00D1FF]/[0.07] rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#6366F1]/[0.06] rounded-full blur-[100px] pointer-events-none" />
@@ -174,63 +166,65 @@ export function Auth() {
           </div>
         </div>
 
-        {/* PATH SELECTION - Step 1 */}
-        {onboardingPath === 'select' && (
-          <div className="space-y-3">
+        {/* PATH SELECTION - always first */}
+        {selectedPath === null && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-[28px] border border-[#0A192F]/[0.06] shadow-neo-lg p-8">
             <p className="text-center text-[#64748B] font-medium mb-6">How do you want to get started?</p>
 
-            {/* Self-Paced Course */}
-            <button
-              onClick={() => setOnboardingPath('self-paced')}
-              className="w-full bg-white/80 backdrop-blur-xl rounded-[20px] border border-[#0A192F]/[0.06] shadow-neo-md p-5 text-left hover:scale-[1.02] transition-transform group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#34D399] to-[#00D1FF] flex items-center justify-center text-white flex-shrink-0">
-                  <BookOpen className="h-5 w-5" />
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setSelectedPath('self-paced')}
+                className="w-full bg-[#F8FAFF] hover:bg-[#00D1FF]/[0.05] rounded-[16px] border border-[#0A192F]/[0.06] p-4 text-left transition-all hover:border-[#00D1FF]/20 hover:scale-[1.01]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#34D399] to-[#00D1FF] flex items-center justify-center text-white flex-shrink-0">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-[#0A192F] text-base">Self-Paced Course</p>
+                    <p className="text-[#64748B] text-sm">Learn at your own speed with curated content</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#0A192F] text-lg mb-1">Self-Paced Course</h3>
-                  <p className="text-[#64748B] text-sm">Start learning at your own speed with our curated content library.</p>
-                </div>
-              </div>
-            </button>
+              </button>
 
-            {/* Self-Curriculum */}
-            <button
-              onClick={() => setOnboardingPath('self-curriculum')}
-              className="w-full bg-white/80 backdrop-blur-xl rounded-[20px] border border-[#0A192F]/[0.06] shadow-neo-md p-5 text-left hover:scale-[1.02] transition-transform group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F472B6] to-[#F59E0B] flex items-center justify-center text-white flex-shrink-0">
-                  <Sparkles className="h-5 w-5" />
+              <button
+                type="button"
+                onClick={() => setSelectedPath('self-curriculum')}
+                className="w-full bg-[#F8FAFF] hover:bg-[#00D1FF]/[0.05] rounded-[16px] border border-[#0A192F]/[0.06] p-4 text-left transition-all hover:border-[#00D1FF]/20 hover:scale-[1.01]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F472B6] to-[#F59E0B] flex items-center justify-center text-white flex-shrink-0">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-[#0A192F] text-base">Build Your Curriculum</p>
+                    <p className="text-[#64748B] text-sm">Create personalized learning paths</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#0A192F] text-lg mb-1">Build Your Curriculum</h3>
-                  <p className="text-[#64748B] text-sm">Create personalized learning paths tailored to your goals.</p>
-                </div>
-              </div>
-            </button>
+              </button>
 
-            {/* Join with Class Code */}
-            <button
-              onClick={() => setOnboardingPath('join-class')}
-              className="w-full bg-white/80 backdrop-blur-xl rounded-[20px] border border-[#0A192F]/[0.06] shadow-neo-md p-5 text-left hover:scale-[1.02] transition-transform group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#00D1FF] flex items-center justify-center text-white flex-shrink-0">
-                  <Users className="h-5 w-5" />
+              <button
+                type="button"
+                onClick={() => setSelectedPath('join-class')}
+                className="w-full bg-[#F8FAFF] hover:bg-[#00D1FF]/[0.05] rounded-[16px] border border-[#0A192F]/[0.06] p-4 text-left transition-all hover:border-[#00D1FF]/20 hover:scale-[1.01]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#6366F1] to-[#00D1FF] flex items-center justify-center text-white flex-shrink-0">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-[#0A192F] text-base">Join a Class</p>
+                    <p className="text-[#64748B] text-sm">Enter class code from your teacher</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[#0A192F] text-lg mb-1">Join a Class</h3>
-                  <p className="text-[#64748B] text-sm">Enter class code from your teacher to join.</p>
-                </div>
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
         )}
 
-        {/* CLASS CODE ENTRY - Step 2 for join-class */}
-        {onboardingPath === 'join-class' && !classLookupResult && (
+        {/* CLASS CODE ENTRY */}
+        {selectedPath === 'join-class' && !classLookupResult && (
           <div className="bg-white/80 backdrop-blur-xl rounded-[28px] border border-[#0A192F]/[0.06] shadow-neo-lg p-8">
             <button
               onClick={resetToSelection}
@@ -277,9 +271,16 @@ export function Auth() {
           </div>
         )}
 
-        {/* CLASS CONFIRMED - Show class info, proceed to auth */}
-        {onboardingPath === 'join-class' && classLookupResult && (
+        {/* CLASS CONFIRMED - proceed to auth */}
+        {selectedPath === 'join-class' && classLookupResult && (
           <div className="bg-white/80 backdrop-blur-xl rounded-[28px] border border-[#0A192F]/[0.06] shadow-neo-lg p-8">
+            <button
+              onClick={resetToSelection}
+              className="text-[#64748B] hover:text-[#0A192F] text-sm font-medium mb-4 flex items-center gap-1"
+            >
+              <ArrowRight className="h-4 w-4 rotate-180" /> Back
+            </button>
+
             <div className="text-center mb-6">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#34D399] to-[#00D1FF] flex items-center justify-center text-white mx-auto mb-4">
                 <Sparkles className="h-7 w-7" />
@@ -291,41 +292,43 @@ export function Auth() {
               </div>
             </div>
 
-            <button
-              onClick={() => setOnboardingPath('auth')}
-              className="neo-button w-full py-3.5 flex items-center justify-center gap-2 group"
-            >
-              Create Account / Sign In <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            {/* Auth form for join-class */}
+            <div className="flex items-center gap-2 p-1 bg-[#F8FAFF] rounded-[14px] mb-3">
+              <button
+                type="button"
+                onClick={() => setUserRole('student')}
+                className={`flex-1 py-2.5 rounded-[12px] text-xs font-bold transition-all ${userRole === 'student' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRole('teacher')}
+                className={`flex-1 py-2.5 rounded-[12px] text-xs font-bold transition-all ${userRole === 'teacher' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Teacher
+              </button>
+            </div>
 
-            <button
-              onClick={() => { setClassLookupResult(null); setOnboardingPath('join-class'); }}
-              className="w-full text-center text-[#64748B] hover:text-[#0A192F] text-sm font-medium mt-4"
-            >
-              Use different code
-            </button>
-          </div>
-        )}
-
-        {/* AUTH FORM - Self-paced / Self-curriculum / Class join */}
-        {(onboardingPath === 'self-paced' || onboardingPath === 'self-curriculum' || (onboardingPath === 'auth' && !classLookupResult)) && (
-          <div className="bg-white/80 backdrop-blur-xl rounded-[28px] border border-[#0A192F]/[0.06] shadow-neo-lg p-8">
-            <button
-              onClick={resetToSelection}
-              className="text-[#64748B] hover:text-[#0A192F] text-sm font-medium mb-4 flex items-center gap-1"
-            >
-              <ArrowRight className="h-4 w-4 rotate-180" /> Back
-            </button>
+            <div className="flex items-center gap-2 p-1 bg-[#F8FAFF] rounded-[14px] mb-4">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(false)}
+                className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${!isSignUp ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSignUp(true)}
+                className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${isSignUp ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Sign Up
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {onboardingPath !== 'auth' && (
-                <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-[#00D1FF]/[0.06] to-[#6366F1]/[0.06] rounded-xl border border-[#6366F1]/10 mb-2">
-                  {onboardingPath === 'self-paced' && <><BookOpen className="h-4 w-4 text-[#6366F1]" /><span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">Self-Paced Course</span></>}
-                  {onboardingPath === 'self-curriculum' && <><Sparkles className="h-4 w-4 text-[#6366F1]" /><span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">Build Your Curriculum</span></>}
-                </div>
-              )}
-
-              <div className="space-y-3">
+              {isSignUp && !classLookupResult && (
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
                   <input
@@ -334,35 +337,10 @@ export function Auth() {
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                     className="neo-input w-full pl-11"
-                    placeholder="Full Name"
+                    placeholder={userRole === 'teacher' ? 'Dr. Sarah Chen' : 'Full Name'}
                   />
                 </div>
-
-                {(onboardingPath === 'self-curriculum' || onboardingPath === 'auth') && (
-                  <div className="relative">
-                    <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
-                    <input
-                      type="text"
-                      required
-                      value={formData.grade}
-                      onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                      className="neo-input w-full pl-11"
-                      placeholder="Grade / Class (e.g., 12)"
-                    />
-                  </div>
-                )}
-
-                <div className="relative">
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" /></svg>
-                  <input
-                    type="text"
-                    value={formData.school}
-                    onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
-                    className="neo-input w-full pl-11"
-                    placeholder="School Name (Optional)"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
@@ -402,39 +380,135 @@ export function Auth() {
               </button>
             </form>
 
-            <div className="mt-5 text-center">
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-[#64748B] hover:text-[#0A192F] transition-colors text-sm font-medium"
-              >
-                {isSignUp ? (
-                  <>Already have an account? <span className="text-gradient font-bold">Sign in</span></>
-                ) : (
-                  <>Don't have an account? <span className="text-gradient font-bold">Sign up</span></>
-                )}
-              </button>
-            </div>
+            <button
+              onClick={() => { setClassLookupResult(null); setSelectedPath('join-class'); }}
+              className="w-full text-center text-[#64748B] hover:text-[#0A192F] text-sm font-medium mt-4"
+            >
+              Use different code
+            </button>
           </div>
         )}
 
-        {/* Footer Features */}
-        {onboardingPath === 'select' && (
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {[
-              { icon: Brain, label: 'AI Powered', gradient: 'from-[#00D1FF] to-[#6366F1]' },
-              { icon: Sparkles, label: 'Personalized', gradient: 'from-[#F472B6] to-[#F59E0B]' },
-              { icon: GraduationCap, label: 'Smart Plans', gradient: 'from-[#34D399] to-[#00D1FF]' },
-            ].map(({ icon: Icon, label, gradient }, i) => (
-              <div key={i} className="bg-white/60 backdrop-blur-sm rounded-xl border border-[#0A192F]/[0.04] p-4 text-center">
-                <div className={`w-9 h-9 mx-auto mb-2 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-white`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <p className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">{label}</p>
+        {/* SELF-PACED or SELF-CURRICULUM - auth form */}
+        {(selectedPath === 'self-paced' || selectedPath === 'self-curriculum') && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-[28px] border border-[#0A192F]/[0.06] shadow-neo-lg p-8">
+            <button
+              onClick={resetToSelection}
+              className="text-[#64748B] hover:text-[#0A192F] text-sm font-medium mb-4 flex items-center gap-1"
+            >
+              <ArrowRight className="h-4 w-4 rotate-180" /> Back
+            </button>
+
+            <div className="flex items-center gap-2 p-1 bg-[#F8FAFF] rounded-[14px] mb-3">
+              <button
+                type="button"
+                onClick={() => setUserRole('student')}
+                className={`flex-1 py-2.5 rounded-[12px] text-xs font-bold transition-all ${userRole === 'student' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserRole('teacher')}
+                className={`flex-1 py-2.5 rounded-[12px] text-xs font-bold transition-all ${userRole === 'teacher' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Teacher
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 p-1 bg-[#F8FAFF] rounded-[14px] mb-4">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(false)}
+                className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${!isSignUp ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSignUp(true)}
+                className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${isSignUp ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-[#00D1FF]/[0.06] to-[#6366F1]/[0.06] rounded-xl border border-[#6366F1]/10 mb-4">
+              {selectedPath === 'self-paced' && <><BookOpen className="h-4 w-4 text-[#6366F1]" /><span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">Self-Paced Course</span></>}
+              {selectedPath === 'self-curriculum' && <><Sparkles className="h-4 w-4 text-[#6366F1]" /><span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">Build Your Curriculum</span></>}
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.full_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="neo-input w-full pl-11"
+                      placeholder="Full Name"
+                    />
+                  </div>
+
+                  {selectedPath === 'self-curriculum' && (
+                    <div className="relative">
+                      <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                      <input
+                        type="text"
+                        value={formData.grade}
+                        onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                        className="neo-input w-full pl-11"
+                        placeholder="Grade / Class (optional)"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="neo-input w-full pl-11"
+                  placeholder="Email Address"
+                />
               </div>
-            ))}
+
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  className="neo-input w-full pl-11"
+                  placeholder="Password"
+                  minLength={6}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="neo-button w-full py-3.5 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              >
+                {loading ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Please wait...</>
+                ) : (
+                  <>{isSignUp ? 'Create Account' : 'Sign In'} <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></>
+                )}
+              </button>
+            </form>
           </div>
         )}
       </div>
     </div>
   );
 }
+export default Auth;

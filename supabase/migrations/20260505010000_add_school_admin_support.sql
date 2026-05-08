@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.schools (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   code TEXT UNIQUE,
+  domain TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -46,17 +47,27 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- 4) Update handle_new_user trigger to support school_admin
+-- 4) Update handle_new_user trigger to auto-link by email domain
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER AS $$
-DECLARE v_school_id UUID; v_school_name TEXT;
+DECLARE
+  v_school_id UUID;
+  v_school_name TEXT;
+  v_domain TEXT;
+  v_free_domains TEXT[] := ARRAY['gmail.com','yahoo.com','hotmail.com','outlook.com','icloud.com','mail.com','protonmail.com','yandex.com','zoho.com','aol.com','live.com','msn.com','qq.com','163.com','foxmail.com','rediffmail.com','ymail.com','rocketmail.com','gmx.com','gmx.net','mail.ru','bk.ru','inbox.ru','list.ru','rambler.ru','yandex.ru','ya.ru','tutanota.com','hey.com','fastmail.com','runbox.com','mailbox.org','disroot.org','riseup.net','cock.li','pm.me','proton.me'];
 BEGIN
   v_school_name := NEW.raw_user_meta_data->>'school';
-  -- Look up or create school if school name is provided
-  IF v_school_name IS NOT NULL AND v_school_name != '' THEN
-    SELECT id INTO v_school_id FROM public.schools WHERE name ILIKE v_school_name LIMIT 1;
+  v_domain := split_part(NEW.email, '@', 2);
+
+  -- Auto-link by email domain for institutional emails (skip free providers)
+  IF v_domain IS NOT NULL AND v_domain != '' AND NOT (v_domain = ANY(v_free_domains)) THEN
+    SELECT id INTO v_school_id FROM public.schools WHERE domain = v_domain LIMIT 1;
     IF v_school_id IS NULL THEN
-      INSERT INTO public.schools (name, code)
-      VALUES (v_school_name, lower(regexp_replace(v_school_name, '[^a-zA-Z0-9]', '', 'g')) || '_' || substr(md5(random()::text), 1, 6))
+      INSERT INTO public.schools (name, code, domain)
+      VALUES (
+        COALESCE(NULLIF(v_school_name,''), v_domain),
+        v_domain,
+        v_domain
+      )
       RETURNING id INTO v_school_id;
     END IF;
   END IF;
@@ -67,7 +78,7 @@ BEGIN
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name',''),
     COALESCE(NEW.raw_user_meta_data->>'grade',''),
-    v_school_name,
+    COALESCE(v_school_name, v_domain),
     v_school_id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'role','student'),

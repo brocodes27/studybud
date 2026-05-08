@@ -6,10 +6,11 @@ import LandingBenefits from '../sections/landing/LandingBenefits';
 import LandingFeatures from '../sections/landing/LandingFeatures';
 import LandingCurriculum from '../sections/landing/LandingCurriculum';
 import LandingCTA from '../sections/landing/LandingCTA';
-import LandingAuth from '../sections/landing/LandingAuth';
 import LandingTestimonials from '../sections/landing/LandingTestimonials';
 import LandingFooter from '../sections/landing/LandingFooter';
+import LandingAuth from '../sections/landing/LandingAuth';
 import { LandingProveItDemo } from '../sections/landing/LandingProveItDemo';
+import Auth from './Auth';
 
 const Landing: React.FC = () => {
   const { role, loading } = useAuth() as any;

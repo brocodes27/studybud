@@ -13,6 +13,7 @@ import { useOfflineStorage } from './hooks/useOfflineStorage';
 import { useToast } from './hooks/useToast';
 import { Profile } from './pages/Profile';
 import Onboarding from './pages/Onboarding';
+import Auth from './pages/Auth';
 import { usePayment } from './hooks/usePayment';
 import { supabase } from './lib/supabase';
 import { Curriculum } from './pages/Curriculum';
@@ -121,11 +122,11 @@ function AppContent() {
     );
   }
 
-  if (!user) return <Landing />;
+  if (!user && location.pathname !== '/auth') return <Landing />;
   if (!onboardingCompleted && effectiveRole !== 'teacher') return <Onboarding />;
 
   const hasFreeAccess = isTeacherExperience || isAdmin;
-  const requiresSubscription = !hasFreeAccess && isPremium === false;
+  const requiresSubscription = !hasFreeAccess && isPremium === false && location.pathname !== '/auth';
 
   if (requiresSubscription && location.pathname !== '/subscription' && location.pathname !== '/pricing') {
     return <Navigate to="/subscription" replace />;
@@ -203,6 +204,7 @@ function AppContent() {
               <Route path="/settings" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/analytics" element={<AdminAnalytics />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/pricing" element={<SubscriptionPage />} />
               <Route path="/subscription" element={<SubscriptionPage />} />
 

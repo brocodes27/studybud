@@ -58,13 +58,13 @@ export function LandingCTA() {
           transition={{ delay: 0.15 }}
           className="flex flex-col sm:flex-row gap-3 justify-center"
         >
-          <a
-            href="#auth"
+          <button
+            onClick={() => window.location.href = '/auth'}
             className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-bold text-white bg-[#2D2A26] hover:bg-[#3D3833] transition-all duration-300 hover:-translate-y-[2px] shadow-lg"
           >
             Start for free
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </a>
+          </button>
           <a
             href="#features"
             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-semibold text-[#2D2A26]/70 border border-[#2D2A26]/[0.12] hover:border-[#2D2A26]/20 hover:text-[#2D2A26] hover:bg-white/50 transition-all"
