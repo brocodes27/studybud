@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-// A lightweight, center-bubble personal tips overlay, styled like CurriculumTour
+// A lightweight, center-bubble personal tips overlay.
 // - One-time per-feature tips using localStorage keys: tips:<pathKey>:v1:completed
-// - Avoids overlap with the Global tour (checks tour:global:v1:active)
-// - Uses the same CSS classes defined for CurriculumTour (tour-overlay, tour-bubble, etc.)
+// - Uses the tour overlay/bubble CSS classes defined in src/index.css (tour-overlay, tour-bubble, etc.)
 
 type TipStep = {
   id?: string; // optional data-tour id for anchored coachmark
@@ -146,7 +145,7 @@ function computeBubblePlacement(rect: DOMRect | null, viewport: { w: number; h: 
 }
 
 function usePathKey(pathname: string) {
-  // Normalize to feature keys; keep curriculum out to avoid duplicate overlays with CurriculumTour
+  // Normalize to feature keys
   if (pathname.startsWith('/teacher')) return 'teacher';
   if (pathname.startsWith('/class/')) return 'teacher-class';
   if (pathname.startsWith('/my-notes')) return 'my-notes';
@@ -198,7 +197,7 @@ const PersonalTipsManager: React.FC = () => {
 
   // Define per-feature tips
   const config = useMemo<TipConfig | null>(() => {
-    if (pathKey === 'curriculum-skip') return null; // Let CurriculumTour handle it
+    if (pathKey === 'curriculum-skip') return null; // Curriculum page no longer has a dedicated tour
 
     const make = (key: string, steps: TipStep[]): TipConfig => ({ key, steps });
 
@@ -467,7 +466,7 @@ const PersonalTipsManager: React.FC = () => {
     };
   }, [config?.key]);
 
-  // Lock body scroll while open (consistent with CurriculumTour)
+  // Lock body scroll while open
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (open) {

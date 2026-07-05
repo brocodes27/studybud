@@ -21,7 +21,6 @@ BEGIN
     RETURN CASE WHEN total_prereqs = 0 THEN 1.0 ELSE ready_prereqs::numeric / total_prereqs END;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- ============================================================
 -- sync_topic_mastery_from_bkt
 -- ============================================================
@@ -68,14 +67,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS sync_bkt_to_topic_mastery ON public.student_cognitive_profiles;
 CREATE TRIGGER sync_bkt_to_topic_mastery
     AFTER INSERT OR UPDATE ON public.student_cognitive_profiles
     FOR EACH ROW
     WHEN (NEW.user_id IS NOT NULL AND NEW.kc_id IS NOT NULL)
     EXECUTE FUNCTION public.sync_topic_mastery_from_bkt();
-
 -- ============================================================
 -- Derived-metric refresh helpers
 -- ============================================================
@@ -90,7 +87,6 @@ BEGIN
     ));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.update_prereq_readiness()
 RETURNS void AS $$
 BEGIN
@@ -104,7 +100,6 @@ BEGIN
     ), 1.0);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.update_velocity_metrics()
 RETURNS void AS $$
 BEGIN
@@ -126,7 +121,6 @@ BEGIN
         updated_at = now();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.update_avoidance_rates()
 RETURNS void AS $$
 BEGIN
@@ -144,7 +138,6 @@ BEGIN
         updated_at = now();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.update_misconception_severity()
 RETURNS void AS $$
 BEGIN
@@ -162,7 +155,6 @@ BEGIN
         updated_at = now();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.refresh_derived_metrics()
 RETURNS void AS $$
 BEGIN
@@ -173,7 +165,6 @@ BEGIN
     PERFORM public.update_misconception_severity();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- refresh_student_twin_snapshot
 -- ============================================================
@@ -392,7 +383,6 @@ BEGIN
     RETURN v_snapshot_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- refresh_all_student_twins
 -- ============================================================
@@ -415,7 +405,6 @@ BEGIN
     RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- generate_weekly_summary
 -- ============================================================
@@ -551,7 +540,6 @@ BEGIN
     RETURN v_summary_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- compute_task_rationale
 -- ============================================================
@@ -665,7 +653,6 @@ BEGIN
     RETURN v_rationale_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- refresh_student_twin_full (convenience wrapper)
 -- ============================================================

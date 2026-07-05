@@ -10,25 +10,19 @@ CREATE TABLE IF NOT EXISTS cbse_syllabi (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(subject, class_level)
 );
-
 -- Create indexes for performance
 CREATE INDEX idx_cbse_syllabi_subject_class ON cbse_syllabi(subject, class_level);
 CREATE INDEX idx_cbse_syllabi_created_at ON cbse_syllabi(created_at);
-
 -- Enable RLS
 ALTER TABLE cbse_syllabi ENABLE ROW LEVEL SECURITY;
-
 -- Create RLS policies - allow all authenticated users to read syllabi
 CREATE POLICY "Everyone can view syllabi" ON cbse_syllabi
     FOR SELECT USING (true);
-
 -- Allow authenticated users to insert/update syllabi
 CREATE POLICY "Authenticated users can insert syllabi" ON cbse_syllabi
     FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
 CREATE POLICY "Authenticated users can update syllabi" ON cbse_syllabi
     FOR UPDATE USING (auth.role() = 'authenticated');
-
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_cbse_syllabi_updated_at()
 RETURNS TRIGGER AS $$
@@ -37,7 +31,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
 -- Create trigger for updated_at
 CREATE TRIGGER update_cbse_syllabi_updated_at
     BEFORE UPDATE ON cbse_syllabi

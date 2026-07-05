@@ -13,7 +13,6 @@ create table if not exists public.exam_plans (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 -- Helpful indexes
 create index if not exists idx_exam_plans_user_created_at
   on public.exam_plans(user_id, created_at);
@@ -21,10 +20,8 @@ create index if not exists idx_exam_plans_user
   on public.exam_plans(user_id);
 create index if not exists idx_exam_plans_exam_date
   on public.exam_plans(exam_date);
-
 -- Enable RLS
 alter table public.exam_plans enable row level security;
-
 -- Policies (guard with DO blocks as CREATE POLICY lacks IF NOT EXISTS on some Postgres versions)
 -- SELECT own
 DO $$
@@ -37,7 +34,6 @@ BEGIN
       FOR SELECT USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- INSERT own
 DO $$
 BEGIN
@@ -49,7 +45,6 @@ BEGIN
       FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- UPDATE own (ensure both USING and WITH CHECK)
 DO $$
 BEGIN
@@ -62,7 +57,6 @@ BEGIN
       WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- DELETE own
 DO $$
 BEGIN
@@ -74,7 +68,6 @@ BEGIN
       FOR DELETE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- Ensure updated_at is maintained on UPDATE
 -- Assumes public.set_updated_at() exists (created in an earlier migration). Guard trigger creation.
 DO $$

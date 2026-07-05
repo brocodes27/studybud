@@ -9,21 +9,16 @@ CREATE TABLE IF NOT EXISTS chat_history (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_at);
-
 -- Enable RLS
 ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
-
 -- Create RLS policies
 CREATE POLICY "Users can view their own chat history" ON chat_history
   FOR SELECT USING (auth.uid() = user_id);
-
 CREATE POLICY "Users can insert their own chat history" ON chat_history
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -32,9 +27,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ language 'plpgsql';
-
 -- Create trigger for updated_at
 CREATE TRIGGER update_chat_history_updated_at
   BEFORE UPDATE ON chat_history
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column(); 
+  EXECUTE FUNCTION update_updated_at_column();

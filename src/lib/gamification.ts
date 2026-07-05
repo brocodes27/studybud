@@ -231,72 +231,46 @@ export async function awardXp(
  * Update streak
  */
 export async function updateStreak(userId: string): Promise<{ streak: number; isNewStreak: boolean; streakBonus: number }> {
-    const today = new Date().toISOString().split('T')[0];
-
     let state = await getUserGamification(userId);
     if (!state) {
         state = await initializeGamification(userId);
     }
 
-    const lastDate = state.last_activity_date;
-    let newStreak = state.current_streak;
-    let isNewStreak = false;
-    let streakBonus = 0;
+    const oldStreak = state.current_streak || 0;
+    const oldLastActivity = state.last_activity_date || '';
 
-    if (!lastDate) {
-        // First activity
-        newStreak = 1;
-        isNewStreak = true;
-    } else if (lastDate === today) {
-        // Already logged today
-        return { streak: newStreak, isNewStreak: false, streakBonus: 0 };
-    } else {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        if (lastDate === yesterdayStr) {
-            // Consecutive day!
-            newStreak = state.current_streak + 1;
-            isNewStreak = true;
-        } else {
-            // Streak broken
-            newStreak = 1;
-            isNewStreak = true;
-        }
+    // Invoke the database RPC function to calculate and update streak consistently
+    const { data: newStreakVal, error: rpcError } = await supabase.rpc('update_streak', { p_user_id: userId });
+    if (rpcError) {
+        console.error('Error executing update_streak RPC:', rpcError);
+        return { streak: oldStreak, isNewStreak: false, streakBonus: 0 };
     }
+
+    // Fetch the updated state to get new values
+    const updatedState = await getUserGamification(userId);
+    const resolvedStreak = typeof newStreakVal === 'number' ? newStreakVal : (updatedState?.current_streak ?? oldStreak);
+    const newLastActivity = updatedState?.last_activity_date ?? oldLastActivity;
+
+    // Check if the streak was newly incremented today
+    const isNewStreak = resolvedStreak > oldStreak || (oldStreak === 0 && resolvedStreak === 1) || (oldLastActivity !== newLastActivity);
 
     // Calculate streak bonus
-    if (isNewStreak && newStreak > 1) {
-        streakBonus = XP_REWARDS.streak_bonus_per_day * newStreak;
+    let streakBonus = 0;
+    if (isNewStreak && resolvedStreak > 1) {
+        streakBonus = XP_REWARDS.streak_bonus_per_day * resolvedStreak;
 
         // Milestone bonuses
-        if (newStreak === 7) streakBonus += XP_REWARDS.streak_milestone_7;
-        if (newStreak === 30) streakBonus += XP_REWARDS.streak_milestone_30;
-        if (newStreak === 100) streakBonus += XP_REWARDS.streak_milestone_100;
-    }
-
-    // Update streak
-    const { error } = await supabase
-        .from('user_gamification')
-        .update({
-            current_streak: newStreak,
-            longest_streak: Math.max(state.longest_streak, newStreak),
-            last_activity_date: today,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId);
-
-    if (error) {
-        console.error('Error updating streak:', error);
+        if (resolvedStreak === 7) streakBonus += XP_REWARDS.streak_milestone_7;
+        if (resolvedStreak === 30) streakBonus += XP_REWARDS.streak_milestone_30;
+        if (resolvedStreak === 100) streakBonus += XP_REWARDS.streak_milestone_100;
     }
 
     // Award streak bonus XP
     if (streakBonus > 0) {
-        await awardXp(userId, streakBonus, `Streak bonus (Day ${newStreak})`, 'streak');
+        await awardXp(userId, streakBonus, `Streak bonus (Day ${resolvedStreak})`, 'streak');
     }
 
-    return { streak: newStreak, isNewStreak, streakBonus };
+    return { streak: resolvedStreak, isNewStreak, streakBonus };
 }
 
 /**

@@ -3,10 +3,8 @@ ALTER TABLE public.class_attendance_sessions
   ADD COLUMN IF NOT EXISTS teacher_notes TEXT,
   ADD COLUMN IF NOT EXISTS teacher_notes_interpreted TEXT,
   ADD COLUMN IF NOT EXISTS teacher_notes_file_url TEXT;
-
 -- RLS for teacher notes (same as session)
 ALTER TABLE public.class_attendance_sessions ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies

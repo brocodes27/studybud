@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS public.class_attendance_sessions (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(class_id, session_date)
 );
-
 CREATE TABLE IF NOT EXISTS public.class_attendance_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   attendance_session_id UUID NOT NULL REFERENCES public.class_attendance_sessions(id) ON DELETE CASCADE,
@@ -26,7 +25,6 @@ CREATE TABLE IF NOT EXISTS public.class_attendance_records (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(attendance_session_id, student_id)
 );
-
 CREATE TABLE IF NOT EXISTS public.parent_student_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -38,22 +36,18 @@ CREATE TABLE IF NOT EXISTS public.parent_student_links (
   accepted_at TIMESTAMPTZ,
   UNIQUE(parent_user_id, student_user_id)
 );
-
 ALTER TABLE public.student_behavioral_profiles ADD COLUMN IF NOT EXISTS attendance_rate_30d NUMERIC DEFAULT 1;
 ALTER TABLE public.student_behavioral_profiles ADD COLUMN IF NOT EXISTS consecutive_absences INTEGER DEFAULT 0;
 ALTER TABLE public.student_behavioral_profiles ADD COLUMN IF NOT EXISTS late_arrival_count_30d INTEGER DEFAULT 0;
 ALTER TABLE public.student_behavioral_profiles ADD COLUMN IF NOT EXISTS last_absent_at DATE;
 ALTER TABLE public.student_behavioral_profiles ADD COLUMN IF NOT EXISTS attendance_risk_level TEXT DEFAULT 'low' CHECK (attendance_risk_level IN ('low', 'medium', 'high'));
-
 CREATE INDEX IF NOT EXISTS idx_attendance_sessions_class_date ON public.class_attendance_sessions(class_id, session_date DESC);
 CREATE INDEX IF NOT EXISTS idx_attendance_records_class_student ON public.class_attendance_records(class_id, student_id);
 CREATE INDEX IF NOT EXISTS idx_parent_student_links_parent ON public.parent_student_links(parent_user_id, status);
 CREATE INDEX IF NOT EXISTS idx_parent_student_links_student ON public.parent_student_links(student_user_id, status);
-
 ALTER TABLE public.class_attendance_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.class_attendance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.parent_student_links ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='class_attendance_sessions' AND policyname='attendance_sessions_teacher_select') THEN
     CREATE POLICY attendance_sessions_teacher_select ON public.class_attendance_sessions FOR SELECT USING (
@@ -69,13 +63,11 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='class_attendance_sessions' AND policyname='attendance_sessions_teacher_write') THEN
     CREATE POLICY attendance_sessions_teacher_write ON public.class_attendance_sessions FOR ALL USING (teacher_id = auth.uid()) WITH CHECK (teacher_id = auth.uid());
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='class_attendance_records' AND policyname='attendance_records_select_related') THEN
     CREATE POLICY attendance_records_select_related ON public.class_attendance_records FOR SELECT USING (
@@ -85,7 +77,6 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='class_attendance_records' AND policyname='attendance_records_teacher_write') THEN
     CREATE POLICY attendance_records_teacher_write ON public.class_attendance_records FOR ALL USING (
@@ -95,25 +86,21 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='parent_student_links' AND policyname='parent_links_select_related') THEN
     CREATE POLICY parent_links_select_related ON public.parent_student_links FOR SELECT USING (parent_user_id = auth.uid() OR student_user_id = auth.uid());
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='parent_student_links' AND policyname='parent_links_parent_insert') THEN
     CREATE POLICY parent_links_parent_insert ON public.parent_student_links FOR INSERT WITH CHECK (parent_user_id = auth.uid());
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='parent_student_links' AND policyname='parent_links_update_related') THEN
     CREATE POLICY parent_links_update_related ON public.parent_student_links FOR UPDATE USING (parent_user_id = auth.uid() OR student_user_id = auth.uid());
   END IF;
 END $$;
-
 CREATE OR REPLACE FUNCTION public.get_student_attendance_summary(p_student_id UUID, p_days INTEGER DEFAULT 30)
 RETURNS TABLE(
   total_sessions INTEGER,
@@ -151,7 +138,6 @@ BEGIN
   FROM ordered;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE OR REPLACE FUNCTION public.refresh_student_attendance_profile(p_student_id UUID)
 RETURNS VOID AS $$
 DECLARE
@@ -187,8 +173,6 @@ BEGIN
     updated_at = NOW();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='student_behavioral_profiles' AND policyname='behavior_profiles_parent_select') THEN
     CREATE POLICY behavior_profiles_parent_select ON public.student_behavioral_profiles FOR SELECT USING (
@@ -201,7 +185,6 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='test_results' AND policyname='test_results_parent_select') THEN
     CREATE POLICY test_results_parent_select ON public.test_results FOR SELECT USING (
@@ -214,7 +197,6 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='daily_prescriptions' AND policyname='daily_prescriptions_parent_select') THEN
     CREATE POLICY daily_prescriptions_parent_select ON public.daily_prescriptions FOR SELECT USING (

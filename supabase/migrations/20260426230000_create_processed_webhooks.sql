@@ -7,13 +7,10 @@ CREATE TABLE IF NOT EXISTS processed_webhooks (
     event_type TEXT,
     payload JSONB
 );
-
 -- Index for fast lookups by event_id
 CREATE INDEX IF NOT EXISTS idx_processed_webhooks_event_id ON processed_webhooks(event_id);
-
 -- RLS: disable for service role access from edge functions
 ALTER TABLE processed_webhooks ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF EXISTS (
@@ -25,7 +22,6 @@ BEGIN
     EXECUTE 'DROP POLICY "Allow service role full access" ON public.processed_webhooks';
   END IF;
 END $$;
-
 CREATE POLICY "Allow service role full access" ON processed_webhooks
     FOR ALL
     TO service_role

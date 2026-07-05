@@ -16,15 +16,11 @@ CREATE TABLE IF NOT EXISTS public.task_completions_v2 (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, source_type, source_id, task_order, scheduled_date)
 );
-
 CREATE INDEX IF NOT EXISTS idx_task_completions_v2_user_date
   ON public.task_completions_v2(user_id, scheduled_date DESC);
-
 CREATE INDEX IF NOT EXISTS idx_task_completions_v2_source
   ON public.task_completions_v2(source_type, source_id);
-
 ALTER TABLE public.task_completions_v2 ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -38,7 +34,6 @@ DO $$ BEGIN
       USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -52,7 +47,6 @@ DO $$ BEGIN
       WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -66,7 +60,6 @@ DO $$ BEGIN
       USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -80,10 +73,8 @@ DO $$ BEGIN
       USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 ALTER TABLE public.task_outputs
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -97,7 +88,6 @@ DO $$ BEGIN
       USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 ALTER TABLE public.user_knowledge
   ADD COLUMN IF NOT EXISTS topic TEXT,
   ADD COLUMN IF NOT EXISTS subject TEXT,
@@ -105,10 +95,8 @@ ALTER TABLE public.user_knowledge
   ADD COLUMN IF NOT EXISTS source TEXT,
   ADD COLUMN IF NOT EXISTS confidence NUMERIC,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
 CREATE INDEX IF NOT EXISTS idx_user_knowledge_user_created_at
   ON public.user_knowledge(user_id, created_at DESC);
-
 UPDATE public.user_knowledge
 SET
   knowledge_type = COALESCE(knowledge_type, source_type),
@@ -119,9 +107,7 @@ WHERE knowledge_type IS NULL
    OR source IS NULL
    OR topic IS NULL
    OR updated_at IS NULL;
-
 DROP FUNCTION IF EXISTS public.refresh_behavioral_profile(UUID);
-
 CREATE FUNCTION public.refresh_behavioral_profile(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -253,9 +239,7 @@ BEGIN
   );
 END;
 $$;
-
 DROP FUNCTION IF EXISTS public.mark_prescription_task_complete(UUID, UUID, INTEGER, INTEGER, INTEGER);
-
 CREATE FUNCTION public.mark_prescription_task_complete(
   p_user_id UUID,
   p_prescription_id UUID,
@@ -342,9 +326,7 @@ BEGIN
   );
 END;
 $$;
-
 DROP FUNCTION IF EXISTS public.mark_sprint_task_complete(UUID, UUID, INTEGER, INTEGER);
-
 CREATE FUNCTION public.mark_sprint_task_complete(
   p_user_id UUID,
   p_sprint_id UUID,

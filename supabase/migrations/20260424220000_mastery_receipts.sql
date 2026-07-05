@@ -18,13 +18,10 @@ CREATE TABLE IF NOT EXISTS public.mastery_receipts (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_mastery_receipts_user ON public.mastery_receipts(user_id);
 CREATE INDEX IF NOT EXISTS idx_mastery_receipts_slug ON public.mastery_receipts(slug);
-
 -- RLS
 ALTER TABLE public.mastery_receipts ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mastery_receipts' AND policyname='mastery_select_own_or_public'
@@ -33,7 +30,6 @@ DO $$ BEGIN
       FOR SELECT USING (auth.uid() = user_id OR public_visible = true);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mastery_receipts' AND policyname='mastery_insert_own'
@@ -42,7 +38,6 @@ DO $$ BEGIN
       FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mastery_receipts' AND policyname='mastery_update_own'
@@ -51,7 +46,6 @@ DO $$ BEGIN
       FOR UPDATE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='mastery_receipts' AND policyname='mastery_delete_own'
@@ -60,7 +54,6 @@ DO $$ BEGIN
       FOR DELETE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- Trigger for updated_at
 DO $$ BEGIN
   IF NOT EXISTS (
@@ -71,5 +64,4 @@ DO $$ BEGIN
       FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
   END IF;
 END $$;
-
 NOTIFY pgrst, 'reload schema';

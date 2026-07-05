@@ -33,7 +33,7 @@ interface SchoolClass {
 }
 
 export function SchoolAdminPanel() {
-  const { user, schoolId } = useAuth() as any;
+  const { user, schoolId, signOut } = useAuth() as any;
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [schoolName, setSchoolName] = useState('');
@@ -145,9 +145,17 @@ export function SchoolAdminPanel() {
             </div>
             <p className="text-sm text-[#64748B] font-medium">Manage your school, teachers, and classes</p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-[#0A192F]/[0.06] shadow-sm">
-            <BarChart3 className="w-4 h-4 text-[#00D1FF]" />
-            <span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">School Admin</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-[#0A192F]/[0.06] shadow-sm">
+              <BarChart3 className="w-4 h-4 text-[#00D1FF]" />
+              <span className="text-xs font-bold text-[#0A192F] uppercase tracking-wider">School Admin</span>
+            </div>
+            <button
+              onClick={() => signOut?.()}
+              className="px-4 py-2 bg-[#2D2A26] text-white rounded-xl text-xs font-bold hover:bg-[#3D3833] transition-colors"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
 

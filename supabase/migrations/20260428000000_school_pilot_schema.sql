@@ -11,7 +11,6 @@ ALTER TABLE public.coaching_templates
   ADD COLUMN IF NOT EXISTS weekly_schedule JSONB DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
 DO $$
 BEGIN
   IF EXISTS (
@@ -32,7 +31,6 @@ BEGIN
     WHERE institute_name IS NULL;
   END IF;
 END $$;
-
 -- Basic weekly_schedule generator from syllabus_map for templates that lack one
 DO $$
 DECLARE rec RECORD; syllabus jsonb; subjects TEXT[]; subj TEXT; topics TEXT[]; max_len INT; w INT; week_obj jsonb; schedule jsonb;
@@ -61,14 +59,12 @@ BEGIN
     UPDATE public.coaching_templates SET weekly_schedule=schedule, updated_at=NOW() WHERE id=rec.id;
   END LOOP;
 END $$;
-
 -- C4) user_profiles: account_type + is_admin safety
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS account_type TEXT DEFAULT 'b2c_student';
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 DO $$ BEGIN ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_account_type_check CHECK (account_type IN ('b2c_student','school_student','teacher','parent','admin')); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 UPDATE public.user_profiles SET account_type=COALESCE(account_type,CASE WHEN role='teacher' THEN 'teacher' ELSE 'b2c_student' END) WHERE account_type IS NULL;
 UPDATE public.user_profiles SET is_admin=COALESCE(is_admin,FALSE) WHERE is_admin IS NULL;
-
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.user_profiles (id,full_name,grade,school,email,role,account_type)
@@ -76,7 +72,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- A2) student_roadmaps: school vs personal scoping
 ALTER TABLE public.student_roadmaps
   ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'personal',
@@ -95,11 +90,9 @@ BEGIN
     v_col
   );
 END $$;
-
 -- A3) Partial unique indexes
 CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_school_roadmap ON public.student_roadmaps(user_id) WHERE scope='school' AND is_active=TRUE;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_one_school_roadmap_per_class ON public.student_roadmaps(user_id,class_id) WHERE scope='school';
-
 -- A4) Tighten teacher RLS (handles class_members column drift)
 DO $$
 DECLARE v_col TEXT;
@@ -108,11 +101,9 @@ BEGIN
   IF v_col IS NULL THEN RETURN; END IF;
   EXECUTE format('DROP POLICY IF EXISTS roadmaps_select_teacher ON public.student_roadmaps; CREATE POLICY roadmaps_select_teacher ON public.student_roadmaps FOR SELECT USING (scope=''school'' AND EXISTS (SELECT 1 FROM public.class_members cm JOIN public.classes c ON c.id=cm.class_id WHERE cm.%I=public.student_roadmaps.user_id AND c.id=public.student_roadmaps.class_id AND c.teacher_id=auth.uid()));', v_col);
 END $$;
-
 -- D) Chapter-based test fields
 ALTER TABLE public.test_results ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL, ADD COLUMN IF NOT EXISTS chapter_tag TEXT;
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS chapter_tag TEXT;
-
 -- B1) join_class: canonical school roadmap creator + force activation
 DROP FUNCTION IF EXISTS public.join_class_by_invite(TEXT);
 DROP FUNCTION IF EXISTS public.join_class(TEXT);
@@ -147,7 +138,6 @@ BEGIN
   RETURN QUERY SELECT v_target_class.id AS out_class_id, v_new_roadmap_id AS out_roadmap_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 CREATE FUNCTION public.join_class_by_invite(p_invite_link TEXT) RETURNS TABLE(out_class_id UUID, out_roadmap_id UUID) AS $$
 DECLARE v_target_class RECORD;
 BEGIN
@@ -156,7 +146,6 @@ BEGIN
   RETURN QUERY SELECT * FROM public.join_class(v_target_class.class_code);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- B2) set_active_roadmap: admin/teacher switcher
 CREATE OR REPLACE FUNCTION public.set_active_roadmap(p_roadmap_id UUID) RETURNS VOID AS $$
 DECLARE v_target RECORD; v_user_id UUID; v_caller_is_admin BOOLEAN; v_caller_is_teacher_of_class BOOLEAN;
@@ -176,7 +165,6 @@ BEGIN
   UPDATE public.student_roadmaps SET is_active=TRUE,updated_at=NOW() WHERE id=p_roadmap_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- B4) log_class_sessions: accept class_id in JSON and store it
 DROP FUNCTION IF EXISTS public.log_class_sessions(JSONB);
 CREATE OR REPLACE FUNCTION public.log_class_sessions(p_rows JSONB) RETURNS VOID AS $$

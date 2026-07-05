@@ -185,6 +185,33 @@ const TeacherClassDashboard: React.FC = () => {
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionError, setActionError] = useState('');
 
+  // Weekly Schedule state
+  const [weekStartDate, setWeekStartDate] = useState(() => {
+    const today = new Date();
+    // Default to coming Sunday
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() + (7 - today.getDay()) % 7);
+    return sunday.toISOString().split('T')[0];
+  });
+  const [weeklyReportDays, setWeeklyReportDays] = useState([
+    { day: 1, topic: '', subject: 'Physics' },
+    { day: 2, topic: '', subject: 'Physics' },
+    { day: 3, topic: '', subject: 'Physics' },
+    { day: 4, topic: '', subject: 'Physics' },
+    { day: 5, topic: '', subject: 'Physics' },
+    { day: 6, topic: '', subject: 'Physics' },
+    { day: 7, topic: '', subject: 'Physics' }
+  ]);
+  const [loggingWeeklyReport, setLoggingWeeklyReport] = useState(false);
+  const [weeklyReportError, setWeeklyReportError] = useState('');
+  const [weeklyReportSuccess, setWeeklyReportSuccess] = useState('');
+
+  useEffect(() => {
+    if (classInfo?.subject) {
+      setWeeklyReportDays(prev => prev.map(d => d.topic ? d : { ...d, subject: classInfo.subject }));
+    }
+  }, [classInfo?.subject]);
+
   const handleAssignAction = async (title: string, description: string) => {
     if (!user || !id) return;
     try {
@@ -198,7 +225,39 @@ const TeacherClassDashboard: React.FC = () => {
       });
       setActionSuccess(`Successfully dispatched: ${title}`);
       setActionError('');
-      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to dispatch intervention');
+    }
+  };
+
+  const handleLogWeeklyReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    try {
+      setLoggingWeeklyReport(true);
+      setWeeklyReportError('');
+      setWeeklyReportSuccess('');
+      
+      const payload = {
+        type: 'weekly_report',
+        week_start_date: weekStartDate,
+        days: weeklyReportDays
+      };
+
+      const { error } = await supabase
+        .from('classes')
+        .update({ custom_curriculum: payload })
+        .eq('id', id);
+
+      if (error) throw error;
+      setWeeklyReportSuccess('Weekly teaching plan published successfully!');
+    } catch (err: any) {
+      console.error('Error logging weekly report:', err);
+      setWeeklyReportError(err.message || 'Failed to log weekly report');
+    } finally {
+      setLoggingWeeklyReport(false);
+    }
+  };  setTimeout(() => setActionSuccess(''), 4000);
     } catch (err: any) {
       console.error(err);
       alert('Failed to dispatch action: ' + err.message);
@@ -660,6 +719,12 @@ const TeacherClassDashboard: React.FC = () => {
       try {
         const { data: classData } = await supabase.from('classes').select('*').eq('id', id).single();
         setClassInfo(classData || null);
+        if (classData?.custom_curriculum && classData.custom_curriculum.type === 'weekly_report') {
+          setWeekStartDate(classData.custom_curriculum.week_start_date || '');
+          if (classData.custom_curriculum.days) {
+            setWeeklyReportDays(classData.custom_curriculum.days);
+          }
+        }
 
         const { data: memberData } = await supabase.from('class_members').select('user_id').eq('class_id', id);
         const userIds: string[] = (memberData || []).map((m: any) => m.user_id).filter(Boolean);
@@ -1019,10 +1084,8 @@ const TeacherClassDashboard: React.FC = () => {
                 <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.highRiskCount ?? 0}</div>
                 <p className="text-xs font-bold text-[#8A8279] mt-1">Critical or high-severity students</p>
               </div>
-            </div>
-
-            {/* Step 1 & 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            </div>            {/* Step 1 & 2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#F5F0E8] rounded-bl-full -z-10 opacity-50"></div>
                 <h2 className="text-xl font-extrabold text-[#2D2A26] mb-2">Step 1: What I taught today</h2>
@@ -1088,14 +1151,17 @@ const TeacherClassDashboard: React.FC = () => {
                   {/* Teacher Notes PDF Upload */}
                   <div className="rounded-[14px] border-2 border-dashed border-[#8B7355]/30 bg-[#8B7355]/5 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <FileText className="w-4 h-4 text-[#8B7355]" />
-                      <span className="text-sm font-bold text-[#2D2A26]">Upload Teacher Notes (PDF)</span>
-                      <span className="text-[10px] text-[#8A8279]">AI interprets → generates study tasks</span>
+                      <Upload className="w-4 h-4 text-[#8B7355]" />
+                      <span className="text-sm font-bold text-[#2D2A26]">Upload Lecture Slides/Notes</span>
+                      <span className="text-[10px] text-[#8A8279]">PDF → topics & notes processed</span>
                     </div>
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => setTeacherNotesFile(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setTeacherNotesFile(file);
+                      }}
                       className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#8B7355]/10 file:text-[#8B7355] hover:file:bg-[#8B7355]/20 cursor-pointer"
                     />
                     {teacherNotesFile && (
@@ -1103,17 +1169,130 @@ const TeacherClassDashboard: React.FC = () => {
                     )}
                   </div>
                   {notesInterpretResult && (
-                    <div className="flex items-center gap-2 p-3 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-[12px]">
-                      <Sparkles className="w-4 h-4 text-[#8B7355]" />
-                      <p className="text-sm font-bold text-[#8B7355]">Notes interpreted! Study tasks generated.</p>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-[12px]">
+                      <p className="text-xs font-bold text-amber-800">Interpretation: {notesInterpretResult}</p>
                     </div>
                   )}
-                  <button type="submit" disabled={loggingSession || dppUploading || notesInterpreting} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:shadow-md transition-all disabled:opacity-50">
-                    {loggingSession ? (dppUploading || notesInterpreting ? 'Processing...' : 'Saving...') : 'Log Lesson & Process'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={loggingSession} className="flex-1 bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:bg-[#3D3833] hover:shadow-md transition-all disabled:opacity-50">
+                      {loggingSession ? 'Logging...' : 'Log Session & Send'}
+                    </button>
+                    {dppFile && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!id || !dppFile) return;
+                          try {
+                            setBppUploading(true);
+                            setDppError('');
+                            const formData = new FormData();
+                            formData.append('file', dppFile);
+                            formData.append('class_id', id);
+                            const { data, error } = await supabase.functions.invoke('process-dpp', {
+                              body: formData,
+                            });
+                            if (error) throw error;
+                            setDppResult(data);
+                            if (data?.topics && data.topics.length > 0) {
+                              setSessionTopics(data.topics.join(', '));
+                            }
+                          } catch (err: any) {
+                            setDppError(err.message || 'DPP processing failed');
+                          } finally {
+                            setBppUploading(false);
+                          }
+                        }}
+                        disabled={dppUploading}
+                        className="bg-[#00D1FF] text-white px-4 rounded-xl font-bold hover:bg-[#00D1FF]/90 transition-all disabled:opacity-50"
+                      >
+                        {dppUploading ? 'Processing...' : 'Run DPP Parse'}
+                      </button>
+                    )}
+                    {teacherNotesFile && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!id || !teacherNotesFile) return;
+                          try {
+                            setNotesInterpreting(true);
+                            const formData = new FormData();
+                            formData.append('file', teacherNotesFile);
+                            formData.append('class_id', id);
+                            const { data, error } = await supabase.functions.invoke('interpret-notes', {
+                              body: formData,
+                            });
+                            if (error) throw error;
+                            setNotesInterpretResult(data?.summary || 'Completed');
+                          } catch (err: any) {
+                            console.error(err);
+                          } finally {
+                            setNotesInterpreting(false);
+                          }
+                        }}
+                        disabled={notesInterpreting}
+                        className="bg-[#8B7355] text-white px-4 rounded-xl font-bold hover:bg-[#8B7355]/90 transition-all disabled:opacity-50"
+                      >
+                        {notesInterpreting ? 'Interpreting...' : 'Run Notes Parse'}
+                      </button>
+                    )}
+                  </div>
                   {sessionLogSuccess && <p className="text-emerald-600 text-sm font-bold mt-2">{sessionLogSuccess}</p>}
                   {sessionLogError && <p className="text-red-600 text-sm font-bold mt-2">{sessionLogError}</p>}
                 </form>
+              </div>
+
+              {/* Sunday Weekly Plan Card */}
+              <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 rounded-bl-full -z-10 opacity-50"></div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#2D2A26] mb-1">Sunday Weekly Plan</h2>
+                  <p className="text-xs text-[#8A8279] mb-6">Schedule teaching topics for the next 7 days.</p>
+                  
+                  <div className="mb-4">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-[#8A8279] mb-1.5">Week Start Date (Sunday)</label>
+                    <input
+                      type="date"
+                      value={weekStartDate}
+                      onChange={(e) => setWeekStartDate(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-[#F8FAFF] rounded-[12px] border border-[#E8E4DF] text-xs font-bold text-[#2D2A26] focus:outline-none"
+                    />
+                  </div>
+
+                  <form onSubmit={handleLogWeeklyReport} className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1">
+                    {weeklyReportDays.map((day, index) => (
+                      <div key={day.day} className="flex gap-2 items-center">
+                        <span className="text-[10px] font-black text-[#8A8279] w-14 shrink-0">Day {day.day} ({(index + 1) === 1 ? 'Mon' : (index + 1) === 2 ? 'Tue' : (index + 1) === 3 ? 'Wed' : (index + 1) === 4 ? 'Thu' : (index + 1) === 5 ? 'Fri' : (index + 1) === 6 ? 'Sat' : 'Sun'}):</span>
+                        <input
+                          type="text"
+                          value={day.topic}
+                          onChange={(e) => {
+                            const newDays = [...weeklyReportDays];
+                            newDays[index].topic = e.target.value;
+                            setWeeklyReportDays(newDays);
+                          }}
+                          placeholder="Topic name..."
+                          className="flex-1 px-3 py-2 bg-[#F8FAFF] rounded-[10px] border border-[#E8E4DF] text-xs font-semibold text-[#2D2A26] focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                    
+                    {weeklyReportSuccess && (
+                      <p className="text-emerald-600 text-xs font-bold bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">{weeklyReportSuccess}</p>
+                    )}
+                    {weeklyReportError && (
+                      <p className="text-red-600 text-xs font-bold bg-red-50 p-2.5 rounded-lg border border-red-100">{weeklyReportError}</p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={loggingWeeklyReport}
+                      className="w-full py-3 bg-[#2D2A26] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#3D3833] transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {loggingWeeklyReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
+                      Publish Weekly Plan
+                    </button>
+                  </form>
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden">
@@ -1136,7 +1315,7 @@ const TeacherClassDashboard: React.FC = () => {
                   {mockSuccessMsg && <p className="text-emerald-600 text-sm font-bold mt-2">{mockSuccessMsg}</p>}
                 </form>
               </div>
-            </div>
+            </div></div>
 
             <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">

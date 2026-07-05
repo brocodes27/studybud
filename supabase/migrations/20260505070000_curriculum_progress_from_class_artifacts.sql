@@ -13,9 +13,7 @@ CREATE TABLE IF NOT EXISTS public.class_curriculum_progress (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(class_id, week, subject)
 );
-
 ALTER TABLE public.class_curriculum_progress ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -42,7 +40,6 @@ DO $$ BEGIN
       USING (EXISTS (SELECT 1 FROM public.class_members cm WHERE cm.class_id = class_curriculum_progress.class_id AND cm.user_id = auth.uid()));
   END IF;
 END $$;
-
 CREATE OR REPLACE FUNCTION public.update_curriculum_progress_from_session(
   p_session_id UUID,
   p_extra_topics TEXT[] DEFAULT '{}',

@@ -9,16 +9,12 @@ ALTER TABLE public.classes
   ADD COLUMN IF NOT EXISTS curriculum_source TEXT DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS custom_curriculum JSONB DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS invite_link TEXT DEFAULT NULL;
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_classes_invite_link ON public.classes(invite_link) WHERE invite_link IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classes_template_id ON public.classes(template_id);
-
 -- 2. Add class_id to class_sessions to link sessions back to the class
 ALTER TABLE public.class_sessions
   ADD COLUMN IF NOT EXISTS class_id UUID REFERENCES public.classes(id) ON DELETE CASCADE;
-
 CREATE INDEX IF NOT EXISTS idx_class_sessions_class_id ON public.class_sessions(class_id);
-
 -- 3. Update create_class RPC to accept optional template_id and return invite_link
 -- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
 -- Drop any existing overload(s) first to avoid "cannot change return type" errors.
@@ -37,7 +33,6 @@ BEGIN
         EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
     END LOOP;
 END $$;
-
 CREATE OR REPLACE FUNCTION create_class(p_name TEXT, p_subject TEXT DEFAULT NULL, p_template_id UUID DEFAULT NULL)
 RETURNS TABLE(id UUID, class_code TEXT, invite_link TEXT) AS $$
 DECLARE
@@ -83,7 +78,6 @@ BEGIN
     RETURN QUERY SELECT new_class_id, new_class_code, new_invite_link;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 4. Update join_class RPC to accept class_code and auto-create student_roadmap
 -- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
 -- Drop any existing overload(s) first to avoid "cannot change return type" errors.
@@ -102,7 +96,6 @@ BEGIN
         EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
     END LOOP;
 END $$;
-
 CREATE OR REPLACE FUNCTION join_class(p_class_code TEXT)
 RETURNS TABLE(class_id UUID, roadmap_id UUID) AS $$
 DECLARE
@@ -200,7 +193,6 @@ BEGIN
     RETURN QUERY SELECT target_class.id, new_roadmap_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 5. Also support joining by invite_link
 -- NOTE: Postgres does not allow changing function return types via CREATE OR REPLACE.
 -- Drop any existing overload(s) first to avoid "cannot change return type" errors.
@@ -219,7 +211,6 @@ BEGIN
         EXECUTE format('DROP FUNCTION IF EXISTS %I.%I(%s) CASCADE', r.schema_name, r.func_name, r.args);
     END LOOP;
 END $$;
-
 CREATE OR REPLACE FUNCTION join_class_by_invite(p_invite_link TEXT)
 RETURNS TABLE(class_id UUID, roadmap_id UUID) AS $$
 DECLARE

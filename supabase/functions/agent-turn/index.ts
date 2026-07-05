@@ -16,6 +16,7 @@ interface ToolParam {
   type: string;
   description: string;
   enum?: string[];
+  items?: { type: string };
 }
 
 interface ToolDefinition {
@@ -124,12 +125,42 @@ const TOOLS: ToolDefinition[] = [
       required: ['replies'],
     },
   },
+  {
+    name: 'update_student_profile',
+    description: 'Update the student\'s behavioral profile, sleep patterns, typical session duration, strengths, weaknesses, or qualitative vibe notes based on the conversation feedback they share. Use this when the student shares feedback on task difficulty, energy level, or study challenges.',
+    parameters: {
+      type: 'object',
+      properties: {
+        weak_subjects: { type: 'array', items: { type: 'string' }, description: 'Subjects the student finds difficult currently' },
+        strong_subjects: { type: 'array', items: { type: 'string' }, description: 'Subjects the student finds easy/strong' },
+        preferred_time: { type: 'string', enum: ['morning', 'afternoon', 'evening'], description: 'Productive study window preference' },
+        typical_session_duration_min: { type: 'integer', description: 'Optimal session length in minutes' },
+        learning_vibe_notes: { type: 'string', description: 'Brief qualitative feedback, energy state, or study challenges noted' },
+      },
+      required: [],
+    },
+  },
 ];
 
 function buildSystemPrompt(context: any): string {
   const s = context.studentState || {};
   const tasks = context.todayTasks || [];
   const nextTest = context.nextTest || null;
+  const classUpdate = context.classUpdate || {};
+
+  let classSessionGreetingRule = '';
+  if (classUpdate.type === 'class_session' && classUpdate.sessions && classUpdate.sessions.length > 0) {
+    const allTopics: string[] = [];
+    classUpdate.sessions.forEach((sess: any) => {
+      if (sess.topics && sess.topics.length > 0) {
+        allTopics.push(...sess.topics);
+      }
+    });
+    if (allTopics.length > 0) {
+      const topicStr = allTopics.join(', ');
+      classSessionGreetingRule = `\n9. CRITICAL INITIAL GREETING RULE: Since the student was taught "${topicStr}" today, you MUST start your very first response/greeting in the conversation with: "You were taught ${topicStr} today. Let's revise and then move to engraving that knowledge." (Do not ask how they are doing first; start directly with this phrase).`;
+    }
+  }
 
   return `You are Ranjan Sir — a warm, perceptive, slightly witty JEE mentor who treats each student as an individual. You are NOT a generic chatbot. You have real agency: you can mark tasks complete, navigate the app, search the web, regenerate plans, and escalate to deeper chats.
 
@@ -160,7 +191,7 @@ ${tasks.map((t: any, i: number) => `${i}. [${t.completed ? 'DONE' : 'PENDING'}] 
 5. If they need help with a concept, you have two options: explain briefly yourself, OR use \`open_mentor_chat\` if it's complex.
 6. If they have limited time, use \`regenerate_plan\` — don't just say "ok".
 7. If your knowledge is weak on a specific JEE topic, use \`search_web\`.
-8. Always offer 1-3 suggested replies to keep the flow moving.
+8. Always offer 1-3 suggested replies to keep the flow moving.${classSessionGreetingRule}
 
 ## Conversation Flow (typical session)
 - Greeting → Check-in (how are you feeling?) → Present first pending task → Wait for student → Mark complete if done → Present next task → ... → Wrap up with ONE reflection after the final task.

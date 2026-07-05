@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 import { useToast } from '../hooks/useToast';
 import { generateMonthlyCurriculum } from '../lib/curriculumApi';
 import { Calendar, CheckCircle, Clock, Loader2, RefreshCw, Sparkles, ListChecks, AlertTriangle, Filter } from 'lucide-react';
-import CurriculumTour from '../components/CurriculumTour.tsx';
 
 interface CurriculumPlan {
   id: string;
@@ -169,9 +168,6 @@ export function Curriculum() {
 
   return (
     <div className="space-y-12 animate-fade-in pb-20 min-h-screen bg-slate-950">
-      {/* Guided Tour Overlay */}
-      <CurriculumTour hasMonthlyPlan={hasMonthlyPlan} hasTasks={groupedTasks.length > 0} ready={!loading} />
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 border-b-8 border-white/10 pb-8">
         <div>
@@ -207,17 +203,15 @@ export function Curriculum() {
           <button
             onClick={() => setMonthCursor(prev => subMonths(prev, 1))}
             className="px-4 py-3 bg-slate-900 border border-white/10 hover:bg-slate-900 hover:text-white transition-all font-black uppercase text-sm"
-            data-tour="month-prev"
           >
             PREV
           </button>
-          <div className="px-6 py-3 bg-neo-accent text-white border border-white/10 font-black flex items-center gap-3 uppercase tracking-wider relative -top-2 shadow-neo" data-tour="month-label">
+          <div className="px-6 py-3 bg-neo-accent text-white border border-white/10 font-black flex items-center gap-3 uppercase tracking-wider relative -top-2 shadow-neo">
             <Calendar className="h-5 w-5 stroke-[3px]" /> {format(monthStart, 'MMMM yyyy')}
           </div>
           <button
             onClick={() => setMonthCursor(prev => addMonths(prev, 1))}
             className="px-4 py-3 bg-slate-900 border border-white/10 hover:bg-slate-900 hover:text-white transition-all font-black uppercase text-sm"
-            data-tour="month-next"
           >
             NEXT
           </button>
@@ -275,7 +269,6 @@ export function Curriculum() {
                 onClick={handleGenerateMonth}
                 disabled={generating}
                 className="bg-slate-900 text-white px-4 py-2 text-sm font-black uppercase tracking-wider border border-white/10 shadow-neo hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                data-tour="generate-btn"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 stroke-[3px]" />}
                 {hasMonthlyPlan ? 'REGENERATE' : 'GENERATE'}
@@ -286,7 +279,7 @@ export function Curriculum() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-900 border border-white/10 p-6 shadow-neo" data-tour="filters">
+      <div className="bg-slate-900 border border-white/10 p-6 shadow-neo">
         <div className="flex flex-wrap items-center gap-8">
           <div className="flex items-center gap-2 text-lg font-black text-slate-100 uppercase italic">
             <Filter className="h-6 w-6 stroke-[3px]" />
@@ -376,7 +369,6 @@ export function Curriculum() {
                       onClick={() => toggleTaskCompleted(t)}
                       className={`mt-1 w-8 h-8 flex-shrink-0 border border-white/10 flex items-center justify-center transition-all bg-slate-800 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none shadow-neo ${t.status === 'completed' ? 'bg-neo-accent' : ''}`}
                       title={t.status === 'completed' ? 'Mark as pending' : 'Mark as completed'}
-                      data-tour="task-toggle"
                     >
                       {t.status === 'completed' && <CheckCircle className="w-5 h-5 text-white stroke-[4px]" />}
                     </button>

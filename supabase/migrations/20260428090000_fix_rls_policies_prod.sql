@@ -11,7 +11,6 @@ DO $$ BEGIN
     EXECUTE 'DROP POLICY attendance_sessions_teacher_select ON public.class_attendance_sessions';
   END IF;
 END $$;
-
 CREATE POLICY attendance_sessions_teacher_select
   ON public.class_attendance_sessions
   FOR SELECT
@@ -33,8 +32,6 @@ CREATE POLICY attendance_sessions_teacher_select
         AND cm.class_id = class_attendance_sessions.class_id
     )
   );
-
-
 -- 2) Fix question_metadata admin insert policy to use public.user_profiles.is_admin (not public.profiles.role)
 DO $$ BEGIN
   IF EXISTS (
@@ -46,7 +43,6 @@ DO $$ BEGIN
     EXECUTE 'DROP POLICY qm_insert_admin ON public.question_metadata';
   END IF;
 END $$;
-
 CREATE POLICY qm_insert_admin
   ON public.question_metadata
   FOR INSERT
@@ -58,4 +54,3 @@ CREATE POLICY qm_insert_admin
         AND COALESCE(up.is_admin, false) = true
     )
   );
-

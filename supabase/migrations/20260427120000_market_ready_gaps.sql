@@ -20,32 +20,26 @@ CREATE TABLE IF NOT EXISTS public.test_attempt_questions (
   mistake_fixed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_test_attempt_questions_test ON public.test_attempt_questions(test_result_id);
 CREATE INDEX IF NOT EXISTS idx_test_attempt_questions_user ON public.test_attempt_questions(user_id);
 CREATE INDEX IF NOT EXISTS idx_test_attempt_questions_topic ON public.test_attempt_questions(topic_tag);
 CREATE INDEX IF NOT EXISTS idx_test_attempt_questions_mistake ON public.test_attempt_questions(original_mistake_id) WHERE original_mistake_id IS NOT NULL;
-
 ALTER TABLE public.test_attempt_questions ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='test_attempt_questions' AND policyname='taq_select_own') THEN
     CREATE POLICY taq_select_own ON public.test_attempt_questions FOR SELECT USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='test_attempt_questions' AND policyname='taq_insert_own') THEN
     CREATE POLICY taq_insert_own ON public.test_attempt_questions FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='test_attempt_questions' AND policyname='taq_update_own') THEN
     CREATE POLICY taq_update_own ON public.test_attempt_questions FOR UPDATE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- 2. Knowledge Graph Edges (Prerequisite Map)
 CREATE TABLE IF NOT EXISTS public.knowledge_graph_edges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -56,18 +50,14 @@ CREATE TABLE IF NOT EXISTS public.knowledge_graph_edges (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(parent_kc_id, child_kc_id, edge_type)
 );
-
 CREATE INDEX IF NOT EXISTS idx_knowledge_graph_edges_parent ON public.knowledge_graph_edges(parent_kc_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_graph_edges_child ON public.knowledge_graph_edges(child_kc_id);
-
 ALTER TABLE public.knowledge_graph_edges ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='knowledge_graph_edges' AND policyname='kge_select_all') THEN
     CREATE POLICY kge_select_all ON public.knowledge_graph_edges FOR SELECT USING (true);
   END IF;
 END $$;
-
 -- 3. Question Metadata (Rich Question Tagging)
 CREATE TABLE IF NOT EXISTS public.question_metadata (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,20 +77,16 @@ CREATE TABLE IF NOT EXISTS public.question_metadata (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_question_metadata_kc ON public.question_metadata(kc_id);
 CREATE INDEX IF NOT EXISTS idx_question_metadata_source ON public.question_metadata(source_type, source_id);
 CREATE INDEX IF NOT EXISTS idx_question_metadata_difficulty ON public.question_metadata(difficulty);
 CREATE INDEX IF NOT EXISTS idx_question_metadata_tags ON public.question_metadata USING GIN(tags);
-
 ALTER TABLE public.question_metadata ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='question_metadata' AND policyname='qm_select_all') THEN
     CREATE POLICY qm_select_all ON public.question_metadata FOR SELECT USING (true);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='question_metadata' AND policyname='qm_insert_admin') THEN
     CREATE POLICY qm_insert_admin ON public.question_metadata
@@ -115,7 +101,6 @@ DO $$ BEGIN
       );
   END IF;
 END $$;
-
 -- 4. Revision Schedule Rules (Spaced Repetition for Prescriptions)
 CREATE TABLE IF NOT EXISTS public.revision_schedule_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -128,26 +113,20 @@ CREATE TABLE IF NOT EXISTS public.revision_schedule_rules (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'skipped')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_revision_schedule_user ON public.revision_schedule_rules(user_id, scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_revision_schedule_status ON public.revision_schedule_rules(status) WHERE status = 'pending';
-
 ALTER TABLE public.revision_schedule_rules ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='revision_schedule_rules' AND policyname='rsr_select_own') THEN
     CREATE POLICY rsr_select_own ON public.revision_schedule_rules FOR SELECT USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='revision_schedule_rules' AND policyname='rsr_insert_own') THEN
     CREATE POLICY rsr_insert_own ON public.revision_schedule_rules FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- 5. Add generated_by column to daily_prescriptions if not exists
 ALTER TABLE public.daily_prescriptions ADD COLUMN IF NOT EXISTS generated_by TEXT DEFAULT 'llm_full';
-
 -- 6. Add prescription_source column to track deterministic vs voice vs llm
 ALTER TABLE public.daily_prescriptions ADD COLUMN IF NOT EXISTS prescription_source JSONB DEFAULT '{}';

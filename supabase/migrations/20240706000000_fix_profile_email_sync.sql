@@ -4,7 +4,6 @@
 -- Drop the existing trigger and function
 DROP TRIGGER IF EXISTS on_auth_user_updated ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_user_update() CASCADE;
-
 -- Create an improved function that handles email updates more reliably
 CREATE OR REPLACE FUNCTION public.handle_user_update()
 RETURNS TRIGGER AS $$
@@ -28,12 +27,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Recreate the trigger
 CREATE TRIGGER on_auth_user_updated
   AFTER UPDATE OF email ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_user_update();
-
 -- Create a function to sync all existing user emails
 CREATE OR REPLACE FUNCTION public.sync_all_user_emails()
 RETURNS void AS $$
@@ -51,9 +48,7 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Run the sync function to update all existing profiles
 SELECT public.sync_all_user_emails();
-
 -- Drop the sync function as it's no longer needed
-DROP FUNCTION IF EXISTS public.sync_all_user_emails(); 
+DROP FUNCTION IF EXISTS public.sync_all_user_emails();

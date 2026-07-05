@@ -192,7 +192,6 @@ export function MasteryTree() {
                           <button
                             key={topic}
                             onClick={() => receipt ? navigate(`/m/${receipt.slug}`) : navigate(`/prove-it?subject=JEE%20${encodeURIComponent(subject.subject)}&topic=${encodeURIComponent(topic)}`)}
-                            data-app-action={!receipt ? 'mastery-topic' : undefined}
                             className={`w-full flex items-center justify-between gap-3 p-3 rounded-[14px] border text-left transition-all ${receipt ? 'bg-[#34D399]/10 border-[#34D399]/20 hover:bg-[#34D399]/15' : 'bg-[#F8FAF9] border-[#0A192F]/5 hover:border-[#00D1FF]/30'}`}
                           >
                             <div className="min-w-0">

@@ -6,7 +6,6 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
-
 CREATE OR REPLACE FUNCTION get_unified_weekly_schedule(p_user_id UUID)
 RETURNS TABLE (
   week INTEGER,
@@ -68,7 +67,6 @@ BEGIN
   SELECT * FROM pivoted ORDER BY week;
 END;
 $$;
-
 -- RLS for get_unified_weekly_schedule
 DO $$ BEGIN
   IF NOT EXISTS (
@@ -80,7 +78,6 @@ DO $$ BEGIN
     USING (user_id = auth.uid());
   END IF;
 END $$;
-
 -- Phase 2: class_session_bpp table for BPP tracking
 CREATE TABLE IF NOT EXISTS class_session_bpp (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -94,7 +91,6 @@ CREATE TABLE IF NOT EXISTS class_session_bpp (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_by UUID REFERENCES auth.users(id)
 );
-
 -- BPP storage policies (curriculums bucket already exists, we need bpp/ subfolder policy)
 DO $$ BEGIN
   IF NOT EXISTS (
@@ -109,7 +105,6 @@ DO $$ BEGIN
     ));
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND policyname = 'class_session_bpp_select_own'
@@ -120,7 +115,6 @@ DO $$ BEGIN
     USING (true);
   END IF;
 END $$;
-
 -- Add source_type = 'bpp' support to question_metadata (already exists as valid value)
 -- Add bpp_session_id to question_metadata (optional FK, allows BPP questions to link back)
 DO $$ BEGIN

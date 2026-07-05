@@ -139,7 +139,6 @@ export function ProveIt() {
               )}
 
               <button onClick={() => start(subject, topic)} disabled={!subject || !topic}
-                data-app-action="prove-start"
                 className="w-full py-3 rounded-[12px] bg-[#0A192F] text-white font-bold text-sm hover:bg-[#0A192F]/90 disabled:opacity-40 transition-all flex items-center justify-center gap-2">
                 <Sparkles className="w-4 h-4" /> Start Grilling
               </button>

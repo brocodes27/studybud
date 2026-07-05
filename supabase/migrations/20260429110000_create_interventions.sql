@@ -33,22 +33,16 @@ CREATE TABLE IF NOT EXISTS public.interventions (
   outcome TEXT,
   outcome_metric JSONB NOT NULL DEFAULT '{}'::jsonb
 );
-
 CREATE INDEX IF NOT EXISTS idx_interventions_student_status
   ON public.interventions(student_user_id, status, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_interventions_class_status
   ON public.interventions(class_id, status, severity, created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_interventions_roadmap_status
   ON public.interventions(roadmap_id, status, created_at DESC);
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
   ON public.interventions(student_user_id, COALESCE(class_id, '00000000-0000-0000-0000-000000000000'::uuid), trigger_type, action_type)
   WHERE status = 'active';
-
 ALTER TABLE public.interventions ENABLE ROW LEVEL SECURITY;
-
 CREATE OR REPLACE FUNCTION public.intervention_student_in_class(
   p_class_id UUID,
   p_student_user_id UUID
@@ -95,7 +89,6 @@ BEGIN
   RETURN COALESCE(v_exists, FALSE);
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.intervention_roadmap_matches(
   p_roadmap_id UUID,
   p_student_user_id UUID,
@@ -125,13 +118,11 @@ BEGIN
   );
 END;
 $$;
-
 DROP POLICY IF EXISTS interventions_select_student ON public.interventions;
 CREATE POLICY interventions_select_student
   ON public.interventions
   FOR SELECT
   USING (auth.uid() = student_user_id);
-
 DROP POLICY IF EXISTS interventions_select_teacher ON public.interventions;
 CREATE POLICY interventions_select_teacher
   ON public.interventions
@@ -144,7 +135,6 @@ CREATE POLICY interventions_select_teacher
         AND c.teacher_id = auth.uid()
     )
   );
-
 DROP POLICY IF EXISTS interventions_insert_system_or_teacher ON public.interventions;
 CREATE POLICY interventions_insert_system_or_teacher
   ON public.interventions
@@ -164,7 +154,6 @@ CREATE POLICY interventions_insert_system_or_teacher
       )
     )
   );
-
 DROP POLICY IF EXISTS interventions_update_teacher ON public.interventions;
 CREATE POLICY interventions_update_teacher
   ON public.interventions
@@ -193,7 +182,6 @@ CREATE POLICY interventions_update_teacher
       )
     )
   );
-
 CREATE OR REPLACE FUNCTION public.upsert_intervention(
   p_student_user_id UUID,
   p_class_id UUID,
@@ -287,7 +275,6 @@ BEGIN
   RETURN v_id;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.resolve_intervention(
   p_intervention_id UUID,
   p_status TEXT,
@@ -341,5 +328,4 @@ BEGIN
   WHERE id = p_intervention_id;
 END;
 $$;
-
 NOTIFY pgrst, 'reload schema';

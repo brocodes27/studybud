@@ -9,10 +9,8 @@
 -- Ensure the unique index exists (idempotent)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_task_completions_v2_unique_task
   ON public.task_completions_v2(user_id, source_type, source_id, task_order, scheduled_date);
-
 -- Drop old signatures safely in case they differ
 DROP FUNCTION IF EXISTS public.refresh_behavioral_profile(UUID);
-
 CREATE OR REPLACE FUNCTION public.refresh_behavioral_profile(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -170,14 +168,12 @@ BEGIN
   );
 END;
 $$;
-
 -- ============================================
 -- Harden mark_prescription_task_complete:
 --   - Safe fallback if unique index missing
 --   - Wraps all auxiliary queries in exception blocks
 -- ============================================
 DROP FUNCTION IF EXISTS public.mark_prescription_task_complete(UUID, UUID, INTEGER, INTEGER, INTEGER);
-
 CREATE OR REPLACE FUNCTION public.mark_prescription_task_complete(
   p_user_id UUID,
   p_prescription_id UUID,
@@ -277,12 +273,10 @@ BEGIN
   );
 END;
 $$;
-
 -- ============================================
 -- Harden mark_sprint_task_complete (same pattern)
 -- ============================================
 DROP FUNCTION IF EXISTS public.mark_sprint_task_complete(UUID, UUID, INTEGER, INTEGER);
-
 CREATE OR REPLACE FUNCTION public.mark_sprint_task_complete(
   p_user_id UUID,
   p_sprint_id UUID,
@@ -380,7 +374,6 @@ BEGIN
   );
 END;
 $$;
-
 -- ============================================
 -- Ensure user_knowledge has all columns the
 -- frontend is writing, and backfill defaults.
@@ -392,7 +385,6 @@ ALTER TABLE public.user_knowledge
   ADD COLUMN IF NOT EXISTS source TEXT,
   ADD COLUMN IF NOT EXISTS confidence NUMERIC,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
 UPDATE public.user_knowledge
 SET
   knowledge_type = COALESCE(knowledge_type, source_type),
@@ -403,10 +395,8 @@ WHERE knowledge_type IS NULL
    OR source IS NULL
    OR topic IS NULL
    OR updated_at IS NULL;
-
 -- Ensure RLS allows users to insert/update their own knowledge
 ALTER TABLE public.user_knowledge ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -420,7 +410,6 @@ DO $$ BEGIN
       WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies

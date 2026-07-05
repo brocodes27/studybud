@@ -525,6 +525,8 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
   let correctionSprint: any = null;
   let behavioralProfile: any = null;
   let roadmapPathAvailable = false;
+  let teacherWeeklyTopic: string | null = null;
+  let teacherWeeklySubject: string | null = null;
 
   try {
     const roadmapRes = await supabase
@@ -540,18 +542,46 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       roadmapPathAvailable = true;
 
       // Fetch parallel roadmap data
-      const [sessionsRes, prescriptionRes, sprintRes, behaviorRes, upcomingTestRes] = await Promise.all([
+      const [sessionsRes, prescriptionRes, sprintRes, behaviorRes, upcomingTestRes, memberRes] = await Promise.all([
         supabase.from('class_sessions').select('*').eq('roadmap_id', roadmapId).eq('session_date', todayStr),
         supabase.from('daily_prescriptions').select('*').eq('user_id', userId).eq('prescription_date', todayStr).limit(1).maybeSingle(),
         supabase.from('correction_sprints').select('*').eq('user_id', userId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('student_behavioral_profiles').select('*').eq('user_id', userId).limit(1).maybeSingle(),
         supabase.from('upcoming_tests').select('test_name, test_date, syllabus').eq('user_id', userId).eq('status', 'upcoming').gte('test_date', todayStr).order('test_date', { ascending: true }).limit(1).maybeSingle(),
+        supabase.from('class_members').select('class_id').eq('student_id', userId),
       ]);
-
+ 
       classSessions = sessionsRes.data || [];
       prescription = prescriptionRes.data || null;
       correctionSprint = sprintRes.data || null;
       behavioralProfile = behaviorRes.data || null;
+
+      const classIds = (memberRes.data || []).map((m: any) => m.class_id).filter(Boolean);
+      if (classIds.length > 0) {
+        const { data: classesData } = await supabase
+          .from('classes')
+          .select('id, name, custom_curriculum')
+          .in('id', classIds);
+
+        for (const cls of (classesData || [])) {
+          const cc = cls.custom_curriculum;
+          if (cc && cc.type === 'weekly_report' && cc.week_start_date && cc.days) {
+            const start = new Date(cc.week_start_date);
+            const today = new Date(todayStr);
+            const diffTime = today.getTime() - start.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays >= 0 && diffDays <= 6) {
+              const scheduledDay = cc.days.find((d: any) => d.day === (diffDays + 1));
+              if (scheduledDay && scheduledDay.topic) {
+                teacherWeeklyTopic = scheduledDay.topic;
+                teacherWeeklySubject = scheduledDay.subject || 'General';
+                break;
+              }
+            }
+          }
+        }
+      }
 
       // If a test is close but the existing prescription wasn't generated with test context, adapt it automatically
       const nextTest = upcomingTestRes.data || null;
@@ -992,6 +1022,21 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       timestamp: todayStr,
       sessions: sessionList,
     };
+  } else if (teacherWeeklyTopic) {
+    classUpdate = {
+      type: 'class_session',
+      title: "Today's Classes",
+      content: `${teacherWeeklySubject}: ${teacherWeeklyTopic}`,
+      source: 'School Plan',
+      timestamp: todayStr,
+      sessions: [
+        {
+          subject: teacherWeeklySubject || 'General',
+          topics: [teacherWeeklyTopic],
+          homework: null,
+        }
+      ],
+    };
   } else {
     const relevantAnnouncements = (announcementsRes as any[]).filter((a: any) => enrolledClassIds.has(a.class_id));
     if (relevantAnnouncements.length > 0) {
@@ -1141,7 +1186,33 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
       });
     });
   }
-
+ 
+  // 2.5 Inject Weekly Report Topics if scheduled for today
+  if (teacherWeeklyTopic && !allTasks.some(t => t.title.includes(teacherWeeklyTopic!))) {
+    allTasks.push({
+      type: 'prescription',
+      id: `weekly_report_topic_${todayStr}`,
+      title: `${teacherWeeklySubject}: ${teacherWeeklyTopic}`,
+      description: `Target topic from your weekly syllabus schedule: ${teacherWeeklyTopic}. Review today's school concepts and practice standard problems.`,
+      strategy: `Go through your school class notes first, write down key definitions, and solve basic questions before moving to high-rigor drills.`,
+      resources: [`School Textbook`, `Class Notebook`],
+      subject: teacherWeeklySubject || 'General',
+      durationMin: 35,
+      urgency: 'high',
+      actionRoute: '/atlas',
+      actionLabel: 'Study with Atlas',
+      completed: isCompleted('prescription', `weekly_report_topic_${todayStr}`, 0),
+      prescriptionId: prescription?.id || 'weekly_report',
+      taskOrder: 99,
+      taskType: 'study',
+      whyToday: `Scheduled for today in your teacher's weekly syllabus report.`,
+      proofRequired: false,
+      interventionId: null,
+      activeIntervention: null,
+      missionVariants: [],
+    });
+  }
+ 
   // 3. Teacher assignments — surface ALL pending assignments with tiered urgency
   const allRelevantAssignments = (assignmentsRes as any[]).filter((a: any) => enrolledClassIds.has(a.class_id));
   console.log('[DEBUG dailyBriefing] relevant assignments count:', allRelevantAssignments.length);

@@ -287,7 +287,7 @@ export function ConversationalBriefing({
     // Only send tool result back for tools that need an agent response.
     // present_task, ask_reflection, show_suggested_replies, navigate_to, open_mentor_chat
     // are terminal — executing them is enough; sending back creates an infinite loop.
-    const toolsNeedingResponse = ['search_web', 'regenerate_plan', 'mark_task_complete'];
+    const toolsNeedingResponse = ['search_web', 'regenerate_plan', 'mark_task_complete', 'update_student_profile'];
     if (toolsNeedingResponse.includes(tool)) {
       await agentTurn(null, undefined, result);
     }

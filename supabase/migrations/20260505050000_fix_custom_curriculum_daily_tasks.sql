@@ -39,7 +39,6 @@ BEGIN
     $sql$, v_member_col);
   END IF;
 END $$;
-
 CREATE OR REPLACE FUNCTION public.get_unified_weekly_schedule(p_user_id UUID)
 RETURNS TABLE (
   week INTEGER,

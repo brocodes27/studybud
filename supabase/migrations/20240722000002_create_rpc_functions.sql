@@ -25,7 +25,6 @@ BEGIN
     RETURN QUERY SELECT new_class_id, new_class_code;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Replace the join_class function to use class_id instead of class_code
 CREATE OR REPLACE FUNCTION join_class(class_id uuid)
 RETURNS void AS $$
@@ -34,4 +33,4 @@ BEGIN
   VALUES (class_id, auth.uid())
   ON CONFLICT DO NOTHING;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER; 
+$$ LANGUAGE plpgsql SECURITY DEFINER;

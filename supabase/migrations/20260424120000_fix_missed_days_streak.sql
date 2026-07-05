@@ -3,7 +3,6 @@
 -- 2) Also counts completed curriculum_tasks as activity
 
 DROP FUNCTION IF EXISTS public.refresh_behavioral_profile(UUID);
-
 CREATE OR REPLACE FUNCTION public.refresh_behavioral_profile(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql

@@ -19,7 +19,6 @@ import { ExploreGrid } from './ExploreGrid';
 import { CorrectionSprintBanner } from './CorrectionSprintBanner';
 import { BacklogAlert } from './BacklogAlert';
 import { TestUploadModal } from './TestUploadModal';
-import { RoadmapOnboarding } from './RoadmapOnboarding';
 import { LearnerModelCard } from './LearnerModelCard';
 import { WhatChangedCard } from './WhatChangedCard';
 import { ConversationalBriefing } from './ConversationalBriefing';
@@ -203,16 +202,26 @@ export function DailyBriefing() {
 
   if (!user) return null;
 
-  // Show onboarding when user has no roadmaps
+  // Prompt to join a class when user has no roadmaps
   if (allRoadmaps.length === 0 && state !== 'loading' && !data?.activeRoadmap) {
     return (
-      <RoadmapOnboarding
-        userId={user.id}
-        onComplete={() => {
-          fetchRoadmaps();
-          loadBriefing();
-        }}
-      />
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center px-4 pt-12 md:pt-20 pb-20">
+        <div className="w-full max-w-lg text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#8B7355]/10 mb-4">
+            <BookOpen className="w-7 h-7 text-[#8B7355]" />
+          </div>
+          <h1 className="text-2xl font-bold text-[#2D2A26] mb-2">Join a class to get started</h1>
+          <p className="text-sm text-[#8A8279] max-w-sm mx-auto mb-6">
+            Your daily briefing is built from the class you join. Ask your teacher for a class code or invite link.
+          </p>
+          <button
+            onClick={() => window.location.href = '/my-classes'}
+            className="bg-[#2D2A26] text-white px-6 py-3 rounded-[14px] text-sm font-extrabold shadow-sm hover:shadow-md transition-all"
+          >
+            Go to My Classes
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -222,7 +231,6 @@ export function DailyBriefing() {
       <div className="w-full max-w-xl flex items-center justify-end gap-2 mb-4">
         <button
           onClick={() => window.location.href = '/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics'}
-          data-app-action="briefing-prove-today"
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2D2A26] rounded-xl text-[11px] font-bold text-white hover:bg-[#3D3833] transition-colors shadow-sm"
         >
           <ShieldCheck className="w-3.5 h-3.5" />

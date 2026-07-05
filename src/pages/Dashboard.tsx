@@ -84,7 +84,8 @@ const VibeCheck = ({ onSelect }: { onSelect: (vibe: string) => void }) => {
 };
 
 export function Dashboard() {
-  const { user, role, loading, fullName } = useAuth() as any;
+  const { user, role, loading, fullName, grade } = useAuth() as any;
+  const isBelow11 = grade && ['8', '9', '10'].includes(grade.toString().trim());
   const { showToast } = useToast();
 
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
@@ -415,11 +416,11 @@ export function Dashboard() {
                 <h3 className="text-base font-bold text-[#0A192F] mb-4 font-display">Quick Tools</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'SAT Sim', icon: Target, path: '/sat-simulator', gradient: 'from-[#F472B6] to-[#F59E0B]' },
+                    { label: 'SAT Sim', icon: Target, path: '/sat-simulator', gradient: 'from-[#F472B6] to-[#F59E0B]', jee: true },
                     { label: 'Solver', icon: Zap, path: '/guided-paper', gradient: 'from-[#00D1FF] to-[#6366F1]' },
                     { label: 'Videos', icon: ListChecks, path: '/videos', gradient: 'from-[#34D399] to-[#00D1FF]' },
                     { label: 'Feynman', icon: Mic, path: '/feynman', gradient: 'from-[#6366F1] to-[#F472B6]' },
-                  ].map((tool, i) => (
+                  ].filter(t => !isBelow11 || !t.jee).map((tool, i) => (
                     <Link
                       key={i}
                       to={tool.path}

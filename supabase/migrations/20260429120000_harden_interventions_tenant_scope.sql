@@ -44,7 +44,6 @@ BEGIN
   RETURN COALESCE(v_exists, FALSE);
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.intervention_roadmap_matches(
   p_roadmap_id UUID,
   p_student_user_id UUID,
@@ -74,18 +73,13 @@ BEGIN
   );
 END;
 $$;
-
 ALTER TABLE public.interventions
   DROP CONSTRAINT IF EXISTS interventions_student_user_id_trigger_type_action_type_status_key;
-
 DROP INDEX IF EXISTS public.interventions_student_user_id_trigger_type_action_type_status_key;
-
 DROP INDEX IF EXISTS public.idx_interventions_one_active_action;
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_interventions_one_active_action
   ON public.interventions(student_user_id, COALESCE(class_id, '00000000-0000-0000-0000-000000000000'::uuid), trigger_type, action_type)
   WHERE status = 'active';
-
 DROP POLICY IF EXISTS interventions_insert_system_or_teacher ON public.interventions;
 CREATE POLICY interventions_insert_system_or_teacher
   ON public.interventions
@@ -105,7 +99,6 @@ CREATE POLICY interventions_insert_system_or_teacher
       )
     )
   );
-
 DROP POLICY IF EXISTS interventions_update_teacher ON public.interventions;
 CREATE POLICY interventions_update_teacher
   ON public.interventions
@@ -134,7 +127,6 @@ CREATE POLICY interventions_update_teacher
       )
     )
   );
-
 CREATE OR REPLACE FUNCTION public.upsert_intervention(
   p_student_user_id UUID,
   p_class_id UUID,
@@ -228,7 +220,6 @@ BEGIN
   RETURN v_id;
 END;
 $$;
-
 CREATE OR REPLACE FUNCTION public.resolve_intervention(
   p_intervention_id UUID,
   p_status TEXT,
@@ -282,5 +273,4 @@ BEGIN
   WHERE id = p_intervention_id;
 END;
 $$;
-
 NOTIFY pgrst, 'reload schema';

@@ -6,7 +6,6 @@
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('curriculums', 'curriculums', true)
 ON CONFLICT (id) DO NOTHING;
-
 -- 2. Allow public read access to curriculum files
 DO $$
 BEGIN
@@ -24,7 +23,6 @@ BEGIN
     );
   END IF;
 END $$;
-
 -- 3. Allow authenticated teachers to upload curriculum files
 DO $$
 BEGIN
@@ -42,7 +40,6 @@ BEGIN
     );
   END IF;
 END $$;
-
 -- 4. Allow owners to update/delete their own curriculum files
 DO $$
 BEGIN
@@ -65,9 +62,7 @@ BEGIN
     );
   END IF;
 END $$;
-
 -- 5. Add curriculum file URL column to classes
 ALTER TABLE public.classes
   ADD COLUMN IF NOT EXISTS curriculum_file_url TEXT DEFAULT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_classes_curriculum_file_url ON public.classes(curriculum_file_url) WHERE curriculum_file_url IS NOT NULL;

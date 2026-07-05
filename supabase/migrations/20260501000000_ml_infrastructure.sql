@@ -6,7 +6,6 @@
 -- ============================================================
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS http;
-
 -- ============================================================
 -- 1. IRT CALIBRATION TABLES
 -- ============================================================
@@ -21,10 +20,8 @@ CREATE TABLE IF NOT EXISTS public.irt_calibration_queue (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_irt_queue_status ON public.irt_calibration_queue(status);
 CREATE INDEX IF NOT EXISTS idx_irt_queue_question ON public.irt_calibration_queue(question_id);
-
 CREATE TABLE IF NOT EXISTS public.irt_item_parameters_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     question_id uuid NOT NULL REFERENCES public.questions(id) ON DELETE CASCADE,
@@ -38,10 +35,8 @@ CREATE TABLE IF NOT EXISTS public.irt_item_parameters_history (
     calibrated_at timestamptz DEFAULT now(),
     CONSTRAINT fk_question FOREIGN KEY (question_id) REFERENCES public.questions(id) ON DELETE CASCADE
 );
-
 CREATE INDEX IF NOT EXISTS idx_irt_history_question ON public.irt_item_parameters_history(question_id);
 CREATE INDEX IF NOT EXISTS idx_irt_history_time ON public.irt_item_parameters_history(calibrated_at);
-
 -- ============================================================
 -- 2. BKT PARAMETER TUNING TABLES
 -- ============================================================
@@ -58,9 +53,7 @@ CREATE TABLE IF NOT EXISTS public.bkt_kc_parameters (
     created_at timestamptz DEFAULT now(),
     CONSTRAINT unique_kc UNIQUE (kc_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_bkt_kc ON public.bkt_kc_parameters(kc_id);
-
 CREATE TABLE IF NOT EXISTS public.bkt_parameter_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     kc_id text NOT NULL,
@@ -73,10 +66,8 @@ CREATE TABLE IF NOT EXISTS public.bkt_parameter_history (
     iteration_count integer,
     calibrated_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_bkt_history_kc ON public.bkt_parameter_history(kc_id);
 CREATE INDEX IF NOT EXISTS idx_bkt_history_time ON public.bkt_parameter_history(calibrated_at);
-
 -- ============================================================
 -- 3. AGENT CORRECTIONS LEARNING TABLES
 -- ============================================================
@@ -92,10 +83,8 @@ CREATE TABLE IF NOT EXISTS public.agent_corrections (
     root_cause_analysis text,
     created_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_agent_corrections_user ON public.agent_corrections(user_id);
 CREATE INDEX IF NOT EXISTS idx_agent_corrections_agent ON public.agent_corrections(agent_responsible);
-
 DO $$
 BEGIN
   ALTER TABLE public.agent_corrections ENABLE ROW LEVEL SECURITY;
@@ -106,7 +95,6 @@ BEGIN
     CREATE POLICY "corrections_insert" ON public.agent_corrections FOR INSERT TO anon WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE TABLE IF NOT EXISTS public.agent_prompt_templates (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_responsible text NOT NULL,
@@ -121,10 +109,8 @@ CREATE TABLE IF NOT EXISTS public.agent_prompt_templates (
     updated_at timestamptz DEFAULT now(),
     CONSTRAINT unique_agent_version UNIQUE (agent_responsible, version)
 );
-
 CREATE INDEX IF NOT EXISTS idx_prompt_template_agent ON public.agent_prompt_templates(agent_responsible);
 CREATE INDEX IF NOT EXISTS idx_prompt_template_active ON public.agent_prompt_templates(agent_responsible, is_active) WHERE is_active = true;
-
 CREATE TABLE IF NOT EXISTS public.agent_correction_analysis (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_responsible text NOT NULL,
@@ -137,10 +123,8 @@ CREATE TABLE IF NOT EXISTS public.agent_correction_analysis (
     last_seen_at timestamptz DEFAULT now(),
     analyzed_at timestamptz DEFAULT now()
 );
-
 CREATE INDEX IF NOT EXISTS idx_correction_analysis_agent ON public.agent_correction_analysis(agent_responsible);
 CREATE INDEX IF NOT EXISTS idx_correction_analysis_category ON public.agent_correction_analysis(root_cause_category);
-
 -- ============================================================
 -- 4. SCORE PREDICTION MODEL TABLES
 -- ============================================================
@@ -157,10 +141,8 @@ CREATE TABLE IF NOT EXISTS public.score_model_coefficients (
     model_version integer NOT NULL DEFAULT 1,
     CONSTRAINT unique_feature_version UNIQUE (feature_name, model_version)
 );
-
 CREATE INDEX IF NOT EXISTS idx_score_coef_version ON public.score_model_coefficients(model_version);
 CREATE INDEX IF NOT EXISTS idx_score_coef_subject ON public.score_model_coefficients(subject) WHERE subject IS NOT NULL;
-
 CREATE TABLE IF NOT EXISTS public.score_prediction_features_cache (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
@@ -170,9 +152,7 @@ CREATE TABLE IF NOT EXISTS public.score_prediction_features_cache (
     computed_at timestamptz DEFAULT now(),
     CONSTRAINT unique_user_subject_feature UNIQUE (user_id, subject, feature_name)
 );
-
 CREATE INDEX IF NOT EXISTS idx_score_features_user ON public.score_prediction_features_cache(user_id);
-
 -- ============================================================
 -- 5. PIPELINE MONITORING
 -- ============================================================
@@ -187,11 +167,9 @@ CREATE TABLE IF NOT EXISTS public.ml_pipeline_runs (
     errors text,
     metadata jsonb
 );
-
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_function ON public.ml_pipeline_runs(function_name);
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_status ON public.ml_pipeline_runs(status);
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_time ON public.ml_pipeline_runs(started_at DESC);
-
 -- ============================================================
 -- 6. RLS POLICIES
 -- ============================================================
@@ -279,7 +257,6 @@ BEGIN
     CREATE POLICY "pipeline_runs_write" ON public.ml_pipeline_runs FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 -- ============================================================
 -- 7. HELPER FUNCTIONS
 -- ============================================================
@@ -301,7 +278,6 @@ BEGIN
     WHERE id = p_run_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Start pipeline run
 CREATE OR REPLACE FUNCTION public.start_pipeline_run(p_function_name text)
 RETURNS uuid AS $$
@@ -314,7 +290,6 @@ BEGIN
     RETURN v_run_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Enqueue question for IRT calibration
 CREATE OR REPLACE FUNCTION public.enqueue_irt_calibration(p_question_id uuid)
 RETURNS void AS $$
@@ -324,7 +299,6 @@ BEGIN
     ON CONFLICT DO NOTHING;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get active BKT params for a KC (fallback to defaults)
 CREATE OR REPLACE FUNCTION public.get_bkt_params(p_kc_id text)
 RETURNS jsonb AS $$
@@ -348,7 +322,6 @@ BEGIN
     ));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get latest score model version
 CREATE OR REPLACE FUNCTION public.get_latest_score_model_version()
 RETURNS integer AS $$
@@ -360,7 +333,6 @@ BEGIN
     RETURN COALESCE(v_version, 0);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Get score model coefficients
 CREATE OR REPLACE FUNCTION public.get_score_model_coefficients(p_version integer DEFAULT NULL)
 RETURNS TABLE(feature_name text, coefficient numeric, subject text, band_intercept numeric) AS $$
@@ -375,7 +347,6 @@ BEGIN
     WHERE smc.model_version = COALESCE(p_version, (SELECT MAX(model_version) FROM public.score_model_coefficients));
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================================
 -- 8. CRON SCHEDULES (enabled separately per environment)
 -- ============================================================
@@ -387,4 +358,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- NOTE: Cron jobs are created via migrations per environment
 -- because ANON_KEY and SERVICE_ROLE vars differ per project.
--- See 20260501000000_ml_cron_schedules.sql for active schedules.
+-- See 20260501000000_ml_cron_schedules.sql for active schedules.;

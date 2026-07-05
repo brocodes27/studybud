@@ -15,19 +15,15 @@ CREATE TABLE IF NOT EXISTS public.task_completions_v2 (
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 ALTER TABLE public.task_completions_v2
   ADD COLUMN IF NOT EXISTS task_title TEXT,
   ADD COLUMN IF NOT EXISTS subject TEXT,
   ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT NOW(),
   ADD COLUMN IF NOT EXISTS notes TEXT,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_task_completions_v2_unique_task
   ON public.task_completions_v2(user_id, source_type, source_id, task_order, scheduled_date);
-
 CREATE INDEX IF NOT EXISTS idx_task_completions_v2_user_date
   ON public.task_completions_v2(user_id, scheduled_date DESC);
-
 CREATE INDEX IF NOT EXISTS idx_task_completions_v2_source
   ON public.task_completions_v2(source_type, source_id);

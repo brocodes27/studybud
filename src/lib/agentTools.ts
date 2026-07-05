@@ -42,6 +42,8 @@ export async function executeTool(
       return askReflection(call.args, context);
     case 'show_suggested_replies':
       return showSuggestedReplies(call.args);
+    case 'update_student_profile':
+      return updateStudentProfile(call.args, context);
     default:
       return { success: false, error: `Unknown tool: ${call.tool}` };
   }
@@ -251,4 +253,71 @@ function showSuggestedReplies(args: Record<string, any>): ToolResult {
     success: true,
     data: { replies },
   };
+}
+
+async function updateStudentProfile(
+  args: Record<string, any>,
+  context: AgentContext
+): Promise<ToolResult> {
+  try {
+    const { data: profile, error: selectError } = await supabase
+      .from('student_behavioral_profiles')
+      .select('*')
+      .eq('user_id', context.userId)
+      .maybeSingle();
+
+    if (selectError) throw selectError;
+
+    const payload: any = {
+      user_id: context.userId,
+    };
+
+    if (args.weak_subjects) {
+      payload.weak_subjects = Array.from(new Set([
+        ...(profile?.weak_subjects || []),
+        ...args.weak_subjects
+      ]));
+    }
+    if (args.strong_subjects) {
+      payload.strong_subjects = Array.from(new Set([
+        ...(profile?.strong_subjects || []),
+        ...args.strong_subjects
+      ]));
+    }
+    if (args.preferred_time) {
+      payload.preferred_time = args.preferred_time;
+    }
+    if (args.typical_session_duration_min) {
+      payload.typical_session_duration_min = args.typical_session_duration_min;
+    }
+    if (args.learning_vibe_notes) {
+      const oldSignals = profile?.stress_signals || {};
+      payload.stress_signals = {
+        ...oldSignals,
+        learning_vibe_notes: args.learning_vibe_notes
+      };
+    }
+
+    const { error: upsertError } = await supabase
+      .from('student_behavioral_profiles')
+      .upsert(payload, { onConflict: 'user_id' });
+
+    if (upsertError) throw upsertError;
+
+    context.onRefresh();
+
+    return {
+      success: true,
+      data: {
+        message: 'Successfully updated student cognitive behavioral profile.',
+        updated_fields: Object.keys(args)
+      }
+    };
+  } catch (e: any) {
+    console.error('Error updating student profile tool:', e);
+    return {
+      success: false,
+      error: `Failed to update student profile: ${e.message}`
+    };
+  }
 }

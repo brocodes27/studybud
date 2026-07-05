@@ -8,11 +8,9 @@ ALTER TABLE saved_videos
   ADD COLUMN IF NOT EXISTS heygen_notified BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS heygen_notified_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS heygen_requested_at TIMESTAMPTZ DEFAULT NOW();
-
 -- Indexes to help lookups
 CREATE INDEX IF NOT EXISTS idx_saved_videos_heygen_status ON saved_videos(heygen_status);
 CREATE INDEX IF NOT EXISTS idx_saved_videos_user_status ON saved_videos(user_id, heygen_status);
-
 -- Trigger to notify users when HeyGen video is ready
 CREATE OR REPLACE FUNCTION notify_user_when_heygen_ready()
 RETURNS TRIGGER AS $$
@@ -36,9 +34,7 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trg_notify_heygen_ready ON saved_videos;
-
 CREATE TRIGGER trg_notify_heygen_ready
 BEFORE INSERT OR UPDATE ON saved_videos
 FOR EACH ROW

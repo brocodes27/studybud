@@ -4,668 +4,735 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import {
-  Target, Calendar, Clock, Brain,
-  ChevronRight, ChevronLeft, Check,
-  User, GraduationCap,
-  Sparkles, Shield, Crown,
-  BookOpen, Layers, Flame, MapPin
+  User, GraduationCap, BookOpen,
+  ArrowRight, Loader2, Calendar, Brain, Clock, Target, Star, CheckCircle, ShieldCheck, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface ExamType {
-  code: string;
-  name: string;
-  description: string;
-  total_score_max: number;
-}
+const DIAGNOSTIC_PCM = [
+  {
+    question: "A particle moves in a circle of radius R with constant speed v. What is its acceleration?",
+    options: ["0", "v²/R towards center", "v²/R along tangent", "v/R² towards center"],
+    correct: 1,
+    subject: "Physics",
+    topic: "Circular Motion"
+  },
+  {
+    question: "Which of these elements has the highest electronegativity?",
+    options: ["Oxygen", "Nitrogen", "Fluorine", "Chlorine"],
+    correct: 2,
+    subject: "Chemistry",
+    topic: "Periodic Table"
+  },
+  {
+    question: "What is the derivative of sin(x²) with respect to x?",
+    options: ["cos(x²)", "2x cos(x²)", "2 cos(x)", "-2x cos(x²)"],
+    correct: 1,
+    subject: "Mathematics",
+    topic: "Calculus"
+  }
+];
+
+const DIAGNOSTIC_K10 = [
+  {
+    question: "What is the SI unit of force?",
+    options: ["Joule", "Watt", "Newton", "Pascal"],
+    correct: 2,
+    subject: "Science",
+    topic: "Force and Laws of Motion"
+  },
+  {
+    question: "Which gas is essential for human respiration?",
+    options: ["Carbon dioxide", "Oxygen", "Nitrogen", "Helium"],
+    correct: 1,
+    subject: "Science",
+    topic: "Respiration"
+  },
+  {
+    question: "If 3x + 5 = 20, what is the value of x?",
+    options: ["3", "5", "15", "6"],
+    correct: 1,
+    subject: "Mathematics",
+    topic: "Linear Equations"
+  }
+];
+
+type Step = 'basics' | 'session' | 'quiz' | 'aha' | 'loading_aha';
 
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { track } = useAnalytics();
-  const [step, setStep] = useState(1);
+  
+  const [step, setStep] = useState<Step>('basics');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [role] = useState<'student' | 'teacher'>((user?.user_metadata?.role as 'student' | 'teacher') || 'student');
+  // Step 1: Basics
+  const initialRole = (user?.user_metadata?.role as 'student' | 'teacher') || 'student';
+  const [role, setRole] = useState<'student' | 'teacher'>(initialRole);
   const [fullName, setFullName] = useState<string>(user?.user_metadata?.full_name || user?.user_metadata?.name || '');
-  const [targetExam, setTargetExam] = useState<string>('jee');
-  const [targetScore, setTargetScore] = useState<number>(180);
-  const [examDate, setExamDate] = useState<string>('');
-  const [hoursPerWeek, setHoursPerWeek] = useState<number>(10);
-  const [weakAreas, setWeakAreas] = useState<string[]>([]);
-  const [studyStyle] = useState<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'balanced'>('balanced');
-
-  // Roadmap Engine States
-  const [instituteChoice, setInstituteChoice] = useState<'template' | 'custom' | 'join_class'>('template');
-  const [instituteName, setInstituteName] = useState<string>('Standard JEE');
-  const [batchName, setBatchName] = useState<string>('');
-  const [yearLevel, setYearLevel] = useState<'11' | '12' | 'Dropper'>('11');
-  const [currentWeek, setCurrentWeek] = useState<number>(1);
-  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [grade, setGrade] = useState<string>('11');
   const [classCode, setClassCode] = useState<string>('');
-  const [accountType, setAccountType] = useState<string>('b2c_student');
 
+  // Step 2: Session timing
+  const [sessionTiming, setSessionTiming] = useState<'start' | 'middle'>('start');
+
+  // Step 3 (Path A): Diagnostic Quiz
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [quizScore, setQuizScore] = useState<number | null>(null);
+
+  // Step 3 (Path B): Personality Quiz
+  const [sleepPattern, setSleepPattern] = useState<'morning' | 'evening' | 'flexible'>('evening');
+  const [previousScores, setPreviousScores] = useState<'top' | 'steady' | 'growth'>('steady');
+  const [favoriteSubject, setFavoriteSubject] = useState<string>('');
+  const [strongestSubject, setStrongestSubject] = useState<string>('');
+  const [weakestSubject, setWeakestSubject] = useState<string>('');
+
+  const isPCM = grade === '11' || grade === '12';
+  const subjectsList = isPCM 
+    ? ['Physics', 'Chemistry', 'Mathematics'] 
+    : ['Science', 'Mathematics', 'English', 'Social Science'];
+
+  const quizQuestions = isPCM ? DIAGNOSTIC_PCM : DIAGNOSTIC_K10;
+
+  // Set default subjects when grade changes
   useEffect(() => {
-    async function loadProfile() {
-      if (!user) return;
-      const { data } = await supabase.from('user_profiles').select('account_type').eq('id', user.id).single();
-      if (data?.account_type) {
-        setAccountType(data.account_type);
-        if (data.account_type === 'school_student') {
-          setInstituteChoice('join_class');
-        }
-      }
+    if (isPCM) {
+      setFavoriteSubject('Physics');
+      setStrongestSubject('Mathematics');
+      setWeakestSubject('Chemistry');
+    } else {
+      setFavoriteSubject('Science');
+      setStrongestSubject('Mathematics');
+      setWeakestSubject('English');
     }
-    loadProfile();
-  }, [user]);
+  }, [grade, isPCM]);
 
-  const examTypes: ExamType[] = [
-    { code: 'jee', name: 'JEE (Mains + Advanced)', description: 'Joint Entrance Examination for IITs and NITs', total_score_max: 360 }
-  ];
-  const [coachingTemplates, setCoachingTemplates] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchCoachingTemplates();
-  }, []);
-
-  const fetchCoachingTemplates = async () => {
-    const { data } = await supabase.from('coaching_templates').select('id, institute_name, program, year_level, description, total_weeks');
-    if (data) {
-       setCoachingTemplates(data);
-       const defaultTmpl = data.find(t => t.institute_name === 'Standard JEE');
-       if (defaultTmpl) setActiveTemplateId(defaultTmpl.id);
+  const handleNextFromBasics = () => {
+    if (!fullName.trim()) {
+      setError('Please enter your name.');
+      return;
+    }
+    setError(null);
+    if (role === 'teacher') {
+      // Teachers skip quizzes/AHA moment and go straight to DB upsert
+      saveProfileAndSubmit();
+    } else {
+      setStep('session');
     }
   };
 
-  const selectedExamData = examTypes.find(e => e.code === targetExam);
+  const handleNextFromSession = () => {
+    setError(null);
+    setStep('quiz');
+  };
 
-  const saveOnboarding = async () => {
-    if (!user || !role) return;
+  const handleQuizSubmit = () => {
+    if (sessionTiming === 'middle') {
+      // Calculate quiz score
+      let score = 0;
+      quizQuestions.forEach((q, idx) => {
+        if (quizAnswers[idx] === q.correct) {
+          score++;
+        }
+      });
+      setQuizScore(score);
+
+      // Auto-assign weak/strong subjects based on quiz answers
+      const wrongSubjects = quizQuestions
+        .filter((q, idx) => quizAnswers[idx] !== q.correct)
+        .map(q => q.subject);
+      const rightSubjects = quizQuestions
+        .filter((q, idx) => quizAnswers[idx] === q.correct)
+        .map(q => q.subject);
+
+      if (wrongSubjects.length > 0) {
+        setWeakestSubject(wrongSubjects[0]);
+      }
+      if (rightSubjects.length > 0) {
+        setStrongestSubject(rightSubjects[0]);
+      }
+    }
+    setStep('loading_aha');
+  };
+
+  // Simulate AI Cognitive Analysis loading before AHA Moment
+  useEffect(() => {
+    if (step === 'loading_aha') {
+      const timer = setTimeout(() => {
+        setStep('aha');
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
+  const saveProfileAndSubmit = async () => {
+    if (!user) return;
     try {
       setLoading(true);
+      setError(null);
 
-      const profilePayload = {
+      // 1. Update user profile
+      const profilePayload: any = {
         id: user.id,
         role,
-        full_name: fullName || null,
+        full_name: fullName.trim() || null,
         onboarding_completed: true,
         trial_active: false,
       };
+
+      if (role === 'student') {
+        profilePayload.grade = grade;
+        profilePayload.account_type = 'school_student'; // Default school cohort student when they sign up
+      } else {
+        profilePayload.account_type = 'teacher';
+      }
+
       const { error: profileError } = await supabase.from('user_profiles').upsert(profilePayload);
       if (profileError) throw profileError;
 
-      if (role === 'student') {
-        const goalPayload = {
-          user_id: user.id,
-          target_exam: targetExam,
-          target_score: targetScore,
-          exam_date: examDate || null,
-          hours_per_week: hoursPerWeek,
-          weak_areas: weakAreas,
-          study_style: studyStyle,
-          onboarding_completed: true,
-        };
-        const { error: goalError } = await supabase.from('user_study_goals').upsert(goalPayload);
-        if (goalError) throw goalError;
-
-        if (accountType === 'school_student' || instituteChoice === 'join_class') {
-          const trimmed = (accountType === 'school_student' ? classCode : classCode).trim();
-          if (!trimmed) {
-            throw new Error('Please enter a class code or invite link to join your school class.');
-          }
-          let result;
-          if (trimmed.length <= 10 && !trimmed.includes('/')) {
-            result = await supabase.rpc('join_class', { p_class_code: trimmed });
-          } else {
-            const slug = trimmed.replace(/^.*\/join\//, '');
-            result = await supabase.rpc('join_class_by_invite', { p_invite_link: slug });
-          }
-          if (result.error) throw new Error(result.error.message);
+      // 2. If student, join class code if provided
+      const trimmedCode = classCode.trim();
+      if (role === 'student' && trimmedCode) {
+        let result;
+        if (trimmedCode.length <= 10 && !trimmedCode.includes('/')) {
+          result = await supabase.rpc('join_class', { p_class_code: trimmedCode.toUpperCase() });
         } else {
-          // Trigger Roadmap Engine Onboarding Edge Function (B2C only)
-          await supabase.functions.invoke('roadmap-onboarding', {
-            body: {
-              template_id: instituteChoice === 'template' ? activeTemplateId : null,
-              institute_name: instituteChoice === 'template' ? coachingTemplates.find(t=>t.id===activeTemplateId)?.institute_name : instituteName,
-              year_level: yearLevel,
-              current_week: currentWeek,
-              batch_name: batchName || 'Standard'
-            }
-          });
+          const slug = trimmedCode.replace(/^.*\/join\//, '');
+          result = await supabase.rpc('join_class_by_invite', { p_invite_link: slug });
         }
+        if (result.error) throw new Error(result.error.message);
       }
 
+      // 3. Save student behavioral profile
+      if (role === 'student') {
+        const preferredTime = sleepPattern === 'morning' ? 'morning' : sleepPattern === 'evening' ? 'evening' : 'afternoon';
+        const behaviorPayload = {
+          user_id: user.id,
+          preferred_time: preferredTime,
+          typical_session_duration_min: 90,
+          weak_subjects: [weakestSubject],
+          strong_subjects: [strongestSubject],
+          typical_slump_day: 'Wednesday',
+          response_to_low_score: 'rebuild_concept',
+          stress_signals: {
+            sleep_pattern: sleepPattern,
+            previous_scores: previousScores,
+            favorite_subject: favoriteSubject,
+            diagnostic_quiz_score: quizScore,
+            session_context: sessionTiming
+          }
+        };
+
+        const { error: behaviorError } = await supabase
+          .from('student_behavioral_profiles')
+          .upsert(behaviorPayload, { onConflict: 'user_id' });
+        if (behaviorError) throw behaviorError;
+      }
+
+      // 4. Upsert Gamification Basics
       await supabase.from('user_gamification').upsert({
         user_id: user.id,
-        total_xp: 0,
+        total_xp: 50, // bonus XP for onboarding
         current_level: 1,
-        current_streak: 0,
+        current_streak: 1,
       }, { onConflict: 'user_id' });
 
       await refreshProfile();
-      track('onboarding_complete', { role, target_exam: targetExam, year_level: yearLevel });
-      navigate(role === 'teacher' ? '/my-classes' : '/prove-it?subject=JEE%20Physics&topic=Rotational%20Dynamics');
+      track('onboarding_complete', { role, grade, sessionTiming, quizScore });
+      
+      if (role === 'student') {
+        navigate('/');
+      } else {
+        navigate('/my-classes');
+      }
     } catch (e: any) {
-      alert(e.message || 'Failed to complete onboarding');
+      setError(e.message || 'Failed to complete onboarding. Please try again.');
+      setStep('basics'); // rollback to edit basics
     } finally {
       setLoading(false);
     }
   };
 
-  const nextStep = () => setStep(s => s + 1);
-  const prevStep = () => setStep(s => s - 1);
-
   return (
-    <div className="min-h-screen bg-[#F8FAFF] flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#00D1FF]/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#F472B6]/10 rounded-full blur-[100px]" />
-      </div>
+    <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4 md:p-8 relative overflow-hidden text-[#2D2A26]">
+      {/* Neo-brutalist background elements */}
+      <div className="absolute inset-0 pointer-events-none noise-heavy opacity-5" />
+      <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-[#00D1FF]/5 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-[#6366F1]/5 rounded-full blur-[120px]" />
 
-      <div className="w-full max-w-xl relative z-10">
-        {/* Progress Steps */}
-        <div className="mb-10 flex items-center justify-between px-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center flex-1 last:flex-none">
-              <div className={`w-10 h-10 rounded-full font-bold flex items-center justify-center text-sm transition-all duration-300 border-2 ${step >= i ? 'bg-[#00D1FF] border-[#00D1FF] text-white shadow-float-cyan' : 'bg-white border-[#0A192F]/10 text-[#64748B]'} ${step === i ? 'scale-110' : ''}`}>
-                {step > i ? <Check className="w-4 h-4" /> : i}
-              </div>
-              {i < 5 && (
-                <div className={`h-1 flex-1 mx-2 rounded-full transition-all duration-500 ${step > i ? 'bg-[#00D1FF]/30' : 'bg-[#0A192F]/5'}`} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <AnimatePresence mode="wait">
-          {/* STEP 1: IDENTITY */}
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[18px] flex items-center justify-center shadow-float-cyan">
-                  <User className="w-7 h-7 text-[#00D1FF]" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Who are you?</h1>
-                  <p className="text-xs font-medium text-[#64748B] mt-1">Let's set up your profile</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Your Full Name</label>
-                  <input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-lg focus:outline-none focus:border-[#00D1FF]/40 bg-white placeholder-[#64748B]/40"
-                    placeholder="Enter your name..."
-                  />
-                </div>
-
-                {role === 'student' ? (
-                  <div className="p-5 bg-[#00D1FF]/5 rounded-[16px] border-2 border-[#00D1FF]/15 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[12px] flex items-center justify-center">
-                      <GraduationCap className="w-6 h-6 text-[#00D1FF]" />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-[#0A192F] tracking-tight">Student Account</p>
-                      <p className="text-xs font-medium text-[#64748B]">Profile configured for peak learning performance</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-5 bg-[#8B7355]/5 rounded-[16px] border-2 border-[#8B7355]/15 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-[12px] flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-[#8B7355]" />
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-[#0A192F] tracking-tight">Teacher Account</p>
-                      <p className="text-xs font-medium text-[#64748B]">Create classes, assign tasks, and track student progress</p>
-                    </div>
-                  </div>
-                )}
-
-                {role === 'teacher' ? (
-                  <button
-                    onClick={saveOnboarding}
-                    disabled={!fullName || loading}
-                    className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
-                  >
-                    {loading ? 'Setting up...' : 'Get Started'} <ChevronRight className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={nextStep}
-                    disabled={!role || !fullName}
-                    className="neo-button w-full py-3.5 flex items-center justify-center gap-2 disabled:opacity-40"
-                  >
-                    Next <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 2: EXAM SELECTION */}
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-[#F472B6]/10 border border-[#F472B6]/20 rounded-[18px] flex items-center justify-center">
-                  <Target className="w-7 h-7 text-[#F472B6]" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Target Exam</h1>
-                  <p className="text-xs font-medium text-[#64748B] mt-1">What are we preparing for?</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 mb-6">
-                {examTypes.map((exam) => (
-                  <button
-                    key={exam.code}
-                    onClick={() => setTargetExam(exam.code)}
-                    className={`w-full p-4 rounded-[16px] border-2 text-left flex items-center justify-between transition-all ${targetExam === exam.code ? 'bg-[#00D1FF]/10 border-[#00D1FF] shadow-float-cyan' : 'bg-[#F8FAFF] border-[#0A192F]/5 hover:border-[#00D1FF]/30'}`}
-                  >
-                    <div>
-                      <span className="font-extrabold text-[#0A192F] tracking-tight">{exam.name}</span>
-                      {exam.description && <p className="text-xs font-medium text-[#64748B] mt-0.5">{exam.description}</p>}
-                    </div>
-                    {targetExam === exam.code && (
-                      <div className="w-7 h-7 bg-[#00D1FF] rounded-full flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
-                  Continue <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 3: SCORE & SCHEDULE */}
-          {step === 3 && role === 'student' && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-[#34D399]/10 border border-[#34D399]/20 rounded-[18px] flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-[#34D399]" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Your Mission</h1>
-                  <p className="text-xs font-medium text-[#64748B] mt-1">Goals and study intensity</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
-                      <Target className="w-3.5 h-3.5" /> Target Score
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={targetScore}
-                        onChange={(e) => setTargetScore(parseInt(e.target.value))}
-                        className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-extrabold text-2xl focus:outline-none focus:border-[#34D399]/40 bg-white"
-                      />
-                      <div className="absolute right-4 bottom-3 text-xs font-medium text-[#64748B]">/ {selectedExamData?.total_score_max || '—'}</div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
-                      <Calendar className="w-3.5 h-3.5" /> Exam Date
-                    </label>
-                    <input
-                      type="date"
-                      value={examDate}
-                      onChange={(e) => setExamDate(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold focus:outline-none focus:border-[#34D399]/40 bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex items-center justify-between text-xs font-bold text-[#64748B] uppercase tracking-wider mb-3">
-                    <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Weekly Practice</span>
-                    <span className="text-[#0A192F] font-extrabold">{hoursPerWeek} hrs/week</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="40"
-                    value={hoursPerWeek}
-                    onChange={(e) => setHoursPerWeek(parseInt(e.target.value))}
-                    className="w-full h-2 rounded-full accent-[#00D1FF] cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] font-medium text-[#64748B] mt-2">
-                    <span>Casual</span>
-                    <span>Dedicated</span>
-                    <span>All-in</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2">
-                    Final Step <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 4: WEAK AREAS */}
-          {step === 4 && role === 'student' && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-[#0A192F]/5 border border-[#0A192F]/10 rounded-[18px] flex items-center justify-center">
-                  <Brain className="w-7 h-7 text-[#0A192F]" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Where to focus?</h1>
-                  <p className="text-xs font-medium text-[#64748B] mt-1">Select your weak areas (optional)</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-2">
-                  {['Mechanics', 'Electrostatics', 'Organic Chemistry', 'Physical Chemistry', 'Calculus', 'Coordinate Geometry', 'Algebra', 'Vectors'].map((area) => (
-                    <button
-                      key={area}
-                      onClick={() => setWeakAreas(areas => areas.includes(area) ? areas.filter(a => a !== area) : [...areas, area])}
-                      className={`p-3.5 rounded-[12px] border-2 font-semibold text-sm transition-all flex items-center gap-2 ${weakAreas.includes(area) ? 'bg-[#00D1FF]/10 border-[#00D1FF] text-[#00D1FF]' : 'bg-[#F8FAFF] border-[#0A192F]/5 text-[#64748B] hover:border-[#00D1FF]/30'}`}
-                    >
-                      {weakAreas.includes(area) && <Check className="w-4 h-4 shrink-0" />}
-                      {area}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="bg-[#F8FAFF] rounded-[16px] border-2 border-[#0A192F]/5 p-5">
-                  <h5 className="font-bold text-[#0A192F] text-sm mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#34D399]" /> Our Promise
-                  </h5>
-                  <p className="text-sm font-medium text-[#64748B] leading-relaxed">We'll turn your JEE weak areas into verified mastery credentials. Your first Prove-It starts today.</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextStep}
-                    className="flex-1 neo-button py-3 flex items-center justify-center gap-2 group"
-                  >
-                    Continue
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* STEP 5: ROADMAP SETUP */}
-          {step === 5 && role === 'student' && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
+      <AnimatePresence mode="wait">
+        {/* STEP 1: BASICS */}
+        {step === 'basics' && (
+          <motion.div
+            key="basics"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-lg relative z-10"
+          >
+            <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-[#8B5CF6]/10 border border-[#8B5CF6]/20 rounded-[18px] flex items-center justify-center">
-                  <Calendar className="w-7 h-7 text-[#8B5CF6]" />
+                <div className="w-14 h-14 bg-[#2D2A26] border-2 border-[#2D2A26] text-white flex items-center justify-center rounded-xl shadow-sm">
+                  <User className="w-7 h-7" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Pick Your Path</h1>
-                  <p className="text-xs font-medium text-[#64748B] mt-1">Choose a structured roadmap or build your own</p>
+                  <h1 className="text-2xl font-black uppercase tracking-tight">Identity Profile</h1>
+                  <p className="text-xs font-bold text-[#8A8279] mt-0.5">Let's set up your ElevenFolks credentials.</p>
                 </div>
               </div>
 
               <div className="space-y-5">
-
-                {/* Mode Toggle — school students only see Join a Class */}
-                <div className="bg-[#F8FAFF] p-1 rounded-[14px] flex">
-                  {accountType !== 'school_student' && (
-                    <button
-                      onClick={() => setInstituteChoice('template')}
-                      className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'template' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                    >
-                      <Layers className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                      Coaching Roadmap
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setInstituteChoice('join_class')}
-                    className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'join_class' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                  >
-                    <MapPin className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                    Join a Class
-                  </button>
-                  {accountType !== 'school_student' && (
-                    <button
-                      onClick={() => setInstituteChoice('custom')}
-                      className={`flex-1 py-2.5 rounded-[12px] text-sm font-bold transition-all ${instituteChoice === 'custom' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
-                    >
-                      <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                      Self Study
-                    </button>
-                  )}
+                {/* Full Name */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Full Name</label>
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full px-4 py-3.5 rounded-xl border-2 border-[#2D2A26] text-[#2D2A26] font-bold text-lg focus:outline-none focus:bg-amber-50/10 placeholder:text-[#8A8279]/40 bg-[#FAF8F5]"
+                    placeholder="Enter your name..."
+                  />
                 </div>
 
-                {/* Join Class Input */}
-                {instituteChoice === 'join_class' && (
-                  <div>
-                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Class Code or Invite Link</label>
-                    <input
-                      value={classCode}
-                      onChange={(e) => setClassCode(e.target.value)}
-                      placeholder="Paste class code or invite link..."
-                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
-                    />
-                    <p className="text-xs text-[#64748B] mt-1.5">Ask your teacher for the class code or invite link.</p>
+                {/* Role Selection */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Role</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole('student')}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-3 text-left transition-all ${role === 'student' ? 'bg-[#8B7355]/10 border-[#8B7355] shadow-[4px_4px_0px_0px_#8B7355]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${role === 'student' ? 'bg-[#8B7355] text-white' : 'bg-[#2D2A26]/5 text-[#8A8279]'}`}>
+                        <GraduationCap className="w-5 h-5" />
+                      </div>
+                      <span className="font-extrabold text-[#2D2A26]">Student</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRole('teacher')}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-3 text-left transition-all ${role === 'teacher' ? 'bg-[#8B7355]/10 border-[#8B7355] shadow-[4px_4px_0px_0px_#8B7355]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${role === 'teacher' ? 'bg-[#8B7355] text-white' : 'bg-[#2D2A26]/5 text-[#8A8279]'}`}>
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                      <span className="font-extrabold text-[#2D2A26]">Teacher</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grade and Class Code (Students Only) */}
+                {role === 'student' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-4 pt-1"
+                  >
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Grade Level</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {['8', '9', '10', '11', '12'].map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setGrade(g)}
+                            className={`py-2 px-3 rounded-lg border-2 text-center text-xs font-black transition-all ${grade === g ? 'bg-[#2D2A26] text-white border-[#2D2A26]' : 'bg-[#FAF8F5] border-[#2D2A26]/15 text-[#8A8279] hover:border-[#2D2A26]/40'}`}
+                          >
+                            Class {g}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] font-bold text-[#8A8279] mt-2">
+                        {isPCM ? "⚡ PCM subjects: Physics, Chemistry & Mathematics (+ JEE prep active)" : "📋 CBSE subjects: Science, Mathematics & English"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Class Cohort Code (Optional)</label>
+                      <input
+                        value={classCode}
+                        onChange={(e) => setClassCode(e.target.value)}
+                        placeholder="Paste class code: e.g. ABC123"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-[#2D2A26] text-[#2D2A26] font-bold text-sm focus:outline-none placeholder:text-[#8A8279]/40 bg-[#FAF8F5]"
+                      />
+                      <p className="text-[10px] font-bold text-[#8A8279] mt-1">If your school or teacher gave you a cohort code, paste it here.</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {error && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-xs font-bold text-red-600">
+                    {error}
                   </div>
                 )}
 
-                {/* Template Cards */}
-                {instituteChoice === 'template' && (
-                  <div className="space-y-3">
-                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider">Available Roadmaps</label>
-                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-                      {coachingTemplates.map((t) => {
-                        const selected = activeTemplateId === t.id;
-                        const programColor = t.program === 'JEE' ? 'bg-[#00D1FF]/10 text-[#00D1FF]' : t.program === 'CBSE' ? 'bg-[#F472B6]/10 text-[#F472B6]' : 'bg-[#8B5CF6]/10 text-[#8B5CF6]';
-                        return (
+                {/* Submit */}
+                <button
+                  onClick={handleNextFromBasics}
+                  disabled={!fullName.trim()}
+                  className="w-full py-4 bg-[#2D2A26] text-white border-2 border-[#2D2A26] hover:bg-[#3D3833] font-black uppercase text-sm rounded-xl transition-all shadow-md active:translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-40"
+                >
+                  {role === 'student' ? 'Next: Study Settings' : 'Setup Profile'} <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 2: SESSION TIMING */}
+        {step === 'session' && (
+          <motion.div
+            key="session"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-lg relative z-10"
+          >
+            <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-[#2D2A26] text-white flex items-center justify-center rounded-xl shadow-sm">
+                  <Calendar className="w-7 h-7" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black uppercase tracking-tight">Academic Timeline</h1>
+                  <p className="text-xs font-bold text-[#8A8279] mt-0.5">Where is your school currently in the session?</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setSessionTiming('start')}
+                    className={`w-full flex items-center gap-4 p-5 rounded-xl border-3 text-left transition-all ${sessionTiming === 'start' ? 'bg-[#8B7355]/10 border-[#8B7355] shadow-[4px_4px_0px_0px_#8B7355]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                  >
+                    <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-lg flex items-center justify-center shrink-0">
+                      <Zap className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-sm text-[#2D2A26] uppercase">Just Started (Beginning)</p>
+                      <p className="text-xs text-[#8A8279] mt-0.5">Classes are at chapter 1 or 2. Let's do a personality diagnostic to map your sleep & scores.</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSessionTiming('middle')}
+                    className={`w-full flex items-center gap-4 p-5 rounded-xl border-3 text-left transition-all ${sessionTiming === 'middle' ? 'bg-[#8B7355]/10 border-[#8B7355] shadow-[4px_4px_0px_0px_#8B7355]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                  >
+                    <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center shrink-0">
+                      <Brain className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-sm text-[#2D2A26] uppercase">In the Middle (Mid-Term)</p>
+                      <p className="text-xs text-[#8A8279] mt-0.5">We're half-way. Let's take a quick 3-question conceptual diagnostic quiz to see what you remember.</p>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep('basics')}
+                    className="flex-1 py-3.5 border-2 border-[#2D2A26] hover:bg-[#2D2A26]/5 font-black uppercase text-xs rounded-xl transition-all"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleNextFromSession}
+                    className="flex-[2] py-3.5 bg-[#2D2A26] text-white border-2 border-[#2D2A26] hover:bg-[#3D3833] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    Continue <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 3: QUIZ (Diagnostic or Personality) */}
+        {step === 'quiz' && (
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-xl relative z-10"
+          >
+            {sessionTiming === 'middle' ? (
+              /* Diagnostic Quiz Panel */
+              <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl space-y-6">
+                <div className="flex items-center gap-3">
+                  <Brain className="w-6 h-6 text-[#8B7355]" />
+                  <h2 className="text-xl font-black uppercase tracking-tight">Diagnostic Progress Check</h2>
+                </div>
+                <p className="text-xs text-[#8A8279]">We've customized this quiz based on Class {grade} {isPCM ? 'PCM' : 'CBSE'} chapters typically covered by mid-term.</p>
+
+                <div className="space-y-6 py-2">
+                  {quizQuestions.map((q, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <p className="text-sm font-bold leading-snug">
+                        <span className="inline-flex items-center justify-center w-5 h-5 bg-[#2D2A26] text-white rounded-full text-[10px] font-black mr-2 align-middle">{idx + 1}</span>
+                        {q.question}
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 pl-7">
+                        {q.options.map((opt, oIdx) => (
                           <button
-                            key={t.id}
-                            onClick={() => { setActiveTemplateId(t.id); setYearLevel(t.year_level); setCurrentWeek(1); }}
-                            className={`w-full text-left p-4 rounded-[16px] border-2 transition-all ${selected ? 'border-[#00D1FF] bg-[#00D1FF]/5 shadow-float-cyan' : 'border-[#0A192F]/5 bg-white hover:border-[#0A192F]/10'}`}
+                            key={oIdx}
+                            onClick={() => setQuizAnswers(prev => ({ ...prev, [idx]: oIdx }))}
+                            className={`w-full p-3 rounded-lg border-2 text-left text-xs font-bold transition-all ${quizAnswers[idx] === oIdx ? 'bg-[#2D2A26] border-[#2D2A26] text-white' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
                           >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide ${programColor}`}>
-                                  {t.program}
-                                </span>
-                                <span className="text-[10px] font-bold text-[#64748B] bg-[#F8FAFF] px-2 py-0.5 rounded-full">
-                                  Class {t.year_level}
-                                </span>
-                              </div>
-                              {selected && <Check className="w-4 h-4 text-[#00D1FF]" />}
-                            </div>
-                            <h3 className="font-bold text-[#0A192F] text-sm mb-1">{t.institute_name}</h3>
-                            <p className="text-xs text-[#64748B] line-clamp-2 leading-relaxed">{t.description}</p>
-                            <div className="flex items-center gap-3 mt-2.5">
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#64748B]">
-                                <Flame className="w-3 h-3 text-[#FBBF24]" />
-                                {t.total_weeks} Weeks
-                              </span>
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-[#64748B]">
-                                <Calendar className="w-3 h-3 text-[#8B5CF6]" />
-                                {t.total_weeks >= 50 ? 'Full Year' : t.total_weeks >= 40 ? 'Board Cycle' : 'Short Term'}
-                              </span>
-                            </div>
+                            {opt}
                           </button>
-                        );
-                      })}
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setStep('session')}
+                    className="flex-1 py-3.5 border-2 border-[#2D2A26] hover:bg-[#2D2A26]/5 font-black uppercase text-xs rounded-xl transition-all"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleQuizSubmit}
+                    disabled={Object.keys(quizAnswers).length < quizQuestions.length}
+                    className="flex-[2] py-3.5 bg-[#2D2A26] text-white border-2 border-[#2D2A26] hover:bg-[#3D3833] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                  >
+                    Grade Quiz & Continue <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Personality Quiz Panel */
+              <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl space-y-6">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-[#8B7355]" />
+                  <h2 className="text-xl font-black uppercase tracking-tight">Identity & Study Habits</h2>
+                </div>
+                <p className="text-xs text-[#8A8279]">No quiz since school just started! Tell us how you study to customize your AI Coach.</p>
+
+                <div className="space-y-4">
+                  {/* Sleep Pattern */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">When do you feel most productive?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'morning', label: '☀️ Early Bird' },
+                        { val: 'evening', label: '🌙 Night Owl' },
+                        { val: 'flexible', label: '🔄 Flexible' }
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          type="button"
+                          onClick={() => setSleepPattern(item.val as any)}
+                          className={`py-2 px-3 rounded-lg border-2 text-center text-xs font-bold transition-all ${sleepPattern === item.val ? 'bg-[#2D2A26] text-white border-[#2D2A26]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
 
-                {/* Self Study */}
-                {instituteChoice === 'custom' && (
+                  {/* Previous Scores */}
                   <div>
-                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Give Your Plan a Name</label>
-                    <input
-                      value={instituteName}
-                      onChange={(e) => setInstituteName(e.target.value)}
-                      placeholder="E.g. Online Self Paced JEE"
-                      className="w-full px-4 py-3.5 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
-                    />
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Previous score bracket</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'top', label: '90% + (Top)' },
+                        { val: 'steady', label: '70% - 90%' },
+                        { val: 'growth', label: 'Below 70%' }
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          type="button"
+                          onClick={() => setPreviousScores(item.val as any)}
+                          className={`py-2 px-3 rounded-lg border-2 text-center text-xs font-bold transition-all ${previousScores === item.val ? 'bg-[#2D2A26] text-white border-[#2D2A26]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
 
-                {/* Batch Name */}
-                <div>
-                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Batch / Group Name <span className="normal-case font-medium text-[#94A3B8]">(optional)</span></label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
-                    <input
-                      value={batchName}
-                      onChange={(e) => setBatchName(e.target.value)}
-                      placeholder="E.g. Morning Batch, Alpha Group"
-                      className="w-full pl-10 pr-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                  {/* Favorite Subject */}
                   <div>
-                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Current Class</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Favorite STEM Subject</label>
                     <select
-                      value={yearLevel}
-                      onChange={(e) => setYearLevel(e.target.value as '11' | '12' | 'Dropper')}
-                      className="w-full px-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
+                      value={favoriteSubject}
+                      onChange={(e) => setFavoriteSubject(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-lg border-2 border-[#2D2A26] font-bold text-xs bg-[#FAF8F5]"
                     >
-                      <option value="11">Class 11</option>
-                      <option value="12">Class 12</option>
-                      <option value="Dropper">Dropper (13th)</option>
+                      {subjectsList.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">Current Week</label>
-                    <input
-                      type="number"
-                      min="1" max="52"
-                      value={currentWeek}
-                      onChange={(e) => setCurrentWeek(Math.min(52, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="w-full px-4 py-3 rounded-[14px] border-2 border-[#0A192F]/10 text-[#0A192F] font-semibold text-sm focus:outline-none focus:border-[#00D1FF]/40 bg-white"
-                    />
+
+                  {/* Strongest vs Weakest */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Strongest Subject</label>
+                      <select
+                        value={strongestSubject}
+                        onChange={(e) => setStrongestSubject(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg border-2 border-[#2D2A26] font-bold text-xs bg-[#FAF8F5]"
+                      >
+                        {subjectsList.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Weakest Subject</label>
+                      <select
+                        value={weakestSubject}
+                        onChange={(e) => setWeakestSubject(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg border-2 border-[#2D2A26] font-bold text-xs bg-[#FAF8F5]"
+                      >
+                        {subjectsList.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  <button onClick={prevStep} className="w-12 h-12 rounded-[12px] border-2 border-[#0A192F]/10 flex items-center justify-center text-[#64748B] hover:border-[#0A192F]/20 transition-colors">
-                    <ChevronLeft className="w-5 h-5" />
+                  <button
+                    onClick={() => setStep('session')}
+                    className="flex-1 py-3.5 border-2 border-[#2D2A26] hover:bg-[#2D2A26]/5 font-black uppercase text-xs rounded-xl transition-all"
+                  >
+                    Back
                   </button>
-                  <button onClick={nextStep} className="flex-1 neo-button py-3 flex items-center justify-center gap-2 group">
-                    Final Step <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform"/>
+                  <button
+                    onClick={handleQuizSubmit}
+                    className="flex-[2] py-3.5 bg-[#2D2A26] text-white border-2 border-[#2D2A26] hover:bg-[#3D3833] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    Generate Study Vibe <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            </motion.div>
-          )}
+            )}
+          </motion.div>
+        )}
 
-          {/* STEP 6: TRIAL */}
-          {step === 6 && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="neo-card"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-[#FBBF24]/10 border border-[#FBBF24]/20 rounded-[18px] flex items-center justify-center">
-                  <Crown className="w-7 h-7 text-[#FBBF24]" />
+        {/* STEP 3.5: LOADING ANALYSIS */}
+        {step === 'loading_aha' && (
+          <motion.div
+            key="loading_aha"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center min-h-[50vh] text-center"
+          >
+            <div className="w-16 h-16 bg-[#2D2A26] border-2 border-[#2D2A26] rounded-2xl flex items-center justify-center shadow-lg mb-6 rotate-12 animate-pulse">
+              <Brain className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-black uppercase tracking-tight">Syncing ATLAS Core...</h2>
+            <p className="text-sm font-semibold text-[#8A8279] mt-2 max-w-xs leading-relaxed">Mapping your study habits, syllabus parameters, and strengths onto your cognitive advisor.</p>
+          </motion.div>
+        )}
+
+        {/* STEP 4: AHA MOMENT */}
+        {step === 'aha' && (
+          <motion.div
+            key="aha"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-2xl relative z-10"
+          >
+            <div className="bg-[#2D2A26] border-4 border-[#2D2A26] p-8 text-white shadow-[12px_12px_0px_0px_#8B7355] rounded-3xl space-y-8 relative overflow-hidden">
+              <div className="absolute top-[-20%] right-[-20%] w-72 h-72 bg-[#00D1FF]/10 rounded-full blur-[80px] pointer-events-none" />
+              
+              <div className="space-y-2 relative z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-wider text-[#00D1FF]">
+                  <Star className="w-3.5 h-3.5 fill-current" /> Blueprint Configured
                 </div>
-                <div>
-                  <h1 className="text-2xl font-extrabold text-[#0A192F] tracking-tight">Start Your Trial</h1>
-                  <p className="text-xs font-bold text-[#34D399] mt-1">7 Days Free Access</p>
+                <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.05] uppercase">
+                  Welcome to <span className="bg-gradient-to-r from-[#00D1FF] to-[#6366F1] bg-clip-text text-transparent">elevenfolks.</span>
+                </h1>
+                <p className="text-sm text-white/60 font-medium">ATLAS has established your personal cognitive profile. Here is what we know about you:</p>
+              </div>
+
+              {/* AHA Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10 text-[#2D2A26]">
+                {/* Profile Card */}
+                <div className="bg-white p-5 rounded-2xl border-2 border-white flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-[#8A8279] uppercase tracking-wider mb-2">Cognitive Blueprint</p>
+                    <h3 className="text-lg font-black leading-tight uppercase mb-1">
+                      {sleepPattern === 'morning' ? '☀️ Early Bird Scholar' : sleepPattern === 'evening' ? '🌙 Night Owl Warrior' : '🔄 Balanced Explorer'}
+                    </h3>
+                    <p className="text-xs text-[#8A8279] leading-relaxed">
+                      Your peak alertness is modeled around <span className="font-extrabold text-[#2D2A26]">{sleepPattern === 'morning' ? 'mornings' : 'late evenings'}</span>. Harder subjects will automatically stack during this window.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-4 text-[11px] font-bold text-[#8B7355]">
+                    <Clock className="w-4 h-4" /> Customized Daily Schedule Active
+                  </div>
+                </div>
+
+                {/* Score Target Card */}
+                <div className="bg-white p-5 rounded-2xl border-2 border-white flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-[#8A8279] uppercase tracking-wider mb-2">Performance Vector</p>
+                    <h3 className="text-lg font-black leading-tight uppercase mb-1">
+                      {previousScores === 'top' ? '🚀 Top-Rank Target' : previousScores === 'steady' ? '📈 Steady Growth' : '🌱 Conceptual Recovery'}
+                    </h3>
+                    <p className="text-xs text-[#8A8279] leading-relaxed">
+                      Targeting a high performance threshold. Your revision cycles will emphasize rigor and retrieval checks.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-4 text-[11px] font-bold text-emerald-600">
+                    <Target className="w-4 h-4" /> Rigor factor: {previousScores === 'top' ? '9.5/10' : '7.8/10'} locked
+                  </div>
+                </div>
+
+                {/* Subjects & Diagnostic Card */}
+                <div className="bg-white p-5 rounded-2xl border-2 border-white md:col-span-2">
+                  <p className="text-[10px] font-black text-[#8A8279] uppercase tracking-wider mb-3">Adaptive Study Strategy</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs border-b border-[#2D2A26]/5 pb-2">
+                      <span className="font-bold text-[#8A8279]">Syllabus Stream</span>
+                      <span className="font-black text-[#2D2A26] uppercase">Class {grade} {isPCM ? 'JEE (PCM)' : 'CBSE'}</span>
+                    </div>
+                    {quizScore !== null && (
+                      <div className="flex items-center justify-between text-xs border-b border-[#2D2A26]/5 pb-2">
+                        <span className="font-bold text-[#8A8279]">Diagnostic Recall Level</span>
+                        <span className="font-black text-amber-600 uppercase">{quizScore} / {quizQuestions.length} Checked</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#8A8279]">Primary Remedial Target</span>
+                      <span className="font-black text-red-600 uppercase">{weakestSubject}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#FAF8F5] border border-[#2D2A26]/10 p-3 rounded-xl mt-4">
+                    <p className="text-xs font-semibold text-[#8A8279] leading-relaxed">
+                      💡 <span className="font-extrabold text-[#2D2A26]">ATLAS strategy:</span> Since <span className="font-black text-[#2D2A26]">{weakestSubject}</span> is marked as weakest, daily plans will automatically serve 15-minute concept rebuilds. Your strong subject, <span className="font-black text-[#2D2A26]">{strongestSubject}</span>, will feature higher-rigor problems to maximize score.
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="bg-gradient-to-br from-[#00D1FF]/5 to-[#F472B6]/5 rounded-[20px] border-2 border-[#00D1FF]/15 p-6">
-                  <h3 className="text-lg font-extrabold text-[#0A192F] mb-2 tracking-tight">7-Day Free Trial</h3>
-                  <p className="text-sm font-medium text-[#64748B] mb-5">Start with a JEE Prove-It challenge, then unlock smart plans, practice, and mastery credentials.</p>
-
-                  <ul className="space-y-3">
-                    {['JEE Prove-It credentials', 'Personalized JEE roadmap', 'Unlimited adaptive practice'].map(f => (
-                      <li key={f} className="flex items-center gap-3 text-sm font-medium text-[#0A192F]">
-                        <div className="w-5 h-5 bg-[#34D399]/10 border border-[#34D399]/30 rounded-full flex items-center justify-center shrink-0">
-                          <Check className="w-3 h-3 text-[#34D399]" />
-                        </div>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
+              {/* Action button */}
+              <div className="pt-2 relative z-10">
                 <button
-                  onClick={saveOnboarding}
+                  onClick={saveProfileAndSubmit}
                   disabled={loading}
-                  className="neo-button w-full py-4 flex items-center justify-center gap-2 group disabled:opacity-50 text-base"
+                  className="w-full py-4.5 bg-[#8B7355] text-white border-2 border-white/20 hover:bg-[#9B8365] font-black uppercase text-sm rounded-xl transition-all shadow-[0_6px_20px_rgba(139,115,85,0.4)] active:translate-y-0.5 flex items-center justify-center gap-2"
                 >
-                  {loading ? 'Setting up...' : 'Start First Prove-It'}
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-
-                <p className="text-center text-xs font-medium text-[#64748B]">You won't be charged for 7 days</p>
-
-                <button onClick={prevStep} className="w-full text-[#64748B] font-medium text-sm hover:text-[#0A192F] transition-colors">
-                  Back
+                  {loading ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Aligning Workspace...</>
+                  ) : (
+                    <><ShieldCheck className="w-5 h-5" /> Launch My Workspace</>
+                  )}
                 </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

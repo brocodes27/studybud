@@ -11,9 +11,7 @@ CREATE TABLE IF NOT EXISTS public.schools (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 ALTER TABLE public.schools ENABLE ROW LEVEL SECURITY;
-
 -- Idempotent policy creation (PostgreSQL doesn't support CREATE POLICY IF NOT EXISTS)
 DO $$
 BEGIN
@@ -23,7 +21,6 @@ BEGIN
     CREATE POLICY schools_select_all ON public.schools FOR SELECT USING (true);
   END IF;
 END $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -32,11 +29,9 @@ BEGIN
     CREATE POLICY schools_insert_admin ON public.schools FOR INSERT WITH CHECK (true);
   END IF;
 END $$;
-
 -- 2) Add school_id to user_profiles
 ALTER TABLE public.user_profiles
   ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES public.schools(id) ON DELETE SET NULL;
-
 -- 3) Update account_type check to include school_admin
 DO $$ BEGIN
   ALTER TABLE public.user_profiles
@@ -46,7 +41,6 @@ DO $$ BEGIN
       CHECK (account_type IN ('b2c_student','school_student','teacher','parent','admin','school_admin'));
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-
 -- 4) Update handle_new_user trigger to auto-link by email domain
 CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER AS $$
 DECLARE

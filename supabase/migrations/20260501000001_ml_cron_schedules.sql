@@ -10,7 +10,6 @@ BEGIN
       E'SELECT net.http_post(url:=''https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/irt-calibrate'',headers:=ARRAY[''Content-Type:application/json'',''Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDQzODU3NywiZXhwIjoyMDY2MDE0NTc3fQ.Xy0OJkdKN_v8A9HXizxwwZ5bJ2IGvvZ8LggpljK2_6A''])');
   END IF;
 END $$;
-
 -- BKT Tuning: 1st of month 4am UTC
 DO $$
 BEGIN
@@ -19,7 +18,6 @@ BEGIN
       E'SELECT net.http_post(url:=''https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/bkt-tune'',headers:=ARRAY[''Content-Type:application/json'',''Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDQzODU3NywiZXhwIjoyMDY2MDE0NTc3fQ.Xy0OJkdKN_v8A9HXizxwwZ5bJ2IGvvZ8LggpljK2_6A''])');
   END IF;
 END $$;
-
 -- Agent Corrections Analysis: Daily 6am UTC
 DO $$
 BEGIN
@@ -28,7 +26,6 @@ BEGIN
       E'SELECT net.http_post(url:=''https://yjdcshkqgzcubniinwoc.supabase.co/functions/v1/agent-analyze-corrections'',headers:=ARRAY[''Content-Type:application/json'',''Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqZGNzaGtxZ3pjdWJuaWlud29jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDQzODU3NywiZXhwIjoyMDY2MDE0NTc3fQ.Xy0OJkdKN_v8A9HXizxwwZ5bJ2IGvvZ8LggpljK2_6A''])');
   END IF;
 END $$;
-
 -- Score Model Retraining: 15th of month 4am UTC
 DO $$
 BEGIN

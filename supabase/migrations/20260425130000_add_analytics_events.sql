@@ -10,18 +10,14 @@ create table if not exists public.analytics_events (
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
-
 create index if not exists analytics_events_name_idx on public.analytics_events(event_name);
 create index if not exists analytics_events_created_at_idx on public.analytics_events(created_at desc);
-
 alter table public.analytics_events enable row level security;
-
 drop policy if exists "Anyone can insert analytics events" on public.analytics_events;
 create policy "Anyone can insert analytics events"
   on public.analytics_events for insert
   to anon, authenticated
   with check (true);
-
 drop policy if exists "Admins can read analytics" on public.analytics_events;
 create policy "Admins can read analytics"
   on public.analytics_events for select
@@ -31,7 +27,6 @@ create policy "Admins can read analytics"
       select 1 from public.user_profiles where id = auth.uid() and is_admin = true
     )
   );
-
 -- Simple aggregate helper for dashboard queries
 create or replace function public.get_funnel_counts(
   p_start timestamptz,

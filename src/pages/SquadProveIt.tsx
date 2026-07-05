@@ -239,7 +239,6 @@ export function SquadProveIt() {
 
               <button
                 onClick={copyInvite}
-                data-app-action="squad-copy-invite"
                 className="w-full py-3 rounded-[12px] bg-[#00D1FF] text-[#0A192F] font-bold flex items-center justify-center gap-2"
               >
                 <Copy className="w-4 h-4" /> Copy squad invite

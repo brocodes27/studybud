@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS us_exam_types (
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Seed US exam types
 INSERT INTO us_exam_types (code, name, description, total_score_max, sections) VALUES
 ('sat', 'SAT (Digital)', 'College Board standardized test for college admissions', 1600, '{"reading_writing": 800, "math": 800}'),
@@ -38,7 +37,6 @@ INSERT INTO us_exam_types (code, name, description, total_score_max, sections) V
 ('ap_cs_a', 'AP Computer Science A', 'Java programming', 5, NULL),
 ('ap_cs_principles', 'AP Computer Science Principles', 'Computing concepts', 5, NULL)
 ON CONFLICT (code) DO NOTHING;
-
 -- ============================================
 -- 2. User Study Goals (Enhanced Onboarding)
 -- ============================================
@@ -56,7 +54,6 @@ CREATE TABLE IF NOT EXISTS user_study_goals (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- ============================================
 -- 3. Gamification System
 -- ============================================
@@ -73,7 +70,6 @@ CREATE TABLE IF NOT EXISTS user_gamification (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- XP transaction log (audit trail)
 CREATE TABLE IF NOT EXISTS xp_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,10 +80,8 @@ CREATE TABLE IF NOT EXISTS xp_transactions (
   source_id UUID,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_xp_transactions_user ON xp_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_xp_transactions_created ON xp_transactions(created_at DESC);
-
 -- Daily activity log
 CREATE TABLE IF NOT EXISTS user_activity_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,9 +93,7 @@ CREATE TABLE IF NOT EXISTS user_activity_log (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, activity_date, activity_type)
 );
-
 CREATE INDEX IF NOT EXISTS idx_activity_log_user_date ON user_activity_log(user_id, activity_date DESC);
-
 -- ============================================
 -- 4. Achievements System
 -- ============================================
@@ -138,7 +130,6 @@ BEGIN
         END IF;
     END IF;
 END $$;
-
 -- Create table if it doesn't exist at all
 CREATE TABLE IF NOT EXISTS achievements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -154,7 +145,6 @@ CREATE TABLE IF NOT EXISTS achievements (
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Add unique constraint on code if not exists
 DO $$
 BEGIN
@@ -164,7 +154,6 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
     NULL; -- Ignore if already exists
 END $$;
-
 -- User unlocked achievements
 CREATE TABLE IF NOT EXISTS user_achievements (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -172,7 +161,6 @@ CREATE TABLE IF NOT EXISTS user_achievements (
   unlocked_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (user_id, achievement_id)
 );
-
 -- Seed achievements
 INSERT INTO achievements (code, name, description, icon, xp_reward, rarity, category, requirement_type, requirement_value) VALUES
 -- Streak achievements
@@ -206,7 +194,6 @@ INSERT INTO achievements (code, name, description, icon, xp_reward, rarity, cate
 ('first_feynman', 'Teacher Mode', 'Complete your first Feynman session', '🧠', 75, 'common', 'practice', 'feynman_sessions', 1),
 ('feynman_10', 'Explain It All', 'Complete 10 Feynman sessions', '💡', 300, 'rare', 'practice', 'feynman_sessions', 10)
 ON CONFLICT (code) DO NOTHING;
-
 -- ============================================
 -- 5. Daily Check-In System
 -- ============================================
@@ -224,9 +211,7 @@ CREATE TABLE IF NOT EXISTS daily_checkins (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, checkin_date)
 );
-
 CREATE INDEX IF NOT EXISTS idx_daily_checkins_user_date ON daily_checkins(user_id, checkin_date DESC);
-
 -- ============================================
 -- 6. Subject Mastery Tracking
 -- ============================================
@@ -243,13 +228,10 @@ CREATE TABLE IF NOT EXISTS user_subject_mastery (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Create unique index for user mastery per domain/subdomain
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mastery_unique 
   ON user_subject_mastery(user_id, exam_type, domain, COALESCE(subdomain, ''));
-
 CREATE INDEX IF NOT EXISTS idx_user_mastery_lookup ON user_subject_mastery(user_id, exam_type);
-
 -- ============================================
 -- 7. Study Groups (Social)
 -- ============================================
@@ -265,7 +247,6 @@ CREATE TABLE IF NOT EXISTS study_groups (
   is_public BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE TABLE IF NOT EXISTS study_group_members (
   group_id UUID REFERENCES study_groups ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -273,7 +254,6 @@ CREATE TABLE IF NOT EXISTS study_group_members (
   joined_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (group_id, user_id)
 );
-
 CREATE TABLE IF NOT EXISTS group_activity_feed (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID REFERENCES study_groups ON DELETE CASCADE,
@@ -283,9 +263,7 @@ CREATE TABLE IF NOT EXISTS group_activity_feed (
   xp_earned INT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_group_feed_recent ON group_activity_feed(group_id, created_at DESC);
-
 -- ============================================
 -- 8. RLS Policies
 -- ============================================
@@ -303,10 +281,8 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can manage their own goals" ON public.user_study_goals';
   END IF;
 END $$;
-
 CREATE POLICY "Users can manage their own goals" ON user_study_goals
   FOR ALL USING (auth.uid() = user_id);
-
 -- User gamification
 ALTER TABLE user_gamification ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -336,14 +312,12 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can insert their own gamification" ON public.user_gamification';
   END IF;
 END $$;
-
 CREATE POLICY "Users can view all gamification" ON user_gamification
   FOR SELECT USING (true);
 CREATE POLICY "Users can update their own gamification" ON user_gamification
   FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own gamification" ON user_gamification
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-
 -- XP transactions
 ALTER TABLE xp_transactions ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -365,12 +339,10 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can insert their own XP" ON public.xp_transactions';
   END IF;
 END $$;
-
 CREATE POLICY "Users can view their own XP" ON xp_transactions
   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own XP" ON xp_transactions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-
 -- Activity log
 ALTER TABLE user_activity_log ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -384,10 +356,8 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can manage their own activity" ON public.user_activity_log';
   END IF;
 END $$;
-
 CREATE POLICY "Users can manage their own activity" ON user_activity_log
   FOR ALL USING (auth.uid() = user_id);
-
 -- Achievements (public read)
 ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -401,10 +371,8 @@ BEGIN
     EXECUTE 'DROP POLICY "Anyone can read achievements" ON public.achievements';
   END IF;
 END $$;
-
 CREATE POLICY "Anyone can read achievements" ON achievements
   FOR SELECT USING (true);
-
 -- User achievements
 ALTER TABLE user_achievements ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -426,12 +394,10 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can unlock their own achievements" ON public.user_achievements';
   END IF;
 END $$;
-
 CREATE POLICY "Users can view all achievements" ON user_achievements
   FOR SELECT USING (true);
 CREATE POLICY "Users can unlock their own achievements" ON user_achievements
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-
 -- Daily check-ins
 ALTER TABLE daily_checkins ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -445,10 +411,8 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can manage their own check-ins" ON public.daily_checkins';
   END IF;
 END $$;
-
 CREATE POLICY "Users can manage their own check-ins" ON daily_checkins
   FOR ALL USING (auth.uid() = user_id);
-
 -- Subject mastery
 ALTER TABLE user_subject_mastery ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -462,10 +426,8 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can manage their own mastery" ON public.user_subject_mastery';
   END IF;
 END $$;
-
 CREATE POLICY "Users can manage their own mastery" ON user_subject_mastery
   FOR ALL USING (auth.uid() = user_id);
-
 -- Study groups (members can view their groups)
 ALTER TABLE study_groups ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -495,7 +457,6 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can create groups" ON public.study_groups';
   END IF;
 END $$;
-
 CREATE POLICY "Public groups visible to all" ON study_groups
   FOR SELECT USING (is_public = true);
 CREATE POLICY "Members can view their groups" ON study_groups
@@ -504,7 +465,6 @@ CREATE POLICY "Members can view their groups" ON study_groups
   );
 CREATE POLICY "Users can create groups" ON study_groups
   FOR INSERT WITH CHECK (auth.uid() = created_by);
-
 ALTER TABLE study_group_members ENABLE ROW LEVEL SECURITY;
 DO $$
 BEGIN
@@ -525,14 +485,12 @@ BEGIN
     EXECUTE 'DROP POLICY "Users can join groups" ON public.study_group_members';
   END IF;
 END $$;
-
 CREATE POLICY "Members can view group members" ON study_group_members
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM study_group_members sgm WHERE sgm.group_id = group_id AND sgm.user_id = auth.uid())
   );
 CREATE POLICY "Users can join groups" ON study_group_members
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-
 ALTER TABLE group_activity_feed ENABLE ROW LEVEL SECURITY;
 DO $$
 BEGIN
@@ -545,12 +503,10 @@ BEGIN
     EXECUTE 'DROP POLICY "Members can view group feed" ON public.group_activity_feed';
   END IF;
 END $$;
-
 CREATE POLICY "Members can view group feed" ON group_activity_feed
   FOR SELECT USING (
     EXISTS (SELECT 1 FROM study_group_members WHERE group_id = group_activity_feed.group_id AND user_id = auth.uid())
   );
-
 -- ============================================
 -- 9. Helper Functions
 -- ============================================
@@ -590,7 +546,6 @@ BEGIN
   RETURN v_new_total;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to update streak
 CREATE OR REPLACE FUNCTION update_streak(p_user_id UUID) RETURNS INT AS $$
 DECLARE
@@ -636,7 +591,6 @@ BEGIN
   RETURN v_streak;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to record daily check-in
 CREATE OR REPLACE FUNCTION record_daily_checkin(
   p_user_id UUID,
@@ -675,7 +629,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- ============================================
 -- 10. Enable Realtime for key tables
 -- ============================================

@@ -3,7 +3,6 @@
 -- don't see imaginary 14 missed days or pre-signup pending tasks/assignments.
 
 DROP FUNCTION IF EXISTS public.refresh_behavioral_profile(UUID);
-
 CREATE OR REPLACE FUNCTION public.refresh_behavioral_profile(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql

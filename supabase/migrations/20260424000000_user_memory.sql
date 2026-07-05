@@ -6,7 +6,6 @@
 -- ============================================
 
 CREATE EXTENSION IF NOT EXISTS vector;
-
 CREATE TABLE IF NOT EXISTS public.user_memory (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -46,21 +45,17 @@ CREATE TABLE IF NOT EXISTS public.user_memory (
 
   UNIQUE (user_id, memory_type, key)
 );
-
 CREATE INDEX IF NOT EXISTS idx_user_memory_user
   ON public.user_memory(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_memory_user_type
   ON public.user_memory(user_id, memory_type);
 CREATE INDEX IF NOT EXISTS idx_user_memory_last_seen
   ON public.user_memory(user_id, last_seen_at DESC);
-
 -- Semantic similarity index (IVFFLAT for speed).
 -- Note: run `CREATE INDEX ... WITH (lists = 100)` once table has enough rows for best perf.
 CREATE INDEX IF NOT EXISTS idx_user_memory_embedding
   ON public.user_memory USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-
 ALTER TABLE public.user_memory ENABLE ROW LEVEL SECURITY;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='user_memory' AND policyname='user_memory_select_own'
@@ -69,7 +64,6 @@ DO $$ BEGIN
       FOR SELECT USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='user_memory' AND policyname='user_memory_insert_own'
@@ -78,7 +72,6 @@ DO $$ BEGIN
       FOR INSERT WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='user_memory' AND policyname='user_memory_update_own'
@@ -87,7 +80,6 @@ DO $$ BEGIN
       FOR UPDATE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='user_memory' AND policyname='user_memory_delete_own'
@@ -96,7 +88,6 @@ DO $$ BEGIN
       FOR DELETE USING (auth.uid() = user_id);
   END IF;
 END $$;
-
 -- ============================================
 -- Semantic recall RPC: top-k by cosine similarity.
 -- Falls back gracefully when embedding is NULL.
@@ -140,7 +131,6 @@ AS $$
   ORDER BY m.embedding <=> p_query_embedding
   LIMIT p_match_count;
 $$;
-
 -- ============================================
 -- Upsert-or-reinforce: if key exists, bump seen_count & last_seen_at
 -- and refresh value/confidence. Otherwise insert.
@@ -189,5 +179,4 @@ BEGIN
   RETURN v_id;
 END;
 $$;
-
 NOTIFY pgrst, 'reload schema';

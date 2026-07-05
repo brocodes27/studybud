@@ -9,7 +9,6 @@
 ALTER TABLE public.knowledge_graph_edges 
   ADD COLUMN IF NOT EXISTS curriculum_standard text,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
-
 -- Ensure RLS policies
 ALTER TABLE public.knowledge_graph_edges ENABLE ROW LEVEL SECURITY;
 DO $$
@@ -21,11 +20,9 @@ BEGIN
     CREATE POLICY "edges_modify_service" ON public.knowledge_graph_edges FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_kg_edges_source ON public.knowledge_graph_edges(parent_kc_id);
 CREATE INDEX IF NOT EXISTS idx_kg_edges_target ON public.knowledge_graph_edges(child_kc_id);
 CREATE INDEX IF NOT EXISTS idx_kg_edges_type ON public.knowledge_graph_edges(edge_type);
-
 -- Trigger: sync edges from knowledge_components.prerequisite_ids
 CREATE OR REPLACE FUNCTION public.sync_kc_prerequisite_edges()
 RETURNS TRIGGER AS $$
@@ -41,12 +38,10 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS sync_kc_prereq_edges_trigger ON public.knowledge_components;
 CREATE TRIGGER sync_kc_prereq_edges_trigger
     AFTER INSERT OR UPDATE OF prerequisite_ids ON public.knowledge_components
     FOR EACH ROW EXECUTE FUNCTION public.sync_kc_prerequisite_edges();
-
 -- ============================================================
 -- 2. STUDENT TOPIC MASTERY (per-KC with confidence + evidence)
 -- ============================================================
@@ -76,7 +71,6 @@ CREATE TABLE IF NOT EXISTS public.student_topic_mastery (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, kc_id)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.student_topic_mastery ENABLE ROW LEVEL SECURITY;
@@ -97,12 +91,10 @@ BEGIN
     CREATE POLICY "topic_mastery_modify_service" ON public.student_topic_mastery FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_stm_user ON public.student_topic_mastery(user_id);
 CREATE INDEX IF NOT EXISTS idx_stm_kc ON public.student_topic_mastery(kc_id);
 CREATE INDEX IF NOT EXISTS idx_stm_mastery ON public.student_topic_mastery(mastery_probability DESC);
 CREATE INDEX IF NOT EXISTS idx_stm_retention ON public.student_topic_mastery(predicted_retention);
-
 -- ============================================================
 -- 3. STUDENT MISCONCEPTIONS
 -- ============================================================
@@ -129,7 +121,6 @@ CREATE TABLE IF NOT EXISTS public.student_misconceptions (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, kc_id, misconception_label)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.student_misconceptions ENABLE ROW LEVEL SECURITY;
@@ -150,12 +141,10 @@ BEGIN
     CREATE POLICY "misconceptions_modify_service" ON public.student_misconceptions FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_sm_user ON public.student_misconceptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sm_kc ON public.student_misconceptions(kc_id);
 CREATE INDEX IF NOT EXISTS idx_sm_severity ON public.student_misconceptions(severity DESC);
 CREATE INDEX IF NOT EXISTS idx_sm_unresolved ON public.student_misconceptions(user_id, resolved) WHERE resolved = false;
-
 -- ============================================================
 -- 4. STUDENT LEARNING VELOCITY
 -- ============================================================
@@ -183,7 +172,6 @@ CREATE TABLE IF NOT EXISTS public.student_learning_velocity (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, kc_id)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.student_learning_velocity ENABLE ROW LEVEL SECURITY;
@@ -204,12 +192,10 @@ BEGIN
     CREATE POLICY "velocity_modify_service" ON public.student_learning_velocity FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_slv_user ON public.student_learning_velocity(user_id);
 CREATE INDEX IF NOT EXISTS idx_slv_kc ON public.student_learning_velocity(kc_id);
 CREATE INDEX IF NOT EXISTS idx_slv_tier ON public.student_learning_velocity(velocity_tier);
 CREATE INDEX IF NOT EXISTS idx_slv_stalled ON public.student_learning_velocity(user_id, velocity_tier) WHERE velocity_tier IN ('stalled', 'struggling');
-
 -- ============================================================
 -- 5. STUDENT AVOIDANCE PATTERNS
 -- ============================================================
@@ -239,10 +225,8 @@ CREATE TABLE IF NOT EXISTS public.student_avoidance_patterns (
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sap_unique ON public.student_avoidance_patterns
     (user_id, avoidance_type, COALESCE(subject, ''), COALESCE(kc_id::text, ''), COALESCE(task_type, ''), COALESCE(difficulty_level, ''));
-
 DO $$
 BEGIN
   ALTER TABLE public.student_avoidance_patterns ENABLE ROW LEVEL SECURITY;
@@ -263,11 +247,9 @@ BEGIN
     CREATE POLICY "avoidance_modify_service" ON public.student_avoidance_patterns FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_sap_user ON public.student_avoidance_patterns(user_id);
 CREATE INDEX IF NOT EXISTS idx_sap_pattern ON public.student_avoidance_patterns(pattern_label);
 CREATE INDEX IF NOT EXISTS idx_sap_active ON public.student_avoidance_patterns(user_id, active) WHERE active = true;
-
 -- ============================================================
 -- 6. STUDENT TWIN SNAPSHOTS
 -- ============================================================
@@ -292,7 +274,6 @@ CREATE TABLE IF NOT EXISTS public.student_twin_snapshots (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, snapshot_version)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.student_twin_snapshots ENABLE ROW LEVEL SECURITY;
@@ -313,10 +294,8 @@ BEGIN
     CREATE POLICY "twin_modify_service" ON public.student_twin_snapshots FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_sts_user ON public.student_twin_snapshots(user_id);
 CREATE INDEX IF NOT EXISTS idx_sts_version ON public.student_twin_snapshots(user_id, snapshot_version DESC);
-
 -- ============================================================
 -- 7. STUDENT TWIN SUMMARIES (weekly)
 -- ============================================================
@@ -339,7 +318,6 @@ CREATE TABLE IF NOT EXISTS public.student_twin_summaries (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, week_start)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.student_twin_summaries ENABLE ROW LEVEL SECURITY;
@@ -360,10 +338,8 @@ BEGIN
     CREATE POLICY "summary_modify_service" ON public.student_twin_summaries FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_stsum_user ON public.student_twin_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_stsum_week ON public.student_twin_summaries(user_id, week_start DESC);
-
 -- ============================================================
 -- 8. TASK RATIONALES
 -- ============================================================
@@ -386,7 +362,6 @@ CREATE TABLE IF NOT EXISTS public.task_rationales (
     updated_at timestamptz DEFAULT now(),
     UNIQUE(user_id, task_source_type, task_source_id, valid_from)
 );
-
 DO $$
 BEGIN
   ALTER TABLE public.task_rationales ENABLE ROW LEVEL SECURITY;
@@ -407,6 +382,5 @@ BEGIN
     CREATE POLICY "rationale_modify_service" ON public.task_rationales FOR ALL TO service_role USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 CREATE INDEX IF NOT EXISTS idx_tr_user ON public.task_rationales(user_id);
 CREATE INDEX IF NOT EXISTS idx_tr_valid ON public.task_rationales(user_id, valid_from DESC) WHERE valid_until IS NULL;

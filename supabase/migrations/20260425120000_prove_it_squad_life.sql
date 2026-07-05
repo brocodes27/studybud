@@ -3,7 +3,6 @@
 -- 1. Weekly deadline so the squad has a shared finish line.
 alter table public.prove_it_squads
   add column if not exists week_ends_at timestamptz;
-
 -- Default new squads to the upcoming Sunday at 23:59 (or now() + 7 days if Sunday unknown).
 -- We'll just leave it NULL-able and let the app set it on creation / rotation.
 
@@ -20,7 +19,6 @@ left join public.user_profiles p on p.id = s.created_by
 where s.created_by is not null
   and m.user_id is null
 on conflict (squad_id, user_id) do nothing;
-
 -- 3. Function: join a squad (idempotent, fills display_name from profile).
 create or replace function public.join_prove_it_squad(p_squad_id text, p_user_id uuid)
 returns void
@@ -40,7 +38,6 @@ begin
        or public.prove_it_squad_members.display_name = '';
 end;
 $$;
-
 -- 4. Function: squad weekly status — every member + whether they attempted this week.
 create or replace function public.get_squad_weekly_status(p_squad_id text)
 returns table (
@@ -71,7 +68,6 @@ as $$
   where m.squad_id = p_squad_id
   order by a.rigor_score desc nulls last, m.joined_at;
 $$;
-
 -- 5. Function: squad streak — how many consecutive weeks the squad had >= 2 members complete.
 -- (Adjust threshold as needed; 2 is safe for tiny squads.)
 create or replace function public.get_squad_streak(p_squad_id text)
@@ -122,7 +118,6 @@ begin
   return v_streak;
 end;
 $$;
-
 -- 6. Allow anyone authenticated to read basic user profile names for squad context.
 -- (The existing policy only lets users view their own profile, which breaks squad rosters.)
 drop policy if exists "Authenticated users can read profile names for squads" on public.user_profiles;

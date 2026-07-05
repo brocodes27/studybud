@@ -42,7 +42,7 @@ export function OutcomeDashboard() {
           <Metric icon={Trophy} label="Credentials" value={`${receipts.length}`} />
         </div>
 
-        <div className="neo-card bg-white" data-app-action="outcome-score-path">
+        <div className="neo-card bg-white">
           <h2 className="text-lg font-extrabold text-[#0A192F] mb-4">Score path</h2>
           <div className="space-y-4">
             <Bar label="Starting estimate" value={estimatedStart} max={300} color="bg-[#F472B6]" />

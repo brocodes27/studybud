@@ -19,7 +19,6 @@ import { supabase } from './lib/supabase';
 import { Curriculum } from './pages/Curriculum';
 import PersonalTipsManager from './components/PersonalTipsManager';
 import { GlobalGenerationStatus } from './components/GlobalGenerationStatus';
-import { AppFirstRunTour } from './components/AppFirstRunTour';
 import SubscriptionPage from './components/SubscriptionPage';
 
 const AdminPanel = lazy(() => import('./pages/AdminPanel').then(m => ({ default: m.AdminPanel })));
@@ -41,13 +40,13 @@ const SchoolAdminPanel = lazy(() => import('./pages/SchoolAdminPanel').then(m =>
 import { Crown, X } from 'lucide-react';
 
 function AppContent() {
-  const { user, role, loading, isPremium, onboardingCompleted, isAdmin } = useAuth();
+  const { user, role, loading, isPremium, onboardingCompleted, isAdmin, accountType } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
   const location = useLocation();
   const effectiveRole = typeof role === 'string' ? role.trim().toLowerCase() : user?.user_metadata?.role?.trim?.().toLowerCase?.();
-  const isSchoolAdmin = effectiveRole === 'school_admin';
+  const isSchoolAdmin = effectiveRole === 'school_admin' || accountType === 'school_admin';
   const [ownsTeacherClasses, setOwnsTeacherClasses] = useState(false);
   const isTeacherExperience = effectiveRole === 'teacher' || ownsTeacherClasses || isSchoolAdmin;
   const isImmersive = location.pathname === '/atlas';
@@ -123,7 +122,7 @@ function AppContent() {
   }
 
   if (!user && location.pathname !== '/auth') return <Landing />;
-  if (!onboardingCompleted && effectiveRole !== 'teacher') return <Onboarding />;
+  if (!onboardingCompleted) return <Onboarding />;
 
   const hasFreeAccess = isTeacherExperience || isAdmin;
   const requiresSubscription = !hasFreeAccess && isPremium === false && location.pathname !== '/auth';
@@ -243,7 +242,6 @@ function AppContent() {
 
       <PersonalTipsManager />
       <GlobalGenerationStatus />
-      <AppFirstRunTour />
       <Toaster toasts={toasts} removeToast={removeToast} />
     </div>
   );

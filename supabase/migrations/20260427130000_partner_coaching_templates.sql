@@ -11,13 +11,13 @@ ALTER TABLE public.coaching_templates
   ADD COLUMN IF NOT EXISTS institute_name TEXT,
   ADD COLUMN IF NOT EXISTS year_level TEXT,
   ADD COLUMN IF NOT EXISTS program TEXT DEFAULT 'JEE',
+  ADD COLUMN IF NOT EXISTS weekly_schedule JSONB DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS test_calendar JSONB DEFAULT '[]',
   ADD COLUMN IF NOT EXISTS syllabus_map JSONB DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
 -- Some prod schemas enforce institute_name as NOT NULL. Seed both name + institute_name.
--- Some prod schemas also enforce year_level as NOT NULL.
-INSERT INTO public.coaching_templates (id, institute_name, year_level, name, program, test_calendar, syllabus_map, created_at)
+-- Some prod schemas also enforce year_level and weekly_schedule as NOT NULL.
+INSERT INTO public.coaching_templates (id, institute_name, year_level, name, program, weekly_schedule, test_calendar, syllabus_map, created_at)
 VALUES
   (
     'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid,
@@ -25,6 +25,14 @@ VALUES
     '11,12',
     'Allen Kota — JEE 2-Year (11th + 12th)',
     'JEE',
+    '[
+      {"day": "Monday", "focus": "Physics + Mathematics"},
+      {"day": "Tuesday", "focus": "Chemistry + problem practice"},
+      {"day": "Wednesday", "focus": "Physics + error correction"},
+      {"day": "Thursday", "focus": "Mathematics + timed drills"},
+      {"day": "Friday", "focus": "Chemistry + revision"},
+      {"day": "Saturday", "focus": "Part test + analysis"}
+    ]'::jsonb,
     '[
       {"week": 1, "test": "Unit Test — Mechanics Basics", "date_offset_days": 7},
       {"week": 4, "test": "Monthly — Mechanics Full", "date_offset_days": 28},
@@ -47,6 +55,14 @@ VALUES
     'Dropper',
     'Resonance — JEE 1-Year Droppers',
     'JEE',
+    '[
+      {"day": "Monday", "focus": "11th revision block"},
+      {"day": "Tuesday", "focus": "12th high-yield theory"},
+      {"day": "Wednesday", "focus": "Mixed subject practice"},
+      {"day": "Thursday", "focus": "Timed mock section"},
+      {"day": "Friday", "focus": "Backlog and error correction"},
+      {"day": "Saturday", "focus": "Full mock + analysis"}
+    ]'::jsonb,
     '[
       {"week": 1, "test": "Revision Test — 11th Physics", "date_offset_days": 7},
       {"week": 2, "test": "Revision Test — 11th Chemistry", "date_offset_days": 14},

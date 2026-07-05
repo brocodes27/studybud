@@ -9,7 +9,6 @@
 -- created local variables shadowing the class_members.class_id column.
 DROP FUNCTION IF EXISTS public.join_class_by_invite(TEXT);
 DROP FUNCTION IF EXISTS public.join_class(TEXT);
-
 CREATE FUNCTION public.join_class(p_class_code TEXT)
 RETURNS TABLE(out_class_id UUID, out_roadmap_id UUID) AS $$
 DECLARE
@@ -116,7 +115,6 @@ BEGIN
     RETURN QUERY SELECT v_target_class.id AS out_class_id, v_new_roadmap_id AS out_roadmap_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 3. Add teacher-view policy on student_roadmaps so teachers can see roadmaps
 --    of students enrolled in their classes (needed for class session logging).
 DO $$ BEGIN
@@ -134,7 +132,6 @@ DO $$ BEGIN
     );
   END IF;
 END $$;
-
 -- join_class_by_invite delegates to join_class
 CREATE FUNCTION public.join_class_by_invite(p_invite_link TEXT)
 RETURNS TABLE(out_class_id UUID, out_roadmap_id UUID) AS $$
@@ -152,7 +149,6 @@ BEGIN
     RETURN QUERY SELECT * FROM public.join_class(v_target_class.class_code);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 4. Ensure class_sessions has all expected columns (idempotent for tables created before 20260421).
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS duration_minutes INTEGER;
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS homework_assigned TEXT;
@@ -162,7 +158,6 @@ ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS session_date DATE DEF
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS teacher_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS roadmap_id UUID REFERENCES public.student_roadmaps(id) ON DELETE CASCADE;
 ALTER TABLE public.class_sessions ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-
 -- 5. RPC to insert class_sessions — bypasses PostgREST schema cache entirely.
 --    The frontend calls this instead of .from('class_sessions').insert() so
 --    stale schema caches don't block the insert.
