@@ -149,14 +149,11 @@ serve(async (req: Request) => {
     const raw = await callGeminiJSON<CurriculumScanResult>(messages, { temperature: 0.1, maxOutputTokens: 8192 });
     const parsed = normalizeResult(raw, subject || classRow.subject);
 
-    const { error: updateErr } = await sbAdmin
-      .from('classes')
-      .update({
-        curriculum_source: 'file',
-        custom_curriculum: parsed,
-      })
-      .eq('id', class_id);
-    if (updateErr) throw updateErr;
+    const { error: rpcErr } = await sbAdmin.rpc('insert_scanned_curriculum_hierarchy', {
+      p_class_id: class_id,
+      p_weekly_schedule: parsed,
+    });
+    if (rpcErr) throw rpcErr;
 
     const { error: roadmapErr } = await sbAdmin
       .from('student_roadmaps')
