@@ -200,7 +200,6 @@ CREATE POLICY "Manage subtopics" ON public.subtopics
         )
     );
 
--- class_syllabus_progress
 DROP POLICY IF EXISTS "Select class progress" ON public.class_syllabus_progress;
 CREATE POLICY "Select class progress" ON public.class_syllabus_progress
     FOR SELECT TO authenticated
@@ -209,7 +208,7 @@ CREATE POLICY "Select class progress" ON public.class_syllabus_progress
             SELECT 1 FROM public.classes c
             WHERE c.id = class_id
             AND (c.teacher_id = auth.uid() OR EXISTS (
-                SELECT 1 FROM public.class_members cm WHERE cm.class_id = c.id AND (cm.student_id = auth.uid() OR cm.user_id = auth.uid())
+                SELECT 1 FROM public.class_members cm WHERE cm.class_id = c.id AND cm.user_id = auth.uid()
             ))
         )
     );

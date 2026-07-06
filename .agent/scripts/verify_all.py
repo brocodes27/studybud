@@ -83,6 +83,7 @@ VERIFICATION_SUITE = [
         "checks": [
             ("Schema Validation", ".agent/skills/database-design/scripts/schema_validator.py", False),
             ("Tenancy Isolation", ".agent/skills/database-design/scripts/test_tenancy_isolation.py", False),
+            ("Course Engine", ".agent/skills/database-design/scripts/test_course_engine.py", False),
         ]
     },
     
