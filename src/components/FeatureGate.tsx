@@ -10,12 +10,14 @@ interface FeatureGateProps {
 }
 
 export function FeatureGate({ children, fallback = 'lock', featureName = 'Premium Feature' }: FeatureGateProps) {
-    const { isPremium, loading } = useAuth() as any;
+    const { isPremium, loading, schoolEntitlements } = useAuth() as any;
     const { initiatePayment } = usePayment();
 
     if (loading) return null;
 
-    if (isPremium) {
+    const hasAccess = isPremium || (schoolEntitlements && (schoolEntitlements.plan === 'pilot' || schoolEntitlements.plan === 'premium' || schoolEntitlements.plan === 'enterprise'));
+
+    if (hasAccess) {
         return <>{children}</>;
     }
 

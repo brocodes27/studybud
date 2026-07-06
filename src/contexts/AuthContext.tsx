@@ -16,6 +16,7 @@ interface AuthContextType {
   schoolId: string | null;
   grade: string | null;
   accountType: string | null;
+  schoolEntitlements: any;
   refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, meta: any) => Promise<any>;
@@ -43,25 +44,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
   const [accountType, setAccountType] = useState<string | null>(null);
+  const [schoolEntitlements, setSchoolEntitlements] = useState<any>(null);
+
+  const fetchProfileAndMembership = async (userId: string) => {
+    const [profileRes, membershipRes] = await Promise.all([
+      supabase
+        .from('user_profiles')
+        .select('role, account_type, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id, grade')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('memberships')
+        .select('role, school_id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle()
+    ]);
+
+    let entitlements = null;
+    if (membershipRes.data?.school_id) {
+      const { data } = await supabase
+        .from('school_entitlements')
+        .select('plan, features, expires_at')
+        .eq('school_id', membershipRes.data.school_id)
+        .maybeSingle();
+      entitlements = data;
+    }
+
+    return {
+      profile: profileRes.data,
+      membership: membershipRes.data,
+      entitlements,
+      profileError: profileRes.error,
+      membershipError: membershipRes.error
+    };
+  };
 
   const refreshProfile = async () => {
     if (!user) return;
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id, grade, account_type')
-      .eq('id', user.id);
+    const { profile: p, membership: m, entitlements } = await fetchProfileAndMembership(user.id);
 
-    if (profile && profile.length > 0) {
-      const p = profile[0];
-      setRole(normalizeRole(p.role));
+    if (p) {
       setIsAdmin(p.is_admin ?? false);
       setFullName(p.full_name ?? null);
       setTrialStart(p.created_at ? new Date(p.created_at) : null);
       setTrialActive(p.trial_active ?? false);
       setOnboardingCompleted(p.onboarding_completed ?? false);
-      setSchoolId(p.school_id ?? null);
       setGrade(p.grade ?? null);
+    }
+
+    if (m) {
+      setRole(normalizeRole(m.role));
+      setSchoolId(m.school_id ?? null);
+      setAccountType(m.role ?? null);
+      setSchoolEntitlements(entitlements);
+    } else if (p) {
+      setRole(normalizeRole(p.role));
+      setSchoolId(p.school_id ?? null);
       setAccountType(p.account_type ?? null);
+      setSchoolEntitlements(null);
+    } else {
+      setRole(null);
+      setSchoolId(null);
+      setAccountType(null);
+      setSchoolEntitlements(null);
     }
   };
 
@@ -125,27 +171,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSession(data.session);
             checkPremiumStatus(data.session.user);
           }
-          // Fetch role from user_profiles
-          const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id, grade, account_type')
-            .eq('id', data.session.user.id);
+          // Fetch role and membership
+          const { profile: p, membership: m, entitlements, profileError, membershipError } = await fetchProfileAndMembership(data.session.user.id);
 
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
+          if (profileError || membershipError) {
+            console.error('Error fetching profile/membership:', profileError || membershipError);
           }
           if (isMounted) {
-            const hasProfile = Array.isArray(profile) && profile.length > 0;
-            const p = profile?.[0];
-            setRole(normalizeRole(hasProfile ? p?.role : data.session.user.user_metadata?.role));
-            setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
-            setFullName(hasProfile ? (p?.full_name ?? null) : null);
-            setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
-            setTrialActive(hasProfile ? (p?.trial_active ?? false) : false);
-            setOnboardingCompleted(hasProfile ? (p?.onboarding_completed ?? false) : false);
-            setSchoolId(hasProfile ? (p?.school_id ?? null) : null);
-            setGrade(hasProfile ? (p?.grade ?? null) : null);
-            setAccountType(hasProfile ? (p?.account_type ?? null) : null);
+            setIsAdmin(p?.is_admin ?? false);
+            setFullName(p?.full_name ?? null);
+            setTrialStart(p?.created_at ? new Date(p.created_at) : null);
+            setTrialActive(p?.trial_active ?? false);
+            setOnboardingCompleted(p?.onboarding_completed ?? false);
+            setGrade(p?.grade ?? null);
+
+            if (m) {
+              setRole(normalizeRole(m.role));
+              setSchoolId(m.school_id ?? null);
+              setAccountType(m.role ?? null);
+              setSchoolEntitlements(entitlements);
+            } else if (p) {
+              setRole(normalizeRole(p.role));
+              setSchoolId(p.school_id ?? null);
+              setAccountType(p.account_type ?? null);
+              setSchoolEntitlements(null);
+            } else {
+              setRole(normalizeRole(data.session.user.user_metadata?.role));
+              setSchoolId(null);
+              setAccountType(null);
+              setSchoolEntitlements(null);
+            }
           }
         } else {
           if (isMounted) {
@@ -189,26 +244,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session.user);
         checkPremiumStatus(session.user);
         // Optionally re-fetch role here if needed
-        supabase
-          .from('user_profiles')
-          .select('role, is_admin, full_name, created_at, trial_active, onboarding_completed, school_id, grade, account_type')
-          .eq('id', session.user.id)
-          .then(({ data: profile, error }) => {
-            if (error) {
-              console.error('Error re-fetching profile:', error);
+        fetchProfileAndMembership(session.user.id).then(({ profile: p, membership: m, entitlements, profileError, membershipError }) => {
+          if (profileError || membershipError) {
+            console.error('Error re-fetching profile/membership:', profileError || membershipError);
+          }
+          if (isMounted) {
+            setIsAdmin(p?.is_admin ?? false);
+            setFullName(p?.full_name ?? null);
+            setTrialStart(p?.created_at ? new Date(p.created_at) : null);
+            setTrialActive(p?.trial_active ?? false);
+            setOnboardingCompleted(p?.onboarding_completed ?? false);
+            setGrade(p?.grade ?? null);
+
+            if (m) {
+              setRole(normalizeRole(m.role));
+              setSchoolId(m.school_id ?? null);
+              setAccountType(m.role ?? null);
+              setSchoolEntitlements(entitlements);
+            } else if (p) {
+              setRole(normalizeRole(p.role));
+              setSchoolId(p.school_id ?? null);
+              setAccountType(p.account_type ?? null);
+              setSchoolEntitlements(null);
+            } else {
+              setRole(normalizeRole(session.user.user_metadata?.role));
+              setSchoolId(null);
+              setAccountType(null);
+              setSchoolEntitlements(null);
             }
-            const hasProfile = Array.isArray(profile) && profile.length > 0;
-            const p = profile?.[0];
-            setRole(normalizeRole(hasProfile ? p?.role : session.user.user_metadata?.role));
-            setIsAdmin(hasProfile ? (p?.is_admin ?? false) : false);
-            setFullName(hasProfile ? (p?.full_name ?? null) : null);
-            setTrialStart(hasProfile && p?.created_at ? new Date(p.created_at) : null);
-            setTrialActive(hasProfile ? (p?.trial_active ?? false) : false);
-            setOnboardingCompleted(hasProfile ? (p?.onboarding_completed ?? false) : false);
-            setGrade(hasProfile ? (p?.grade ?? null) : null);
-            setSchoolId(hasProfile ? (p?.school_id ?? null) : null);
-            setAccountType(hasProfile ? (p?.account_type ?? null) : null);
-          });
+          }
+        });
       } else {
         setUser(null);
         setRole(null);
@@ -218,6 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSchoolId(null);
         setGrade(null);
         setAccountType(null);
+        setSchoolEntitlements(null);
       }
     });
 
@@ -261,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, session, loading, role, isPremium, isAdmin, fullName,
-      trialStart, trialActive, onboardingCompleted, schoolId, grade, accountType, refreshProfile,
+      trialStart, trialActive, onboardingCompleted, schoolId, grade, accountType, schoolEntitlements, refreshProfile,
       signIn, signUp, signOut, signInWithGoogle
     }}>
       {children}

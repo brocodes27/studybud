@@ -40,7 +40,7 @@ const SchoolAdminPanel = lazy(() => import('./pages/SchoolAdminPanel').then(m =>
 import { Crown, X } from 'lucide-react';
 
 function AppContent() {
-  const { user, role, loading, isPremium, onboardingCompleted, isAdmin, accountType } = useAuth();
+  const { user, role, loading, isPremium, onboardingCompleted, isAdmin, accountType, schoolId } = useAuth();
   const { isOnline } = useOfflineStorage();
   const { initiatePayment, isLoadingPayment } = usePayment();
   const { toasts, removeToast } = useToast();
@@ -124,7 +124,8 @@ function AppContent() {
   if (!user && location.pathname !== '/auth') return <Landing />;
   if (!onboardingCompleted) return <Onboarding />;
 
-  const hasFreeAccess = isTeacherExperience || isAdmin;
+  const isSchoolLinked = !!schoolId;
+  const hasFreeAccess = isTeacherExperience || isAdmin || isSchoolLinked;
   const requiresSubscription = !hasFreeAccess && isPremium === false && location.pathname !== '/auth';
 
   if (requiresSubscription && location.pathname !== '/subscription' && location.pathname !== '/pricing') {
