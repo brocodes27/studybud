@@ -23,3 +23,21 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# PyInstaller / Build outputs
+build/
+dist/
+*.spec
+
+# Local SQLite databases
+*.sqlite3
+*.db
+
