@@ -225,6 +225,7 @@ const TeacherClassDashboard: React.FC = () => {
       });
       setActionSuccess(`Successfully dispatched: ${title}`);
       setActionError('');
+      setTimeout(() => setActionSuccess(''), 4000);
     } catch (err: any) {
       setActionError(err.message || 'Failed to dispatch intervention');
     }
@@ -256,11 +257,6 @@ const TeacherClassDashboard: React.FC = () => {
       setWeeklyReportError(err.message || 'Failed to log weekly report');
     } finally {
       setLoggingWeeklyReport(false);
-    }
-  };  setTimeout(() => setActionSuccess(''), 4000);
-    } catch (err: any) {
-      console.error(err);
-      alert('Failed to dispatch action: ' + err.message);
     }
   };
 
@@ -1315,7 +1311,7 @@ const TeacherClassDashboard: React.FC = () => {
                   {mockSuccessMsg && <p className="text-emerald-600 text-sm font-bold mt-2">{mockSuccessMsg}</p>}
                 </form>
               </div>
-            </div></div>
+            </div>
 
             <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
