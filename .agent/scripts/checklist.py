@@ -73,16 +73,16 @@ def check_script_exists(script_path: Path) -> bool:
     """Check if script file exists"""
     return script_path.exists() and script_path.is_file()
 
-def run_script(name: str, script_path: Path, project_path: str, url: Optional[str] = None) -> dict:
+def run_script(name: str, script_path: Path, project_path: str, url: Optional[str] = None, required: bool = False) -> dict:
     """
     Run a validation script and capture results
     
     Returns:
-        dict with keys: name, passed, output, skipped
+        dict with keys: name, passed, output, skipped, required
     """
     if not check_script_exists(script_path):
         print_warning(f"{name}: Script not found, skipping")
-        return {"name": name, "passed": True, "output": "", "skipped": True}
+        return {"name": name, "passed": True, "output": "", "skipped": True, "required": required}
     
     print_step(f"Running: {name}")
     
@@ -114,28 +114,33 @@ def run_script(name: str, script_path: Path, project_path: str, url: Optional[st
             "passed": passed,
             "output": result.stdout,
             "error": result.stderr,
-            "skipped": False
+            "skipped": False,
+            "required": required
         }
     
     except subprocess.TimeoutExpired:
         print_error(f"{name}: TIMEOUT (>5 minutes)")
-        return {"name": name, "passed": False, "output": "", "error": "Timeout", "skipped": False}
+        return {"name": name, "passed": False, "output": "", "error": "Timeout", "skipped": False, "required": required}
     
     except Exception as e:
         print_error(f"{name}: ERROR - {str(e)}")
-        return {"name": name, "passed": False, "output": "", "error": str(e), "skipped": False}
+        return {"name": name, "passed": False, "output": "", "error": str(e), "skipped": False, "required": required}
 
 def print_summary(results: List[dict]):
     """Print final summary report"""
     print_header("📊 CHECKLIST SUMMARY")
     
     passed_count = sum(1 for r in results if r["passed"] and not r.get("skipped"))
-    failed_count = sum(1 for r in results if not r["passed"] and not r.get("skipped"))
+    failed_required_count = sum(1 for r in results if not r["passed"] and not r.get("skipped") and r.get("required", False))
+    failed_optional_count = sum(1 for r in results if not r["passed"] and not r.get("skipped") and not r.get("required", False))
     skipped_count = sum(1 for r in results if r.get("skipped"))
     
     print(f"Total Checks: {len(results)}")
     print(f"{Colors.GREEN}✅ Passed: {passed_count}{Colors.ENDC}")
-    print(f"{Colors.RED}❌ Failed: {failed_count}{Colors.ENDC}")
+    if failed_required_count > 0:
+        print(f"{Colors.RED}❌ Failed (Required): {failed_required_count}{Colors.ENDC}")
+    if failed_optional_count > 0:
+        print(f"{Colors.YELLOW}⚠️  Failed (Optional): {failed_optional_count}{Colors.ENDC}")
     print(f"{Colors.YELLOW}⏭️  Skipped: {skipped_count}{Colors.ENDC}")
     print()
     
@@ -145,18 +150,21 @@ def print_summary(results: List[dict]):
             status = f"{Colors.YELLOW}⏭️ {Colors.ENDC}"
         elif r["passed"]:
             status = f"{Colors.GREEN}✅{Colors.ENDC}"
-        else:
+        elif r.get("required", False):
             status = f"{Colors.RED}❌{Colors.ENDC}"
+        else:
+            status = f"{Colors.YELLOW}⚠️ {Colors.ENDC}"
         
-        print(f"{status} {r['name']}")
+        req_label = " (Required)" if r.get("required", False) else " (Optional)"
+        print(f"{status} {r['name']}{req_label}")
     
     print()
     
-    if failed_count > 0:
-        print_error(f"{failed_count} check(s) FAILED - Please fix before proceeding")
+    if failed_required_count > 0:
+        print_error(f"{failed_required_count} required check(s) FAILED - Please fix before proceeding")
         return False
     else:
-        print_success("All checks PASSED ✨")
+        print_success("All required checks PASSED ✨")
         return True
 
 def main():
@@ -191,7 +199,7 @@ Examples:
     print_header("📋 CORE CHECKS")
     for name, script_path, required in CORE_CHECKS:
         script = project_path / script_path
-        result = run_script(name, script, str(project_path))
+        result = run_script(name, script, str(project_path), required=required)
         results.append(result)
         
         # If required check fails, stop
@@ -205,7 +213,7 @@ Examples:
         print_header("⚡ PERFORMANCE CHECKS")
         for name, script_path, required in PERFORMANCE_CHECKS:
             script = project_path / script_path
-            result = run_script(name, script, str(project_path), args.url)
+            result = run_script(name, script, str(project_path), args.url, required=required)
             results.append(result)
     
     # Print summary
