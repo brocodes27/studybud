@@ -548,7 +548,7 @@ export async function fetchDailyBriefing(userId: string): Promise<DailyBriefingD
         supabase.from('correction_sprints').select('*').eq('user_id', userId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('student_behavioral_profiles').select('*').eq('user_id', userId).limit(1).maybeSingle(),
         supabase.from('upcoming_tests').select('test_name, test_date, syllabus').eq('user_id', userId).eq('status', 'upcoming').gte('test_date', todayStr).order('test_date', { ascending: true }).limit(1).maybeSingle(),
-        supabase.from('class_members').select('class_id').eq('student_id', userId),
+        supabase.from('class_members').select('class_id').eq('user_id', userId),
       ]);
  
       classSessions = sessionsRes.data || [];

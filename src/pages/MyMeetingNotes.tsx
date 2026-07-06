@@ -148,7 +148,7 @@ export function MyMeetingNotes() {
                     <div className="flex -space-x-2 ml-2">
                       {note.screenshots.slice(0, 3).map((img, idx) => (
                         <div key={idx} className="w-8 h-8 rounded-lg border border-white/10 bg-gray-800 overflow-hidden">
-                          <img src={img} alt="" className="w-full h-full object-cover opacity-70" />
+                          <img src={img} alt="Attachment screenshot" className="w-full h-full object-cover opacity-70" />
                         </div>
                       ))}
                       {note.screenshots.length > 3 && (

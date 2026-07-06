@@ -12,7 +12,8 @@ const TABS = [
   'Mastery Control Panel',
   'Daily Teaching Loop',
   'Student Readiness',
-  'Groups & Interventions'
+  'Groups & Interventions',
+  'Assignments & Gradebook'
 ];
 
 // Map known JEE sub-domains back to their parent subject for filtering
@@ -137,6 +138,13 @@ const TeacherClassDashboard: React.FC = () => {
   const [mockPreview, setMockPreview] = useState<string>('');
   const [mockSuccessMsg, setMockSuccessMsg] = useState('');
 
+  // Phase 2 grading states
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [gradingScores, setGradingScores] = useState<Record<string, string>>({});
+  const [gradingFeedback, setGradingFeedback] = useState<Record<string, string>>({});
+  const [submittingGradeId, setSubmittingGradeId] = useState<string | null>(null);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+
   // Class Session Logger state
   const [sessionSubject, setSessionSubject] = useState(classInfo?.subject || 'General');
   const [sessionTopics, setSessionTopics] = useState('');
@@ -211,6 +219,56 @@ const TeacherClassDashboard: React.FC = () => {
       setWeeklyReportDays(prev => prev.map(d => d.topic ? d : { ...d, subject: classInfo.subject }));
     }
   }, [classInfo?.subject]);
+
+  const handleSaveGrade = async (submissionId: string, studentId: string, assignmentId: string) => {
+    if (!user) return;
+    const score = gradingScores[submissionId] || '';
+    const feedback = gradingFeedback[submissionId] || '';
+    setSubmittingGradeId(submissionId);
+
+    try {
+      const isNew = submissionId.startsWith('new_');
+      const payload: any = {
+        assignment_id: assignmentId,
+        student_id: studentId,
+        grade: score,
+        feedback: feedback,
+        graded_at: new Date().toISOString(),
+        graded_by: user.id
+      };
+
+      if (!isNew) {
+        payload.id = submissionId;
+      }
+
+      const { error } = await supabase
+        .from('assignment_submissions')
+        .upsert(payload, { onConflict: 'assignment_id,student_id' });
+
+      if (error) throw error;
+
+      const { data: submissionsData } = await supabase
+        .from('assignment_submissions')
+        .select('*')
+        .in('assignment_id', assignments.map(a => a.id));
+      
+      const newSubmissions = submissionsData || [];
+      setSubmissions(newSubmissions);
+
+      const newScores = { ...gradingScores };
+      const newFeedback = { ...gradingFeedback };
+      newSubmissions.forEach(sub => {
+        newScores[sub.id] = sub.grade || '';
+        newFeedback[sub.id] = sub.feedback || '';
+      });
+      setGradingScores(newScores);
+      setGradingFeedback(newFeedback);
+    } catch (err) {
+      console.error('Error saving grade:', err);
+    } finally {
+      setSubmittingGradeId(null);
+    }
+  };
 
   const handleAssignAction = async (title: string, description: string) => {
     if (!user || !id) return;
@@ -760,6 +818,24 @@ const TeacherClassDashboard: React.FC = () => {
 
         const { data: assignmentData } = await supabase.from('assignments').select('*').eq('class_id', id).order('created_at', { ascending: false });
         setAssignments(assignmentData || []);
+
+        if (assignmentData && assignmentData.length > 0) {
+          const assignmentIds = assignmentData.map(a => a.id);
+          const { data: submissionsData } = await supabase
+            .from('assignment_submissions')
+            .select('*')
+            .in('assignment_id', assignmentIds);
+          setSubmissions(submissionsData || []);
+
+          const initialScores: Record<string, string> = {};
+          const initialFeedback: Record<string, string> = {};
+          (submissionsData || []).forEach(sub => {
+            initialScores[sub.id] = sub.grade || '';
+            initialFeedback[sub.id] = sub.feedback || '';
+          });
+          setGradingScores(initialScores);
+          setGradingFeedback(initialFeedback);
+        }
       } finally {
         setLoadingData(false);
       }
@@ -1555,6 +1631,130 @@ const TeacherClassDashboard: React.FC = () => {
                   className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Reflection Pack (5m)
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5) Assignments & Gradebook */}
+        {tab === 'Assignments & Gradebook' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#2D2A26]">Assignments & Gradebook</h2>
+                <p className="text-sm text-[#8A8279]">Review and grade student submissions for this class.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Assignments list */}
+              <div className="lg:col-span-1 bg-white rounded-2xl border border-[#E8E4DF] p-5 space-y-4 shadow-sm h-fit">
+                <h3 className="text-xs font-black uppercase text-[#8A8279] tracking-wider border-b border-[#E8E4DF] pb-2">Class Assignments</h3>
+                
+                {assignments.length === 0 ? (
+                  <p className="text-xs text-[#8A8279] italic">No assignments created yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {assignments.map(a => (
+                      <button
+                        key={a.id}
+                        onClick={() => setSelectedAssignmentId(a.id)}
+                        className={`w-full text-left p-3 rounded-xl border text-xs font-bold transition-all ${selectedAssignmentId === a.id ? 'bg-[#8B7355]/10 border-[#8B7355] text-[#2D2A26]' : 'bg-[#FAF8F5] border-[#E8E4DF] text-[#8A8279] hover:border-[#2D2A26]/30'}`}
+                      >
+                        <div className="font-extrabold text-[#2D2A26] line-clamp-1">{a.title}</div>
+                        {a.due_date && <div className="text-[10px] mt-1 font-medium">Due: {new Date(a.due_date).toLocaleDateString()}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Gradebook Grid */}
+              <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E8E4DF] p-5 shadow-sm space-y-4">
+                {selectedAssignmentId ? (
+                  <>
+                    <div className="border-b border-[#E8E4DF] pb-3">
+                      <h3 className="font-extrabold text-[#2D2A26]">{assignments.find(a => a.id === selectedAssignmentId)?.title}</h3>
+                      <p className="text-xs text-[#8A8279] mt-0.5">{assignments.find(a => a.id === selectedAssignmentId)?.description}</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {students.length === 0 ? (
+                        <p className="text-xs text-[#8A8279] italic">No students enrolled in this class.</p>
+                      ) : (
+                        students.map(student => {
+                          const sub = submissions.find(s => s.assignment_id === selectedAssignmentId && s.student_id === student.id);
+                          const subId = sub?.id || `new_${student.id}_${selectedAssignmentId}`;
+
+                          return (
+                            <div key={student.id} className="bg-[#FAF8F5]/80 p-4 rounded-xl border border-[#E8E4DF] space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="font-black text-sm text-[#2D2A26]">{student.full_name}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                                  sub ? (sub.grade ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800') : 'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {sub ? (sub.grade ? `Graded: ${sub.grade}` : 'Submitted') : 'Not Submitted'}
+                                </span>
+                              </div>
+
+                              {sub && (
+                                <div className="text-xs bg-white p-3 rounded-lg border border-[#E8E4DF] space-y-2">
+                                  <span className="font-bold text-[#8A8279] block">Submission text:</span>
+                                  <p className="font-medium text-[#2D2A26]">{sub.submission_text || 'No text content.'}</p>
+                                  {sub.attachment_url && (
+                                    <a
+                                      href={sub.attachment_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-blue-600 hover:underline font-bold"
+                                    >
+                                      <FileText className="w-3.5 h-3.5" /> View Submitted File
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                                <div>
+                                  <label className="block text-[10px] font-black uppercase tracking-wider text-[#8A8279] mb-1">Grade</label>
+                                  <input
+                                    type="text"
+                                    value={gradingScores[subId] || ''}
+                                    onChange={(e) => setGradingScores({ ...gradingScores, [subId]: e.target.value })}
+                                    placeholder="e.g. A+, 95/100"
+                                    className="w-full bg-white border border-[#E8E4DF] text-xs font-bold p-2 rounded-lg focus:outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-black uppercase tracking-wider text-[#8A8279] mb-1">Feedback</label>
+                                  <input
+                                    type="text"
+                                    value={gradingFeedback[subId] || ''}
+                                    onChange={(e) => setGradingFeedback({ ...gradingFeedback, [subId]: e.target.value })}
+                                    placeholder="Enter grading feedback..."
+                                    className="w-full bg-white border border-[#E8E4DF] text-xs font-bold p-2 rounded-lg focus:outline-none"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  onClick={() => handleSaveGrade(subId, student.id, selectedAssignmentId)}
+                                  disabled={submittingGradeId === subId || (!gradingScores[subId] && !gradingFeedback[subId])}
+                                  className="bg-[#8B7355] text-white px-4 py-1.5 text-xs font-black uppercase rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-40"
+                                >
+                                  {submittingGradeId === subId ? 'Saving...' : 'Save Grade'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-[#8A8279] italic py-8 text-center">Select an assignment from the left column to view the student gradebook.</p>
+                )}
               </div>
             </div>
           </div>

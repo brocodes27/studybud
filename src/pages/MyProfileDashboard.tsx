@@ -369,7 +369,7 @@ export default function MyProfileDashboard() {
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6366F1]/10 to-[#00D1FF]/10 flex items-center justify-center mx-auto mb-6">
             <Brain className="w-8 h-8 text-[#6366F1]" />
           </div>
-          <h1 className="text-2xl font-extrabold text-[#0A192F] mb-3">No Profile Data Yet</h1>
+          <h2 className="text-2xl font-extrabold text-[#0A192F] mb-3">No Profile Data Yet</h2>
           <p className="text-[#64748B] mb-4 max-w-md mx-auto">
             Ranjan Sir hasn't built a behavioral model for you yet. Start completing tasks and interacting with the platform — your profile will grow automatically.
           </p>
@@ -1028,7 +1028,7 @@ function TeacherRanjanDashboard({ userId }: { userId?: string }) {
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold text-[#0A192F] tracking-tight">What Ranjan Sir Knows for Teachers</h1>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-[#0A192F] tracking-tight">What Ranjan Sir Knows for Teachers</h2>
                 <p className="text-sm text-[#64748B] mt-2 max-w-2xl leading-relaxed">
                   Ranjan Sir tracks how you are building classes, organizing curricula, assigning work, and growing student participation.
                 </p>

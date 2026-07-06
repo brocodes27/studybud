@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Upload, Sparkles, RefreshCw, AlertCircle, BookOpen, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -48,6 +49,42 @@ export function DailyBriefing() {
   const [completedTaskId, setCompletedTaskId] = useState<string | null>(null);
   const { track } = useAnalytics();
   const isLoadingRef = useRef(false);
+
+  // Phase 2: Pending assignments state and fetcher
+  const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
+
+  const fetchPendingAssignments = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const { data: memberData } = await supabase.from('class_members').select('class_id').eq('user_id', user.id);
+      const classIds = (memberData || []).map((m: any) => m.class_id).filter(Boolean);
+
+      if (classIds.length > 0) {
+        const { data: assignData } = await supabase
+          .from('assignments')
+          .select('*')
+          .in('class_id', classIds)
+          .order('due_date', { ascending: true });
+
+        if (assignData && assignData.length > 0) {
+          const { data: subData } = await supabase
+            .from('assignment_submissions')
+            .select('assignment_id')
+            .eq('student_id', user.id);
+          
+          const submittedIds = new Set((subData || []).map((s: any) => s.assignment_id));
+          const pending = (assignData || []).filter((a: any) => !submittedIds.has(a.id));
+          setPendingAssignments(pending);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching pending assignments:', err);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchPendingAssignments();
+  }, [fetchPendingAssignments]);
 
   useEffect(() => {
     track('daily_briefing_open');
@@ -371,6 +408,30 @@ export function DailyBriefing() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full"
           >
+            {pendingAssignments.length > 0 && (
+              <div className="w-full max-w-xl mx-auto mb-6 bg-[#FAF5EE] border-4 border-[#2D2A26] p-5 shadow-[4px_4px_0px_0px_#2D2A26] rounded-2xl flex items-start gap-4 animate-fade-in">
+                <div className="bg-[#8B7355] text-white p-2 rounded-xl">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-black uppercase text-[#2D2A26] tracking-tight">Pending Class Assignments</h3>
+                  <p className="text-xs font-semibold text-[#8A8279] mt-0.5 mb-3">You have homework deadlines upcoming. Click to submit.</p>
+                  <div className="space-y-2">
+                    {pendingAssignments.map(a => (
+                      <Link
+                        key={a.id}
+                        to={`/class/${a.class_id}`}
+                        className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-[#2D2A26]/10 text-xs font-bold hover:border-[#2D2A26]/30 transition-all text-[#2D2A26]"
+                      >
+                        <span className="truncate">{a.title}</span>
+                        {a.due_date && <span className="text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded ml-2">Due: {new Date(a.due_date).toLocaleDateString()}</span>}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <ConversationalBriefing
               data={data}
               userId={user.id}

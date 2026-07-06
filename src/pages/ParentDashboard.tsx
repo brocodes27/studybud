@@ -129,7 +129,7 @@ const ParentDashboard: React.FC = () => {
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl border border-red-100 p-8 max-w-md text-center shadow-sm">
           <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-[#2D2A26] mb-2">Parent access only</h1>
+          <h2 className="text-2xl font-bold text-[#2D2A26] mb-2">Parent access only</h2>
           <p className="text-sm text-[#8A8279]">This dashboard is for linked parent accounts.</p>
         </div>
       </div>

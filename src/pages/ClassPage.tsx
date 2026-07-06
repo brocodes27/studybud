@@ -65,6 +65,12 @@ const ClassPage = () => {
     const [announcementContent, setAnnouncementContent] = useState('');
     const [formError, setFormError] = useState('');
 
+    // Phase 2 submissions state
+    const [submissions, setSubmissions] = useState<Record<string, any>>({});
+    const [submittingId, setSubmittingId] = useState<string | null>(null);
+    const [subText, setSubText] = useState<Record<string, string>>({});
+    const [subFile, setSubFile] = useState<Record<string, File | null>>({});
+
     const fetchClassData = useCallback(async () => {
         if (!user || !id) return;
 
@@ -125,6 +131,22 @@ const ClassPage = () => {
         if (resourcesError) console.error('Error fetching resources:', resourcesError);
         else {
             setResources(resourcesData);
+        }
+
+        // Fetch student submissions for the class assignments
+        if (role === 'student' && user) {
+            const { data: submissionsData, error: submissionsError } = await supabase
+                .from('assignment_submissions')
+                .select('*')
+                .eq('student_id', user.id);
+            
+            if (!submissionsError && submissionsData) {
+                const subMap = submissionsData.reduce((acc: any, sub: any) => {
+                    acc[sub.assignment_id] = sub;
+                    return acc;
+                }, {});
+                setSubmissions(subMap);
+            }
         }
 
         setLoading(false);
@@ -198,6 +220,55 @@ const ClassPage = () => {
             setAnnouncementContent('');
             setFormError('');
             fetchClassData(); // Refresh list
+        }
+    };
+
+    const handleUploadSubmission = async (assignmentId: string) => {
+        if (!user) return;
+        setSubmittingId(assignmentId);
+        setFormError('');
+        try {
+            const text = subText[assignmentId] || '';
+            const file = subFile[assignmentId] || null;
+
+            let attachmentUrl = null;
+            if (file) {
+                const filePath = `${user.id}/${assignmentId}/${Date.now()}_${file.name}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('submissions')
+                    .upload(filePath, file);
+
+                if (uploadError) {
+                    setFormError('Error uploading submission attachment.');
+                    console.error(uploadError);
+                    return;
+                }
+
+                const { data: publicURLData } = supabase.storage.from('submissions').getPublicUrl(filePath);
+                attachmentUrl = publicURLData.publicUrl;
+            }
+
+            const { error: subError } = await supabase
+                .from('assignment_submissions')
+                .upsert({
+                    assignment_id: assignmentId,
+                    student_id: user.id,
+                    submission_text: text,
+                    attachment_url: attachmentUrl,
+                    submitted_at: new Date().toISOString()
+                }, { onConflict: 'assignment_id,student_id' });
+
+            if (subError) throw subError;
+
+            // Clear inputs
+            setSubText(prev => ({ ...prev, [assignmentId]: '' }));
+            setSubFile(prev => ({ ...prev, [assignmentId]: null }));
+            fetchClassData();
+        } catch (err: any) {
+            console.error(err);
+            setFormError(err.message || 'Failed to upload submission.');
+        } finally {
+            setSubmittingId(null);
         }
     };
 
@@ -483,55 +554,133 @@ const ClassPage = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-6">
-                                    {assignments.map(a => (
-                                        <div key={a.id} className="bg-[#FAFBFF] p-6 rounded-2xl border border-[#E8E4DF] shadow-sm group hover:shadow-md hover:-translate-y-0.5 transition-all">
-                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-[#E8E4DF] pb-4">
-                                                <h4 className="text-lg font-bold text-[#2D2A26]">{a.title}</h4>
-                                                {a.due_date && (
-                                                    <div className="bg-[#F5F0E8] text-[#2D2A26] px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E8E4DF] flex items-center gap-2">
-                                                        <Clock className="h-4 w-4 stroke-[2.5px]" />
-                                                        Due: {new Date(a.due_date).toLocaleDateString()}
+                                    {assignments.map(a => {
+                                        const submission = submissions[a.id];
+                                        return (
+                                            <div key={a.id} className="bg-[#FAFBFF] p-6 rounded-2xl border border-[#E8E4DF] shadow-sm group hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-[#E8E4DF] pb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <h4 className="text-lg font-bold text-[#2D2A26]">{a.title}</h4>
+                                                        {role === 'student' && (
+                                                            submission ? (
+                                                                submission.grade ? (
+                                                                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-emerald-100">
+                                                                        Graded: {submission.grade}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-blue-100">
+                                                                        Submitted
+                                                                    </span>
+                                                                )
+                                                            ) : (
+                                                                <span className="bg-red-50 text-red-700 text-[10px] font-black uppercase px-2.5 py-1 rounded-full border border-red-100">
+                                                                    Not Submitted
+                                                                </span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                    {a.due_date && (
+                                                        <div className="bg-[#F5F0E8] text-[#2D2A26] px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E8E4DF] flex items-center gap-2">
+                                                            <Clock className="h-4 w-4 stroke-[2.5px]" />
+                                                            Due: {new Date(a.due_date).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-[#2D2A26] font-medium leading-relaxed mb-6">{a.description}</p>
+
+                                                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-[#E8E4DF]">
+                                                    {a.file_url && (
+                                                        a.file_url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
+                                                            <div className="w-full mb-4 bg-white p-4 rounded-xl border border-[#E8E4DF]">
+                                                                <img src={a.file_url} alt={a.title} className="max-h-80 w-auto rounded-2xl border border-[#E8E4DF] mx-auto" />
+                                                            </div>
+                                                        ) : (
+                                                            <a
+                                                                href={a.file_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 bg-white text-[#2D2A26] px-4 py-2.5 font-bold text-xs rounded-[14px] border border-[#E8E4DF] shadow-sm hover:shadow-md active:scale-95 transition-all"
+                                                            >
+                                                                <Download className="h-4 w-4 stroke-[2.5px]" />
+                                                                Download File
+                                                            </a>
+                                                        )
+                                                    )}
+
+                                                    {a.file_url && /\.json(\?|$)/i.test(a.file_url) && (
+                                                        <button
+                                                            className="flex items-center gap-2 bg-[#6B8E6B] text-white px-5 py-2.5 font-bold text-sm rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all"
+                                                            onClick={() => handleTakeMockTest(a)}
+                                                        >
+                                                            <Sparkles className="h-5 w-5 stroke-[2.5px]" />
+                                                            Take Mock Test
+                                                        </button>
+                                                    )}
+
+                                                    <div className="ml-auto flex items-center gap-2 text-xs font-medium text-[#8A8279]">
+                                                        <Calendar className="h-4 w-4" />
+                                                        Posted: {new Date(a.created_at).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+
+                                                {/* Student Submission Display or Form */}
+                                                {role === 'student' && (
+                                                    <div className="mt-4 pt-4 border-t border-[#E8E4DF] bg-[#FAF8F5]/60 p-4 rounded-xl border border-[#E8E4DF]/60">
+                                                        {submission ? (
+                                                            <div className="space-y-3">
+                                                                <h5 className="text-xs font-black uppercase text-[#8A8279] tracking-wider">Your Submission</h5>
+                                                                <p className="text-sm font-semibold text-[#2D2A26]">{submission.submission_text || 'No text submitted.'}</p>
+                                                                {submission.attachment_url && (
+                                                                    <a
+                                                                        href={submission.attachment_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline"
+                                                                    >
+                                                                        <FileText className="w-3.5 h-3.5" /> View Submitted File
+                                                                    </a>
+                                                                )}
+                                                                
+                                                                {submission.grade && (
+                                                                    <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg mt-3">
+                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 block mb-1">Teacher Feedback</span>
+                                                                        <p className="text-xs font-bold text-emerald-950">{submission.feedback || 'No feedback left.'}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-4">
+                                                                <h5 className="text-xs font-black uppercase text-[#2D2A26] tracking-wider">Submit Assignment</h5>
+                                                                
+                                                                <textarea
+                                                                    value={subText[a.id] || ''}
+                                                                    onChange={(e) => setSubText({ ...subText, [a.id]: e.target.value })}
+                                                                    placeholder="Type your submission description or comments..."
+                                                                    className="w-full px-4 py-2.5 bg-white border border-[#E8E4DF] rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
+                                                                    rows={3}
+                                                                />
+
+                                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                                                    <input
+                                                                        type="file"
+                                                                        onChange={(e) => setSubFile({ ...subFile, [a.id]: e.target.files ? e.target.files[0] : null })}
+                                                                        className="text-xs font-medium file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border file:border-[#E8E4DF] file:bg-[#F5F0E8] file:text-[#2D2A26] file:font-bold file:cursor-pointer"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleUploadSubmission(a.id)}
+                                                                        disabled={submittingId === a.id || !(subText[a.id]?.trim() || subFile[a.id])}
+                                                                        className="bg-[#8B7355] text-white px-5 py-2 text-xs font-black uppercase rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-40"
+                                                                    >
+                                                                        {submittingId === a.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Submit'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
-                                            <p className="text-[#2D2A26] font-medium leading-relaxed mb-6">{a.description}</p>
-
-                                            <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-[#E8E4DF]">
-                                                {a.file_url && (
-                                                    a.file_url.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
-                                                        <div className="w-full mb-4 bg-white p-4 rounded-xl border border-[#E8E4DF]">
-                                                            <img src={a.file_url} alt={a.title} className="max-h-80 w-auto rounded-2xl border border-[#E8E4DF] mx-auto" />
-                                                        </div>
-                                                    ) : (
-                                                        <a
-                                                            href={a.file_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 bg-white text-[#2D2A26] px-4 py-2.5 font-bold text-xs rounded-[14px] border border-[#E8E4DF] shadow-sm hover:shadow-md active:scale-95 transition-all"
-                                                        >
-                                                            <Download className="h-4 w-4 stroke-[2.5px]" />
-                                                            Download File
-                                                        </a>
-                                                    )
-                                                )}
-
-                                                {a.file_url && /\.json(\?|$)/i.test(a.file_url) && (
-                                                    <button
-                                                        className="flex items-center gap-2 bg-[#6B8E6B] text-white px-5 py-2.5 font-bold text-sm rounded-[14px] shadow-sm hover:shadow-md active:scale-95 transition-all"
-                                                        onClick={() => handleTakeMockTest(a)}
-                                                    >
-                                                        <Sparkles className="h-5 w-5 stroke-[2.5px]" />
-                                                        Take Mock Test
-                                                    </button>
-                                                )}
-
-                                                <div className="ml-auto flex items-center gap-2 text-xs font-medium text-[#8A8279]">
-                                                    <Calendar className="h-4 w-4" />
-                                                    Posted: {new Date(a.created_at).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

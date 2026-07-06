@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Plus, Users, X, Copy, Check, FileText, Upload, Loader2 } from 'lucide-react';
+import { BookOpen, Plus, Users, X, Copy, Check, FileText, Upload, Loader2, Brain, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface Class {
     id: string;
@@ -14,9 +14,24 @@ interface Class {
     curriculum_file_url?: string;
 }
 
+interface Intervention {
+    id: string;
+    student_user_id: string;
+    class_id: string;
+    trigger_type: string;
+    severity: string;
+    intervention_level: number;
+    action_type: string;
+    status: string;
+    created_at: string;
+    studentName?: string;
+    className?: string;
+}
+
 const MyClasses = () => {
     const { user, role } = useAuth() as any;
     const [classes, setClasses] = useState<Class[]>([]);
+    const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [className, setClassName] = useState('');
     const [classSubject, setClassSubject] = useState('');
     const [curriculumFile, setCurriculumFile] = useState<File | null>(null);
@@ -32,6 +47,9 @@ const MyClasses = () => {
 
     useEffect(() => {
         fetchClasses();
+        if (role === 'teacher') {
+            fetchInterventions();
+        }
     }, [user, role]);
 
     const fetchClasses = async () => {
@@ -62,6 +80,76 @@ const MyClasses = () => {
             }
         }
         setLoading(false);
+    };
+
+    const fetchInterventions = async () => {
+        if (!user) return;
+        try {
+            // Get teacher classes
+            const { data: classData } = await supabase.from('classes').select('id, name').eq('teacher_id', user.id);
+            const classIds = (classData || []).map(c => c.id);
+            const classNamesMap = (classData || []).reduce((acc: any, c) => {
+                acc[c.id] = c.name;
+                return acc;
+            }, {});
+
+            if (classIds.length === 0) return;
+
+            // Fetch active interventions
+            const { data: intData, error: intError } = await supabase
+                .from('interventions')
+                .select('*')
+                .in('class_id', classIds)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false });
+
+            if (intError) throw intError;
+
+            // Fetch student profiles to map names
+            const studentIds = (intData || []).map(i => i.student_user_id).filter(Boolean);
+            const studentNamesMap: Record<string, string> = {};
+
+            if (studentIds.length > 0) {
+                const { data: profiles } = await supabase.from('user_profiles').select('id, full_name').in('id', studentIds);
+                (profiles || []).forEach(p => {
+                    studentNamesMap[p.id] = p.full_name || 'Student';
+                });
+            }
+
+            const mappedInterventions = (intData || []).map((i: any) => ({
+                ...i,
+                className: classNamesMap[i.class_id] || 'General Class',
+                studentName: studentNamesMap[i.student_user_id] || 'Class Student'
+            }));
+
+            setInterventions(mappedInterventions);
+        } catch (err) {
+            console.error('Error fetching interventions:', err);
+        }
+    };
+
+    const handleResolveIntervention = async (id: string) => {
+        const { error } = await supabase
+            .from('interventions')
+            .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) {
+            setError('Failed to resolve intervention.');
+        } else {
+            fetchInterventions();
+        }
+    };
+
+    const handleDismissIntervention = async (id: string) => {
+        const { error } = await supabase
+            .from('interventions')
+            .update({ status: 'dismissed', resolved_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error) {
+            setError('Failed to dismiss intervention.');
+        } else {
+            fetchInterventions();
+        }
     };
 
     const handleCreateClass = async (e: FormEvent) => {
@@ -156,7 +244,6 @@ const MyClasses = () => {
         if (joinMode === 'code') {
             result = await supabase.rpc('join_class', { p_class_code: trimmed.toUpperCase() });
         } else {
-            // Could be full URL or just the slug
             const slug = trimmed.replace(/^.*\/join\//, '');
             result = await supabase.rpc('join_class_by_invite', { p_invite_link: slug });
         }
@@ -222,10 +309,10 @@ const MyClasses = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-[#2D2A26] leading-none">
-                                My Classes
+                                Today Control Room
                             </h1>
                             <p className="text-sm text-[#8A8279] mt-1">
-                                {role === 'teacher' ? 'Manage your classes' : 'Your enrolled classes'}
+                                {role === 'teacher' ? 'Your active classes and priority inbox.' : 'Your active academic workspace.'}
                             </p>
                         </div>
                     </div>
@@ -240,6 +327,103 @@ const MyClasses = () => {
                     )}
                 </div>
 
+                {/* Metrics Summary (Teacher Only) */}
+                {role === 'teacher' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm flex items-center gap-4">
+                            <div className="bg-[#8B7355]/10 p-3 rounded-xl">
+                                <Users className="w-6 h-6 text-[#8B7355]" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-extrabold text-[#2D2A26]">{classes.length}</h3>
+                                <p className="text-xs font-bold text-[#8A8279] uppercase">Managed Classes</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm flex items-center gap-4">
+                            <div className="bg-red-50 p-3 rounded-xl">
+                                <AlertCircle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-extrabold text-[#2D2A26]">{interventions.length}</h3>
+                                <p className="text-xs font-bold text-[#8A8279] uppercase">Active Interventions</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm flex items-center gap-4">
+                            <div className="bg-emerald-50 p-3 rounded-xl">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-extrabold text-[#2D2A26]">100%</h3>
+                                <p className="text-xs font-bold text-[#8A8279] uppercase">Syllabus Health</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Live Intervention Inbox (Teacher Only) */}
+                {role === 'teacher' && interventions.length > 0 && (
+                    <div className="bg-white rounded-2xl border-4 border-[#2D2A26] p-6 shadow-[8px_8px_0px_0px_#2D2A26] mb-8 animate-fade-in">
+                        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E8E4DF]">
+                            <div className="bg-red-100 p-2 rounded-xl text-red-700 animate-pulse">
+                                <Brain className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-black uppercase text-[#2D2A26]">Intervention Inbox</h2>
+                                <p className="text-xs font-bold text-[#8A8279]">Immediate attention required: student risk thresholds triggered.</p>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-[#E8E4DF] text-xs font-black uppercase text-[#8A8279] tracking-wider">
+                                        <th className="pb-3">Student</th>
+                                        <th className="pb-3">Class</th>
+                                        <th className="pb-3">Trigger Type</th>
+                                        <th className="pb-3 text-center">Severity</th>
+                                        <th className="pb-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {interventions.map((int) => (
+                                        <tr key={int.id} className="border-b border-[#E8E4DF] last:border-0 hover:bg-[#FAF8F5]/60 transition-colors">
+                                            <td className="py-3.5 font-bold text-[#2D2A26]">{int.studentName}</td>
+                                            <td className="py-3.5 font-semibold text-[#8A8279] text-xs">{int.className}</td>
+                                            <td className="py-3.5 font-bold text-xs uppercase text-[#2D2A26]">{int.trigger_type.replace(/_/g, ' ')}</td>
+                                            <td className="py-3.5 text-center">
+                                                <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                                    int.severity === 'critical' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                                    int.severity === 'high' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                                                    int.severity === 'medium' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                    'bg-green-100 text-green-700 border border-green-200'
+                                                }`}>
+                                                    {int.severity}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 text-right space-x-2">
+                                                <button
+                                                    onClick={() => handleResolveIntervention(int.id)}
+                                                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase transition-all"
+                                                >
+                                                    Resolve
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDismissIntervention(int.id)}
+                                                    className="bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase transition-all"
+                                                >
+                                                    Dismiss
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
                 {/* Error Message */}
                 {error && (
                     <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 flex items-center gap-3">
@@ -252,7 +436,7 @@ const MyClasses = () => {
                 {role === 'teacher' && (
                     <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm mb-8">
                         <h2 className="text-lg font-bold text-[#2D2A26] mb-4 flex items-center gap-2">
-                            <Plus className="h-5 w-5 text-[#00D1FF] stroke-[2.5px]" />
+                            <Plus className="h-5 w-5 text-[#8B7355] stroke-[2.5px]" />
                             Create New Class
                         </h2>
                         <form onSubmit={handleCreateClass} className="flex flex-col gap-3">
@@ -262,12 +446,12 @@ const MyClasses = () => {
                                     placeholder="e.g. JEE Advanced Physics"
                                     value={className}
                                     onChange={(e) => setClassName(e.target.value)}
-                                    className="flex-1 px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
+                                    className="flex-1 px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                                 />
                                 <select
                                     value={classSubject}
                                     onChange={(e) => setClassSubject(e.target.value)}
-                                    className="px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 appearance-none min-w-[180px]"
+                                    className="px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 appearance-none min-w-[180px]"
                                     required
                                 >
                                     <option value="">Select Subject</option>
@@ -291,7 +475,7 @@ const MyClasses = () => {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <div className="flex-1">
-                                    <div className="w-full bg-[#F8FAFF] rounded-[14px] border border-dashed border-[#E8E4DF] px-4 py-3 text-center hover:border-[#8B7355]/30 transition-colors">
+                                    <div className="w-full bg-[#FAF8F5] rounded-[14px] border border-dashed border-[#E8E4DF] px-4 py-3 text-center hover:border-[#8B7355]/30 transition-colors">
                                         <input
                                             type="file"
                                             accept=".pdf,.doc,.docx"
@@ -316,7 +500,7 @@ const MyClasses = () => {
                                             setSkipCurriculum(!skipCurriculum);
                                             if (!skipCurriculum) setCurriculumFile(null);
                                         }}
-                                        className={`mt-2 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${skipCurriculum ? 'bg-[#00D1FF]/10 border-[#00D1FF] text-[#00D1FF]' : 'bg-white border-[#E8E4DF] text-[#8A8279] hover:border-[#8B7355]/30'}`}
+                                        className={`mt-2 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${skipCurriculum ? 'bg-amber-500/10 border-amber-500 text-amber-700' : 'bg-white border-[#E8E4DF] text-[#8A8279] hover:border-[#8B7355]/30'}`}
                                     >
                                         {skipCurriculum ? 'Will add curriculum later' : 'Skip for now — add later'}
                                     </button>
@@ -345,18 +529,18 @@ const MyClasses = () => {
                                 <h2 className="text-xl font-bold text-[#2D2A26]">Join a Class</h2>
                             </div>
 
-                            <div className="bg-[#F8FAFF] p-1 rounded-[14px] flex mb-5">
+                            <div className="bg-[#FAF8F5] p-1 rounded-[14px] flex mb-5">
                                 <button
                                     type="button"
                                     onClick={() => setJoinMode('code')}
-                                    className={`flex-1 py-2 rounded-[12px] text-sm font-bold transition-all ${joinMode === 'code' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                                    className={`flex-1 py-2 rounded-[12px] text-sm font-bold transition-all ${joinMode === 'code' ? 'bg-white text-[#2D2A26] shadow-sm' : 'text-[#64748B]'}`}
                                 >
                                     Class Code
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setJoinMode('link')}
-                                    className={`flex-1 py-2 rounded-[12px] text-sm font-bold transition-all ${joinMode === 'link' ? 'bg-white text-[#00D1FF] shadow-sm' : 'text-[#64748B]'}`}
+                                    className={`flex-1 py-2 rounded-[12px] text-sm font-bold transition-all ${joinMode === 'link' ? 'bg-white text-[#2D2A26] shadow-sm' : 'text-[#64748B]'}`}
                                 >
                                     Invite Link
                                 </button>
@@ -372,7 +556,7 @@ const MyClasses = () => {
                                         placeholder={joinMode === 'code' ? 'e.g. ABC123' : 'Paste the invite link here'}
                                         value={joinCode}
                                         onChange={(e) => setJoinCode(e.target.value)}
-                                        className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
+                                        className="w-full px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 transition-all placeholder:text-[#8A8279]/50"
                                     />
                                 </div>
                                 <button
@@ -462,7 +646,7 @@ const MyClasses = () => {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(c.curriculum_file_url, '_blank'); }}
-                                                    className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+                                                    className="text-[10px] font-bold bg-[#FAF8F5] text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50 transition-colors inline-flex items-center gap-1"
                                                 >
                                                     <FileText className="w-3 h-3" /> Curriculum File
                                                 </button>
@@ -509,7 +693,6 @@ const MyClasses = () => {
             </div>
         </div>
     );
-
 };
 
 export default MyClasses;

@@ -77,9 +77,30 @@ serve(async (req: Request) => {
     const tmpl = PROMPT_TEMPLATES[action];
     if (!tmpl) return new Response(JSON.stringify({error:`Unknown action: ${action}`}), {status:400, headers:corsHeaders});
 
+    // 1. Check AI budget before calling API
+    const { data: hasBudget, error: budgetError } = await sb.rpc('check_ai_budget', { p_user_id: user.id });
+    if (budgetError) console.error('Budget check error:', budgetError);
+    if (hasBudget === false) {
+      return new Response(JSON.stringify({ error: 'Monthly AI budget limit reached for your school. Please contact your administrator to upgrade your plan.' }), { 
+        status: 402, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
     const { messages, opts } = tmpl(payload);
     const isJson = opts.json;
     const result = isJson ? await callGeminiJSON(messages, opts) : await callGemini(messages, opts);
+
+    // 2. Log AI usage details asynchronously
+    const promptLen = JSON.stringify(messages).length;
+    const completionLen = typeof result === 'string' ? result.length : JSON.stringify(result).length;
+    sb.rpc('log_ai_usage', {
+      p_user_id: user.id,
+      p_model: 'gemini-1.5-flash',
+      p_feature_name: action,
+      p_prompt_len: promptLen,
+      p_completion_len: completionLen
+    }).catch((err: any) => console.error('Failed to log AI consumption:', err));
 
     return new Response(JSON.stringify({ success: true, result }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {

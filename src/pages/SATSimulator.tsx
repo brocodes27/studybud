@@ -367,7 +367,7 @@ export default function SATSimulator() {
             <CheckCircle2 className="w-4 h-4" />
             Test Complete
           </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">Your Results</h1>
+          <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#0A192F] leading-tight">Your Results</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -454,7 +454,7 @@ export default function SATSimulator() {
             <Activity className="w-5 h-5 stroke-[2.5px]" />
           </div>
           <div>
-            <h1 className="font-extrabold text-lg leading-none text-[#0A192F] tracking-tight">SAT Simulator</h1>
+            <h2 className="font-extrabold text-lg leading-none text-[#0A192F] tracking-tight">SAT Simulator</h2>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs font-bold text-[#00D1FF] uppercase tracking-widest">{section === 'rw' ? 'Reading & Writing' : 'Math'}</span>
               <span className="text-xs font-bold text-[#64748B]">· Part {part}</span>
