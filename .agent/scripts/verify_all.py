@@ -82,6 +82,7 @@ VERIFICATION_SUITE = [
         "category": "Data Layer",
         "checks": [
             ("Schema Validation", ".agent/skills/database-design/scripts/schema_validator.py", False),
+            ("Tenancy Isolation", ".agent/skills/database-design/scripts/test_tenancy_isolation.py", False),
         ]
     },
     
