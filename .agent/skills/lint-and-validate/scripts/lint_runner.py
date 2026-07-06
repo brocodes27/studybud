@@ -57,13 +57,17 @@ def detect_project_type(project_path: Path) -> dict:
     
     # Python project
     if (project_path / "pyproject.toml").exists() or (project_path / "requirements.txt").exists():
-        result["type"] = "python"
+        if result["type"] == "node":
+            result["type"] = "hybrid"
+        else:
+            result["type"] = "python"
         
         # Check for ruff
-        result["linters"].append({"name": "ruff", "cmd": ["ruff", "check", "."]})
+        if shutil.which("ruff"):
+            result["linters"].append({"name": "ruff", "cmd": ["ruff", "check", "."]})
         
         # Check for mypy
-        if (project_path / "mypy.ini").exists() or (project_path / "pyproject.toml").exists():
+        if shutil.which("mypy") and ((project_path / "mypy.ini").exists() or (project_path / "pyproject.toml").exists()):
             result["linters"].append({"name": "mypy", "cmd": ["mypy", "."]})
     
     return result
