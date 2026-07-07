@@ -1,5 +1,34 @@
-import { motion } from 'framer-motion';
-import { BookOpen, FlaskConical, Calculator, ChevronRight, Calendar } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { ArrowRight, Calendar } from 'lucide-react';
+
+function CountUp({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-40px' });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const duration = 1200;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      setDisplay(Math.round(value * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, value]);
+
+  return (
+    <span ref={ref}>
+      {display}
+      {suffix}
+    </span>
+  );
+}
 
 const weekData = [
   { week: 1, physics: 'Kinematics', chemistry: 'Mole Concept & Atomic Structure', math: 'Complex Numbers & Quadratics', type: 'lecture' },
@@ -12,16 +41,10 @@ const weekData = [
   { week: 8, physics: 'Revision — Mechanics', chemistry: 'Revision — Organic Basics', math: 'Revision — Algebra & Coordinate', type: 'major' },
 ];
 
-const subjectColors: Record<string, string> = {
-  physics: 'bg-[#8B7355]/10 text-[#8B7355] border-[#8B7355]/20',
-  chemistry: 'bg-[#A0938D]/10 text-[#A0938D] border-[#A0938D]/20',
-  math: 'bg-[#C4A882]/10 text-[#C4A882] border-[#C4A882]/20',
-};
-
-const subjectIcons = {
-  physics: BookOpen,
-  chemistry: FlaskConical,
-  math: Calculator,
+const subjectDotColors: Record<string, string> = {
+  physics: '#8B7355',
+  chemistry: '#6B8E6B',
+  math: '#7A6B8A',
 };
 
 export function LandingCurriculum() {
@@ -63,10 +86,10 @@ export function LandingCurriculum() {
         {/* Schedule cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
           {[
-            { label: 'Total Weeks', value: '52', color: '#8B7355' },
-            { label: 'Tests Scheduled', value: '22', color: '#A0938D' },
-            { label: 'Subjects', value: '3', color: '#C4A882' },
-            { label: 'Topics Covered', value: '120+', color: '#8B7355' },
+            { label: 'Total Weeks', value: 52, suffix: '' },
+            { label: 'Tests Scheduled', value: 22, suffix: '' },
+            { label: 'Subjects', value: 3, suffix: '' },
+            { label: 'Topics Covered', value: 120, suffix: '+' },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -74,9 +97,14 @@ export function LandingCurriculum() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className="bg-white rounded-2xl border border-[#2D2A26]/[0.05] p-5 text-center hover:shadow-[0_8px_30px_rgba(45,42,38,0.06)] transition-shadow"
+              className="bg-white rounded-2xl border border-[#2D2A26]/[0.05] p-5 text-center hover:shadow-[0_8px_30px_rgba(45,42,38,0.06)] hover:-translate-y-0.5 transition-all"
             >
-              <p className="text-3xl font-semibold mb-1" style={{ color: stat.color }}>{stat.value}</p>
+              <p
+                className="text-4xl font-semibold mb-1 text-gradient"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                <CountUp value={stat.value} suffix={stat.suffix} />
+              </p>
               <p className="text-[11px] font-bold text-[#8A8279] uppercase tracking-wider">{stat.label}</p>
             </motion.div>
           ))}
@@ -109,37 +137,38 @@ export function LandingCurriculum() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.04 }}
-                    className="border-b border-[#2D2A26]/[0.03] hover:bg-[#FAF8F5] transition-colors group"
+                    className={`border-b border-[#2D2A26]/[0.03] hover:bg-[#F5F0E8]/60 transition-colors group ${i % 2 === 1 ? 'bg-[#FAF8F5]/60' : 'bg-white'}`}
                   >
-                    <td className="px-5 py-3.5">
-                      <span className="text-[12px] font-bold text-[#2D2A26]">W{row.week}</span>
+                    <td className="px-5 py-4">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F0E8] text-[11px] font-bold text-[#8B7355]">
+                        {row.week}
+                      </span>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-3.5 h-3.5 text-[#8B7355]" />
-                        <span className="text-[12px] font-medium text-[#2D2A26]">{row.physics}</span>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subjectDotColors.physics }} />
+                        <span className="text-[13px] font-medium text-[#2D2A26]">{row.physics}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <FlaskConical className="w-3.5 h-3.5 text-[#A0938D]" />
-                        <span className="text-[12px] font-medium text-[#2D2A26]">{row.chemistry}</span>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subjectDotColors.chemistry }} />
+                        <span className="text-[13px] font-medium text-[#2D2A26]">{row.chemistry}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="w-3.5 h-3.5 text-[#C4A882]" />
-                        <span className="text-[12px] font-medium text-[#2D2A26]">{row.math}</span>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subjectDotColors.math }} />
+                        <span className="text-[13px] font-medium text-[#2D2A26]">{row.math}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${
-                        row.type === 'test'
-                          ? 'bg-[#8B7355]/10 text-[#8B7355]'
-                          : row.type === 'major'
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${row.type === 'test'
+                        ? 'bg-[#8B7355]/10 text-[#8B7355]'
+                        : row.type === 'major'
                           ? 'bg-[#A0938D]/10 text-[#A0938D]'
                           : 'bg-[#F5F0E8] text-[#8A8279]'
-                      }`}>
+                        }`}>
                         {row.type}
                       </span>
                     </td>
@@ -148,11 +177,21 @@ export function LandingCurriculum() {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 border-t border-[#2D2A26]/[0.04] bg-[#FAF8F5]">
-            <p className="text-[11px] text-[#8A8279] font-medium flex items-center gap-1.5">
-              <ChevronRight className="w-3 h-3" />
-              Showing first 8 weeks of 52. Full curriculum available after enrollment.
-            </p>
+          <div className="relative">
+            {/* Gradient fade hinting there's more */}
+            <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+            <div className="px-5 py-4 border-t border-[#2D2A26]/[0.04] bg-[#FAF8F5] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-[11px] text-[#8A8279] font-medium">
+                Showing first 8 weeks of 52.
+              </p>
+              <a
+                href="#auth"
+                className="group inline-flex items-center gap-1.5 text-[12px] font-bold text-[#8B7355] hover:text-[#6E5A42] transition-colors"
+              >
+                View full 52-week plan
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </a>
+            </div>
           </div>
         </motion.div>
       </div>

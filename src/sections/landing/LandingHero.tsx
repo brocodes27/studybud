@@ -1,11 +1,15 @@
 import { useRef, useMemo, Suspense, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, ShieldCheck, Calendar } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen, ShieldCheck, Calendar, ChevronDown } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { gsap } from 'gsap';
+import { useGSAP } from '@gsap/react';
+import SplitType from 'split-type';
+
+gsap.registerPlugin(useGSAP);
 
 function FloatingObject({
   children,
@@ -24,8 +28,24 @@ function FloatingObject({
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * speed * 0.15) * 0.08 + state.clock.elapsedTime * speed * 0.02;
-    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * speed * 0.12) * 0.04;
+    
+    // Smooth floating animation
+    const floatY = Math.sin(state.clock.elapsedTime * speed) * 0.15;
+    
+    // Parallax displacement based on pointer coordinates (-1 to 1)
+    const targetX = position[0] + state.pointer.x * 1.2;
+    const targetY = position[1] + floatY + state.pointer.y * 1.2;
+    
+    // LERP smoothing
+    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.05);
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.05);
+    
+    // Tilt rotation based on pointer
+    const targetRotX = Math.sin(state.clock.elapsedTime * speed * 0.12) * 0.04 - state.pointer.y * 0.3;
+    const targetRotY = state.clock.elapsedTime * speed * 0.02 + state.pointer.x * 0.3;
+    
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotX, 0.05);
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotY, 0.05);
   });
 
   return (
@@ -238,25 +258,203 @@ function Scene() {
 export default function LandingHero() {
   const navigate = useNavigate();
   const { track } = useAnalytics();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const ctaContainerRef = useRef<HTMLDivElement>(null);
+
+  const prefersReducedMotion = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
 
   useEffect(() => {
     track('landing_view');
   }, [track]);
 
+  useGSAP((context, contextSafe) => {
+    if (prefersReducedMotion || !contextSafe) return;
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    // Logo entrance
+    tl.from('.brand-logo', {
+      opacity: 0,
+      y: -25,
+      duration: 1.0,
+      ease: 'back.out(1.5)',
+    });
+
+    // Heading character split & reveal
+    let split: SplitType | null = null;
+    if (headingRef.current) {
+      split = new SplitType(headingRef.current, { types: 'words,chars' });
+      tl.from(split.chars, {
+        opacity: 0,
+        y: 60,
+        rotateX: -70,
+        stagger: 0.015,
+        duration: 1.0,
+        ease: 'back.out(1.4)',
+      }, '-=0.8');
+    }
+
+    // Subtitle description
+    tl.from('.hero-desc', {
+      opacity: 0,
+      y: 20,
+      duration: 0.9,
+    }, '-=0.6');
+
+    // Search bar container
+    tl.from('.search-container', {
+      opacity: 0,
+      y: 25,
+      duration: 0.9,
+    }, '-=0.7');
+
+    // CTA button container
+    tl.from('.cta-container', {
+      opacity: 0,
+      y: 25,
+      duration: 0.9,
+    }, '-=0.7');
+
+    // Feature cards stagger reveal
+    tl.from('.feature-card', {
+      opacity: 0,
+      y: 45,
+      stagger: 0.12,
+      duration: 1.2,
+      ease: 'back.out(1.2)',
+    }, '-=0.7');
+
+    // Social proof text & scroll cue
+    tl.from('.social-proof, .scroll-cue', {
+      opacity: 0,
+      y: 10,
+      duration: 0.9,
+      stagger: 0.1,
+    }, '-=0.6');
+
+    // MAGNETIC EFFECTS FOR SEARCH BAR & CTA BUTTON
+    const makeMagnetic = (el: HTMLElement, strength = 0.3) => {
+      const onMouseMove = contextSafe((e: MouseEvent) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - (rect.left + rect.width / 2);
+        const y = e.clientY - (rect.top + rect.height / 2);
+        
+        gsap.to(el, {
+          x: x * strength,
+          y: y * strength,
+          scale: 1.03,
+          duration: 0.4,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      });
+
+      const onMouseLeave = contextSafe(() => {
+        gsap.to(el, {
+          x: 0,
+          y: 0,
+          scale: 1,
+          duration: 0.6,
+          ease: 'elastic.out(1.2, 0.4)',
+          overwrite: 'auto',
+        });
+      });
+
+      el.addEventListener('mousemove', onMouseMove);
+      el.addEventListener('mouseleave', onMouseLeave);
+
+      return () => {
+        el.removeEventListener('mousemove', onMouseMove);
+        el.removeEventListener('mouseleave', onMouseLeave);
+      };
+    };
+
+    if (searchContainerRef.current) makeMagnetic(searchContainerRef.current, 0.22);
+    if (ctaContainerRef.current) makeMagnetic(ctaContainerRef.current, 0.32);
+
+    // 3D TILT EFFECT FOR FEATURE CARDS
+    const makeTiltCard = (el: HTMLElement) => {
+      const onMouseMove = contextSafe((e: MouseEvent) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const xc = (x / rect.width) - 0.5;
+        const yc = (y / rect.height) - 0.5;
+
+        gsap.to(el, {
+          rotateY: xc * 16,
+          rotateX: -yc * 16,
+          scale: 1.02,
+          boxShadow: '0 20px 40px rgba(45, 42, 38, 0.12)',
+          duration: 0.4,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      });
+
+      const onMouseLeave = contextSafe(() => {
+        gsap.to(el, {
+          rotateY: 0,
+          rotateX: 0,
+          scale: 1,
+          boxShadow: '0 2px 8px rgba(45, 42, 38, 0.06)',
+          duration: 0.6,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        });
+      });
+
+      el.addEventListener('mousemove', onMouseMove);
+      el.addEventListener('mouseleave', onMouseLeave);
+
+      return () => {
+        el.removeEventListener('mousemove', onMouseMove);
+        el.removeEventListener('mouseleave', onMouseLeave);
+      };
+    };
+
+    const cards = containerRef.current.querySelectorAll('.feature-card');
+    const cleanupFns = Array.from(cards).map(card => makeTiltCard(card as HTMLElement));
+
+    return () => {
+      if (split) {
+        split.revert();
+      }
+      cleanupFns.forEach(fn => fn());
+    };
+  }, { scope: containerRef });
+
   return (
-    <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 pt-20 pb-16 overflow-hidden">
-      {/* 3D Background Canvas */}
+    <section ref={containerRef} className="relative min-h-[92vh] flex flex-col items-center justify-center px-6 pt-24 pb-16 overflow-hidden">
+      {/* 3D Background Canvas (static gradient fallback for reduced motion) */}
       <div className="absolute inset-0 z-0">
-        <Canvas
-          camera={{ position: [0, 0, 7], fov: 55, near: 0.1, far: 50 }}
-          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-          dpr={[1, 1.5]}
-        >
-          <color attach="background" args={['#FAF8F5']} />
-          <Suspense fallback={null}>
-            <Scene />
-          </Suspense>
-        </Canvas>
+        {prefersReducedMotion ? (
+          <div
+            className="w-full h-full"
+            style={{
+              background:
+                'radial-gradient(ellipse at 30% 20%, rgba(196,168,130,0.12) 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, rgba(139,115,85,0.08) 0%, transparent 50%), #FAF8F5',
+            }}
+          />
+        ) : (
+          <Canvas
+            camera={{ position: [0, 0, 7], fov: 55, near: 0.1, far: 50 }}
+            gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+            dpr={[1, 1.5]}
+          >
+            <color attach="background" args={['#FAF8F5']} />
+            <Suspense fallback={null}>
+              <Scene />
+            </Suspense>
+          </Canvas>
+        )}
       </div>
 
       {/* Soft edge fade for depth */}
@@ -267,129 +465,126 @@ export default function LandingHero() {
         }}
       />
 
-      <div className="relative z-10 max-w-2xl mx-auto text-center">
+      <div className="relative z-10 max-w-4xl mx-auto text-center animate-fade-in">
         {/* Logo / Brand */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-10"
-        >
+        <div className="mb-10 brand-logo">
           <div className="flex items-center justify-center gap-3 mb-6">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-[#8B7355]">
-              <path d="M20 4C12 4 6 10 6 18c0 5 2.5 9.5 6.5 12.5L20 38l7.5-7.5C31.5 27.5 34 23 34 18c0-8-6-14-14-14z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <path d="M14 18c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5-2.5 5.5-6 5.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-              <path d="M20 12.5v-3M20 28.5v-3M12.5 20h-3M30.5 20h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M20 4C12 4 6 10 6 18c0 5 2.5 9.5 6.5 12.5L20 38l7.5-7.5C31.5 27.5 34 23 34 18c0-8-6-14-14-14z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              <path d="M14 18c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5-2.5 5.5-6 5.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+              <path d="M20 12.5v-3M20 28.5v-3M12.5 20h-3M30.5 20h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </div>
-          <h1 className="text-5xl md:text-6xl font-semibold text-[#2D2A26] tracking-tight mb-3"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            Stop pretending you know JEE.
+          <h1
+            ref={headingRef}
+            className="text-6xl md:text-7xl lg:text-8xl font-semibold text-[#2D2A26] tracking-tight leading-[0.95] mb-6"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Stop pretending
+            <br />
+            <span className="italic text-[#8B7355]">you know</span> JEE.
           </h1>
-          <p className="text-[15px] text-[#8A8279] font-medium tracking-wide max-w-md mx-auto leading-relaxed">
+          <p className="text-[16px] md:text-[17px] text-[#8A8279] font-medium tracking-wide max-w-lg mx-auto leading-relaxed hero-desc">
             ATLAS grills you on Physics, Chemistry & Maths until you actually prove mastery. No hints. No shortcuts. Just a shareable credential when you pass.
           </p>
-        </motion.div>
+        </div>
 
         {/* Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6"
-        >
+        <div className="mb-6 search-container" ref={searchContainerRef}>
           <div className="relative max-w-lg mx-auto">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A8279]">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M7 12.5C10.0376 12.5 12.5 10.0376 12.5 7C12.5 3.96243 10.0376 1.5 7 1.5C3.96243 1.5 1.5 3.96243 1.5 7C1.5 10.0376 3.96243 12.5 7 12.5Z" stroke="currentColor" strokeWidth="1.2"/>
-                <path d="M10.5 10.5L14.5 14.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <path d="M7 12.5C10.0376 12.5 12.5 10.0376 12.5 7C12.5 3.96243 10.0376 1.5 7 1.5C3.96243 1.5 1.5 3.96243 1.5 7C1.5 10.0376 3.96243 12.5 7 12.5Z" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M10.5 10.5L14.5 14.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
             </div>
             <input
               type="text"
+              aria-label="Search a JEE topic to get started"
               placeholder="Try Rotational Dynamics, Electrochemistry, Limits..."
-              className="w-full pl-11 pr-5 py-3.5 bg-white/80 backdrop-blur-md border border-[#E8E2D9] rounded-full text-sm text-[#2D2A26] placeholder:text-[#B5AEA5] focus:outline-none focus:border-[#8B7355]/40 focus:ring-2 focus:ring-[#8B7355]/10 transition-all shadow-sm"
+              className="w-full pl-11 pr-5 py-3.5 bg-white/80 backdrop-blur-md border border-[#E8E2D9] rounded-full text-sm text-[#2D2A26] placeholder:text-[#B5AEA5] focus:outline-none focus:border-[#8B7355]/40 focus:ring-2 focus:ring-[#8B7355]/10 transition-colors shadow-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  navigate('/signup');
+                  const query = e.currentTarget.value.trim();
+                  navigate(query ? `/signup?topic=${encodeURIComponent(query)}` : '/signup');
                 }
               }}
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Start Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-16"
-        >
+        <div className="mb-16 cta-container" ref={ctaContainerRef}>
           <a
             href="#demo"
-            className="inline-flex items-center gap-2 px-7 py-3 bg-[#2D2A26] text-white text-sm font-extrabold rounded-full hover:bg-[#3D3833] transition-colors shadow-md"
+            className="group inline-flex items-center gap-2 px-8 py-3.5 bg-[#2D2A26] text-white text-sm font-extrabold rounded-full transition-shadow duration-300 shadow-neo-lg"
           >
             Prove it — free, no signup
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </a>
-        </motion.div>
+        </div>
 
         {/* Feature Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto mb-16"
-        >
-          <div className="flex flex-col items-center text-center p-5 bg-white/40 backdrop-blur-sm rounded-xl">
-            <div className="w-14 h-14 mb-4 text-[#8B7355]">
-              <ShieldCheck className="w-full h-full" strokeWidth={1.2} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-3xl mx-auto mb-16" style={{ perspective: 1000 }}>
+          {[
+            {
+              icon: ShieldCheck,
+              color: '#8B7355',
+              title: 'Prove-It Mode',
+              text: 'ATLAS grills you with follow-ups until you truly master a topic. No hints. No guessing.',
+            },
+            {
+              icon: BookOpen,
+              color: '#6B8E6B',
+              title: 'Daily JEE Prescriptions',
+              text: 'Based on your weak areas and backlog, get one prioritized task every morning. No decision fatigue.',
+            },
+            {
+              icon: Calendar,
+              color: '#7A6B8A',
+              title: 'Squad Accountability',
+              text: 'Form a Prove-It squad with friends. Weekly topic, shared streak, and real rigor scores.',
+            },
+          ].map((card) => (
+            <div
+              key={card.title}
+              className="feature-card group flex flex-col items-center text-center p-6 bg-white/60 backdrop-blur-md border border-[#2D2A26]/[0.05] shadow-neo-sm rounded-2xl transition-shadow duration-300"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <div
+                className="w-12 h-12 mb-4 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300"
+                style={{ backgroundColor: card.color }}
+              >
+                <card.icon className="w-6 h-6 text-white" strokeWidth={1.6} />
+              </div>
+              <h3
+                className="text-sm font-semibold text-[#2D2A26] mb-1.5"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                {card.title}
+              </h3>
+              <p className="text-xs text-[#8A8279] leading-relaxed max-w-[200px]">{card.text}</p>
             </div>
-            <h3 className="text-sm font-semibold text-[#2D2A26] mb-1.5" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              Prove-It Mode
-            </h3>
-            <p className="text-xs text-[#8A8279] leading-relaxed max-w-[200px]">
-              ATLAS grills you with follow-ups until you truly master a topic. No hints. No guessing.
-            </p>
-          </div>
+          ))}
+        </div>
 
-          <div className="flex flex-col items-center text-center p-5 bg-white/40 backdrop-blur-sm rounded-xl">
-            <div className="w-14 h-14 mb-4 text-[#8B7355]">
-              <BookOpen className="w-full h-full" strokeWidth={1.2} />
-            </div>
-            <h3 className="text-sm font-semibold text-[#2D2A26] mb-1.5" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              Daily JEE Prescriptions
-            </h3>
-            <p className="text-xs text-[#8A8279] leading-relaxed max-w-[200px]">
-              Based on your weak areas and backlog, get one prioritized task every morning. No decision fatigue.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center text-center p-5 bg-white/40 backdrop-blur-sm rounded-xl">
-            <div className="w-14 h-14 mb-4 text-[#8B7355]">
-              <Calendar className="w-full h-full" strokeWidth={1.2} />
-            </div>
-            <h3 className="text-sm font-semibold text-[#2D2A26] mb-1.5" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              Squad Accountability
-            </h3>
-            <p className="text-xs text-[#8A8279] leading-relaxed max-w-[200px]">
-              Form a Prove-It squad with friends. Weekly topic, shared streak, and real rigor scores.
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Social proof placeholder — replace with real screenshots or student count once you have them */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-md mx-auto text-center"
-        >
+        {/* Social proof placeholder */}
+        <div className="max-w-md mx-auto text-center social-proof">
           <p className="text-xs text-[#8A8279] font-medium">
             Built for JEE. No AI cheating. Only mastery.
           </p>
-        </motion.div>
+        </div>
       </div>
+
+      {/* Scroll cue */}
+      <a
+        href="#demo"
+        aria-label="Scroll to the live demo"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 text-[#8A8279] hover:text-[#8B7355] transition-colors scroll-cue"
+      >
+        <span className="text-[10px] font-bold uppercase tracking-widest">Try the demo</span>
+        <ChevronDown className={`w-5 h-5 ${prefersReducedMotion ? '' : 'animate-float'}`} />
+      </a>
     </section>
   );
 }

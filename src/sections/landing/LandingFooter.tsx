@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 
 export function LandingFooter() {
   return (
     <footer className="bg-[#2D2A26] text-white pt-16 pb-10 relative overflow-hidden">
+      {/* Oversized watermark for depth */}
+      <span
+        aria-hidden="true"
+        className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-[22vw] leading-none font-semibold text-white/[0.03] whitespace-nowrap pointer-events-none select-none"
+        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+      >
+        elevenfolks
+      </span>
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-start justify-between gap-14 mb-14">
           <div className="max-w-sm">
@@ -31,10 +38,14 @@ export function LandingFooter() {
             <div>
               <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">Resources</p>
               <div className="flex flex-col gap-2.5">
-                {['Curriculum', 'Test Calendar', 'Blog', 'Help Center'].map((item) => (
-                  <span key={item} className="text-[13px] font-medium text-white/45 cursor-default">
-                    {item}
-                  </span>
+                {[
+                  { label: 'Curriculum', href: '#curriculum' },
+                  { label: 'Live Demo', href: '#demo' },
+                  { label: 'Help Center', href: 'mailto:hello@elevenfolks.com' },
+                ].map((item) => (
+                  <a key={item.label} href={item.href} className="text-[13px] font-medium text-white/45 hover:text-white/80 transition-colors">
+                    {item.label}
+                  </a>
                 ))}
               </div>
             </div>
@@ -42,19 +53,18 @@ export function LandingFooter() {
               <p className="text-[10px] font-bold text-white/25 uppercase tracking-widest mb-4">Company</p>
               <div className="flex flex-col gap-2.5">
                 {[
-                  { label: 'About', href: '#about' },
                   { label: 'Privacy Policy', href: '/privacy' },
                   { label: 'Terms of Service', href: '/terms' },
                   { label: 'Contact', href: 'mailto:hello@elevenfolks.com' }
                 ].map((item) => (
-                  item.href.startsWith('/') || item.href.startsWith('mailto:') ? (
+                  item.href.startsWith('/') ? (
                     <Link key={item.label} to={item.href} className="text-[13px] font-medium text-white/45 hover:text-white/80 transition-colors">
                       {item.label}
                     </Link>
                   ) : (
-                    <span key={item.label} className="text-[13px] font-medium text-white/45 cursor-default">
+                    <a key={item.label} href={item.href} className="text-[13px] font-medium text-white/45 hover:text-white/80 transition-colors">
                       {item.label}
-                    </span>
+                    </a>
                   )
                 ))}
               </div>
@@ -69,7 +79,6 @@ export function LandingFooter() {
           <div className="flex items-center gap-6">
             <Link to="/privacy" className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors">Privacy</Link>
             <Link to="/terms" className="text-[12px] font-medium text-white/20 hover:text-white/40 transition-colors">Terms</Link>
-            <span className="text-[12px] font-medium text-white/20 cursor-default">Cookies</span>
           </div>
         </div>
       </div>

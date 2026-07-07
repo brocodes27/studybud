@@ -7,7 +7,7 @@ export interface ChatMessage {
 
 export class AIService {
   private static instance: AIService;
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AIService {
     if (!AIService.instance) {
@@ -37,9 +37,9 @@ export class AIService {
 
       // Inject real-world temporal awareness so the LLM always knows "today"
       const now = new Date();
-      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      const realWorldContext = `Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}.`;
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const realWorldContext = `Today is ${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`;
 
       const fullPrompt = `SYSTEM INSTRUCTION: ${contextualSystemPrompt}\n\n${realWorldContext}\n\nUSER PROMPT: ${prompt}`;
 
@@ -64,6 +64,25 @@ export class AIService {
   }
 
   /**
+   * Guest-safe chat for the public landing demo. Calls the JWT-less
+   * `landing-demo` edge function (anon key only, server-locked prompt).
+   */
+  async generateGuestChat(message: string, conversationHistory: any[] = []): Promise<{
+    response: string,
+    emotion_detected: string,
+    pedagogical_mode: string
+  }> {
+    const { data, error } = await supabase.functions.invoke('landing-demo', {
+      body: { message, conversation_history: conversationHistory }
+    });
+    if (error) throw error;
+    if (!data?.response || typeof data.response !== 'string' || data.response.trim() === '') {
+      throw new Error('Demo returned empty response');
+    }
+    return data;
+  }
+
+  /**
    * Generates a response using the Orchestrator Edge Function (or fallback to NDCF).
    */
   async generateEmpatheticChat(message: string, sessionId: string, conversationHistory: any[], studyContext?: string, useFullOrchestration: boolean = true): Promise<{
@@ -74,7 +93,9 @@ export class AIService {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData?.session?.access_token) {
-        throw new Error('Unauthorized');
+        // No auth session (e.g. landing-page demo, logged-out /prove-it):
+        // route to the guest-safe demo function instead of failing.
+        return await this.generateGuestChat(message, conversationHistory);
       }
 
       // Use the new Multi-Agent Orchestrator (it handles both fast path and complex path internally)

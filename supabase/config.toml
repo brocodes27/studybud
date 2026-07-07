@@ -320,6 +320,10 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # Allow browser preflight without JWT; the function validates Authorization internally.
 verify_jwt = false
 
+[functions.landing-demo]
+# Public landing-page demo endpoint. No user JWT — abuse-bounded by CORS + input caps inside the function.
+verify_jwt = false
+
 [functions.analyse-task-output]
 enabled = true
 verify_jwt = true

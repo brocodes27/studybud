@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fetchClassExecutionMetrics, type ClassExecutionMetrics } from '../lib/classExecutionMetrics';
 import { Bell, XCircle, Eye, Trash2, Upload, FileText, Link as LinkIcon, BarChart2, Brain, Users, BookOpen, AlertCircle, Loader2, Download, Clock, Sparkles, GraduationCap, CheckCircle2, CalendarCheck, Zap, Target, Activity, Flag, Mail, ShieldCheck, Gauge, ClipboardCheck } from 'lucide-react';
-import { MLPipelineHealth } from '../components/MLPipelineHealth';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
@@ -52,19 +51,19 @@ function masteryBelongsToSubject(m: any, subject: string): boolean {
 
   // Keyword fallback for known subjects
   if (s.includes('physics')) {
-    const keywords = ['kinematics','dynamics','thermodynamics','waves','electromagnetism','optics','mechanics','electrodynamics','modern physics','electrostatics','magnetism','emi','gravitation','atoms','nuclei','semiconductors','current electricity','ac circuits','photoelectric'];
+    const keywords = ['kinematics', 'dynamics', 'thermodynamics', 'waves', 'electromagnetism', 'optics', 'mechanics', 'electrodynamics', 'modern physics', 'electrostatics', 'magnetism', 'emi', 'gravitation', 'atoms', 'nuclei', 'semiconductors', 'current electricity', 'ac circuits', 'photoelectric'];
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
   if (s.includes('chem')) {
-    const keywords = ['mole concept','equilibrium','electrochemistry','organic','inorganic','physical chem','goc','hydrocarbons','haloalkanes','amines','alcohols','bonding','periodic','coordination','p-block','chemical kinetics','thermodynamics'];
+    const keywords = ['mole concept', 'equilibrium', 'electrochemistry', 'organic', 'inorganic', 'physical chem', 'goc', 'hydrocarbons', 'haloalkanes', 'amines', 'alcohols', 'bonding', 'periodic', 'coordination', 'p-block', 'chemical kinetics', 'thermodynamics'];
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
   if (s.includes('math')) {
-    const keywords = ['limits','derivatives','integrals','calculus','algebra','coordinate geometry','probability','matrices','determinants','complex numbers','sequences','series','quadratic','trigonometry','functions'];
+    const keywords = ['limits', 'derivatives', 'integrals', 'calculus', 'algebra', 'coordinate geometry', 'probability', 'matrices', 'determinants', 'complex numbers', 'sequences', 'series', 'quadratic', 'trigonometry', 'functions'];
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
   if (s.includes('social') || s.includes('sst') || s.includes('civic') || s.includes('history') || s.includes('geograph') || s.includes('political') || s.includes('economic')) {
-    const keywords = ['history','geography','civics','political science','economics','nationalism','democracy','resources','development','constitution','sst','social science'];
+    const keywords = ['history', 'geography', 'civics', 'political science', 'economics', 'nationalism', 'democracy', 'resources', 'development', 'constitution', 'sst', 'social science'];
     if (keywords.some(k => d.includes(k) || sub.includes(k))) return true;
   }
   return false;
@@ -185,10 +184,13 @@ const TeacherClassDashboard: React.FC = () => {
   const [studentMasteries, setStudentMasteries] = useState<Record<string, any[]>>({});
   const [studentStreaks, setStudentStreaks] = useState<Record<string, any>>({});
 
+  // Checked Work (Notebook Grader / test uploads attached to this class)
+  const [checkedWork, setCheckedWork] = useState<any[]>([]);
+
   // Real Data generation for UI
   const [heatmapData, setHeatmapData] = useState<any>({});
   const [readinessData, setReadinessData] = useState<any>({});
-  
+
   // Action Feedback state
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionError, setActionError] = useState('');
@@ -199,7 +201,10 @@ const TeacherClassDashboard: React.FC = () => {
     // Default to coming Sunday
     const sunday = new Date(today);
     sunday.setDate(today.getDate() + (7 - today.getDay()) % 7);
-    return sunday.toISOString().split('T')[0];
+    const yyyy = sunday.getFullYear();
+    const mm = String(sunday.getMonth() + 1).padStart(2, '0');
+    const dd = String(sunday.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   });
   const [weeklyReportDays, setWeeklyReportDays] = useState([
     { day: 1, topic: '', subject: 'Physics' },
@@ -251,7 +256,7 @@ const TeacherClassDashboard: React.FC = () => {
         .from('assignment_submissions')
         .select('*')
         .in('assignment_id', assignments.map(a => a.id));
-      
+
       const newSubmissions = submissionsData || [];
       setSubmissions(newSubmissions);
 
@@ -296,7 +301,7 @@ const TeacherClassDashboard: React.FC = () => {
       setLoggingWeeklyReport(true);
       setWeeklyReportError('');
       setWeeklyReportSuccess('');
-      
+
       const payload = {
         type: 'weekly_report',
         week_start_date: weekStartDate,
@@ -398,10 +403,10 @@ const TeacherClassDashboard: React.FC = () => {
         const skillRecord = masteries.find(m => m.subdomain === skill || m.domain === skill);
         let status = 'Unknown';
         if (skillRecord) {
-           const score = Number(skillRecord.mastery_score || 0);
-           if (score >= 80) status = 'Mastered';
-           else if (score >= 50) status = 'Fragile';
-           else status = 'Stuck';
+          const score = Number(skillRecord.mastery_score || 0);
+          if (score >= 80) status = 'Mastered';
+          else if (score >= 50) status = 'Fragile';
+          else status = 'Stuck';
         }
         newHeatmap[s.id][skill] = status;
       });
@@ -427,7 +432,7 @@ const TeacherClassDashboard: React.FC = () => {
         flags.push('Low Adherence');
       }
       if (profile.stress_signals && Object.keys(profile.stress_signals).length > 0) {
-         flags.push('Stress Flags');
+        flags.push('Stress Flags');
       }
 
       newReadiness[s.id] = {
@@ -732,7 +737,7 @@ const TeacherClassDashboard: React.FC = () => {
         if (match) questions = JSON.parse(match[0]);
         else throw new Error('Failed to parse AI response');
       }
-      
+
       const preview = questions.map((q: any, i: number) => {
         const head = `${i + 1}. [${q.marks} marks] ${q.question}`;
         if (q.type === 'mcq' && Array.isArray(q.options)) {
@@ -793,9 +798,9 @@ const TeacherClassDashboard: React.FC = () => {
 
           const { data: masteryData } = await supabase.from('user_subject_mastery').select('*').in('user_id', userIds);
           const mmap: Record<string, any[]> = {};
-          (masteryData || []).forEach((m: any) => { 
-             if (!mmap[m.user_id]) mmap[m.user_id] = [];
-             mmap[m.user_id].push(m);
+          (masteryData || []).forEach((m: any) => {
+            if (!mmap[m.user_id]) mmap[m.user_id] = [];
+            mmap[m.user_id].push(m);
           });
           setStudentMasteries(mmap);
 
@@ -815,6 +820,15 @@ const TeacherClassDashboard: React.FC = () => {
 
         const { data: announcementData } = await supabase.from('class_announcements').select('*').eq('class_id', id);
         setAnnouncements(announcementData || []);
+
+        // Checked Work: results appended by the Notebook Grader & test uploads
+        const { data: checkedWorkData } = await supabase
+          .from('test_results')
+          .select('id, user_id, test_name, score_obtained, score_total, weak_topics, test_date')
+          .eq('class_id', id)
+          .order('test_date', { ascending: false })
+          .limit(50);
+        setCheckedWork(checkedWorkData || []);
 
         const { data: assignmentData } = await supabase.from('assignments').select('*').eq('class_id', id).order('created_at', { ascending: false });
         setAssignments(assignmentData || []);
@@ -858,14 +872,14 @@ const TeacherClassDashboard: React.FC = () => {
     skillColumns.forEach(skill => {
       skillScores[skill] = { total: 0, count: 0, stuckCount: 0, fragileCount: 0 };
     });
-    
+
     Object.values(heatmapData).forEach((studentData: any) => {
       Object.entries(studentData).forEach(([skill, status]) => {
         if (skillScores[skill]) {
           skillScores[skill].count++;
           if (status === 'Stuck') skillScores[skill].stuckCount++;
           if (status === 'Fragile') skillScores[skill].fragileCount++;
-          
+
           if (status === 'Mastered') skillScores[skill].total += 100;
           else if (status === 'Fragile') skillScores[skill].total += 60;
           else if (status === 'Stuck') skillScores[skill].total += 30;
@@ -891,7 +905,7 @@ const TeacherClassDashboard: React.FC = () => {
   const weakestSkills = getWeakestSkills();
   const priority1 = weakestSkills[0] || { skill: skillColumns[0] || 'General', fragilePct: 0, stuckCount: 0, fragileCount: 0 };
   const priority2 = weakestSkills[1] || { skill: skillColumns[1] || 'General', fragilePct: 0, stuckCount: 0, fragileCount: 0 };
-  
+
   const classParticipationPct = students.length > 0 ? Math.round(Object.keys(attendanceStatus).filter(k => attendanceStatus[k] === 'present').length / students.length * 100) : 85;
 
   if (role !== 'teacher') {
@@ -908,7 +922,7 @@ const TeacherClassDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF8F5] pb-20 font-sans">
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-        
+
         {/* Header */}
         <div className="mb-8 pb-8 border-b border-[#E8E4DF]">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -923,9 +937,18 @@ const TeacherClassDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-[#E8E4DF] shadow-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm font-bold text-[#2D2A26]">Active</span>
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/teacher/grader?class=${id}`}
+                className="flex items-center gap-2 px-4 py-2 bg-[#2D2A26] text-white rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                Notebook Grader
+              </Link>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-[#E8E4DF] shadow-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-sm font-bold text-[#2D2A26]">Active</span>
+              </div>
             </div>
           </div>
         </div>
@@ -936,11 +959,10 @@ const TeacherClassDashboard: React.FC = () => {
             {TABS.map(t => (
               <button
                 key={t}
-                className={`px-5 py-3 font-bold text-sm rounded-[14px] transition-all whitespace-nowrap ${
-                  tab === t
+                className={`px-5 py-3 font-bold text-sm rounded-[14px] transition-all whitespace-nowrap ${tab === t
                   ? 'bg-[#2D2A26] text-white shadow-sm transform scale-[1.02]'
                   : 'bg-white text-[#8A8279] border border-[#E8E4DF] hover:text-[#2D2A26] hover:bg-[#F8FAFF]'
-                }`}
+                  }`}
                 onClick={() => setTab(t)}
               >
                 {t}
@@ -978,7 +1000,7 @@ const TeacherClassDashboard: React.FC = () => {
                   </div>
                   <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">{priority1.fragilePct}% of class is fragile in {priority1.skill}</h3>
                   <p className="text-sm text-[#8A8279] mb-4">Largest impact on overall class mastery.</p>
-                  <button 
+                  <button
                     onClick={() => handleAssignAction(`10-min Concept Rebuild: ${priority1.skill}`, `Targeted review material for ${priority1.skill}`)}
                     className="w-full bg-white border border-red-200 text-red-600 font-bold py-2 rounded-lg text-sm hover:bg-red-50 transition-colors">
                     + 10-min Concept Rebuild
@@ -990,21 +1012,21 @@ const TeacherClassDashboard: React.FC = () => {
                   </div>
                   <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">{priority2.stuckCount} students stuck on {priority2.skill}</h3>
                   <p className="text-sm text-[#8A8279] mb-4">High risk of falling permanently behind.</p>
-                  <button 
+                  <button
                     onClick={() => handleAssignAction(`Practice Sprint: ${priority2.skill}`, `Remedial practice problems for ${priority2.skill}`)}
                     className="w-full bg-white border border-amber-200 text-amber-700 font-bold py-2 rounded-lg text-sm hover:bg-amber-50 transition-colors">
                     + Assign Practice Sprint
                   </button>
                 </div>
-                <div className="bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl p-5 hover:shadow-md transition-shadow">
+                <div className="bg-[#F5F0E8]/40 border border-[#E8E4DF] rounded-xl p-5 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-blue-500 text-white text-xs font-black px-2 py-1 rounded-md">PRIORITY 3</span>
+                    <span className="bg-[#8B7355] text-white text-xs font-black px-2 py-1 rounded-md">PRIORITY 3</span>
                   </div>
                   <h3 className="font-bold text-[#2D2A26] mb-2 text-lg leading-tight">Review Yesterday's Exit Ticket</h3>
                   <p className="text-sm text-[#8A8279] mb-4">Common misconception: Vector resolution.</p>
-                  <button 
+                  <button
                     onClick={() => setTab('Daily Teaching Loop')}
-                    className="w-full bg-white border border-blue-200 text-blue-600 font-bold py-2 rounded-lg text-sm hover:bg-blue-50 transition-colors">
+                    className="w-full bg-white border border-[#8B7355]/30 text-[#8B7355] font-bold py-2 rounded-lg text-sm hover:bg-[#F5F0E8] transition-colors">
                     + Open Results
                   </button>
                 </div>
@@ -1025,7 +1047,7 @@ const TeacherClassDashboard: React.FC = () => {
                   <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-200"></div> Unknown</div>
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1049,7 +1071,7 @@ const TeacherClassDashboard: React.FC = () => {
                           const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS];
                           return (
                             <td key={skill} className="p-2 text-center">
-                              <div 
+                              <div
                                 className={`w-full h-8 rounded-md ${color} opacity-90 hover:opacity-100 cursor-pointer transition-all border border-black/5`}
                                 title={`${s.full_name} - ${skill}: ${status}`}
                                 onClick={() => alert(`Evidence for ${s.full_name} in ${skill}:\n- 3 Wrong questions\n- 15 mins spent stuck`)}
@@ -1070,14 +1092,85 @@ const TeacherClassDashboard: React.FC = () => {
                 </table>
               </div>
             </div>
+
+            {/* Checked Work — results appended by the Notebook Grader */}
+            <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-extrabold text-[#2D2A26] flex items-center gap-2">
+                  <ClipboardCheck className="h-6 w-6 text-[#8B7355] stroke-[2.5px]" />
+                  Checked Work
+                </h2>
+                <Link to={`/teacher/grader?class=${id}`} className="text-sm font-bold text-[#8B7355] hover:underline">
+                  Open Notebook Grader →
+                </Link>
+              </div>
+              {checkedWork.length === 0 ? (
+                <p className="text-sm text-[#8A8279] font-medium">
+                  No checked work yet. Use the Notebook Grader to capture and AI-check a student's notebook or answer sheet — results will appear here and on the student's own dashboard.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="p-3 border-b-2 border-[#E8E4DF] text-xs font-black text-[#8A8279] uppercase tracking-wider">Student</th>
+                        <th className="p-3 border-b-2 border-[#E8E4DF] text-xs font-black text-[#8A8279] uppercase tracking-wider">Test</th>
+                        <th className="p-3 border-b-2 border-[#E8E4DF] text-xs font-black text-[#8A8279] uppercase tracking-wider">Score</th>
+                        <th className="p-3 border-b-2 border-[#E8E4DF] text-xs font-black text-[#8A8279] uppercase tracking-wider">Date</th>
+                        <th className="p-3 border-b-2 border-[#E8E4DF] text-xs font-black text-[#8A8279] uppercase tracking-wider">Weak Topics</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {checkedWork.map((r) => {
+                        const student = students.find((s) => s.id === r.user_id);
+                        const weakTopics: any[] = Array.isArray(r.weak_topics) ? r.weak_topics : [];
+                        const pct = r.score_total > 0 ? Math.round((r.score_obtained / r.score_total) * 100) : 0;
+                        return (
+                          <tr key={r.id} className="hover:bg-[#F8FAFF] transition-colors border-b border-[#E8E4DF]/50 align-top">
+                            <td className="p-3 text-sm font-bold text-[#2D2A26] whitespace-nowrap">
+                              {student?.full_name || student?.email || 'Student'}
+                            </td>
+                            <td className="p-3 text-sm font-medium text-[#2D2A26]">{r.test_name}</td>
+                            <td className="p-3 text-sm whitespace-nowrap">
+                              <span className={`font-black ${pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                                {r.score_obtained}/{r.score_total}
+                              </span>
+                              <span className="text-[#8A8279] font-bold text-xs ml-1.5">({pct}%)</span>
+                            </td>
+                            <td className="p-3 text-sm font-medium text-[#8A8279] whitespace-nowrap">
+                              {r.test_date ? new Date(r.test_date).toLocaleDateString() : '—'}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1.5 max-w-md">
+                                {weakTopics.length === 0 ? (
+                                  <span className="text-xs font-bold text-emerald-600">All clear</span>
+                                ) : (
+                                  weakTopics.slice(0, 4).map((w: any, i: number) => (
+                                    <span key={i} className="text-[11px] font-bold px-2 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-700 truncate max-w-[14rem]" title={typeof w === 'string' ? w : w?.topic}>
+                                      {typeof w === 'string' ? w : w?.topic || 'Topic'}
+                                    </span>
+                                  ))
+                                )}
+                                {weakTopics.length > 4 && (
+                                  <span className="text-[11px] font-bold text-[#8A8279]">+{weakTopics.length - 4} more</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* 2) Daily Teaching Loop */}
         {tab === 'Daily Teaching Loop' && (
           <div className="space-y-6 animate-fade-in">
-            {/* ML Pipeline Health Panel */}
-            <MLPipelineHealth />
+
 
             <div className="bg-[#2D2A26] rounded-2xl p-6 text-white shadow-sm">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1131,7 +1224,7 @@ const TeacherClassDashboard: React.FC = () => {
               <div className="bg-white rounded-2xl border border-[#2D2A26]/[0.06] p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-black uppercase tracking-wider text-[#8A8279]">Teacher Time Saved</span>
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <ShieldCheck className="w-4 h-4 text-[#8B7355]" />
                 </div>
                 <div className="text-3xl font-black text-[#2D2A26]">{executionMetrics?.teacherActionsSaved ?? 0}</div>
                 <p className="text-xs font-bold text-[#8A8279] mt-1">Agent-created actions awaiting review</p>
@@ -1168,7 +1261,7 @@ const TeacherClassDashboard: React.FC = () => {
                     value={sessionTopics}
                     onChange={(e) => setSessionTopics(e.target.value)}
                     placeholder="Topics: e.g., Newton's 2nd Law"
-                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50"
+                    className="w-full px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50"
                   />
                   <textarea
                     value={sessionHomework}
@@ -1177,18 +1270,18 @@ const TeacherClassDashboard: React.FC = () => {
                       setHomeworkEnabled(e.target.value.length > 0);
                     }}
                     placeholder="Homework (optional)"
-                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
+                    className="w-full px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
                   />
                   <textarea
                     value={sessionTeacherNotes}
                     onChange={(e) => setSessionTeacherNotes(e.target.value)}
                     placeholder="Teacher notes: e.g., Many students struggled with sign conventions in relative velocity. Focus on conceptual clarity before formulas."
-                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
+                    className="w-full px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20 placeholder:text-[#8A8279]/50 min-h-[80px]"
                   />
                   {/* DPP Upload */}
-                  <div className="rounded-[14px] border-2 border-dashed border-[#00D1FF]/30 bg-[#00D1FF]/5 p-4">
+                  <div className="rounded-[14px] border-2 border-dashed border-[#8B7355]/30 bg-[#8B7355]/5 p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Upload className="w-4 h-4 text-[#00D1FF]" />
+                      <Upload className="w-4 h-4 text-[#8B7355]" />
                       <span className="text-sm font-bold text-[#2D2A26]">Upload Today's DPP</span>
                       <span className="text-[10px] text-[#8A8279]">PDF → questions auto-extracted</span>
                     </div>
@@ -1202,10 +1295,10 @@ const TeacherClassDashboard: React.FC = () => {
                           // Auto-trigger DPP extraction after session is logged
                         }
                       }}
-                      className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#00D1FF]/10 file:text-[#00D1FF] hover:file:bg-[#00D1FF]/20 cursor-pointer"
+                      className="w-full text-sm text-[#8A8279] file:mr-3 file:py-2 file:px-4 file:rounded-[10px] file:border-0 file:text-xs file:font-bold file:bg-[#8B7355]/10 file:text-[#8B7355] hover:file:bg-[#8B7355]/20 cursor-pointer"
                     />
                     {dppFile && (
-                      <p className="text-xs text-[#00D1FF] font-medium mt-2 truncate">{dppFile.name}</p>
+                      <p className="text-xs text-[#8B7355] font-medium mt-2 truncate">{dppFile.name}</p>
                     )}
                   </div>
                   {dppResult && (
@@ -1275,7 +1368,7 @@ const TeacherClassDashboard: React.FC = () => {
                           }
                         }}
                         disabled={dppUploading}
-                        className="bg-[#00D1FF] text-white px-4 rounded-xl font-bold hover:bg-[#00D1FF]/90 transition-all disabled:opacity-50"
+                        className="bg-[#8B7355] text-white px-4 rounded-xl font-bold hover:bg-[#8B7355]/90 transition-all disabled:opacity-50"
                       >
                         {dppUploading ? 'Processing...' : 'Run DPP Parse'}
                       </button>
@@ -1316,61 +1409,67 @@ const TeacherClassDashboard: React.FC = () => {
               {/* Sunday Weekly Plan Card */}
               <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden flex flex-col justify-between">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 rounded-bl-full -z-10 opacity-50"></div>
-                <div>
-                  <h2 className="text-xl font-extrabold text-[#2D2A26] mb-1">Sunday Weekly Plan</h2>
-                  <p className="text-xs text-[#8A8279] mb-6">Schedule teaching topics for the next 7 days.</p>
-                  
-                  <div className="mb-4">
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-[#8A8279] mb-1.5">Week Start Date (Sunday)</label>
-                    <input
-                      type="date"
-                      value={weekStartDate}
-                      onChange={(e) => setWeekStartDate(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#F8FAFF] rounded-[12px] border border-[#E8E4DF] text-xs font-bold text-[#2D2A26] focus:outline-none"
-                    />
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-[#2D2A26] mb-1">Sunday Weekly Plan</h2>
+                    <p className="text-xs text-[#8A8279] mb-6">Schedule teaching topics for the next 7 days.</p>
+
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-[#8A8279] mb-1.5">Week Start Date (Sunday)</label>
+                      <input
+                        type="date"
+                        value={weekStartDate}
+                        onChange={(e) => setWeekStartDate(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-[#FAF8F5] rounded-[12px] border border-[#E8E4DF] text-xs font-bold text-[#2D2A26] focus:outline-none"
+                      />
+                    </div>
                   </div>
 
-                  <form onSubmit={handleLogWeeklyReport} className="space-y-3.5 max-h-[360px] overflow-y-auto pr-1">
-                    {weeklyReportDays.map((day, index) => (
-                      <div key={day.day} className="flex gap-2 items-center">
-                        <span className="text-[10px] font-black text-[#8A8279] w-14 shrink-0">Day {day.day} ({(index + 1) === 1 ? 'Mon' : (index + 1) === 2 ? 'Tue' : (index + 1) === 3 ? 'Wed' : (index + 1) === 4 ? 'Thu' : (index + 1) === 5 ? 'Fri' : (index + 1) === 6 ? 'Sat' : 'Sun'}):</span>
-                        <input
-                          type="text"
-                          value={day.topic}
-                          onChange={(e) => {
-                            const newDays = [...weeklyReportDays];
-                            newDays[index].topic = e.target.value;
-                            setWeeklyReportDays(newDays);
-                          }}
-                          placeholder="Topic name..."
-                          className="flex-1 px-3 py-2 bg-[#F8FAFF] rounded-[10px] border border-[#E8E4DF] text-xs font-semibold text-[#2D2A26] focus:outline-none"
-                        />
-                      </div>
-                    ))}
-                    
-                    {weeklyReportSuccess && (
-                      <p className="text-emerald-600 text-xs font-bold bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">{weeklyReportSuccess}</p>
-                    )}
-                    {weeklyReportError && (
-                      <p className="text-red-600 text-xs font-bold bg-red-50 p-2.5 rounded-lg border border-red-100">{weeklyReportError}</p>
-                    )}
+                  <form onSubmit={handleLogWeeklyReport} className="flex flex-col justify-between flex-1 mt-4">
+                    <div className="space-y-3 mb-6">
+                      {weeklyReportDays.map((day, index) => (
+                        <div key={day.day} className="flex gap-2 items-center">
+                          <span className="text-[10px] font-black text-[#8A8279] w-14 shrink-0">Day {day.day} ({(index + 1) === 1 ? 'Mon' : (index + 1) === 2 ? 'Tue' : (index + 1) === 3 ? 'Wed' : (index + 1) === 4 ? 'Thu' : (index + 1) === 5 ? 'Fri' : (index + 1) === 6 ? 'Sat' : 'Sun'}):</span>
+                          <input
+                            type="text"
+                            value={day.topic}
+                            onChange={(e) => {
+                              const newDays = [...weeklyReportDays];
+                              newDays[index].topic = e.target.value;
+                              setWeeklyReportDays(newDays);
+                            }}
+                            placeholder="Topic name..."
+                            className="flex-1 px-3 py-2 bg-[#FAF8F5] rounded-[10px] border border-[#E8E4DF] text-xs font-semibold text-[#2D2A26] focus:outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
 
-                    <button
-                      type="submit"
-                      disabled={loggingWeeklyReport}
-                      className="w-full py-3 bg-[#2D2A26] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#3D3833] transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      {loggingWeeklyReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
-                      Publish Weekly Plan
-                    </button>
+                    <div className="shrink-0 space-y-3">
+                      {weeklyReportSuccess && (
+                        <p className="text-emerald-600 text-xs font-bold bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">{weeklyReportSuccess}</p>
+                      )}
+                      {weeklyReportError && (
+                        <p className="text-red-600 text-xs font-bold bg-red-50 p-2.5 rounded-lg border border-red-100">{weeklyReportError}</p>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loggingWeeklyReport}
+                        className="w-full py-3 bg-[#2D2A26] text-white rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#3D3833] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {loggingWeeklyReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
+                        Publish Weekly Plan
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>
 
               <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10 opacity-50"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F5F0E8]/50 rounded-bl-full -z-10 opacity-50"></div>
                 <h2 className="text-xl font-extrabold text-[#2D2A26] mb-2 flex items-center gap-2">
-                  Step 2: Auto-check <Zap className="w-5 h-5 text-blue-500" />
+                  Step 2: Auto-check <Zap className="w-5 h-5 text-[#8B7355]" />
                 </h2>
                 <p className="text-sm text-[#8A8279] mb-6">Generate a 5-question exit ticket tagged to taught skills.</p>
                 <form onSubmit={handleGenerateDailyMockTest} className="space-y-4">
@@ -1379,9 +1478,9 @@ const TeacherClassDashboard: React.FC = () => {
                     value={dailyTopics}
                     onChange={(e) => setDailyTopics(e.target.value)}
                     placeholder="Topics to test..."
-                    className="w-full px-4 py-3 bg-[#F8FAFF] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
+                    className="w-full px-4 py-3 bg-[#FAF8F5] rounded-[14px] border border-[#E8E4DF] font-medium text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-[#8B7355]/20"
                   />
-                  <button type="submit" disabled={generatingMock || !dailyTopics} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 hover:shadow-md transition-all disabled:opacity-50">
+                  <button type="submit" disabled={generatingMock || !dailyTopics} className="w-full bg-[#2D2A26] text-white py-3 rounded-xl font-bold hover:bg-[#3D3833] hover:shadow-md transition-all disabled:opacity-50">
                     {generatingMock ? 'Generating...' : 'Generate Exit Ticket'}
                   </button>
                   {mockSuccessMsg && <p className="text-emerald-600 text-sm font-bold mt-2">{mockSuccessMsg}</p>}
@@ -1408,17 +1507,16 @@ const TeacherClassDashboard: React.FC = () => {
 
               <div className="space-y-3">
                 {(executionMetrics?.riskQueue || []).slice(0, 5).map((item) => (
-                  <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#F8FAFF] border border-[#E8E4DF] rounded-xl p-4">
+                  <div key={item.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#F5F0E8]/40 border border-[#E8E4DF] rounded-xl p-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="font-black text-[#2D2A26]">{item.studentName}</span>
-                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full ${
-                          item.severity === 'critical' || item.severity === 'high'
-                            ? 'bg-red-100 text-red-700'
-                            : item.severity === 'medium'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-blue-100 text-blue-700'
-                        }`}>
+                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full ${item.severity === 'critical' || item.severity === 'high'
+                          ? 'bg-red-100 text-red-700'
+                          : item.severity === 'medium'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-[#8B7355]/10 text-[#8B7355]'
+                          }`}>
                           L{item.interventionLevel} {item.severity}
                         </span>
                       </div>
@@ -1469,7 +1567,7 @@ const TeacherClassDashboard: React.FC = () => {
                   <h2 className="text-xl font-extrabold text-[#2D2A26]">Step 3 & 4: Results & 1-Click Correction</h2>
                   <p className="text-sm text-[#8A8279]">See who broke where, and assign remedial tasks instantly.</p>
                 </div>
-                <button 
+                <button
                   onClick={() => handleAssignAction('1-Click Correction Sprint', 'Remedial topics from latest exit ticket for entire class.')}
                   className="bg-red-50 text-red-600 border border-red-200 px-5 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center gap-2">
                   <Target className="w-4 h-4" /> 1-Click Correction Sprint
@@ -1519,7 +1617,7 @@ const TeacherClassDashboard: React.FC = () => {
             <div className="bg-white rounded-2xl border-2 border-[#2D2A26]/[0.06] p-6 shadow-sm">
               <h2 className="text-xl font-extrabold text-[#2D2A26] mb-2">Student Readiness Signals</h2>
               <p className="text-sm text-[#8A8279] mb-6">Know instantly whether the issue is concept, discipline, or time pressure.</p>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1592,7 +1690,7 @@ const TeacherClassDashboard: React.FC = () => {
                 <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
                   {students.filter(s => (readinessData[s.id]?.mastery || 0) < 50).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
+                <button
                   onClick={() => handleAssignAction('Concept Pack (10m + 10m)', 'Foundational rebuild for Concept Weak group.')}
                   className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Concept Pack (10m + 10m)
@@ -1609,7 +1707,7 @@ const TeacherClassDashboard: React.FC = () => {
                 <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
                   {students.filter(s => (readinessData[s.id]?.speed || 0) > 2.5).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
+                <button
                   onClick={() => handleAssignAction('Timed Practice Pack', 'Timed drills for Speed Weak group.')}
                   className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Timed Practice Pack
@@ -1617,18 +1715,18 @@ const TeacherClassDashboard: React.FC = () => {
               </div>
 
               {/* Careless Mistakes */}
-              <div className="bg-white rounded-2xl border-2 border-blue-100 p-6 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+              <div className="bg-white rounded-2xl border-2 border-[#E8E2D9] p-6 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-2 h-full bg-[#8B7355]"></div>
                 <h3 className="text-lg font-bold text-[#2D2A26] mb-1 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-500" /> Careless Mistakes
+                  <AlertCircle className="w-5 h-5 text-[#8B7355]" /> Careless Mistakes
                 </h3>
                 <p className="text-xs text-[#8A8279] mb-4">High speed, low accuracy. Needs reflection.</p>
-                <div className="bg-[#F8FAFF] rounded-xl p-3 mb-4 min-h-[100px]">
+                <div className="bg-[#F5F0E8]/40 rounded-xl p-3 mb-4 min-h-[100px]">
                   {students.filter(s => (readinessData[s.id]?.speed || 0) < 2.0 && (readinessData[s.id]?.mastery || 0) >= 50 && (readinessData[s.id]?.mastery || 0) < 80).map(s => <div key={s.id} className="text-sm font-bold text-[#2D2A26] py-1 border-b border-[#E8E4DF] last:border-0">{s.full_name}</div>)}
                 </div>
-                <button 
+                <button
                   onClick={() => handleAssignAction('Reflection Pack (5m)', 'Reflection and error analysis for Careless Mistakes group.')}
-                  className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition-colors text-sm">
+                  className="w-full bg-[#8B7355]/10 hover:bg-[#8B7355]/20 text-[#8B7355] font-bold py-3 rounded-xl transition-colors text-sm">
                   Assign Reflection Pack (5m)
                 </button>
               </div>
@@ -1650,7 +1748,7 @@ const TeacherClassDashboard: React.FC = () => {
               {/* Left Column: Assignments list */}
               <div className="lg:col-span-1 bg-white rounded-2xl border border-[#E8E4DF] p-5 space-y-4 shadow-sm h-fit">
                 <h3 className="text-xs font-black uppercase text-[#8A8279] tracking-wider border-b border-[#E8E4DF] pb-2">Class Assignments</h3>
-                
+
                 {assignments.length === 0 ? (
                   <p className="text-xs text-[#8A8279] italic">No assignments created yet.</p>
                 ) : (
@@ -1690,9 +1788,8 @@ const TeacherClassDashboard: React.FC = () => {
                             <div key={student.id} className="bg-[#FAF8F5]/80 p-4 rounded-xl border border-[#E8E4DF] space-y-3">
                               <div className="flex justify-between items-center">
                                 <span className="font-black text-sm text-[#2D2A26]">{student.full_name}</span>
-                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
-                                  sub ? (sub.grade ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800') : 'bg-gray-100 text-gray-700'
-                                }`}>
+                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${sub ? (sub.grade ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800') : 'bg-gray-100 text-gray-700'
+                                  }`}>
                                   {sub ? (sub.grade ? `Graded: ${sub.grade}` : 'Submitted') : 'Not Submitted'}
                                 </span>
                               </div>

@@ -27,6 +27,7 @@ const MyClasses = lazy(() => import('./pages/MyClasses'));
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const ClassPage = lazy(() => import('./pages/ClassPage').then(m => ({ default: m.ClassPage })));
 const TeacherClassDashboard = lazy(() => import('./pages/TeacherClassDashboard'));
+const GraderConsole = lazy(() => import('./pages/GraderConsole'));
 const AtlasWorkspace = lazy(() => import('./pages/AtlasWorkspace').then(m => ({ default: m.AtlasWorkspace })));
 const AdminAnalytics = lazy(() => import('./components/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 const MyProfileDashboard = lazy(() => import('./pages/MyProfileDashboard'));
@@ -110,12 +111,12 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[#00D1FF]/5 blur-[120px] rounded-full translate-y-1/2" />
-        <div className="relative z-10 w-16 h-16 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#8B7355]/5 blur-[120px] rounded-full translate-y-1/2" />
+        <div className="relative z-10 w-16 h-16 border-4 border-[#8B7355]/20 border-t-[#8B7355] rounded-full animate-spin" />
         <div className="mt-10 text-center space-y-3 relative z-10">
-          <h2 className="text-4xl font-extrabold tracking-tight text-[#0A192F]">Elevenfolks</h2>
-          <p className="text-[#64748B] font-medium text-sm">Loading your workspace...</p>
+          <h2 className="text-4xl font-extrabold tracking-tight text-[#2D2A26]">Elevenfolks</h2>
+          <p className="text-[#8A8279] font-medium text-sm">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -134,7 +135,7 @@ function AppContent() {
 
   if (requiresSubscription) {
     return (
-      <div className="min-h-screen bg-white text-[#0A192F] selection:bg-[#00D1FF]/30 selection:text-[#0A192F]">
+      <div className="min-h-screen bg-[#FAF8F5] text-[#2D2A26] selection:bg-[#8B7355]/20 selection:text-[#2D2A26]">
         <main className="w-full mx-auto px-6 py-10">
           <SubscriptionPage />
         </main>
@@ -144,28 +145,28 @@ function AppContent() {
   }
 
   return (
-    <div className={`min-h-screen text-[#0A192F] selection:bg-[#00D1FF]/30 selection:text-[#0A192F] ${isImmersive ? 'bg-[#F8FAF9]' : 'bg-white'}`}>
+    <div className={`min-h-screen text-[#2D2A26] selection:bg-[#8B7355]/20 selection:text-[#2D2A26] bg-[#FAF8F5]`}>
       <div className="relative z-10">
         {!isFullscreen && (isTeacherExperience ? <TeacherNavbar /> : <ManusSidebar />)}
 
         <div className={!isFullscreen && !isTeacherExperience ? `md:pl-14 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${isImmersive ? 'h-screen overflow-hidden' : ''}` : !isFullscreen ? "md:pl-[var(--sidebar-width,20rem)] transition-all duration-500" : ""}>
           {!isFullscreen && !isOnline && (
-            <div className="bg-[#F472B6]/10 border-b border-[#F472B6]/20 text-[#F472B6] text-center py-3 text-xs font-bold uppercase tracking-widest">
+            <div className="bg-[#FAF8F5] border-b border-[#2D2A26]/10 text-[#8B7355] text-center py-3 text-xs font-bold uppercase tracking-widest">
               You're offline — syncing is limited
             </div>
           )}
 
           {!isFullscreen && !isImmersive && !isTeacherExperience && !isAdmin && isPremium === false && showSubscribeBanner && (
             <div className="w-full flex justify-center sticky top-6 z-50 pointer-events-none">
-              <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-white/90 backdrop-blur-2xl border-2 border-[#0A192F]/10 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-float-cyan overflow-hidden group gap-4 sm:gap-6">
-                <div className="absolute top-0 left-0 w-full h-1 sm:w-1.5 sm:h-full bg-[#00D1FF]" />
+              <div className="pointer-events-auto relative flex flex-col sm:flex-row items-center justify-between w-[calc(100%-2rem)] max-w-4xl mx-4 bg-[#FAF8F5]/90 backdrop-blur-2xl border-2 border-[#2D2A26]/10 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-neo-lg overflow-hidden group gap-4 sm:gap-6">
+                <div className="absolute top-0 left-0 w-full h-1 sm:w-1.5 sm:h-full bg-[#8B7355]" />
                 <div className="flex items-center gap-4 sm:gap-6">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#00D1FF]/10 border border-[#00D1FF]/20 rounded-[16px] flex items-center justify-center text-[#00D1FF] shrink-0">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-[16px] flex items-center justify-center text-[#8B7355] shrink-0">
                     <Crown className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   <div className="space-y-1 text-center sm:text-left">
-                    <span className="font-extrabold text-lg sm:text-xl text-[#0A192F] leading-none block tracking-tight">Level Up to Premium</span>
-                    <span className="text-xs font-medium text-[#64748B] block">Unlock advanced AI models & global analytics</span>
+                    <span className="font-extrabold text-lg sm:text-xl text-[#2D2A26] leading-none block tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Level Up to Premium</span>
+                    <span className="text-xs font-medium text-[#8A8279] block">Unlock advanced AI models & global analytics</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-center">
@@ -178,7 +179,7 @@ function AppContent() {
                   </button>
                   <button
                     onClick={() => setShowSubscribeBanner(false)}
-                    className="p-2 sm:p-3 text-[#64748B] hover:text-[#0A192F] transition-colors"
+                    className="p-2 sm:p-3 text-[#8A8279] hover:text-[#2D2A26] transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -189,53 +190,54 @@ function AppContent() {
 
           <main className={isFullscreen ? "w-full min-h-screen p-0 m-0" : `w-full mx-auto px-0 py-0 transition-all ${isImmersive ? 'h-full' : ''}`}>
             <Suspense fallback={<div className="w-full min-h-[50vh] flex items-center justify-center"><div className="w-10 h-10 border-4 border-[#00D1FF]/20 border-t-[#00D1FF] animate-spin rounded-full" /></div>}>
-            <Routes>
-              {/* Core Experience */}
-              <Route path="/" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
-              <Route path="/daily" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
-              <Route path="/atlas" element={<ErrorBoundary><AtlasWorkspace /></ErrorBoundary>} />
+              <Routes>
+                {/* Core Experience */}
+                <Route path="/" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+                <Route path="/daily" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+                <Route path="/atlas" element={<ErrorBoundary><AtlasWorkspace /></ErrorBoundary>} />
 
-              {/* Curriculum Reference */}
-              <Route path="/curriculum" element={<Curriculum />} />
+                {/* Curriculum Reference */}
+                <Route path="/curriculum" element={<Curriculum />} />
 
-              {/* Account & Profile */}
-              <Route path="/profile" element={<MyProfileDashboard />} />
-              <Route path="/my-profile" element={<MyProfileDashboard />} />
-              <Route path="/settings" element={<Profile />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/pricing" element={<SubscriptionPage />} />
-              <Route path="/subscription" element={<SubscriptionPage />} />
+                {/* Account & Profile */}
+                <Route path="/profile" element={<MyProfileDashboard />} />
+                <Route path="/my-profile" element={<MyProfileDashboard />} />
+                <Route path="/settings" element={<Profile />} />
+                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/pricing" element={<SubscriptionPage />} />
+                <Route path="/subscription" element={<SubscriptionPage />} />
 
-              {/* Teacher Portal */}
-              <Route path="/teacher" element={<TeacherPortal />}>
-                <Route index element={<Navigate to="/my-classes" replace />} />
-                <Route path="class/:id" element={<TeacherClassDashboard />} />
-              </Route>
-              <Route path="/my-classes" element={<MyClasses />} />
-              <Route path="/parent" element={<ParentDashboard />} />
-              <Route path="/school-admin" element={<SchoolAdminPanel />} />
-              <Route path="/class/:id" element={<ClassPage />} />
+                {/* Teacher Portal */}
+                <Route path="/teacher" element={<TeacherPortal />}>
+                  <Route index element={<Navigate to="/my-classes" replace />} />
+                  <Route path="class/:id" element={<TeacherClassDashboard />} />
+                  <Route path="grader" element={<GraderConsole />} />
+                </Route>
+                <Route path="/my-classes" element={<MyClasses />} />
+                <Route path="/parent" element={<ParentDashboard />} />
+                <Route path="/school-admin" element={<SchoolAdminPanel />} />
+                <Route path="/class/:id" element={<ClassPage />} />
 
-              {/* Prove-It Mode — Socratic Mastery */}
-              <Route path="/prove-it" element={<ErrorBoundary><ProveIt /></ErrorBoundary>} />
-              <Route path="/mastery-tree" element={<ErrorBoundary><MasteryTree /></ErrorBoundary>} />
-              <Route path="/squad-prove-it" element={<ErrorBoundary><SquadProveIt /></ErrorBoundary>} />
-              <Route path="/outcomes" element={<ErrorBoundary><OutcomeDashboard /></ErrorBoundary>} />
-              <Route path="/mastery-reports" element={<ErrorBoundary><MasteryReports /></ErrorBoundary>} />
-              <Route path="/m/:slug" element={<ErrorBoundary><PublicReceipt /></ErrorBoundary>} />
+                {/* Prove-It Mode — Socratic Mastery */}
+                <Route path="/prove-it" element={<ErrorBoundary><ProveIt /></ErrorBoundary>} />
+                <Route path="/mastery-tree" element={<ErrorBoundary><MasteryTree /></ErrorBoundary>} />
+                <Route path="/squad-prove-it" element={<ErrorBoundary><SquadProveIt /></ErrorBoundary>} />
+                <Route path="/outcomes" element={<ErrorBoundary><OutcomeDashboard /></ErrorBoundary>} />
+                <Route path="/mastery-reports" element={<ErrorBoundary><MasteryReports /></ErrorBoundary>} />
+                <Route path="/m/:slug" element={<ErrorBoundary><PublicReceipt /></ErrorBoundary>} />
 
-              {/* Dashboard redirects */}
-              <Route path="/dashboard" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
-              <Route path="/analytics" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+                {/* Dashboard redirects */}
+                <Route path="/dashboard" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
+                <Route path="/analytics" element={isSchoolAdmin ? <Navigate to="/school-admin" replace /> : isTeacherExperience ? <Navigate to="/my-classes" replace /> : <ManusHome />} />
 
-              {/* Legal */}
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
+                {/* Legal */}
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
             </Suspense>
           </main>
         </div>

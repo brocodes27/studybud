@@ -1,0 +1,15 @@
+{
+  "name": "grader-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Notebook Grader Machine device agent: runs on the grader box (e.g. aryan@grader.local), listens for Realtime commands from the elevenfolks Grader Console, captures notebook pages with the attached camera, uploads them to Supabase Storage and triggers AI grading.",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0"
+  }
+}

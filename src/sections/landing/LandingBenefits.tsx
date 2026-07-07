@@ -8,20 +8,23 @@ const steps = [
     description: 'Upload a test or pick a topic. ATLAS grills you with Socratic follow-ups until you truly understand — not memorize.',
     color: '#8B7355',
     bgGlow: 'bg-[#8B7355]/[0.08]',
+    hoverShadow: 'hover:shadow-float-cyan',
   },
   {
     icon: BrainCircuit,
     title: 'Get daily prescriptions',
     description: 'Every morning: one prioritized task based on your backlog, weak subjects, and exam date. No more "what should I study?"',
-    color: '#8B7355',
-    bgGlow: 'bg-[#8B7355]/[0.08]',
+    color: '#6B8E6B',
+    bgGlow: 'bg-[#6B8E6B]/[0.08]',
+    hoverShadow: 'hover:shadow-float-mint',
   },
   {
     icon: Calendar,
     title: 'Squad accountability',
     description: 'Form a Prove-It squad with friends. Weekly topic, shared streak, real rigor scores. Peer pressure, but productive.',
-    color: '#8B7355',
-    bgGlow: 'bg-[#8B7355]/[0.08]',
+    color: '#7A6B8A',
+    bgGlow: 'bg-[#7A6B8A]/[0.08]',
+    hoverShadow: 'hover:shadow-float-indigo',
   },
 ];
 
@@ -71,14 +74,20 @@ export function LandingBenefits() {
               transition={{ delay: i * 0.15, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
               className="group relative"
             >
-              <div className="absolute -inset-px rounded-[24px] bg-[#8B7355] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+              <div
+                className="absolute -inset-px rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"
+                style={{ backgroundColor: step.color }}
+              />
 
-              <div className="relative bg-white rounded-[24px] border border-[#2D2A26]/[0.05] p-7 hover:shadow-[0_20px_60px_rgba(45,42,38,0.08)] transition-all duration-500 h-full overflow-hidden">
+              <div className={`relative bg-white rounded-[24px] border border-[#2D2A26]/[0.05] p-7 ${step.hoverShadow} hover:-translate-y-1 transition-all duration-500 h-full overflow-hidden`}>
                 <div className={`absolute top-0 right-0 w-32 h-32 ${step.bgGlow} rounded-full blur-[50px] opacity-60`} />
 
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-[#8B7355] flex items-center justify-center shadow-lg">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: step.color }}
+                    >
                       <step.icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="text-[24px] font-semibold text-[#2D2A26]/[0.06]">0{i + 1}</span>
@@ -87,9 +96,12 @@ export function LandingBenefits() {
                   <h3 className="font-semibold text-xl text-[#2D2A26] mb-2.5 tracking-tight">{step.title}</h3>
                   <p className="text-[#8A8279] font-medium leading-relaxed text-[14px] mb-6">{step.description}</p>
 
-                  <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#2D2A26]/40 group-hover:text-[#8B7355] transition-colors">
-                    <span>Learn more</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  <div
+                    className="flex items-center gap-1.5 text-[12px] font-bold text-[#2D2A26]/40 transition-colors"
+                    style={{ ['--step-color' as string]: step.color }}
+                  >
+                    <span className="group-hover:text-[var(--step-color)] transition-colors">Learn more</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 group-hover:text-[var(--step-color)] transition-all" />
                   </div>
                 </div>
               </div>

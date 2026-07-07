@@ -16,7 +16,7 @@ export function ProveIt() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [phase, setPhase] = useState<'setup'|'grill'|'done'>('setup');
+  const [phase, setPhase] = useState<'setup' | 'grill' | 'done'>('setup');
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [weak, setWeak] = useState<string[]>([]);
@@ -50,9 +50,16 @@ export function ProveIt() {
     track('prove_it_start', { subject: subj, topic: t, squad_id: squadId });
     setSubject(subj); setTopic(t); setPhase('grill'); setLoading(true);
     const system = `You are ATLAS in Prove-It mode — a strict Socratic examiner. Subject: ${subj}, Topic: ${t}. Ask ONE concise question. Do NOT explain. Do NOT encourage.`;
-    const { response } = await AIService.getInstance().generateEmpatheticChat(system, user?.id || 'guest', [], '', false);
-    setTurns([{ role: 'q', content: response?.trim() || `Explain ${t} in your own words.` }]);
-    setLoading(false);
+    try {
+      const { response } = await AIService.getInstance().generateEmpatheticChat(system, user?.id || 'guest', [], '', false);
+      setTurns([{ role: 'q', content: response?.trim() || `Explain ${t} in your own words.` }]);
+    } catch (err) {
+      console.error('Prove-It start failed:', err);
+      // Graceful fallback: still let the student engage with a canned opener
+      setTurns([{ role: 'q', content: `Explain ${t} in your own words — what's the core principle, and where does it break down?` }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submit = async () => {
@@ -60,36 +67,42 @@ export function ProveIt() {
     const ans = input.trim(); setInput('');
     setTurns(p => [...p, { role: 'a', content: ans }]);
     setLoading(true);
-    const prompt = `Grill this student on ${subject}/${topic}. History:\n${turns.map(t => `${t.role==='q'?'Q':'A'}: ${t.content}`).join('\n')}\nA: ${ans}\nIf this is exchange 3+ and understanding is solid, output exactly "[VERDICT:passed] Rigor:X/10 <summary>". Otherwise ask ONE harder follow-up. No fluff.`;
-    const { response } = await AIService.getInstance().generateEmpatheticChat(prompt, user?.id || 'guest', [], '', false);
-    const text = response?.trim() || '';
-    const v = text.match(/\[VERDICT:(passed|failed)\]\s*Rigor:([\d.]+)\/10\s*(.*)/i);
-    if (v) {
-      const rigor = parseFloat(v[2]);
-      setTurns(p => [...p, { role: 'v', content: v[3], score: rigor }]);
-      setPhase('done');
-      if (user?.id) {
-        const slug = crypto.randomUUID().slice(0, 8);
-        const qa = turns.map((t,i) => t.role==='q'?{q:t.content,a:turns[i+1]?.content||''}:null).filter(Boolean);
-        const metadata = { challenge_id: challengeId || null, squad_id: squadId || null };
-        const { data } = await supabase.from('mastery_receipts').insert({ user_id: user.id, slug, subject, topic, rigor_score: rigor, verdict: v[1].toLowerCase(), qa_log: qa, public_visible: true, metadata }).select('slug').single();
-        const finalSlug = data?.slug || slug;
-        if (squadId) {
-          await supabase.from('prove_it_squad_attempts').upsert({
-            squad_id: squadId,
-            user_id: user.id,
-            receipt_slug: finalSlug,
-            subject,
-            topic,
-            rigor_score: rigor,
-          }, { onConflict: 'squad_id,user_id,topic' });
+    const prompt = `Grill this student on ${subject}/${topic}. History:\n${turns.map(t => `${t.role === 'q' ? 'Q' : 'A'}: ${t.content}`).join('\n')}\nA: ${ans}\nIf this is exchange 3+ and understanding is solid, output exactly "[VERDICT:passed] Rigor:X/10 <summary>". Otherwise ask ONE harder follow-up. No fluff.`;
+    try {
+      const { response } = await AIService.getInstance().generateEmpatheticChat(prompt, user?.id || 'guest', [], '', false);
+      const text = response?.trim() || '';
+      const v = text.match(/\[VERDICT:(passed|failed)\]\s*Rigor:([\d.]+)\/10\s*(.*)/i);
+      if (v) {
+        const rigor = parseFloat(v[2]);
+        setTurns(p => [...p, { role: 'v', content: v[3], score: rigor }]);
+        setPhase('done');
+        if (user?.id) {
+          const slug = crypto.randomUUID().slice(0, 8);
+          const qa = turns.map((t, i) => t.role === 'q' ? { q: t.content, a: turns[i + 1]?.content || '' } : null).filter(Boolean);
+          const metadata = { challenge_id: challengeId || null, squad_id: squadId || null };
+          const { data } = await supabase.from('mastery_receipts').insert({ user_id: user.id, slug, subject, topic, rigor_score: rigor, verdict: v[1].toLowerCase(), qa_log: qa, public_visible: true, metadata }).select('slug').single();
+          const finalSlug = data?.slug || slug;
+          if (squadId) {
+            await supabase.from('prove_it_squad_attempts').upsert({
+              squad_id: squadId,
+              user_id: user.id,
+              receipt_slug: finalSlug,
+              subject,
+              topic,
+              rigor_score: rigor,
+            }, { onConflict: 'squad_id,user_id,topic' });
+          }
+          setReceipt({ slug: finalSlug, rigor, verdict: v[1].toLowerCase(), subject, topic, challengeId, squadId });
         }
-        setReceipt({ slug: finalSlug, rigor, verdict: v[1].toLowerCase(), subject, topic, challengeId, squadId });
+      } else {
+        setTurns(p => [...p, { role: 'q', content: text }]);
       }
-    } else {
-      setTurns(p => [...p, { role: 'q', content: text }]);
+    } catch (err) {
+      console.error('Prove-It submit failed:', err);
+      setTurns(p => [...p, { role: 'q', content: 'ATLAS is momentarily unavailable — try again in a few seconds.' }]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const shareUrl = receipt ? `${window.location.origin}/m/${receipt.slug}` : '';
@@ -163,11 +176,10 @@ export function ProveIt() {
 
             <div className="space-y-3">
               {turns.map((t, i) => (
-                <div key={i} className={`p-4 rounded-[16px] border-2 ${
-                  t.role === 'q' ? 'bg-white border-[#0A192F]/10' :
+                <div key={i} className={`p-4 rounded-[16px] border-2 ${t.role === 'q' ? 'bg-white border-[#0A192F]/10' :
                   t.role === 'a' ? 'bg-[#00D1FF]/5 border-[#00D1FF]/20' :
-                  'bg-[#34D399]/10 border-[#34D399]/20'
-                }`}>
+                    'bg-[#34D399]/10 border-[#34D399]/20'
+                  }`}>
                   <div className="text-[10px] font-bold uppercase tracking-widest mb-1 text-[#64748B]">
                     {t.role === 'q' ? 'ATLAS asks' : t.role === 'a' ? 'Your answer' : 'Verdict'}
                   </div>

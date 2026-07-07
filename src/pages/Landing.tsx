@@ -10,7 +10,6 @@ import LandingTestimonials from '../sections/landing/LandingTestimonials';
 import LandingFooter from '../sections/landing/LandingFooter';
 import LandingAuth from '../sections/landing/LandingAuth';
 import { LandingProveItDemo } from '../sections/landing/LandingProveItDemo';
-import Auth from './Auth';
 
 const Landing: React.FC = () => {
   const { role, loading } = useAuth() as any;
@@ -35,6 +34,7 @@ const Landing: React.FC = () => {
       <LandingBenefits />
       <LandingFeatures />
       <LandingCurriculum />
+      <LandingTestimonials />
       <LandingCTA />
       <LandingAuth />
       <LandingFooter />

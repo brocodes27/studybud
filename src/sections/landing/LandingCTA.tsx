@@ -3,20 +3,14 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function LandingCTA() {
   return (
-    <section className="py-24 md:py-32 px-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[#F5F0E8]" />
-
-      {/* Subtle warm orbs */}
-      <motion.div
-        animate={{ x: [0, 40, 0], y: [0, -30, 0], scale: [1, 1.2, 1] }}
-        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#C4A484]/[0.08] rounded-full blur-[120px]"
+    <section className="py-24 md:py-32 px-6 relative overflow-hidden noise">
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(180deg, #FAF8F5 0%, #F5F0E8 100%)' }}
       />
-      <motion.div
-        animate={{ x: [0, -30, 0], y: [0, 40, 0], scale: [1, 1.15, 1] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#8B7355]/[0.06] rounded-full blur-[100px]"
-      />
+      {/* Warm hairlines framing the band */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8B7355]/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#8B7355]/20 to-transparent" />
 
       <div className="max-w-3xl mx-auto text-center relative z-10">
         <motion.div
