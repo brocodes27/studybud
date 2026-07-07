@@ -169,24 +169,33 @@ export const CTAScene: React.FC<CTASceneProps> = ({ ctaText, url }) => {
       >
         <svg width="32" height="32" viewBox="0 0 40 40" fill="none" style={{ color: "#8B7355" }}>
           <path
-            d="M20 4C12 4 6 10 6 18c0 5 2.5 9.5 6.5 12.5L20 38l7.5-7.5C31.5 27.5 34 23 34 18c0-8-6-14-14-14z"
+            d="M12 12V28"
             stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <path
-            d="M14 18c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5-2.5 5.5-6 5.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
+            strokeWidth="2.5"
             strokeLinecap="round"
           />
           <path
-            d="M20 12.5v-3M20 28.5v-3M12.5 20h-3M30.5 20h-3"
+            d="M20 12V28"
             stroke="currentColor"
-            strokeWidth="1.5"
+            strokeWidth="2.5"
             strokeLinecap="round"
           />
+          <path
+            d="M20 16H28"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M20 22H26"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+          <circle cx="20" cy="12" r="2.2" fill="currentColor" />
+          <circle cx="28" cy="16" r="1.8" fill="currentColor" />
+          <circle cx="26" cy="22" r="1.8" fill="currentColor" />
         </svg>
       </div>
     </AbsoluteFill>

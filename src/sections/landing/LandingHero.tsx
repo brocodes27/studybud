@@ -8,6 +8,7 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import SplitType from 'split-type';
+import { Logo } from '../../components/Logo';
 
 gsap.registerPlugin(useGSAP);
 
@@ -468,13 +469,7 @@ export default function LandingHero() {
       <div className="relative z-10 max-w-4xl mx-auto text-center animate-fade-in">
         {/* Logo / Brand */}
         <div className="mb-10 brand-logo">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-[#8B7355]">
-              <path d="M20 4C12 4 6 10 6 18c0 5 2.5 9.5 6.5 12.5L20 38l7.5-7.5C31.5 27.5 34 23 34 18c0-8-6-14-14-14z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <path d="M14 18c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5-2.5 5.5-6 5.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-              <path d="M20 12.5v-3M20 28.5v-3M12.5 20h-3M30.5 20h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </div>
+            <Logo size={48} className="text-[#8B7355] mx-auto hover:text-[#2D2A26] transition-colors" />
           <h1
             ref={headingRef}
             className="text-6xl md:text-7xl lg:text-8xl font-semibold text-[#2D2A26] tracking-tight leading-[0.95] mb-6"

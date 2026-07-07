@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence, useScroll } from 'framer-motion';
+import { Logo } from '../../components/Logo';
 
 export function LandingHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -61,10 +62,7 @@ export function LandingHeader() {
               }`}
           >
             <a href="/" className="flex items-center gap-2.5 pl-2.5 group">
-              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" className="text-[#8B7355] group-hover:scale-110 transition-transform">
-                <path d="M20 4C12 4 6 10 6 18c0 5 2.5 9.5 6.5 12.5L20 38l7.5-7.5C31.5 27.5 34 23 34 18c0-8-6-14-14-14z" stroke="currentColor" strokeWidth="2" fill="none" />
-                <path d="M14 18c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5-2.5 5.5-6 5.5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-              </svg>
+              <Logo size={24} className="text-[#8B7355] group-hover:scale-110 transition-transform" />
               <span className="text-[17px] font-semibold tracking-tight text-[#2D2A26] hidden sm:block" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 elevenfolks
               </span>

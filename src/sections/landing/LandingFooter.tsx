@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Logo } from '../../components/Logo';
 
 export function LandingFooter() {
   return (
@@ -15,6 +16,7 @@ export function LandingFooter() {
         <div className="flex flex-col lg:flex-row items-start justify-between gap-14 mb-14">
           <div className="max-w-sm">
             <div className="flex items-center gap-2.5 mb-5">
+              <Logo size={20} className="text-[#8B7355]" />
               <span className="text-[17px] font-semibold tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
                 elevenfolks
               </span>

@@ -89,7 +89,7 @@ interface StudentRosterInput {
 }
 
 export default function Onboarding() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, schoolId } = useAuth();
   const navigate = useNavigate();
   const { track } = useAnalytics();
   
@@ -118,6 +118,8 @@ export default function Onboarding() {
     { grade: '10', section: 'A', subject: 'Science' }
   ]);
   const [studentInvitesText, setStudentInvitesText] = useState<string>('');
+  const [createdClasses, setCreatedClasses] = useState<Array<{ name: string; code: string }>>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Admin specific
   const [schoolName, setSchoolName] = useState<string>('');
@@ -165,9 +167,11 @@ export default function Onboarding() {
     }
     setError(null);
     if (role === 'teacher') {
+      if (!schoolId) {
+        setError('Access Denied: Your school domain has not been registered or given access. Please contact your administrator.');
+        return;
+      }
       setStep('teacher_sections');
-    } else if (role === 'school_admin') {
-      setStep('admin_school');
     } else {
       setStep('session');
     }
@@ -254,13 +258,13 @@ export default function Onboarding() {
   };
 
   // Teacher Onboarding Actions
-  const handleTeacherSectionsSubmit = () => {
+  const handleTeacherSectionsSubmit = async () => {
     if (teacherSections.length === 0) {
       setError('Please add at least one section you teach.');
       return;
     }
     setError(null);
-    setStep('teacher_roster');
+    await saveTeacherProfile();
   };
 
   const saveTeacherProfile = async () => {
@@ -282,6 +286,8 @@ export default function Onboarding() {
       // 2. Create Sections, Subjects, and Teaching Assignments (in parallel)
       const academicYearRes = await supabase.from('academic_years').select('id').eq('is_active', true).limit(1);
       const ayId = academicYearRes.data?.[0]?.id;
+
+      const tempClasses: Array<{ name: string; code: string }> = [];
 
       if (ayId) {
         for (const sec of teacherSections) {
@@ -336,34 +342,23 @@ export default function Onboarding() {
             });
 
             // Auto-create class room
+            const classCodeValue = `CLS-${uuidShort()}`;
+            const classNameValue = `Class ${sec.grade}-${sec.section} ${sec.subject}`;
             await supabase.from('classes').insert({
               teacher_id: user.id,
-              name: `Class ${sec.grade}-${sec.section} ${sec.subject}`,
+              name: classNameValue,
               subject: sec.subject.toLowerCase(),
-              class_code: `CLS-${uuidShort()}`
+              class_code: classCodeValue
             });
+
+            tempClasses.push({ name: classNameValue, code: classCodeValue });
           }
         }
       }
 
-      // 3. Process Student Invites Roster
-      if (studentInvitesText.trim()) {
-        const studentEmails = studentInvitesText.split(/[\n,]/).map(e => e.trim()).filter(Boolean);
-        const schoolRes = await supabase.from('memberships').select('school_id').eq('user_id', user.id).limit(1).maybeSingle();
-        const schoolId = schoolRes.data?.school_id;
-
-        if (schoolId && studentEmails.length > 0) {
-          const inviteRows = studentEmails.map(email => ({
-            school_id: schoolId,
-            email,
-            role: 'student'
-          }));
-          await supabase.from('school_invitations').insert(inviteRows);
-        }
-      }
-
+      setCreatedClasses(tempClasses);
       await refreshProfile();
-      navigate('/my-classes');
+      setStep('teacher_roster');
     } catch (e: any) {
       setError(e.message || 'Failed to complete teacher onboarding.');
     } finally {
@@ -617,7 +612,7 @@ export default function Onboarding() {
 
                 <div>
                   <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Role</label>
-                  <div className="grid grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setRole('student')}
@@ -634,15 +629,6 @@ export default function Onboarding() {
                     >
                       <BookOpen className="w-6 h-6 text-[#8B7355]" />
                       <span className="font-extrabold text-[11px] text-[#2D2A26]">Teacher</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRole('school_admin')}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-center transition-all ${role === 'school_admin' ? 'bg-[#8B7355]/10 border-[#8B7355] shadow-[4px_4px_0px_0px_#8B7355]' : 'bg-[#FAF8F5] border-[#2D2A26]/10 hover:border-[#2D2A26]/30'}`}
-                    >
-                      <Building className="w-6 h-6 text-[#8B7355]" />
-                      <span className="font-extrabold text-[11px] text-[#2D2A26]">Admin</span>
                     </button>
                   </div>
                 </div>
@@ -776,9 +762,10 @@ export default function Onboarding() {
                   </button>
                   <button
                     onClick={handleTeacherSectionsSubmit}
+                    disabled={loading}
                     className="flex-[2] py-3.5 bg-[#2D2A26] text-white border-2 border-[#2D2A26] hover:bg-[#3D3833] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
                   >
-                    Next: Invite Students <ArrowRight className="w-4 h-4" />
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Classes'} <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -786,7 +773,7 @@ export default function Onboarding() {
           </motion.div>
         )}
 
-        {/* TEACHER STEP 3: INVITE STUDENTS */}
+        {/* TEACHER STEP 3: SHARE CLASS CODES */}
         {step === 'teacher_roster' && (
           <motion.div
             key="teacher_roster"
@@ -796,19 +783,33 @@ export default function Onboarding() {
             className="w-full max-w-lg relative z-10"
           >
             <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl">
-              <h2 className="text-xl font-black uppercase tracking-tight mb-2">Invite Students</h2>
-              <p className="text-xs font-bold text-[#8A8279] mb-5">Enter student emails to invite them to join your classes.</p>
+              <h2 className="text-xl font-black uppercase tracking-tight mb-2">Class Rooms Active!</h2>
+              <p className="text-xs font-bold text-[#8A8279] mb-5">Your classes have been created. Share these unique codes with your students so they can join instantly.</p>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Student Email Roster</label>
-                  <textarea
-                    value={studentInvitesText}
-                    onChange={(e) => setStudentInvitesText(e.target.value)}
-                    placeholder="Enter emails separated by commas or lines..."
-                    className="w-full px-4 py-3 bg-[#FAF8F5] border-2 border-[#2D2A26] rounded-xl text-[#2D2A26] font-semibold text-sm focus:outline-none min-h-[140px]"
-                  />
-                  <p className="text-[10px] font-bold text-[#8A8279] mt-1.5">Students will automatically receive cohort access when they register with these email accounts.</p>
+                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                  {createdClasses.map((cls, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-[#FAF8F5] p-3 rounded-xl border-2 border-[#2D2A26]/10">
+                      <div>
+                        <p className="font-extrabold text-xs text-[#2D2A26]">{cls.name}</p>
+                        <p className="font-mono text-[10px] font-bold text-[#8B7355] mt-0.5">{cls.code}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(cls.code);
+                          setCopiedCode(cls.code);
+                          setTimeout(() => setCopiedCode(null), 2000);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border-2 text-[10px] font-black uppercase transition-all ${
+                          copiedCode === cls.code
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-white border-[#2D2A26] text-[#2D2A26] hover:bg-[#2D2A26]/5'
+                        }`}
+                      >
+                        {copiedCode === cls.code ? 'Copied!' : 'Copy Code'}
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 {error && (
@@ -817,19 +818,12 @@ export default function Onboarding() {
                   </div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 pt-2">
                   <button
-                    onClick={() => setStep('teacher_sections')}
-                    className="flex-1 py-3.5 border-2 border-[#2D2A26] hover:bg-[#2D2A26]/5 font-black uppercase text-xs rounded-xl transition-all"
+                    onClick={() => navigate('/my-classes')}
+                    className="w-full py-3.5 bg-[#8B7355] text-white border-2 border-white/20 hover:bg-[#9B8365] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
                   >
-                    Back
-                  </button>
-                  <button
-                    onClick={saveTeacherProfile}
-                    disabled={loading}
-                    className="flex-[2] py-3.5 bg-[#8B7355] text-white border-2 border-white/20 hover:bg-[#9B8365] font-black uppercase text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Launch Teacher Room'}
+                    Go to Dashboard
                   </button>
                 </div>
               </div>

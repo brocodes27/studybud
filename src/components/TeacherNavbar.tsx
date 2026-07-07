@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Logo } from './Logo';
 import {
   LogOut,
   ChevronLeft,
@@ -71,7 +72,7 @@ const TeacherNavbar = () => {
           {!isCollapsed && (
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-xl flex items-center justify-center text-[#8B7355]">
-                <span className="text-xl font-black italic">EF</span>
+                <Logo size={24} className="text-[#8B7355]" />
               </div>
               <span className="text-xl font-black uppercase tracking-tighter text-[#2D2A26]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>TEACHER</span>
             </div>
@@ -117,7 +118,7 @@ const TeacherNavbar = () => {
       <header className="md:hidden fixed top-0 left-0 w-full bg-[#FAF8F5]/80 backdrop-blur-xl p-4 z-50 flex items-center justify-between border-b border-[#E8E2D9]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#8B7355]/10 border border-[#8B7355]/20 rounded-xl flex items-center justify-center text-[#8B7355]">
-            <span className="text-xl font-black italic">EF</span>
+            <Logo size={24} className="text-[#8B7355]" />
           </div>
           <span className="text-2xl font-black uppercase tracking-tighter italic text-[#2D2A26]" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>TEACHER</span>
         </div>

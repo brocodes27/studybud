@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
@@ -132,8 +133,8 @@ const Navbar = () => {
       <div className="md:hidden fixed top-4 right-4 z-[100]">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2.5 rounded-xl shadow-neo-lg text-white"
-          style={{ background: 'linear-gradient(135deg, #00D1FF, #6366F1)' }}
+          className="p-2.5 rounded-xl shadow-neo-sm text-white"
+          style={{ background: 'linear-gradient(135deg, #8B7355, #2D2A26)' }}
         >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -144,13 +145,12 @@ const Navbar = () => {
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-[#0A192F]/[0.04]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-float-indigo"
-              style={{ background: 'linear-gradient(135deg, #00D1FF, #6366F1)' }}>
-              EF
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#8B7355]/10 border border-[#8B7355]/20 shadow-sm">
+              <Logo size={22} className="text-[#8B7355]" />
             </div>
             <div>
               <h1 className="text-base font-extrabold text-[#0A192F] leading-none tracking-tight font-display">Elevenfolks</h1>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[#6366F1] mt-0.5">Student</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#8B7355] mt-0.5">Student</p>
             </div>
           </div>
         </div>
