@@ -6,7 +6,7 @@ export function LandingAuth() {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate('/auth');
+    navigate('/auth?portal=students');
   };
 
   return (
@@ -20,7 +20,7 @@ export function LandingAuth() {
       >
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#8B7355]/[0.08] text-[#8B7355] text-[11px] font-bold uppercase tracking-widest mb-5">
           <Sparkles className="w-3.5 h-3.5" />
-          Students &amp; Teachers
+          For Students
         </div>
         <h2
           className="text-3xl md:text-4xl font-semibold tracking-tight text-[#2D2A26] mb-3"

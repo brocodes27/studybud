@@ -10,12 +10,14 @@ import {
   X,
   BookUser,
   Crown,
-  School
+  School,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 
 const navLinks = [
+  { href: '/teacher-workspace', label: 'WORKSPACE', icon: Sparkles },
   { href: '/my-classes', label: 'CLASSES', icon: BookUser },
   { href: '/school-admin', label: 'SCHOOL', icon: School },
   { href: '/subscription', label: 'PREMIUM', icon: Crown },

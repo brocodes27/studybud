@@ -38,7 +38,6 @@ export function LandingHeader() {
     { label: 'Features', href: '#features' },
     { label: 'Curriculum', href: '#curriculum' },
     { label: 'Stories', href: '#testimonials' },
-    { label: 'For Teachers', href: '#auth' },
   ];
 
   return (

@@ -53,7 +53,7 @@ export function LandingCTA() {
           className="flex flex-col sm:flex-row gap-3 justify-center"
         >
           <button
-            onClick={() => window.location.href = '/auth'}
+            onClick={() => window.location.href = '/auth?portal=students'}
             className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-[15px] font-bold text-white bg-[#2D2A26] hover:bg-[#3D3833] transition-all duration-300 hover:-translate-y-[2px] shadow-lg"
           >
             Start for free

@@ -85,7 +85,7 @@ serve(async (req) => {
 
         // Idempotency: skip duplicate events
         const eventId = payload.id || payload.data?.id || `dodo-${crypto.randomUUID()}`;
-        const alreadyProcessed = await isEventProcessed(supabase, eventId);
+        const alreadyProcessed = await isEventProcessed(supabase as any, eventId);
         if (alreadyProcessed) {
             console.log(`⏭️ Dodo event ${eventId} already processed — skipping.`);
             return new Response(JSON.stringify({ received: true, idempotent: true }), {
@@ -146,6 +146,17 @@ serve(async (req) => {
             if (userId) {
                 console.log(`🔄 Upgrading user ${userId} to Premium...`);
 
+                // Which pass did they buy? metadata.plan is set by
+                // create-dodo-payment; fall back to amount (1299 / 3900).
+                const plan = String(
+                    data.metadata?.plan ||
+                    payload.metadata?.plan ||
+                    (Number(data.total_amount) === 3900 ? 'semester' : 'monthly')
+                ) === 'semester' ? 'semester' : 'monthly';
+                const accessDays = plan === 'semester' ? 120 : 30;
+                const now = new Date();
+                const periodEnd = new Date(now.getTime() + accessDays * 24 * 60 * 60 * 1000);
+
                 // Upsert into the subscriptions table
                 // This is what AuthContext.tsx checks: subscriptions.status === 'active'
                 const { error: subError } = await supabase
@@ -153,10 +164,11 @@ serve(async (req) => {
                     .upsert({
                         user_id: userId,
                         status: 'active',
+                        plan,
                         payment_provider: 'dodo',
-                        subscription_start: new Date().toISOString(),
-                        subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 days
-                        updated_at: new Date().toISOString(),
+                        subscription_start: now.toISOString(),
+                        subscription_end: periodEnd.toISOString(), // +30 / +120 days
+                        updated_at: now.toISOString(),
                     }, {
                         onConflict: 'user_id',
                     });
@@ -170,11 +182,12 @@ serve(async (req) => {
                         .insert({
                             user_id: userId,
                             status: 'active',
+                            plan,
                             payment_provider: 'dodo',
-                            subscription_start: new Date().toISOString(),
-                            subscription_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
+                            subscription_start: now.toISOString(),
+                            subscription_end: periodEnd.toISOString(),
+                            created_at: now.toISOString(),
+                            updated_at: now.toISOString(),
                         });
 
                     if (insertError) {
@@ -185,37 +198,47 @@ serve(async (req) => {
                         });
                     }
                 }
+
+                // Flip the premium flag the AI metering RPC reads. If the
+                // profile row is missing the update no-ops harmlessly.
+                const { error: premiumError } = await supabase
+                    .from('user_profiles')
+                    .update({ is_premium: true })
+                    .eq('id', userId);
+                if (premiumError) {
+                    console.error("❌ is_premium update failed:", premiumError);
+                }
+
                 console.log("🎉 User upgraded to Premium successfully!");
-                await markEventProcessed(supabase, eventId, "dodo", eventType, payload);
+                await markEventProcessed(supabase as any, eventId, "dodo", eventType, payload);
 
                 // Notify Dub.co of the sale
                 try {
                     const dubApiKey = Deno.env.get("DUB_API_KEY");
-                    if (!dubApiKey) {
-                        console.warn("⚠️ DUB_API_KEY not set; skipping Dub.co sale tracking.");
-                        return;
-                    }
+                    if (dubApiKey) {
+                        const dubResponse = await fetch("https://api.dub.co/track/sale", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${dubApiKey}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                customerId: userEmail, // Used email as customerId in client tracking
+                                externalId: userId,
+                                amount: data.total_amount || 1599,
+                                currency: "usd",
+                                paymentProcessor: "dodo",
+                                metadata: { email: userEmail, userId: userId }
+                            })
+                        });
 
-                    const dubResponse = await fetch("https://api.dub.co/track/sale", {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${dubApiKey}`,
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            customerId: userEmail, // Used email as customerId in client tracking
-                            externalId: userId,
-                            amount: data.total_amount || 1599,
-                            currency: "usd",
-                            paymentProcessor: "dodo",
-                            metadata: { email: userEmail, userId: userId }
-                        })
-                    });
-
-                    if (!dubResponse.ok) {
-                        console.error(`❌ Dub.co sale tracking failed with status: ${dubResponse.status}`);
+                        if (!dubResponse.ok) {
+                            console.error(`❌ Dub.co sale tracking failed with status: ${dubResponse.status}`);
+                        } else {
+                            console.log("📈 Tracked sale in Dub.co successfully");
+                        }
                     } else {
-                        console.log("📈 Tracked sale in Dub.co successfully");
+                        console.warn("⚠️ DUB_API_KEY not set; skipping Dub.co sale tracking.");
                     }
                 } catch (dubErr) {
                     console.error("❌ Failed to track Dub.co sale:", dubErr);

@@ -21,7 +21,7 @@ export async function isEventProcessed(
 export async function markEventProcessed(
   supabase: SupabaseClient,
   eventId: string,
-  source: "dodo" | "paypal" | "razorpay",
+  source: "dodo" | "paypal" | "razorpay" | "stripe",
   eventType?: string,
   payload?: any
 ): Promise<void> {

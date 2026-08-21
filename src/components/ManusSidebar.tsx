@@ -12,7 +12,9 @@ import {
   Users,
   BarChart3,
   LogOut,
-  BookOpen
+  BookOpen,
+  CirclePlay,
+  LineChart
 } from 'lucide-react';
 
 export const ManusSidebar = () => {
@@ -46,6 +48,26 @@ export const ManusSidebar = () => {
                     <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">
                         New Session
                     </div>
+                </NavLink>
+
+                <NavLink
+                    to="/learn"
+                    className={({ isActive }) =>
+                        `p-2.5 rounded-xl transition-all duration-200 relative group ${isActive ? 'bg-white shadow-sm border border-[#E8E2D9] text-[#2D2A26]' : 'text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26]'}`
+                    }
+                >
+                    <BookOpen className="w-[17px] h-[17px]" strokeWidth={2}/>
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">Learning Studio</div>
+                </NavLink>
+
+                <NavLink
+                    to="/prove-it"
+                    className={({ isActive }) =>
+                        `p-2.5 rounded-xl transition-all duration-200 relative group ${isActive ? 'bg-white shadow-sm border border-[#E8E2D9] text-[#2D2A26]' : 'text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26]'}`
+                    }
+                >
+                    <CirclePlay className="w-[17px] h-[17px]" strokeWidth={2}/>
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">Practice & Mastery</div>
                 </NavLink>
 
                 <NavLink
@@ -149,6 +171,16 @@ export const ManusSidebar = () => {
                     <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">
                         My Profile
                     </div>
+                </NavLink>
+
+                <NavLink
+                    to="/outcomes"
+                    className={({ isActive }) =>
+                        `p-2.5 rounded-xl transition-all duration-200 relative group ${isActive ? 'bg-white shadow-sm border border-[#E8E2D9] text-[#2D2A26]' : 'text-[#8A8279] hover:bg-[#F5F0E8] hover:text-[#2D2A26]'}`
+                    }
+                >
+                    <LineChart className="w-[17px] h-[17px]" strokeWidth={2}/>
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-[#2D2A26] text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-md tracking-wide">Learning Insights</div>
                 </NavLink>
 
                 <NavLink

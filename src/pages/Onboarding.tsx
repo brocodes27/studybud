@@ -11,49 +11,49 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const DIAGNOSTIC_PCM = [
   {
-    question: "A particle moves in a circle of radius R with constant speed v. What is its acceleration?",
-    options: ["0", "v²/R towards center", "v²/R along tangent", "v/R² towards center"],
+    question: "In Organic Chemistry (CHEM 2210), what is the major product of an SN2 reaction at a chiral center?",
+    options: ["Retention of configuration", "Inversion of configuration (Walden inversion)", "Racemic mixture", "No reaction"],
     correct: 1,
-    subject: "Physics",
-    topic: "Circular Motion"
+    subject: "Organic Chemistry",
+    topic: "Stereochemistry & Substitutions"
   },
   {
-    question: "Which of these elements has the highest electronegativity?",
-    options: ["Oxygen", "Nitrogen", "Fluorine", "Chlorine"],
-    correct: 2,
-    subject: "Chemistry",
-    topic: "Periodic Table"
+    question: "In Multivariable Calculus (MATH 2400), what does the gradient vector ∇f point towards?",
+    options: ["Direction of maximum decrease", "Direction of maximum increase of f", "Perpendicular to all level curves", "Tangent to the surface"],
+    correct: 1,
+    subject: "Calculus III",
+    topic: "Partial Derivatives & Gradients"
   },
   {
-    question: "What is the derivative of sin(x²) with respect to x?",
-    options: ["cos(x²)", "2x cos(x²)", "2 cos(x)", "-2x cos(x²)"],
+    question: "In General Physics (PHYS 1100), what is conserved in an inelastic collision?",
+    options: ["Kinetic energy only", "Linear momentum only", "Both kinetic energy and momentum", "Mechanical energy"],
     correct: 1,
-    subject: "Mathematics",
-    topic: "Calculus"
+    subject: "Physics Mechanics",
+    topic: "Momentum and Collisions"
   }
 ];
 
 const DIAGNOSTIC_K10 = [
   {
-    question: "What is the SI unit of force?",
-    options: ["Joule", "Watt", "Newton", "Pascal"],
+    question: "In Principles of Macroeconomics (ECON 2010), what happens to real GDP during a recession?",
+    options: ["Increases rapidly", "Declines for two consecutive quarters", "Remains constant", "Matches inflation"],
+    correct: 1,
+    subject: "Macroeconomics",
+    topic: "GDP and Business Cycles"
+  },
+  {
+    question: "In General Biology (BIOL 1010), which organelle is responsible for ATP synthesis via cellular respiration?",
+    options: ["Ribosome", "Golgi apparatus", "Mitochondria", "Lysosome"],
     correct: 2,
-    subject: "Science",
-    topic: "Force and Laws of Motion"
+    subject: "General Biology",
+    topic: "Cellular Energy"
   },
   {
-    question: "Which gas is essential for human respiration?",
-    options: ["Carbon dioxide", "Oxygen", "Respiration", "Helium"],
-    correct: 1,
-    subject: "Science",
-    topic: "Respiration"
-  },
-  {
-    question: "If 3x + 5 = 20, what is the value of x?",
-    options: ["3", "5", "15", "6"],
-    correct: 1,
-    subject: "Mathematics",
-    topic: "Linear Equations"
+    question: "In Data Structures (CS 1332), what is the worst-case time complexity of binary search on a sorted array?",
+    options: ["O(1)", "O(n)", "O(log n)", "O(n log n)"],
+    correct: 2,
+    subject: "Computer Science",
+    topic: "Algorithms & Searching"
   }
 ];
 
@@ -89,7 +89,7 @@ interface StudentRosterInput {
 }
 
 export default function Onboarding() {
-  const { user, refreshProfile, schoolId } = useAuth();
+  const { user, refreshProfile, schoolId, role: authRole, isChainAdmin, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { track } = useAnalytics();
   
@@ -120,6 +120,10 @@ export default function Onboarding() {
   const [studentInvitesText, setStudentInvitesText] = useState<string>('');
   const [createdClasses, setCreatedClasses] = useState<Array<{ name: string; code: string }>>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [teacherSchoolCode, setTeacherSchoolCode] = useState(
+    String(user?.user_metadata?.school_code || ''),
+  );
+  const [teacherSchoolName, setTeacherSchoolName] = useState<string | null>(null);
 
   // Admin specific
   const [schoolName, setSchoolName] = useState<string>('');
@@ -160,6 +164,45 @@ export default function Onboarding() {
     }
   }, [grade, isPCM]);
 
+  // Invited school/chain admins skip the student quiz and finish into setup.
+  useEffect(() => {
+    const invitedAdmin =
+      isAdmin ||
+      isChainAdmin ||
+      ['org_admin', 'principal', 'school_admin', 'chain_admin'].includes(String(authRole || '').toLowerCase());
+    if (!user || !invitedAdmin) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const { error: profileError } = await supabase.from('user_profiles').upsert({
+          id: user.id,
+          full_name: fullName.trim() || user.user_metadata?.full_name || user.email || 'Administrator',
+          onboarding_completed: true,
+          account_type: 'school_admin',
+          role: isChainAdmin || authRole === 'chain_admin' ? 'chain_admin' : 'org_admin',
+          school_id: schoolId,
+        });
+        if (profileError) throw profileError;
+        await refreshProfile();
+        if (!cancelled) {
+          navigate(isChainAdmin || authRole === 'chain_admin' ? '/chain' : '/school-setup');
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e.message || 'Could not finish school admin onboarding.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally omit refreshProfile/navigate identity churn; run once per invite role resolution.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authRole, isAdmin, isChainAdmin, schoolId, user?.id]);
+
   const handleNextFromBasics = () => {
     if (!fullName.trim()) {
       setError('Please enter your name.');
@@ -167,14 +210,42 @@ export default function Onboarding() {
     }
     setError(null);
     if (role === 'teacher') {
-      if (!schoolId) {
-        setError('Access Denied: Your school domain has not been registered or given access. Please contact your administrator.');
+      if (!schoolId && !teacherSchoolName) {
+        setError('Enter your campus school code so we can link you to the principal’s roster.');
         return;
       }
       setStep('teacher_sections');
     } else {
       setStep('session');
     }
+  };
+
+  const handleTeacherSchoolLookup = async () => {
+    if (!teacherSchoolCode.trim()) {
+      setError('Enter a school code.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const { data, error: lookupError } = await supabase.rpc('lookup_school_by_code', {
+        p_code: teacherSchoolCode.trim(),
+      });
+      if (lookupError) throw lookupError;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.id) throw new Error('No school found for that code.');
+      setTeacherSchoolName(row.name);
+    } catch (e: any) {
+      setTeacherSchoolName(null);
+      setError(e.message || 'Could not find that school code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNextFromSession = () => {
+    setError(null);
+    setStep('quiz');
   };
 
   // Student Flow Actions
@@ -249,7 +320,7 @@ export default function Onboarding() {
       }, { onConflict: 'user_id' });
 
       await refreshProfile();
-      navigate('/');
+      navigate('/subscription');
     } catch (e: any) {
       setError(e.message || 'Failed to complete student onboarding.');
     } finally {
@@ -273,31 +344,71 @@ export default function Onboarding() {
       setLoading(true);
       setError(null);
 
+      // Always join via SECURITY DEFINER RPC so membership is created under RLS.
+      const codeToJoin = teacherSchoolCode.trim() || undefined;
+      if (!schoolId && !codeToJoin) {
+        throw new Error('Enter your school code to join a campus.');
+      }
+      if (codeToJoin) {
+        const { data: joinData, error: joinError } = await supabase.rpc('join_school_as_teacher', {
+          p_code: codeToJoin,
+        });
+        if (joinError) throw joinError;
+        if (!joinData?.school_id) throw new Error('Could not join school.');
+      } else if (schoolId) {
+        const { data: schoolRow } = await supabase.from('schools').select('code').eq('id', schoolId).maybeSingle();
+        if (schoolRow?.code) {
+          const { error: joinError } = await supabase.rpc('join_school_as_teacher', {
+            p_code: schoolRow.code,
+          });
+          if (joinError) throw joinError;
+        }
+      }
+
+      const resolvedSchoolId =
+        (
+          await supabase
+            .from('memberships')
+            .select('school_id')
+            .eq('user_id', user.id)
+            .eq('role', 'teacher')
+            .eq('status', 'active')
+            .maybeSingle()
+        ).data?.school_id || schoolId;
+
       // 1. Update Profile
       const { error: profileError } = await supabase.from('user_profiles').upsert({
         id: user.id,
         role: 'teacher',
         full_name: fullName.trim(),
         onboarding_completed: true,
-        account_type: 'teacher'
+        account_type: 'teacher',
+        school_id: resolvedSchoolId,
       });
       if (profileError) throw profileError;
 
-      // 2. Create Sections, Subjects, and Teaching Assignments (in parallel)
-      const academicYearRes = await supabase.from('academic_years').select('id').eq('is_active', true).limit(1);
+      // 2. Prefer principal-created structure; only create classes if year exists for this school
+      const academicYearRes = resolvedSchoolId
+        ? await supabase
+            .from('academic_years')
+            .select('id')
+            .eq('school_id', resolvedSchoolId)
+            .eq('is_active', true)
+            .limit(1)
+        : await supabase.from('academic_years').select('id').eq('is_active', true).limit(1);
       const ayId = academicYearRes.data?.[0]?.id;
 
       const tempClasses: Array<{ name: string; code: string }> = [];
 
-      if (ayId) {
+      if (ayId && resolvedSchoolId) {
         for (const sec of teacherSections) {
-          // Get or create grade section
           let sectionId;
           const sectionRes = await supabase
             .from('grade_sections')
             .select('id')
-            .eq('grade_name', sec.grade)
-            .eq('section_name', sec.section)
+            .eq('school_id', resolvedSchoolId)
+            .eq('grade', sec.grade)
+            .eq('section', sec.section)
             .limit(1)
             .maybeSingle();
 
@@ -306,17 +417,17 @@ export default function Onboarding() {
           } else {
             const newSec = await supabase
               .from('grade_sections')
-              .insert({ grade_name: sec.grade, section_name: sec.section, academic_year_id: ayId })
+              .insert({ school_id: resolvedSchoolId, grade: sec.grade, section: sec.section })
               .select('id')
               .single();
             sectionId = newSec.data?.id;
           }
 
-          // Get or create subject
           let subjectId;
           const subjectRes = await supabase
             .from('subjects')
             .select('id')
+            .eq('school_id', resolvedSchoolId)
             .eq('name', sec.subject)
             .limit(1)
             .maybeSingle();
@@ -326,32 +437,45 @@ export default function Onboarding() {
           } else {
             const newSub = await supabase
               .from('subjects')
-              .insert({ name: sec.subject })
+              .insert({ school_id: resolvedSchoolId, name: sec.subject })
               .select('id')
               .single();
             subjectId = newSub.data?.id;
           }
 
-          // Insert teaching assignment
           if (sectionId && subjectId) {
-            await supabase.from('teaching_assignments').insert({
-              teacher_id: user.id,
-              section_id: sectionId,
-              subject_id: subjectId,
-              academic_year_id: ayId
-            });
+            const assignmentResult = await supabase
+              .from('teaching_assignments')
+              .upsert(
+                {
+                  teacher_id: user.id,
+                  section_id: sectionId,
+                  subject_id: subjectId,
+                  academic_year_id: ayId,
+                },
+                { onConflict: 'teacher_id,section_id,subject_id,academic_year_id' },
+              )
+              .select('id')
+              .single();
+            if (assignmentResult.error) throw assignmentResult.error;
 
-            // Auto-create class room
-            const classCodeValue = `CLS-${uuidShort()}`;
-            const classNameValue = `Class ${sec.grade}-${sec.section} ${sec.subject}`;
-            await supabase.from('classes').insert({
-              teacher_id: user.id,
-              name: classNameValue,
-              subject: sec.subject.toLowerCase(),
-              class_code: classCodeValue
+            const ensured = await supabase.rpc('ensure_class_for_teaching_assignment', {
+              p_assignment_id: assignmentResult.data.id,
             });
+            if (ensured.error) throw ensured.error;
 
-            tempClasses.push({ name: classNameValue, code: classCodeValue });
+            const classResult = await supabase
+              .from('classes')
+              .select('name, class_code')
+              .eq('id', ensured.data)
+              .single();
+            if (classResult.error) throw classResult.error;
+            if (classResult.data.class_code) {
+              tempClasses.push({
+                name: classResult.data.name,
+                code: classResult.data.class_code,
+              });
+            }
           }
         }
       }
@@ -539,9 +663,6 @@ export default function Onboarding() {
     }
   };
 
-  // Helper function to generate unique class tags
-  const uuidShort = () => Math.random().toString(36).substring(2, 7).toUpperCase();
-
   const parseStudentRosterCSV = (text: string) => {
     try {
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
@@ -573,10 +694,10 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4 md:p-8 relative overflow-hidden text-[#2D2A26]">
+    <div className="curve-root min-h-screen bg-[#0a0814] text-white flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none noise-heavy opacity-5" />
-      <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-[#00D1FF]/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-[#6366F1]/5 rounded-full blur-[120px]" />
+      <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-[#8b5cf6]/15 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[45%] bg-[#f472b6]/10 rounded-full blur-[120px]" />
 
       <AnimatePresence mode="wait">
         {/* STEP 1: BASICS */}
@@ -588,24 +709,24 @@ export default function Onboarding() {
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-lg relative z-10"
           >
-            <div className="bg-white border-4 border-[#2D2A26] p-6 md:p-8 shadow-[8px_8px_0px_0px_#2D2A26] rounded-2xl">
+            <div className="bg-[#130f24]/90 backdrop-blur-xl border border-white/10 p-6 md:p-8 shadow-2xl rounded-3xl text-white">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-[#2D2A26] border-2 border-[#2D2A26] text-white flex items-center justify-center rounded-xl shadow-sm">
+                <div className="w-14 h-14 bg-[#8b5cf6] border border-[#8b5cf6] text-white flex items-center justify-center rounded-2xl shadow-lg">
                   <User className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black uppercase tracking-tight">Identity Profile</h2>
-                  <p className="text-xs font-bold text-[#8A8279] mt-0.5">Let's setup your ElevenFolks credentials.</p>
+                  <h2 className="text-2xl font-extrabold uppercase tracking-tight text-white">Identity Profile</h2>
+                  <p className="text-xs font-bold text-curve-muted mt-0.5">Setup your Curve student credentials.</p>
                 </div>
               </div>
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26] mb-2">Full Name</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-curve-muted mb-2">Full Name</label>
                   <input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border-2 border-[#2D2A26] text-[#2D2A26] font-bold text-lg focus:outline-none focus:bg-amber-50/10 placeholder:text-[#8A8279]/40 bg-[#FAF8F5]"
+                    className="w-full px-4 py-3.5 rounded-xl border border-white/10 text-white font-bold text-lg focus:outline-none focus:border-[#8b5cf6] placeholder:text-white/40 bg-[#1c162e]"
                     placeholder="Enter your name..."
                   />
                 </div>
@@ -632,6 +753,55 @@ export default function Onboarding() {
                     </button>
                   </div>
                 </div>
+
+                {role === 'teacher' && !schoolId && (
+                  <div className="space-y-3 rounded-xl border-2 border-[#2D2A26]/15 bg-[#FAF8F5] p-4">
+                    <label className="block text-xs font-black uppercase tracking-wider text-[#2D2A26]">
+                      Campus school code
+                    </label>
+                    <p className="text-[11px] font-semibold text-[#8A8279]">
+                      Ask your principal for the school code shown in School setup. This links you to that campus roster.
+                    </p>
+                    {teacherSchoolName ? (
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">
+                        Linked to {teacherSchoolName}
+                        <button
+                          type="button"
+                          className="ml-2 text-xs underline"
+                          onClick={() => {
+                            setTeacherSchoolName(null);
+                            setTeacherSchoolCode('');
+                          }}
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          value={teacherSchoolCode}
+                          onChange={(e) => setTeacherSchoolCode(e.target.value.toUpperCase())}
+                          placeholder="e.g. DPS-NORTH"
+                          className="w-full px-4 py-3 rounded-xl border-2 border-[#2D2A26] text-[#2D2A26] font-bold text-sm uppercase tracking-wider bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleTeacherSchoolLookup}
+                          disabled={loading || !teacherSchoolCode.trim()}
+                          className="shrink-0 rounded-xl bg-[#2D2A26] px-4 py-3 text-xs font-black uppercase text-white disabled:opacity-40"
+                        >
+                          Find
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {role === 'teacher' && schoolId && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">
+                    Already linked to your campus.
+                  </div>
+                )}
 
                 {role === 'student' && (
                   <motion.div

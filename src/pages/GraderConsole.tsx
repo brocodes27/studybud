@@ -6,6 +6,12 @@ import {
   Camera, RefreshCw, Play, Pause, PlusCircle, Loader2, AlertCircle,
   CheckCircle2, ScanLine, FileText, Cpu
 } from 'lucide-react';
+import AnnotatedNotebookPage from '../components/grader/AnnotatedNotebookPage';
+import {
+  normalizeNotebookAnnotations,
+  type NotebookAnnotation,
+  type NotebookAnnotationReviewStatus,
+} from '../lib/notebookAnnotations';
 
 interface GradingSession {
   id: string;
@@ -19,7 +25,13 @@ interface GradingSession {
   command: string | null;
   command_seq: number;
   error_message: string | null;
-  result: { total?: number; max?: number; per_question?: EvaluationItem[] };
+  result: {
+    total?: number;
+    max?: number;
+    per_question?: EvaluationItem[];
+    annotations_generated?: number;
+    annotation_warnings?: string[];
+  };
   test_result_id: string | null;
   created_at: string;
 }
@@ -36,6 +48,8 @@ interface GradingPage {
   session_id: string;
   page_number: number;
   storage_path: string;
+  annotations?: NotebookAnnotation[];
+  annotation_review_status?: NotebookAnnotationReviewStatus;
   signedUrl?: string;
 }
 
@@ -212,16 +226,24 @@ const GraderConsole: React.FC = () => {
 
   const sendCommand = async (command: string) => {
     if (!session?.id) return;
+    if (session.status === 'graded' || session.status === 'cancelled') {
+      setError('Completed grading sessions are read-only. Start a new session to capture or grade more pages.');
+      return;
+    }
     setError('');
     setSendingCommand(command);
     try {
-      const nextSeq = commandSeqRef.current + 1;
-      const { error: updateErr } = await supabase
-        .from('grading_sessions')
-        .update({ command, command_seq: nextSeq })
-        .eq('id', session.id);
+      const { data: updatedSession, error: updateErr } = await supabase
+        .rpc('send_grading_session_command', {
+          p_session_id: session.id,
+          p_command: command,
+        });
       if (updateErr) throw updateErr;
-      commandSeqRef.current = nextSeq;
+      if (updatedSession) {
+        const updated = updatedSession as GradingSession;
+        commandSeqRef.current = updated.command_seq || commandSeqRef.current;
+        setSession(updated);
+      }
     } catch (err: any) {
       setError(err.message || `Failed to send command: ${command}`);
     } finally {
@@ -236,6 +258,30 @@ const GraderConsole: React.FC = () => {
     commandSeqRef.current = 0;
   };
 
+  const savePageAnnotations = useCallback(async (
+    pageId: string,
+    annotations: NotebookAnnotation[],
+    reviewStatus: NotebookAnnotationReviewStatus,
+  ) => {
+    const normalized = normalizeNotebookAnnotations(annotations);
+    const { error: updateError } = await supabase.rpc('update_grading_page_annotations', {
+      p_page_id: pageId,
+      p_annotations: normalized,
+      p_review_status: reviewStatus,
+    });
+    if (updateError) throw updateError;
+
+    setPages((current) => current.map((page) => (
+      page.id === pageId
+        ? {
+            ...page,
+            annotations: normalized,
+            annotation_review_status: reviewStatus,
+          }
+        : page
+    )));
+  }, []);
+
   if (role !== 'teacher') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -248,6 +294,7 @@ const GraderConsole: React.FC = () => {
   }
 
   const busy = session?.status === 'checking';
+  const controlsLocked = session?.status === 'graded' || session?.status === 'cancelled';
   const perQuestion: EvaluationItem[] = session?.result?.per_question || [];
   const studentName =
     students.find((s) => s.id === session?.student_user_id)?.full_name ||
@@ -399,7 +446,7 @@ const GraderConsole: React.FC = () => {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => sendCommand('capture_page')}
-                    disabled={!!sendingCommand || busy}
+                    disabled={!!sendingCommand || busy || controlsLocked || session.status === 'paused'}
                     className="inline-flex items-center gap-2 bg-[#0A192F] text-white font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition disabled:opacity-40"
                   >
                     {sendingCommand === 'capture_page' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -407,7 +454,7 @@ const GraderConsole: React.FC = () => {
                   </button>
                   <button
                     onClick={() => sendCommand('retake_last')}
-                    disabled={!!sendingCommand || busy || pages.length === 0}
+                    disabled={!!sendingCommand || busy || controlsLocked || session.status === 'paused' || pages.length === 0}
                     className="inline-flex items-center gap-2 border-2 border-[#0A192F]/15 text-[#0A192F] font-bold px-5 py-2.5 rounded-xl hover:bg-[#0A192F]/5 transition disabled:opacity-40"
                   >
                     {sendingCommand === 'retake_last' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -415,7 +462,7 @@ const GraderConsole: React.FC = () => {
                   </button>
                   <button
                     onClick={() => sendCommand(session.status === 'paused' ? 'resume' : 'start_checking')}
-                    disabled={!!sendingCommand || busy || pages.length === 0}
+                    disabled={!!sendingCommand || busy || controlsLocked || pages.length === 0}
                     className="inline-flex items-center gap-2 bg-[#00D1FF] text-[#0A192F] font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition disabled:opacity-40"
                   >
                     {sendingCommand === 'start_checking' || sendingCommand === 'resume'
@@ -425,7 +472,7 @@ const GraderConsole: React.FC = () => {
                   </button>
                   <button
                     onClick={() => sendCommand('pause')}
-                    disabled={!!sendingCommand || busy || session.status === 'paused'}
+                    disabled={!!sendingCommand || busy || controlsLocked || session.status !== 'capturing'}
                     className="inline-flex items-center gap-2 border-2 border-[#0A192F]/15 text-[#0A192F] font-bold px-5 py-2.5 rounded-xl hover:bg-[#0A192F]/5 transition disabled:opacity-40"
                   >
                     {sendingCommand === 'pause' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pause className="w-4 h-4" />}
@@ -511,8 +558,17 @@ const GraderConsole: React.FC = () => {
                     Score: <strong className="text-[#0A192F]">{session.result?.total ?? 0} / {session.result?.max ?? 0}</strong>
                     {' '}— appended to the student's record (visible in the class dashboard and the student's own dashboard).
                   </p>
+                  <p className="mt-1 text-xs text-[#64748B]">
+                    {session.result?.annotations_generated ?? 0} visual marks placed. Review and approve each page before sharing the annotated work.
+                  </p>
                 </div>
               </div>
+
+              {(session.result?.annotation_warnings?.length ?? 0) > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  {session.result?.annotation_warnings?.join(' ')}
+                </div>
+              )}
 
               {perQuestion.length > 0 && (
                 <div className="overflow-x-auto">
@@ -541,6 +597,29 @@ const GraderConsole: React.FC = () => {
                   </table>
                 </div>
               )}
+            </section>
+          )}
+
+          {session.status === 'graded' && pages.length > 0 && (
+            <section className="space-y-5">
+              <div>
+                <h3 className="text-xl font-bold text-[var(--neo-ink)]">Review annotated pages</h3>
+                <p className="mt-1 text-sm text-[var(--neo-muted)]">
+                  The red marks are editable overlays. Moving or deleting them never changes the original scan.
+                </p>
+              </div>
+              {pages.map((page) => page.signedUrl && (
+                <AnnotatedNotebookPage
+                  key={page.id}
+                  pageNumber={page.page_number}
+                  imageUrl={page.signedUrl}
+                  annotations={normalizeNotebookAnnotations(page.annotations)}
+                  reviewStatus={page.annotation_review_status || 'review'}
+                  onSave={(annotations, reviewStatus) => (
+                    savePageAnnotations(page.id, annotations, reviewStatus)
+                  )}
+                />
+              ))}
             </section>
           )}
         </>

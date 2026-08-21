@@ -41,3 +41,10 @@ dist/
 *.sqlite3
 *.db
 
+
+# Generated knowledge graph (rebuild with `graphify update`)
+graphify-out/
+
+# Rendered video output
+out/
+tmp/

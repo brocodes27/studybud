@@ -39,7 +39,39 @@ export default {
           500: '#B8956A',
           600: '#9A7A52',
           700: '#7C6242',
-        }
+        },
+        // Curve (US college product) dark theme. Namespaced so it never
+        // collides with the cream "neo" palette the existing pages rely on.
+        curve: {
+          void: '#0E0A14',
+          bg: '#150F1D',
+          surface: '#1D1528',
+          raised: '#251B33',
+          line: 'rgba(255, 255, 255, 0.09)',
+          ink: '#FFFFFF',
+          muted: '#A79FB5',
+          faint: '#6F667F',
+          violet: '#7B5CF0',
+          'violet-soft': '#A9A5F5',
+          lilac: '#C9B8F7',
+          amber: '#F5C451',
+          tangerine: '#F2A03D',
+          mint: '#A8E6D8',
+          blush: '#F5B8D8',
+          good: '#5FD3A6',
+          risk: '#F2A03D',
+          bad: '#F2657A',
+        },
+      },
+      // Named "grad-*" rather than "curve-*" so these do not collide with the
+      // curve color keys, which would emit the same bg-curve-violet utility.
+      backgroundImage: {
+        'grad-violet': 'linear-gradient(135deg, #A9A5F5 0%, #C9B8F7 55%, #E4D9FB 100%)',
+        'grad-amber': 'linear-gradient(135deg, #F5C451 0%, #F2A03D 100%)',
+        'grad-mint': 'linear-gradient(135deg, #A8E6D8 0%, #CFF3E8 100%)',
+        'grad-blush': 'linear-gradient(135deg, #F5B8D8 0%, #F9D2E6 100%)',
+        'grad-deep': 'linear-gradient(150deg, #2A1C3D 0%, #150F1D 60%)',
+        'grad-glow': 'radial-gradient(120% 120% at 15% 0%, rgba(123,92,240,0.28) 0%, rgba(123,92,240,0) 60%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

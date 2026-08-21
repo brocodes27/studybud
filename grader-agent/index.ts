@@ -16,6 +16,7 @@
 // Env (.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GRADER_DEVICE_ID,
 //             CAPTURE_CMD (optional command template, '{out}' = output file)
 import { execFile } from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -52,22 +53,27 @@ const log = (...args: unknown[]) => console.log(`[${new Date().toISOString()}]`,
 let isCapturing = false;
 let sessionStatus = 'idle';
 let liveFeedInterval: NodeJS.Timeout | null = null;
+let lastReleaseTime = 0;
 
 function startLiveFeed() {
     if (liveFeedInterval) return;
     log("Starting live feed loop...");
     liveFeedInterval = setInterval(async () => {
-        if (isCapturing || sessionStatus !== 'capturing') return;
+        if (isCapturing || sessionStatus !== 'capturing' || (Date.now() - lastReleaseTime < 250)) return;
         isCapturing = true;
         const tempPath = path.join(os.tmpdir(), `live-${DEVICE_ID}.jpg`);
         try {
             let cmd = CAPTURE_CMD;
             if (cmd.includes('rpicam-still')) {
-                cmd = cmd.replace('rpicam-still', 'rpicam-still --width 640 --height 480');
+                cmd = cmd.replace('rpicam-still', 'rpicam-still --width 640 --height 480 --immediate --denoise off');
+                cmd = cmd.replace('-t 1000', '-t 1');
             } else if (cmd.includes('libcamera-still')) {
-                cmd = cmd.replace('libcamera-still', 'libcamera-still --width 640 --height 480');
+                cmd = cmd.replace('libcamera-still', 'libcamera-still --width 640 --height 480 --immediate --denoise off');
+                cmd = cmd.replace('-t 1000', '-t 1');
             } else if (cmd.includes('fswebcam')) {
                 cmd = cmd.replace('-r 1920x1080', '-r 640x480');
+            } else if (cmd.includes('imagesnap')) {
+                cmd = cmd.replace('-w 1', '-w 0.1');
             }
             
             const parts = cmd.split(/\s+/).map((p) => p.replace('{out}', tempPath));
@@ -94,9 +100,10 @@ function startLiveFeed() {
             if (fs.existsSync(tempPath)) {
                 fs.unlink(tempPath, () => {});
             }
+            lastReleaseTime = Date.now();
             isCapturing = false;
         }
-    }, 1500);
+    }, 250);
 }
 
 function stopLiveFeed() {
@@ -131,13 +138,19 @@ async function checkActiveSession() {
     }
 }
 
-function capturePhoto(outPath: string): Promise<void> {
+async function capturePhoto(outPath: string): Promise<void> {
+    // Wait for any active live feed capture to release the camera and respect release cooldown
+    for (let i = 0; i < 40; i++) { // wait up to 2 seconds
+        if (!isCapturing && (Date.now() - lastReleaseTime >= 250)) break;
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
     isCapturing = true;
     const parts = CAPTURE_CMD.split(/\s+/).map((p) => p.replace('{out}', outPath));
     const [cmd, ...args] = parts;
     log(`Capturing photo: ${cmd} ${args.join(' ')}`);
     return new Promise((resolve, reject) => {
         execFile(cmd, args, { timeout: 30000 }, (err, _stdout, stderr) => {
+            lastReleaseTime = Date.now();
             isCapturing = false;
             if (err) return reject(new Error(`Camera capture failed (${cmd}): ${err.message} ${stderr || ''}`));
             if (!fs.existsSync(outPath) || fs.statSync(outPath).size === 0) {
@@ -148,46 +161,66 @@ function capturePhoto(outPath: string): Promise<void> {
     });
 }
 
-async function markFailed(sessionId: string, message: string) {
+async function markFailed(sessionId: string, commandSeq: number, runToken: string, message: string) {
     try {
-        await supabase.from('grading_sessions')
-            .update({ status: 'failed', error_message: message })
-            .eq('id', sessionId);
+        const { data, error } = await supabase.rpc('fail_grading_session_command', {
+            p_session_id: sessionId,
+            p_command_seq: commandSeq,
+            p_run_token: runToken,
+            p_error_message: message,
+        });
+        if (error) throw error;
+        if (data !== true) {
+            log(`Failure status was not written because session ${sessionId} no longer owns this command lease.`);
+        }
     } catch (e) {
         log('Failed to write failure status:', e);
     }
 }
 
-async function uploadPage(sessionId: string, pageNumber: number): Promise<string> {
-    const localPath = path.join(os.tmpdir(), `${sessionId}-page-${pageNumber}.jpg`);
-    await capturePhoto(localPath);
-    const storagePath = `${sessionId}/page-${pageNumber}.jpg`;
-    const { error: uploadErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(storagePath, fs.readFileSync(localPath), { contentType: 'image/jpeg', upsert: true });
-    if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
-    fs.unlink(localPath, () => { /* best-effort cleanup */ });
-    return storagePath;
+async function removeUploadedPage(storagePath: string) {
+    const { error } = await supabase.storage.from(BUCKET).remove([storagePath]);
+    if (error) log(`Could not clean up unused scan ${storagePath}:`, error.message);
 }
 
-async function handleCapturePage(sessionId: string) {
+async function uploadPage(sessionId: string, pageNumber: number, runToken: string): Promise<string> {
+    const localPath = path.join(os.tmpdir(), `${sessionId}-${runToken}-page-${pageNumber}.jpg`);
+    const storagePath = `${sessionId}/commands/${runToken}/page-${pageNumber}.jpg`;
+    try {
+        await capturePhoto(localPath);
+        const { error: uploadErr } = await supabase.storage
+            .from(BUCKET)
+            .upload(storagePath, fs.readFileSync(localPath), { contentType: 'image/jpeg', upsert: false });
+        if (uploadErr) throw new Error(`Storage upload failed: ${uploadErr.message}`);
+        return storagePath;
+    } finally {
+        fs.unlink(localPath, () => { /* best-effort cleanup */ });
+    }
+}
+
+async function handleCapturePage(sessionId: string, commandSeq: number, runToken: string) {
     const { count, error: countErr } = await supabase
         .from('grading_pages')
         .select('*', { count: 'exact', head: true })
         .eq('session_id', sessionId);
     if (countErr) throw new Error(`Failed to count pages: ${countErr.message}`);
     const pageNumber = (count ?? 0) + 1;
-    const storagePath = await uploadPage(sessionId, pageNumber);
-    const { error: insertErr } = await supabase.from('grading_pages').insert({
-        session_id: sessionId,
-        page_number: pageNumber,
-        storage_path: storagePath,
+    const storagePath = await uploadPage(sessionId, pageNumber, runToken);
+    const { error: insertErr } = await supabase.rpc('commit_grading_page_capture', {
+        p_session_id: sessionId,
+        p_command_seq: commandSeq,
+        p_run_token: runToken,
+        p_page_number: pageNumber,
+        p_storage_path: storagePath,
     });
-    if (insertErr) throw new Error(`Failed to insert page row: ${insertErr.message}`);
+    if (insertErr) {
+        await removeUploadedPage(storagePath);
+        throw new Error(`Failed to commit captured page: ${insertErr.message}`);
+    }
     log(`Captured page ${pageNumber} for session ${sessionId} -> ${storagePath}`);
 }
 
-async function handleRetakeLast(sessionId: string) {
+async function handleRetakeLast(sessionId: string, commandSeq: number, runToken: string) {
     const { data: lastPage, error } = await supabase
         .from('grading_pages')
         .select('*')
@@ -198,21 +231,27 @@ async function handleRetakeLast(sessionId: string) {
     if (error) throw new Error(`Failed to load last page: ${error.message}`);
     if (!lastPage) {
         // Nothing captured yet — treat retake as a normal capture.
-        return handleCapturePage(sessionId);
+        return handleCapturePage(sessionId, commandSeq, runToken);
     }
-    const storagePath = await uploadPage(sessionId, lastPage.page_number);
-    const { error: updateErr } = await supabase
-        .from('grading_pages')
-        .update({ storage_path: storagePath, ocr_text: null })
-        .eq('id', lastPage.id);
-    if (updateErr) throw new Error(`Failed to update retaken page: ${updateErr.message}`);
+    const storagePath = await uploadPage(sessionId, lastPage.page_number, runToken);
+    const { error: updateErr } = await supabase.rpc('commit_grading_page_retake', {
+        p_session_id: sessionId,
+        p_command_seq: commandSeq,
+        p_run_token: runToken,
+        p_page_id: lastPage.id,
+        p_storage_path: storagePath,
+    });
+    if (updateErr) {
+        await removeUploadedPage(storagePath);
+        throw new Error(`Failed to commit retaken page: ${updateErr.message}`);
+    }
+    if (lastPage.storage_path !== storagePath) {
+        await removeUploadedPage(lastPage.storage_path);
+    }
     log(`Retook page ${lastPage.page_number} for session ${sessionId}`);
 }
 
 async function handleStartChecking(sessionId: string) {
-    await supabase.from('grading_sessions')
-        .update({ status: 'checking', error_message: null })
-        .eq('id', sessionId);
     log(`Invoking grade-notebook for session ${sessionId}...`);
     const { data, error } = await supabase.functions.invoke('grade-notebook', {
         body: { session_id: sessionId },
@@ -230,45 +269,134 @@ async function handleStartChecking(sessionId: string) {
     log(`Grading complete for session ${sessionId}:`, JSON.stringify(data)?.slice(0, 300));
 }
 
-async function handlePause(sessionId: string) {
-    await supabase.from('grading_sessions')
-        .update({ status: 'paused' })
-        .eq('id', sessionId);
+async function handlePause(sessionId: string, commandSeq: number, runToken: string) {
+    const { error } = await supabase.rpc('pause_grading_session_command', {
+        p_session_id: sessionId,
+        p_command_seq: commandSeq,
+        p_run_token: runToken,
+    });
+    if (error) throw error;
     log(`Session ${sessionId} paused`);
 }
 
 // Deduplicate commands: the console bumps command_seq for every button press.
 const lastSeenSeq = new Map<string, number>();
+const commandQueues = new Map<string, Promise<void>>();
+
+const delay = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function claimCommand(sessionId: string, commandSeq: number, command: string, runToken: string) {
+    let retryCount = 0;
+    for (;;) {
+        const { data, error } = await supabase.rpc('claim_grading_command', {
+            p_session_id: sessionId,
+            p_command_seq: commandSeq,
+            p_command: command,
+            p_run_token: runToken,
+        });
+        if (error) {
+            retryCount += 1;
+            if (retryCount === 1 || retryCount % 30 === 0) {
+                log(`Command claim retry for session ${sessionId}:`, error.message);
+            }
+            await delay(1000);
+            continue;
+        }
+        if (data !== 'busy') return String(data);
+        await delay(500);
+    }
+}
+
+async function finishCommand(sessionId: string, commandSeq: number, runToken: string) {
+    for (let attempt = 1; attempt <= 120; attempt += 1) {
+        const { data, error } = await supabase.rpc('finish_grading_command', {
+            p_session_id: sessionId,
+            p_command_seq: commandSeq,
+            p_run_token: runToken,
+        });
+        if (!error) {
+            if (data !== true) {
+                log(`Command lease was already lost for session ${sessionId}; stale writes were fenced.`);
+            }
+            return;
+        }
+        if (attempt === 1 || attempt % 30 === 0) {
+            log(`Command lease release retry for session ${sessionId}:`, error.message);
+        }
+        await delay(500);
+    }
+    log(`Command lease release timed out for session ${sessionId}; it will expire safely.`);
+}
 
 async function handleSessionUpdate(session: any) {
-    const { id, command, command_seq } = session || {};
+    const { id, command, command_seq, status } = session || {};
     if (!id || !command || typeof command_seq !== 'number') return;
     if ((lastSeenSeq.get(id) ?? -1) >= command_seq) return; // already handled
-    lastSeenSeq.set(id, command_seq);
+
+    if (status === 'graded' || status === 'cancelled') {
+        lastSeenSeq.set(id, command_seq);
+        log(`Ignoring command '${command}' for read-only ${status} session ${id}`);
+        return;
+    }
 
     log(`Command '${command}' (seq ${command_seq}) for session ${id}`);
+    const runToken = randomUUID();
+    let claimStatus: string;
+    try {
+        claimStatus = await claimCommand(id, command_seq, command, runToken);
+    } catch (claimError: any) {
+        log(`Could not claim command '${command}' for session ${id}:`, claimError?.message || claimError);
+        return;
+    }
+    if (claimStatus !== 'claimed') {
+        lastSeenSeq.set(id, command_seq);
+        log(`Command '${command}' (seq ${command_seq}) skipped: ${claimStatus}`);
+        return;
+    }
+    lastSeenSeq.set(id, command_seq);
+
     try {
         switch (command) {
             case 'capture_page':
-                await handleCapturePage(id);
+                await handleCapturePage(id, command_seq, runToken);
                 break;
             case 'retake_last':
-                await handleRetakeLast(id);
+                await handleRetakeLast(id, command_seq, runToken);
                 break;
             case 'start_checking':
             case 'resume':
                 await handleStartChecking(id);
                 break;
             case 'pause':
-                await handlePause(id);
+                await handlePause(id, command_seq, runToken);
                 break;
             default:
                 log(`Unknown command ignored: ${command}`);
         }
     } catch (err: any) {
-        log(`Command '${command}' failed for session ${id}:`, err?.message || err);
-        await markFailed(id, String(err?.message || err));
+        const message = String(err?.message || err);
+        if (message.includes('already in progress')) {
+            log(`Command '${command}' ignored because another grader already owns session ${id}`);
+            return;
+        }
+        log(`Command '${command}' failed for session ${id}:`, message);
+        await markFailed(id, command_seq, runToken, message);
+    } finally {
+        await finishCommand(id, command_seq, runToken);
     }
+}
+
+function enqueueSessionUpdate(session: any) {
+    const sessionId = session?.id;
+    if (!sessionId) return;
+    const previous = commandQueues.get(sessionId) || Promise.resolve();
+    const next = previous
+        .catch((error) => log(`Previous command queue error for session ${sessionId}:`, error))
+        .then(() => handleSessionUpdate(session));
+    commandQueues.set(sessionId, next);
+    void next.finally(() => {
+        if (commandQueues.get(sessionId) === next) commandQueues.delete(sessionId);
+    }).catch((error) => log(`Command queue error for session ${sessionId}:`, error));
 }
 
 log(`Notebook Grader agent starting (device_id=${DEVICE_ID})`);
@@ -292,7 +420,7 @@ const channel = supabase
             } else {
                 stopLiveFeed();
             }
-            void handleSessionUpdate(payload.new);
+            enqueueSessionUpdate(payload.new);
         },
     )
     .subscribe((status: string, err?: Error) => {

@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, FileText, Bell, Link as LinkIcon, Download, LogOut, AlertTriangle, Calendar, Clock, Plus, XCircle, Sparkles } from 'lucide-react';
+import { BookOpen, FileText, Bell, Link as LinkIcon, Download, LogOut, AlertTriangle, Calendar, Clock, Plus, XCircle, Sparkles, Loader2 } from 'lucide-react';
 
 interface ClassInfo {
     id: string;

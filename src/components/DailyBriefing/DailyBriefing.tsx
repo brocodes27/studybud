@@ -447,7 +447,13 @@ export function DailyBriefing() {
         {/* COMPLETE */}
         {state === 'complete' && (
           <motion.div key="complete" className="w-full">
-            <CompletionCelebration onContinue={handleExplore} xpEarned={completionMeta.xpEarned} levelUp={completionMeta.levelUp} newLevel={completionMeta.newLevel} />
+            <CompletionCelebration
+              onContinue={handleExplore}
+              xpEarned={completionMeta.xpEarned || 150}
+              levelUp={completionMeta.levelUp}
+              newLevel={completionMeta.newLevel}
+              streakCount={data?.streak || 1}
+            />
           </motion.div>
         )}
 

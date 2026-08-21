@@ -16,19 +16,8 @@ const STORAGE_KEY = 'chemistry_exam_dashboard_v1';
 const initialData: DashboardData = {
   examDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
   subject: 'Chemistry',
-  materials: [
-    { id: 'm1', title: 'Organic Chemistry Notes', type: 'note', path: '/materials/organic-notes.md', tags: ['organic', 'revision'] },
-    { id: 'm2', title: 'Physical Chemistry Formula Sheet', type: 'pdf', path: '/materials/physical-formulas.pdf', tags: ['physical', 'formulas'] },
-    { id: 'm3', title: 'Inorganic PYQ Pack', type: 'pdf', path: '/materials/inorganic-pyq.pdf', tags: ['inorganic', 'pyq'] },
-  ],
-  tasks: [
-    { id: 't1', text: 'Revise Chemical Bonding chapter', done: false, dueDay: 1, priority: 'high' },
-    { id: 't2', text: 'Solve 30 Organic Chemistry MCQs', done: false, dueDay: 2, priority: 'high' },
-    { id: 't3', text: 'Memorize periodic trends and exceptions', done: false, dueDay: 2, priority: 'medium' },
-    { id: 't4', text: 'Practice stoichiometry numericals (20)', done: false, dueDay: 3, priority: 'high' },
-    { id: 't5', text: 'Complete 1 full Chemistry mock test', done: false, dueDay: 4, priority: 'high' },
-    { id: 't6', text: 'Final formula + reaction quick revision', done: false, dueDay: 5, priority: 'medium' },
-  ],
+  materials: [],
+  tasks: [],
 };
 
 function daysLeft(examDate: string): number {

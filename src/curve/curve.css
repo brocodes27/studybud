@@ -1,0 +1,441 @@
+/* ============================================
+   CURVE — dark display theme for the US college product.
+   Every rule is scoped under .curve-root so it cannot leak into the
+   cream "neo" theme that the existing pages render with.
+   ============================================ */
+
+.curve-root {
+  --curve-void: #0e0a14;
+  --curve-bg: #150f1d;
+  --curve-surface: #1d1528;
+  --curve-raised: #251b33;
+  --curve-line: rgba(255, 255, 255, 0.09);
+  --curve-ink: #ffffff;
+  --curve-muted: #a79fb5;
+  --curve-faint: #6f667f;
+  --curve-violet: #7b5cf0;
+
+  min-height: 100%;
+  background-color: var(--curve-bg);
+  color: var(--curve-ink);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient canvas: a violet bloom top-left plus the faint diagonal
+   streaks from the reference. Both are decorative and pointer-inert. */
+.curve-canvas {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.curve-canvas::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(120% 110% at 12% -10%, rgba(123, 92, 240, 0.3) 0%, rgba(123, 92, 240, 0) 55%),
+    radial-gradient(90% 90% at 92% 8%, rgba(245, 184, 216, 0.12) 0%, rgba(245, 184, 216, 0) 55%),
+    var(--curve-bg);
+}
+
+.curve-canvas::after {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    114deg,
+    transparent 0 118px,
+    rgba(255, 255, 255, 0.035) 118px 120px
+  );
+}
+
+/* ---------- Typography ----------
+   index.css sets `h1..h6 { color: #2D2A26; font-family: Playfair Display
+   !important }` and `body { color: var(--neo-ink) !important }` globally for
+   the cream theme. Those would render Curve headings as dark serif on a dark
+   canvas, so they are neutralized here at higher specificity. */
+
+.curve-root h1,
+.curve-root h2,
+.curve-root h3,
+.curve-root h4,
+.curve-root h5,
+.curve-root h6 {
+  color: inherit;
+  font-family: Inter, system-ui, -apple-system, sans-serif !important;
+  font-weight: inherit;
+}
+
+.curve-root p,
+.curve-root span,
+.curve-root button,
+.curve-root nav,
+.curve-root div {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+.curve-display {
+  color: var(--curve-ink);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  font-size: clamp(2.1rem, 6.2vw, 3.9rem);
+}
+
+.curve-display-light {
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.curve-title {
+  color: inherit;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+}
+
+.curve-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--curve-faint);
+}
+
+.curve-muted {
+  color: var(--curve-muted);
+}
+
+/* Tabular figures keep the forecast number from jittering as it updates. */
+.curve-figure {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  font-weight: 700;
+}
+
+/* ---------- Surfaces ---------- */
+
+.curve-panel {
+  background: linear-gradient(158deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--curve-line);
+  border-radius: 28px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.curve-inset {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--curve-line);
+  border-radius: 20px;
+}
+
+/* ---------- Gradient course cards ---------- */
+
+.curve-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  padding: 1.15rem;
+  min-height: 172px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #1a1224;
+  isolation: isolate;
+  text-align: left;
+  width: 100%;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) {
+  .curve-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 44px -18px rgba(0, 0, 0, 0.75);
+  }
+}
+
+.curve-card:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/* The soft blob that gives each card its depth, echoing the reference art. */
+.curve-card-blob {
+  position: absolute;
+  z-index: -1;
+  inset: -35% -25% auto auto;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 48% 52% 44% 56% / 55% 45% 55% 45%;
+  background: rgba(255, 255, 255, 0.5);
+  filter: blur(14px);
+}
+
+.curve-card-blob-alt {
+  position: absolute;
+  z-index: -1;
+  inset: auto auto -32% -18%;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 52% 48% 58% 42% / 45% 58% 42% 55%;
+  background: rgba(255, 255, 255, 0.28);
+  filter: blur(18px);
+}
+
+.curve-tag {
+  align-self: flex-start;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(26, 18, 36, 0.16);
+  color: #1a1224;
+  backdrop-filter: blur(6px);
+}
+
+/* ---------- Chips ---------- */
+
+.curve-chip-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+  scroll-snap-type: x proximity;
+}
+
+.curve-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.curve-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  padding: 0.55rem 1.05rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  white-space: nowrap;
+  color: var(--curve-muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--curve-line);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.curve-chip:hover {
+  color: var(--curve-ink);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.curve-chip[aria-pressed="true"] {
+  background: #ffffff;
+  color: #150f1d;
+  border-color: #ffffff;
+  font-weight: 650;
+}
+
+/* ---------- Circular action button ---------- */
+
+.curve-orb {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  flex: 0 0 auto;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease;
+}
+
+.curve-orb-dark {
+  background: #1a1224;
+  color: #ffffff;
+}
+
+.curve-orb-light {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--curve-line);
+  color: var(--curve-ink);
+}
+
+.curve-orb-light:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.curve-orb:hover {
+  transform: rotate(45deg) scale(1.06);
+}
+
+.curve-orb-static:hover {
+  transform: scale(1.06);
+}
+
+/* ---------- Primary CTA ---------- */
+
+.curve-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1.4rem;
+  border-radius: 9999px;
+  font-weight: 650;
+  font-size: 0.9375rem;
+  background: #ffffff;
+  color: #150f1d;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms ease;
+}
+
+.curve-cta:hover {
+  transform: translateY(-2px);
+}
+
+.curve-cta:disabled {
+  opacity: 0.45;
+  transform: none;
+}
+
+.curve-cta-ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--curve-ink);
+  border: 1px solid var(--curve-line);
+}
+
+/* ---------- Forms ---------- */
+
+.curve-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--curve-line);
+  color: var(--curve-ink);
+  font-size: 0.9375rem;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.curve-input::placeholder {
+  color: var(--curve-faint);
+}
+
+.curve-input:focus {
+  outline: none;
+  border-color: rgba(123, 92, 240, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.curve-input:disabled {
+  opacity: 0.5;
+}
+
+/* Native selects render their popup with the OS palette, so the options need
+   an explicit dark background or they come out white-on-white. */
+.curve-input option {
+  background: #1d1528;
+  color: #ffffff;
+}
+
+textarea.curve-input {
+  resize: vertical;
+  min-height: 8rem;
+  line-height: 1.55;
+}
+
+.curve-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--curve-muted);
+  margin-bottom: 0.375rem;
+}
+
+/* ---------- Chat ---------- */
+
+.curve-bubble {
+  max-width: 42rem;
+  padding: 0.8rem 1rem;
+  border-radius: 18px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.curve-bubble-coach {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--curve-line);
+  color: var(--curve-ink);
+  border-bottom-left-radius: 6px;
+}
+
+.curve-bubble-student {
+  background: #ffffff;
+  color: #150f1d;
+  margin-left: auto;
+  border-bottom-right-radius: 6px;
+  font-weight: 500;
+}
+
+/* ---------- Floating nav (mobile) ---------- */
+
+.curve-dock {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  border-radius: 9999px;
+  background: rgba(21, 15, 29, 0.82);
+  border: 1px solid var(--curve-line);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.8);
+}
+
+.curve-dock-item {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  color: var(--curve-muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.curve-dock-item[aria-current="page"] {
+  background: #ffffff;
+  color: #150f1d;
+}
+
+/* ---------- Scroll + motion hygiene ---------- */
+
+.curve-root ::selection {
+  background: rgba(123, 92, 240, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curve-root *,
+  .curve-root *::before,
+  .curve-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .curve-card:hover,
+  .curve-orb:hover,
+  .curve-cta:hover {
+    transform: none;
+  }
+}

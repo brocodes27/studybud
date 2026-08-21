@@ -178,15 +178,18 @@ export function PracticeTestEngine({ planId }: PracticeTestEngineProps) {
     let correct = 0;
     
     // Log interactions to BKT engine (fire and forget to not block UI)
-    currentTest.questions.forEach((question, index) => { 
+    currentTest.questions.forEach((question, index) => {
       const isCorrect = answers[index] === question.correct_answer;
-      if (isCorrect) correct++; 
-      
-      // Attempt BKT logging if we have a KC assigned to this question (some might be legacy)
-      // Usually the DB returns kc_id if it's there. For now, we simulate using subject/topic mapping later
-      // if kc_id is not directly on the question object. We'll pass question id for the edge function to map.
+      if (isCorrect) correct++;
+
+      // Only log when the question actually carries a kc_id. Falling back to
+      // question.id wrote UUIDs that violate the FK to knowledge_components,
+      // so every BKT update silently failed and mastery never moved.
+      const kcId = (question as any).kc_id;
+      if (!kcId) return;
+
       KnowledgeTracingService.logInteraction(
-        question.id, // edge function can resolve to kc_id if it's a UUID
+        kcId,
         isCorrect,
         Math.floor(((currentTest.duration_minutes * 60) - timeLeft) * 1000 / currentTest.total_questions), // very rough average time
         'practice_test',

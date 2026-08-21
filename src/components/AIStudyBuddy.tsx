@@ -13,6 +13,9 @@ import { TestResultUploader } from './AIStudyBuddy/TestResultUploader';
 import { MemorySnapshot } from './AIStudyBuddy/MemorySnapshot';
 import { SuggestedQuestions } from './AIStudyBuddy/SuggestedQuestions';
 import { Zap, Brain, Upload, Target, Flame, BookOpen, ChevronRight, ChevronDown, Layers } from 'lucide-react';
+import type { ActionEvent } from '@openuidev/react-lang';
+import { resolveAtlasOpenUIAction } from '../openui/actions';
+import { shouldUseFullAtlasOrchestration } from '../lib/atlasPerformance';
 import Vapi from '@vapi-ai/web';
 
 const vapi = new Vapi(import.meta.env.VITE_VAPI_PUBLIC_KEY || '');
@@ -25,6 +28,8 @@ interface Message {
   subject?: string;
   topic?: string;
   isSystemAlert?: boolean;
+  format?: 'markdown' | 'openui';
+  fallbackContent?: string;
 }
 
 interface StudyPlan {
@@ -1341,30 +1346,37 @@ export function AIStudyBuddy({
       }));
 
       // Call the NDCF Empathetic Edge Function
-      const { response: responseText, emotion_detected, pedagogical_mode } = await AIService.getInstance().generateEmpatheticChat(
+      const {
+        response: responseText,
+        response_kind: responseKind = 'text',
+        fallback_response: fallbackResponse,
+      } = await AIService.getInstance().generateEmpatheticChat(
         finalContent,
         session?.user?.id ? `${session.user.id}_${Date.now().toString().slice(0,6)}` : 'guest_session', 
         formattedHistory,
         finalContext + (extraContext ? `\n\n${extraContext}` : ''),
-        true // Enable full multi-agent orchestration
+        shouldUseFullAtlasOrchestration(finalContent)
       );
 
       // Extract Agentic Navigation Commands for the OS layer
       let finalCleanResponse = responseText;
       let navigateAction: string | null = null;
-      
-      const actionMatch = finalCleanResponse.match(/\[ACTION:NAVIGATE_([A-Z_]+)\]/);
-      if (actionMatch) {
-        navigateAction = actionMatch[1];
-        finalCleanResponse = finalCleanResponse.replace(actionMatch[0], '').trim();
-      }
+      const isOpenUIResponse = responseKind === 'openui';
 
-      // Check for "Journal Sync" signal from ATLAS
-      if (finalCleanResponse.includes("### JOURNAL_APPEND:")) {
-        const noteToAppend = finalCleanResponse.split("### JOURNAL_APPEND:")[1].trim();
-        // Dispatch custom event to Atlas workspace
-        window.dispatchEvent(new CustomEvent('append-study-note', { detail: noteToAppend }));
-        finalCleanResponse = finalCleanResponse.split("### JOURNAL_APPEND:")[0].trim();
+      if (!isOpenUIResponse) {
+        const actionMatch = finalCleanResponse.match(/\[ACTION:NAVIGATE_([A-Z_]+)\]/);
+        if (actionMatch) {
+          navigateAction = actionMatch[1];
+          finalCleanResponse = finalCleanResponse.replace(actionMatch[0], '').trim();
+        }
+
+        // Check for "Journal Sync" signal from ATLAS
+        if (finalCleanResponse.includes("### JOURNAL_APPEND:")) {
+          const noteToAppend = finalCleanResponse.split("### JOURNAL_APPEND:")[1].trim();
+          // Dispatch custom event to Atlas workspace
+          window.dispatchEvent(new CustomEvent('append-study-note', { detail: noteToAppend }));
+          finalCleanResponse = finalCleanResponse.split("### JOURNAL_APPEND:")[0].trim();
+        }
       }
 
       const assistantMessage: Message = {
@@ -1372,6 +1384,8 @@ export function AIStudyBuddy({
         content: finalCleanResponse,
         role: 'assistant',
         timestamp: new Date(),
+        format: isOpenUIResponse ? 'openui' : 'markdown',
+        fallbackContent: isOpenUIResponse ? fallbackResponse : undefined,
         subject: studyPlans.find(p => p.id === selectedPlan)?.subject,
         topic: (() => {
           const plan = studyPlans.find(p => p.id === selectedPlan);
@@ -1427,6 +1441,17 @@ export function AIStudyBuddy({
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOpenUIAction = (event: ActionEvent) => {
+    const action = resolveAtlasOpenUIAction(event);
+    if (!action) {
+      console.warn('Ignored unsupported Atlas OpenUI action:', event.type);
+    } else if (action.kind === 'continue') {
+      void sendMessage(action.prompt);
+    } else {
+      window.location.assign(action.route);
     }
   };
 
@@ -1874,6 +1899,7 @@ export function AIStudyBuddy({
             title={title}
             messagesEndRef={messagesEndRef}
             formatTime={formatTime}
+            onOpenUIAction={handleOpenUIAction}
           />
 
           <div className="shrink-0">
@@ -1896,4 +1922,3 @@ export function AIStudyBuddy({
     </div>
   );
 }
-

@@ -1,7 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import type { ActionEvent } from '@openuidev/react-lang';
+import { AtlasOpenUIMessage } from '../../openui/AtlasOpenUIMessage';
 import 'katex/dist/katex.min.css';
 
 interface Message {
@@ -12,6 +14,8 @@ interface Message {
     subject?: string;
     topic?: string;
     isSystemAlert?: boolean;
+    format?: 'markdown' | 'openui';
+    fallbackContent?: string;
 }
 
 interface MessageListProps {
@@ -21,15 +25,39 @@ interface MessageListProps {
     title: string;
     messagesEndRef: React.RefObject<HTMLDivElement>;
     formatTime: (date: Date) => string;
+    onOpenUIAction: (event: ActionEvent) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
     messages,
     isLoading,
     messagesEndRef,
-    formatTime
+    formatTime,
+    onOpenUIAction,
 }) => {
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [loadingMessage, setLoadingMessage] = useState('Thinking…');
+
+    useEffect(() => {
+        if (!isLoading) {
+            setLoadingMessage('Thinking…');
+            return;
+        }
+
+        setLoadingMessage('Thinking…');
+        const contextTimer = window.setTimeout(
+            () => setLoadingMessage('Using your study context…'),
+            1200,
+        );
+        const clarityTimer = window.setTimeout(
+            () => setLoadingMessage('Shaping a clear next step…'),
+            4000,
+        );
+        return () => {
+            window.clearTimeout(contextTimer);
+            window.clearTimeout(clarityTimer);
+        };
+    }, [isLoading]);
 
     // Auto-scroll to bottom when messages change or loading state toggles
     useEffect(() => {
@@ -81,6 +109,12 @@ export const MessageList: React.FC<MessageListProps> = ({
                                         </ReactMarkdown>
                                     </div>
                                 </div>
+                            ) : message.format === 'openui' ? (
+                                <AtlasOpenUIMessage
+                                    content={message.content}
+                                    fallbackContent={message.fallbackContent}
+                                    onAction={onOpenUIAction}
+                                />
                             ) : (
                                 /* Atlas: flat prose, no bubble */
                                 <div className="text-[15px] leading-[1.75] text-[#2D2A26]">
@@ -117,12 +151,15 @@ export const MessageList: React.FC<MessageListProps> = ({
                 })}
 
                 {isLoading && (
-                    <div className="mt-8">
+                    <div className="mt-8" role="status" aria-live="polite">
                         <div className="mb-2 text-[11px] font-semibold tracking-[0.08em] uppercase text-[#8B7355]">Atlas</div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3 text-sm text-[#8A8279]">
+                            <span>{loadingMessage}</span>
+                            <span className="flex items-center gap-1.5" aria-hidden="true">
                             <div className="w-1.5 h-1.5 bg-[#8B7355] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                             <div className="w-1.5 h-1.5 bg-[#8B7355] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                             <div className="w-1.5 h-1.5 bg-[#8B7355] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </span>
                         </div>
                     </div>
                 )}

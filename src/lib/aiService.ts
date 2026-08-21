@@ -5,6 +5,14 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface AtlasChatResponse {
+  response: string;
+  emotion_detected: string;
+  pedagogical_mode: string;
+  response_kind?: 'text' | 'openui';
+  fallback_response?: string;
+}
+
 export class AIService {
   private static instance: AIService;
   private constructor() { }
@@ -67,11 +75,7 @@ export class AIService {
    * Guest-safe chat for the public landing demo. Calls the JWT-less
    * `landing-demo` edge function (anon key only, server-locked prompt).
    */
-  async generateGuestChat(message: string, conversationHistory: any[] = []): Promise<{
-    response: string,
-    emotion_detected: string,
-    pedagogical_mode: string
-  }> {
+  async generateGuestChat(message: string, conversationHistory: any[] = []): Promise<AtlasChatResponse> {
     const { data, error } = await supabase.functions.invoke('landing-demo', {
       body: { message, conversation_history: conversationHistory }
     });
@@ -85,11 +89,13 @@ export class AIService {
   /**
    * Generates a response using the Orchestrator Edge Function (or fallback to NDCF).
    */
-  async generateEmpatheticChat(message: string, sessionId: string, conversationHistory: any[], studyContext?: string, useFullOrchestration: boolean = true): Promise<{
-    response: string,
-    emotion_detected: string,
-    pedagogical_mode: string
-  }> {
+  async generateEmpatheticChat(
+    message: string,
+    sessionId: string,
+    conversationHistory: any[],
+    studyContext?: string,
+    useFullOrchestration: boolean = false,
+  ): Promise<AtlasChatResponse> {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData?.session?.access_token) {

@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 
 export function AtlasWorkspace() {
   const location = useLocation();
+  const isFullscreen =
+    new URLSearchParams(location.search).get('fullscreen') === '1';
 
   useEffect(() => {
     const state = location.state as { initialMessage?: string };
@@ -19,7 +21,11 @@ export function AtlasWorkspace() {
   }, [location]);
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#FAF8F5]">
+    <div
+      className={`flex w-full flex-col overflow-hidden bg-[var(--neo-bg)] ${
+        isFullscreen ? 'h-screen' : 'h-[calc(100vh-4rem)] md:h-screen'
+      }`}
+    >
       <AIStudyBuddy
         title="Atlas"
         subtitle="AI Study Buddy"

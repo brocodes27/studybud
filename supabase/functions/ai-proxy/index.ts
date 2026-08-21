@@ -32,7 +32,7 @@ const PROMPT_TEMPLATES: Record<string, (payload: any) => { messages: any[]; opts
     opts: { temperature: p.temperature ?? 0.7 }
   }),
   viva_questions: (p) => ({
-    messages: [{ role: 'user', content: `Generate 3 viva voce (oral exam) questions for JEE topic "${p.topic}". Return JSON array of {question, context, expectedKeyPoints, difficulty}.` }],
+    messages: [{ role: 'user', content: `Generate 3 viva voce (oral exam) questions for the topic "${p.topic}". Return JSON array of {question, context, expectedKeyPoints, difficulty}.` }],
     opts: { temperature: 0.5, json: true }
   }),
   transcribe_audio: (p) => ({
@@ -81,11 +81,20 @@ serve(async (req: Request) => {
     const { data: hasBudget, error: budgetError } = await sb.rpc('check_ai_budget', { p_user_id: user.id });
     if (budgetError) console.error('Budget check error:', budgetError);
     if (hasBudget === false) {
-      return new Response(JSON.stringify({ error: 'Monthly AI budget limit reached for your school. Please contact your administrator to upgrade your plan.' }), { 
+      return new Response(JSON.stringify({ error: 'Daily AI budget limit reached. Upgrade to Curve Pro for unlimited access, or come back tomorrow.' }), { 
         status: 402, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       });
     }
+
+    // 2. Atomically consume the user's daily quota. School users are skipped
+    //    inside the RPC (their budget is the school entitlement), so this
+    //    only meters B2C free-tier usage.
+    const { error: consumeError } = await sb.rpc('consume_user_ai_quota', {
+      p_user_id: user.id,
+      p_estimated_cost: 0.01,
+    });
+    if (consumeError) console.error('Quota consume failed:', consumeError);
 
     const { messages, opts } = tmpl(payload);
     const isJson = opts.json;
@@ -94,13 +103,13 @@ serve(async (req: Request) => {
     // 2. Log AI usage details asynchronously
     const promptLen = JSON.stringify(messages).length;
     const completionLen = typeof result === 'string' ? result.length : JSON.stringify(result).length;
-    sb.rpc('log_ai_usage', {
+    void sb.rpc('log_ai_usage', {
       p_user_id: user.id,
       p_model: 'gemini-1.5-flash',
       p_feature_name: action,
       p_prompt_len: promptLen,
       p_completion_len: completionLen
-    }).catch((err: any) => console.error('Failed to log AI consumption:', err));
+    }).then(({ error }) => { if (error) console.error('Failed to log AI consumption:', error); });
 
     return new Response(JSON.stringify({ success: true, result }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error: any) {

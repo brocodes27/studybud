@@ -756,43 +756,63 @@ function ChipButton({
 
 function StudentCommandCenter({ model }: { model: StudentCommandCenterModel }) {
   const modeStyle =
-    model.mode === 'comeback' ? 'bg-red-50 text-red-700' :
-    model.mode === 'repair' ? 'bg-amber-50 text-amber-700' :
-    model.mode === 'momentum' ? 'bg-emerald-50 text-emerald-700' :
-    'bg-blue-50 text-blue-700';
+    model.mode === 'comeback' ? 'bg-red-50 text-red-700 border-red-200' :
+    model.mode === 'repair' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+    model.mode === 'momentum' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+    'bg-blue-50 text-blue-700 border-blue-200';
+
+  const motivationalMessage =
+    model.progressPct === 100 ? '🎉 All Daily Missions Accomplished! Outstanding focus today.' :
+    model.progressPct >= 50 ? '🔥 You are over halfway there! Keep this momentum burning.' :
+    model.completedCount > 0 ? '✨ Great start! Each completed mission builds long-term mastery.' :
+    model.rewardCue;
 
   return (
-    <div className="bg-white border border-[#E8E2D9] rounded-2xl px-3.5 py-3 mb-3 shadow-sm">
+    <div className="bg-white border-2 border-[#2D2A26]/10 rounded-2xl px-4 py-3.5 mb-3 shadow-sm relative overflow-hidden">
+      {model.progressPct === 100 && (
+        <div className="absolute top-0 right-0 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[9.5px] font-black uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-amber-300" /> Daily Target Smashed!
+        </div>
+      )}
       <div className="flex items-center gap-3">
-        <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${modeStyle}`}>
+        <span className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full border ${modeStyle}`}>
           {model.mode}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-[13px] font-black text-[#2D2A26] truncate">{model.identityTitle}</h2>
-            <span className="text-[10px] font-bold text-[#B5AEA5] shrink-0">
-              {model.completedCount}/{model.totalCount}
+            <h2 className="text-[13.5px] font-black text-[#2D2A26] truncate">{model.identityTitle}</h2>
+            <span className="text-[10.5px] font-bold text-[#8A8279] bg-[#FAF8F5] px-2 py-0.5 rounded-md border border-[#E8E2D9] shrink-0">
+              {model.completedCount}/{model.totalCount} completed
             </span>
           </div>
-          <p className="text-[11px] font-semibold text-[#8A8279] truncate">{model.identityDetail}</p>
+          <p className="text-[11px] font-semibold text-[#8A8279] truncate mt-0.5">{model.identityDetail}</p>
         </div>
-        <div className="w-20 shrink-0">
-          <div className="flex items-center justify-end gap-2 mb-1">
+        <div className="w-24 shrink-0">
+          <div className="flex items-center justify-end gap-1 mb-1">
             <span className="text-[12px] font-black text-[#2D2A26]">{model.progressPct}%</span>
           </div>
-          <div className="w-full h-1.5 bg-[#F5F0E8] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-[#F5F0E8] rounded-full overflow-hidden border border-[#E8E2D9]">
             <motion.div
               initial={false}
               animate={{ width: `${model.progressPct}%` }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="h-full bg-[#8B7355] rounded-full"
+              className={`h-full rounded-full ${
+                model.progressPct === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-[#8B7355] to-[#B5956B]'
+              }`}
             />
           </div>
         </div>
       </div>
-      <div className="mt-2 flex items-center gap-1.5 text-[10.5px] font-bold text-[#8A8279]">
-        <Trophy className="w-3.5 h-3.5 text-amber-500" />
-        {model.rewardCue}
+      <div className="mt-2.5 pt-2 border-t border-[#F5F0E8] flex items-center justify-between gap-2 text-[11px] font-bold text-[#5D5A56]">
+        <div className="flex items-center gap-1.5 min-w-0 truncate">
+          <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="truncate">{motivationalMessage}</span>
+        </div>
+        {model.progressPct > 0 && (
+          <span className="text-[10px] font-extrabold text-[#8B7355] bg-[#FAF5EE] px-2 py-0.5 rounded-full shrink-0 border border-[#8B7355]/20">
+            +{model.completedCount * 40} XP Earned
+          </span>
+        )}
       </div>
     </div>
   );

@@ -1,149 +1,129 @@
-import { Zap, Crown, Check, Star, Sparkles, IndianRupee } from 'lucide-react';
-import { useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { Crown, Check, DollarSign } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { usePayment } from '../hooks/usePayment';
 
 export default function SubscriptionPage() {
-    const { isPremium, role, isAdmin } = useAuth() as any;
     const { isLoadingPayment, initiatePayment } = usePayment();
     const { track } = useAnalytics();
+    const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'semester'>('semester');
 
     useEffect(() => {
         track('subscription_page_view');
     }, [track]);
 
     const features = [
-        { name: "JEE Prove-It", free: "1 attempt / day", pro: "Unlimited credentials" },
-        { name: "Mastery Tree", free: "Basic progress", pro: "Full branch tracking" },
-        { name: "Score Prediction", free: "Preview", pro: "JEE target-gap plan" },
-        { name: "Squad Accountability", free: "Join squads", pro: "Create squads" },
-        { name: "Daily Prescriptions", free: "Limited", pro: "Adaptive JEE plan" },
-        { name: "Teacher Assignments", free: "Assigned only", pro: "Full analytics" },
-        { name: "Mastery Reports", free: "Weekly summary", pro: "Shareable report cards" },
-    ];
-
-    const faqs = [
-        { q: "Who needs a subscription?", a: "Students need Pro to access the app. Teachers can access their teaching workspace for free." },
-        { q: "Refund policy?", a: "Access remains active until cycle expiration. Cancel anytime." },
-        { q: "Data persistence?", a: "Your history is safe. Downgrading freezes Pro data but never deletes it." },
-        { q: "Support?", a: "Direct developer channel open for Pro subscribers. 24h resolution target." },
+        { name: "Daily Grade Forecast", free: "1 course preview", pro: "All enrolled courses" },
+        { name: "Grade Engine", free: "Current standing only", pro: "Layer 2 predictive forecast range" },
+        { name: "High-Leverage Daily Action", free: "Basic mission", pro: "Ranked by grade impact / min" },
+        { name: "Atlas Tutor & Socratic Practice", free: "Limited", pro: "Unlimited deep-linked tutoring" },
+        { name: "Problem Set Scanner", free: "3 scans / month", pro: "Unlimited STEM notebook scanning" },
+        { name: "Shareable Forecast Cards", free: "Watermarked", pro: "Full custom card export" },
     ];
 
     return (
-        <div className="pb-20 animate-fade-in">
-            {/* Soft bg orbs */}
-            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-[#8B7355]/4 rounded-full blur-[120px] pointer-events-none -z-10" />
-            <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-[#C4A484]/4 rounded-full blur-[100px] pointer-events-none -z-10" />
+        <div className="curve-root min-h-screen bg-[#0a0814] text-white pb-20 animate-fade-in p-4 sm:p-8">
+            {/* Soft ambient bg orbs */}
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-[#8b5cf6]/15 rounded-full blur-[120px] pointer-events-none -z-10" />
+            <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-[#f472b6]/10 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-5xl mx-auto px-4">
                 {/* Header */}
-                <div className="text-center mb-16 space-y-4">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8B7355]/10 text-[#8B7355] rounded-full font-bold text-sm border border-[#8B7355]/20">
-                        <Crown className="w-4 h-4" />
-                        <span>Student access pass</span>
+                <div className="text-center mb-12 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8b5cf6]/15 text-[#c4b5fd] rounded-full font-bold text-sm border border-[#8b5cf6]/30">
+                        <Crown className="w-4 h-4 text-[#fbbf24]" />
+                        <span>Curve Pro Student Access</span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-[#2D2A26] leading-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                        Student Pro <span className="text-[#8B7355]">Access</span>
+                    <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-white">
+                        Know your grade before <span className="bg-gradient-to-r from-[#a78bfa] to-[#f472b6] bg-clip-text text-transparent">your professor does</span>
                     </h1>
-                    <p className="text-xl font-medium text-[#8A8279] max-w-2xl mx-auto leading-relaxed">
-                        Students need an active subscription to enter the app. Teachers get free access to their workspace.
+                    <p className="text-lg font-medium text-curve-muted max-w-2xl mx-auto leading-relaxed">
+                        One daily updated forecast per course and the single highest-leverage action to move it.
                     </p>
                 </div>
 
                 {/* Pricing Cards */}
                 <div className="grid md:grid-cols-2 gap-8 mb-16">
-                    {/* Free Plan */}
-                    <div className="neo-card bg-[#F5F0E8]/40 border border-[#E8E2D9]">
-                        <h3 className="text-2xl font-extrabold text-[#2D2A26] tracking-tight mb-1" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Teacher</h3>
+                    {/* Monthly Plan */}
+                    <div
+                      onClick={() => setSelectedPlan('monthly')}
+                      className={`p-6 rounded-3xl bg-[#130f24] border cursor-pointer transition-all ${selectedPlan === 'monthly' ? 'border-[#8b5cf6] ring-2 ring-[#8b5cf6]/40' : 'border-white/10'}`}
+                    >
+                        <h3 className="text-2xl font-extrabold tracking-tight mb-1 text-white">Monthly Pass</h3>
                         <div className="flex items-end gap-1 mb-2">
-                            <span className="text-5xl font-extrabold text-[#2D2A26]">₹0</span>
-                            <span className="text-[#8A8279] font-medium mb-2">for teachers</span>
+                            <DollarSign className="w-8 h-8 text-[#a78bfa] mb-2" />
+                            <span className="text-5xl font-extrabold text-white">12.99</span>
+                            <span className="text-curve-muted font-medium mb-2">/month</span>
                         </div>
-                        <p className="text-[#8A8279] font-medium text-sm mb-8 pb-6 border-b border-[#2D2A26]/5">
-                            Teachers can access the app for free.
+                        <p className="text-curve-muted font-medium text-sm mb-8 pb-6 border-b border-white/10">
+                            Flexible month-to-month subscription. Cancel anytime.
                         </p>
 
                         <ul className="space-y-4 mb-8">
                             {features.map((f, i) => (
                                 <li key={i} className="flex items-start gap-3">
-                                    <div className="w-5 h-5 rounded-full bg-[#8B7355]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Check className="w-3 h-3 text-[#8B7355] stroke-[3px]" />
+                                    <div className="w-5 h-5 rounded-full bg-[#8b5cf6]/20 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Check className="w-3 h-3 text-[#c4b5fd] stroke-[3px]" />
                                     </div>
-                                    <span className="text-sm font-medium text-[#8A8279]">
-                                        <span className="text-[#2D2A26] font-bold">{f.name}:</span> {f.free}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-
-                        <div className="bg-white rounded-[16px] p-4 border border-[#2D2A26]/5">
-                            <p className="text-xs font-bold text-[#8A8279] leading-relaxed">
-                                Free teacher access · class management · assignments · learner insights
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Pro Plan */}
-                    <div className="neo-card relative border-2 border-[#8B7355]/40 shadow-neo-lg bg-[#FAF8F5]">
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-[#8B7355] text-white rounded-full font-extrabold text-xs shadow-neo-sm">
-                            Recommended
-                        </div>
-
-                        <h3 className="text-2xl font-extrabold text-[#2D2A26] tracking-tight mb-1 flex items-center gap-2" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                            Pro <Crown className="w-5 h-5 text-[#8B7355]" />
-                        </h3>
-                        <div className="flex items-end gap-1 mb-2">
-                            <IndianRupee className="w-8 h-8 text-[#2D2A26] mb-2" />
-                            <span className="text-5xl font-extrabold text-[#2D2A26]">199</span>
-                            <span className="text-[#8A8279] font-medium mb-2">/month</span>
-                        </div>
-                        <p className="text-[#8B7355] font-bold text-sm mb-8 pb-6 border-b border-[#8B7355]/20">
-                            Required for student access.
-                        </p>
-
-                        <ul className="space-y-4 mb-8">
-                            {features.map((f, i) => (
-                                <li key={i} className="flex items-start gap-3">
-                                    <div className="w-5 h-5 rounded-full bg-[#8B7355]/20 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Check className="w-3 h-3 text-[#8B7355] stroke-[3px]" />
-                                    </div>
-                                    <span className="text-sm font-medium text-[#8A8279]">
-                                        <span className="text-[#2D2A26] font-bold">{f.name}:</span> {f.pro}
+                                    <span className="text-sm font-medium text-curve-muted">
+                                        <span className="text-white font-bold">{f.name}:</span> {f.pro}
                                     </span>
                                 </li>
                             ))}
                         </ul>
 
                         <button
-                            onClick={() => { track('payment_initiate', { plan: 'pro' }); initiatePayment(); }}
-                            disabled={isLoadingPayment || isPremium || role === 'teacher' || isAdmin}
-                            className="neo-button w-full py-4 text-base shadow-neo-lg"
+                          onClick={() => { setSelectedPlan('monthly'); initiatePayment('monthly'); }}
+                          disabled={isLoadingPayment}
+                          className={`w-full py-4 rounded-2xl font-extrabold text-sm transition-all flex items-center justify-center gap-2 ${selectedPlan === 'monthly'
+                            ? 'bg-[#8b5cf6] hover:bg-[#7c3aed] text-white shadow-lg'
+                            : 'bg-white/5 hover:bg-white/10 text-curve-muted border border-white/10'}`}
                         >
-                            {isLoadingPayment ? 'Processing...' : role === 'teacher' || isAdmin ? 'Free Access Enabled' : isPremium ? 'You\'re Pro' : 'Subscribe to Access'}
-                            {!isLoadingPayment && !isPremium && role !== 'teacher' && !isAdmin && <Zap className="w-5 h-5 stroke-[2.5px]" />}
-                            {(isPremium || role === 'teacher' || isAdmin) && <Star className="w-5 h-5 fill-current" />}
+                            {isLoadingPayment ? 'Processing...' : 'Choose Monthly — $12.99'}
                         </button>
-                        <p className="text-center text-xs font-medium text-[#8A8279] mt-4">Coaching centers: bulk pricing available. Contact us.</p>
                     </div>
-                </div>
 
-                {/* FAQ */}
-                <div className="max-w-3xl mx-auto">
-                    <div className="text-center mb-10">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#8B7355]/10 text-[#8B7355] rounded-full font-bold text-sm border border-[#8B7355]/20 mb-4">
-                            <Sparkles className="w-4 h-4" />
-                            <span>Common Questions</span>
+                    {/* Semester Pass */}
+                    <div
+                      onClick={() => setSelectedPlan('semester')}
+                      className={`p-6 rounded-3xl relative border-2 cursor-pointer transition-all bg-gradient-to-b from-[#191233] to-[#0e091f] ${selectedPlan === 'semester' ? 'border-[#8b5cf6] ring-4 ring-[#8b5cf6]/30 shadow-2xl' : 'border-white/20'}`}
+                    >
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-1.5 bg-[#8b5cf6] text-white rounded-full font-extrabold text-xs shadow-lg">
+                            Best Value · Save 30%
                         </div>
-                        <h2 className="text-3xl font-extrabold text-[#2D2A26] tracking-tight">Got questions?</h2>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-5">
-                        {faqs.map((faq, i) => (
-                            <div key={i} className="bg-white rounded-[24px] p-6 border-2 border-[#2D2A26]/5 hover:border-[#8B7355]/20 hover:shadow-neo-md transition-all">
-                                <h4 className="font-extrabold text-[#2D2A26] mb-2 tracking-tight">{faq.q}</h4>
-                                <p className="font-medium text-sm text-[#8A8279] leading-relaxed">{faq.a}</p>
-                            </div>
-                        ))}
+
+                        <h3 className="text-2xl font-extrabold text-white tracking-tight mb-1 flex items-center gap-2">
+                            Semester Pass <Crown className="w-5 h-5 text-[#fbbf24]" />
+                        </h3>
+                        <div className="flex items-end gap-1 mb-2">
+                            <DollarSign className="w-8 h-8 text-[#a78bfa] mb-2" />
+                            <span className="text-5xl font-extrabold text-white">39.00</span>
+                            <span className="text-curve-muted font-medium mb-2">/4-month semester</span>
+                        </div>
+                        <p className="text-[#a78bfa] font-bold text-sm mb-8 pb-6 border-b border-white/10">
+                            Covers your full academic semester across all courses.
+                        </p>
+
+                        <ul className="space-y-4 mb-8">
+                            {features.map((f, i) => (
+                                <li key={i} className="flex items-start gap-3">
+                                    <div className="w-5 h-5 rounded-full bg-[#8b5cf6]/30 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Check className="w-3 h-3 text-[#34d399] stroke-[3px]" />
+                                    </div>
+                                    <span className="text-sm font-medium text-white/90">
+                                        <span className="text-white font-bold">{f.name}:</span> {f.pro}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <button
+                          onClick={() => { setSelectedPlan('semester'); initiatePayment('semester'); }}
+                          disabled={isLoadingPayment}
+                          className="w-full py-4 rounded-2xl bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-extrabold text-sm transition-all shadow-lg flex items-center justify-center gap-2"
+                        >
+                            {isLoadingPayment ? 'Processing...' : 'Unlock Semester Pass — $39'}
+                        </button>
                     </div>
                 </div>
             </div>

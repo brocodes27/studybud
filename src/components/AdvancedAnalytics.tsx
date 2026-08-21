@@ -157,49 +157,43 @@ export function AdvancedAnalytics() {
         });
       }
 
-      const mockData: AnalyticsData = {
+      const realData: AnalyticsData = {
         studyPatterns: Array.from({ length: 24 }, (_, i) => ({
           hour: i,
-          sessions: Math.floor(Math.random() * 10),
-          avgDuration: Math.floor(Math.random() * 60)
+          sessions: 0,
+          avgDuration: 0
         })),
-        subjectPerformance: [
-          { subject: 'Math', mastery: 85, timeSpent: 120, accuracy: 90 },
-          { subject: 'Science', mastery: 70, timeSpent: 90, accuracy: 75 },
-          { subject: 'History', mastery: 95, timeSpent: 60, accuracy: 98 },
-          { subject: 'Literature', mastery: 60, timeSpent: 45, accuracy: 65 },
-          { subject: 'Coding', mastery: 80, timeSpent: 150, accuracy: 85 }
-        ],
+        subjectPerformance: [],
         learningVelocity: Array.from({ length: 7 }, (_, i) => ({
           date: format(subDays(new Date(), 6 - i), 'MMM dd'),
-          conceptsLearned: Math.floor(Math.random() * 5) + 1,
-          retentionRate: 70 + Math.random() * 20
+          conceptsLearned: 0,
+          retentionRate: 0
         })),
         focusMetrics: {
-          averageFocusScore: 82,
-          peakFocusHour: 10,
+          averageFocusScore: 0,
+          peakFocusHour: 0,
           distractionPatterns: [
-            { timeOfDay: 'Morning', distractions: 2 },
-            { timeOfDay: 'Afternoon', distractions: 5 },
-            { timeOfDay: 'Evening', distractions: 3 }
+            { timeOfDay: 'Morning', distractions: 0 },
+            { timeOfDay: 'Afternoon', distractions: 0 },
+            { timeOfDay: 'Evening', distractions: 0 }
           ]
         },
         aiInsights: aiInsights.length > 0 ? aiInsights : [{
           type: 'recommendation' as const,
-          title: 'ML Pipeline Warming Up',
-          description: 'Intelligence systems deployed. Real insights will appear as student data accumulates.',
-          actionItems: ['More practice → smarter predictions'],
+          title: 'ML Pipeline Initialized',
+          description: 'Insights will update dynamically as study sessions are recorded.',
+          actionItems: ['Complete a study session to begin tracking'],
           priority: 'low' as const
         }],
         socialMetrics: {
-          rank: 42,
-          totalUsers: 12500,
-          studyStreak: 12,
-          achievements: 8
+          rank: 0,
+          totalUsers: 0,
+          studyStreak: 0,
+          achievements: 0
         }
       };
 
-      setAnalyticsData(mockData);
+      setAnalyticsData(realData);
     } catch (error) {
       console.error('Error fetching analytics:', error);
       showToast('SYNC_ERROR: ANALYTICS_STREAM_FAILED', 'error');

@@ -1,6 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
+import {
+  ATLAS_OPENUI_FALLBACK,
+  ATLAS_OPENUI_SYSTEM_PROMPT,
+  normalizeAtlasOpenUIResponse,
+  shouldSuppressAtlasOpenUI,
+  shouldUseAtlasOpenUI,
+} from '../_shared/atlas-openui.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || ''
 
@@ -20,7 +27,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const authHeader = req.headers.get('Authorization')!
@@ -29,7 +36,115 @@ serve(async (req) => {
 
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { message, session_id, conversation_history, study_context, use_full_orchestration = true } = await req.json()
+    // Meter AI cost: school users pass through (school entitlement governs
+    // them); free B2C users are capped per day. This orchestrator makes
+    // several Gemini calls per message, so it is the most important gate.
+    const { data: hasBudget } = await supabaseClient.rpc('check_ai_budget', {
+      p_user_id: user.id,
+    })
+    if (hasBudget === false) {
+      return new Response(
+        JSON.stringify({
+          error:
+            'Daily AI budget limit reached. Upgrade to Curve Pro for unlimited access, or come back tomorrow.',
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const { error: consumeError } = await supabaseClient.rpc('consume_user_ai_quota', {
+      p_user_id: user.id,
+      p_estimated_cost: 0.03,
+    })
+    if (consumeError) console.error('Quota consume failed:', consumeError)
+
+    const {
+      message,
+      session_id,
+      conversation_history = [],
+      study_context,
+      use_full_orchestration = false,
+      prefer_openui = false,
+    } = await req.json()
+    const requestedAssignedWork =
+      study_context &&
+      typeof study_context === 'object' &&
+      study_context.mode === 'assigned_work'
+    const [{ data: schoolMembership }, { data: profile }] = await Promise.all([
+      supabaseClient
+        .from('memberships')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle(),
+      supabaseClient
+        .from('user_profiles')
+        .select('role, account_type')
+        .eq('id', user.id)
+        .maybeSingle(),
+    ])
+    const requesterRole = String(
+      schoolMembership?.role || profile?.role || profile?.account_type || user.user_metadata?.role || 'student'
+    ).toLowerCase()
+    const studentSafetyMode = requesterRole === 'student'
+    let assignedContextVerified = false
+    if (requestedAssignedWork && study_context.assignment_id) {
+      const { data: assignment } = await supabaseClient
+        .from('assignments')
+        .select('class_id, assignee_ids')
+        .eq('id', study_context.assignment_id)
+        .maybeSingle()
+      if (assignment) {
+        const { data: membership } = await supabaseClient
+          .from('class_members')
+          .select('id')
+          .eq('class_id', assignment.class_id)
+          .or(`user_id.eq.${user.id},student_id.eq.${user.id}`)
+          .maybeSingle()
+        const intendedAssignee =
+          !Array.isArray(assignment.assignee_ids) ||
+          assignment.assignee_ids.length === 0 ||
+          assignment.assignee_ids.includes(user.id)
+        assignedContextVerified = Boolean(membership) && intendedAssignee
+      }
+    } else if (requestedAssignedWork && study_context.prescription_id) {
+      const { data: prescription } = await supabaseClient
+        .from('daily_prescriptions')
+        .select('id, tasks')
+        .eq('id', study_context.prescription_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      const taskIndex = Number(study_context.prescription_task_index)
+      assignedContextVerified = Boolean(
+        prescription &&
+        Array.isArray(prescription.tasks) &&
+        Number.isInteger(taskIndex) &&
+        taskIndex >= 0 &&
+        taskIndex < prescription.tasks.length
+      )
+    }
+    if (requestedAssignedWork && !assignedContextVerified) {
+      return new Response(JSON.stringify({ error: 'Assigned-work context could not be verified' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    // Student-facing tutoring is always guidance-first, even if a caller omits
+    // UI context. This prevents direct API calls from turning the tutor into an
+    // answer endpoint. Teacher/admin callers retain general explanatory mode.
+    const assignedWorkMode = studentSafetyMode || assignedContextVerified
+    const serializedStudyContext =
+      typeof study_context === 'string' ? study_context : JSON.stringify(study_context || {})
+    const socraticContract = assignedWorkMode
+      ? `ASSIGNED-WORK SOCRATIC CONTRACT (NON-NEGOTIABLE):
+         - Never provide the final answer, completed solution, answer key, or text the student can submit.
+         - Never solve the whole problem, even when the student asks directly, claims urgency, or asks you to "just check".
+         - Ask exactly one next-smallest useful question at a time.
+         - You may name a relevant principle, point out one error, or give a partial hint, but then return the work to the student.
+         - If the student supplies an answer, diagnose the reasoning without replacing it with the correct finished answer.
+         - Keep each response concise enough that the student must continue thinking.
+         This contract overrides all later teaching-style suggestions.`
+      : ''
 
     // ============================================
     // 0.5 COMPLETION INTENT — if the user explicitly says they've finished today's tasks,
@@ -95,6 +210,11 @@ serve(async (req) => {
     // ============================================
     const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const todayStr = new Date().toISOString().split('T')[0];
+    const openUIRequested =
+      !shouldSuppressAtlasOpenUI(message) &&
+      (prefer_openui === true || shouldUseAtlasOpenUI(message))
+    const needsRichSnapshot = use_full_orchestration || openUIRequested
+    const emptySnapshotQuery = () => Promise.resolve({ data: null, error: null })
 
     // Use allSettled so a single missing table / schema drift can't wipe the whole snapshot.
     const settled = await Promise.allSettled([
@@ -105,50 +225,50 @@ serve(async (req) => {
         .lt('p_mastery', 0.8)
         .order('p_mastery', { ascending: true })
         .limit(5),
-      supabaseClient
+      needsRichSnapshot ? supabaseClient
         .from('task_completions')
         .select('plan_id, day_number, created_at')
         .eq('user_id', user.id)
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
-        .limit(10),
-      supabaseClient
+        .limit(10) : emptySnapshotQuery(),
+      needsRichSnapshot ? supabaseClient
         .from('task_completions_v2')
         .select('source_type, source_id, task_order, scheduled_date, completed_at, task_snapshot')
         .eq('user_id', user.id)
         .gte('completed_at', sinceIso)
         .order('completed_at', { ascending: false })
-        .limit(15),
-      supabaseClient
+        .limit(15) : emptySnapshotQuery(),
+      needsRichSnapshot ? supabaseClient
         .from('task_outputs')
         .select('output_type, text_content, file_url, ai_analysis, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5),
-      supabaseClient
+        .limit(5) : emptySnapshotQuery(),
+      needsRichSnapshot ? supabaseClient
         .from('test_results')
         .select('test_name, score, max_score, weak_topics, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(2),
-      supabaseClient
+        .limit(2) : emptySnapshotQuery(),
+      needsRichSnapshot ? supabaseClient
         .from('class_sessions')
         .select('subject, topic, notes, taught_at')
         .eq('user_id', user.id)
         .order('taught_at', { ascending: false })
-        .limit(5),
+        .limit(5) : emptySnapshotQuery(),
       supabaseClient
         .from('daily_prescriptions')
         .select('id, tasks, total_estimated_minutes')
         .eq('user_id', user.id)
         .eq('prescription_date', todayStr)
         .maybeSingle(),
-      supabaseClient
+      needsRichSnapshot ? supabaseClient
         .from('video_generations')
         .select('topic, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5),
+        .limit(5) : emptySnapshotQuery(),
       supabaseClient
         .from('user_memory')
         .select('memory_type, key, value, last_seen_at, seen_count')
@@ -156,17 +276,17 @@ serve(async (req) => {
         .in('memory_type', ['preference', 'factual', 'goal', 'bookmark', 'skill', 'communication_style'])
         .order('last_seen_at', { ascending: false })
         .limit(12),
-      supabaseClient
+      needsRichSnapshot ? supabaseClient
         .from('student_roadmaps')
         .select('institute_name, program, current_week')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .maybeSingle(),
-      supabaseClient
+        .maybeSingle() : emptySnapshotQuery(),
+      needsRichSnapshot ? supabaseClient
         .from('student_behavioral_profiles')
         .select('attendance_rate_30d, consecutive_absences, late_arrival_count_30d, last_absent_at, attendance_risk_level')
         .eq('user_id', user.id)
-        .maybeSingle(),
+        .maybeSingle() : emptySnapshotQuery(),
     ]);
 
     // Unpack settled results (fall back to empty data on rejection)
@@ -333,7 +453,13 @@ serve(async (req) => {
       : "No prior activity found for this student yet.";
 
     // Base context string augmented with full activity snapshot
-    const baseContext = `Study Context: ${study_context || 'None'}\n\n=== STUDENT ACTIVITY SNAPSHOT ===\n${activitySnapshot}\n=== END SNAPSHOT ===\n\nRecent Chat History: ${JSON.stringify(conversation_history.slice(-3))}\nStudent Message: ${message}`
+    const baseContext = `Study Context: ${serializedStudyContext || 'None'}\n\n${socraticContract}\n\n=== STUDENT ACTIVITY SNAPSHOT ===\n${activitySnapshot}\n=== END SNAPSHOT ===\n\nRecent Chat History: ${JSON.stringify(conversation_history.slice(-3))}\nStudent Message: ${message}`
+    const assignedWorkOpenUIRule = assignedWorkMode
+      ? '\nFor assigned work, use a FeynmanPrompt as the main section, ask exactly one next-smallest question, and include at most one ContinueButton for a smaller hint. Do not use task lists, completion controls, mastery claims, or navigation.'
+      : ''
+    const openUIDirective = openUIRequested
+      ? `\n\nINTERACTIVE RESPONSE CONTRACT (OVERRIDES PROSE AND NAVIGATION-TAG INSTRUCTIONS):\n${ATLAS_OPENUI_SYSTEM_PROMPT}${assignedWorkOpenUIRule}`
+      : ''
 
     // Internal helper to call Gemini
     const callGemini = async (systemPrompt: string, userPrompt: string) => {
@@ -365,44 +491,50 @@ serve(async (req) => {
     let finalResponse = ''
     let emotionDetected = 'neutral'
     let pedagogicalMode = 'socratic'
+    let responseKind: 'text' | 'openui' = 'text'
 
     if (!use_full_orchestration) {
       // Fast path (Route to NDCF mentor or direct)
        finalResponse = await callGemini(
-         "You are ATLAS, a warm, friendly, and encouraging study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT of what this student has actually done (completions, uploads, tests, classes, videos, memories). Ground your answer in that snapshot — reference concrete items when relevant. Never claim you don't know what they've done. Be supportive and celebrate their progress.",
+         `You are ATLAS, a warm, friendly, and encouraging study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT of what this student has actually done (completions, uploads, tests, classes, videos, memories). Ground your answer in that snapshot — reference concrete items when relevant. Never claim you don't know what they've done. Be supportive and celebrate their progress. ${socraticContract}${openUIDirective}`,
          baseContext
        )
     } else {
       try {
       // 1. Emotional Agent
-      const emotionalOutput = await callGemini(
-        "You are the Emotional Intelligence Agent. Analyze the student's emotional state (frustration, confidence, confusion). Output a short JSON with { 'emotion': '...', 'recommended_tone': '...' }",
-        baseContext
-      )
+      const [emotionalOutput, expertOutput] = await Promise.all([
+        callGemini(
+          "You are the Emotional Intelligence Agent. Analyze the student's emotional state (frustration, confidence, confusion). Output a short JSON with { 'emotion': '...', 'recommended_tone': '...' }",
+          baseContext
+        ),
+        callGemini(
+          assignedWorkMode
+            ? `You are the Subject Expert Agent. Privately identify the relevant facts and likely misconception, but DO NOT output a final answer or complete solution. Give the synthesizer only the minimum principle needed to choose one next question. ${socraticContract}`
+            : "You are the Subject Expert Agent. Ignore teaching style. Just analyze the factual correctness of the student's statement or precisely answer their technical question. Output pure facts.",
+          baseContext
+        ),
+      ])
 
       try {
         const parsed = JSON.parse(emotionalOutput.replace(/```json/g, '').replace(/```/g, ''))
         emotionDetected = parsed.emotion || 'neutral'
       } catch(e) {}
 
-      // 2. Subject Expert Agent
-      const expertOutput = await callGemini(
-        "You are the Subject Expert Agent. Ignore teaching style. Just analyze the factual correctness of the student's statement or precisely answer their technical question. Output pure facts.",
-        baseContext
-      )
-
-      // 3. Pedagogical Agent
+      // 2. Pedagogical Agent
       const pedagogyOutput = await callGemini(
-        `You are the Pedagogical Agent. Given the Expert's facts: "${expertOutput}" and the student's emotion: "${emotionDetected}", decide HOW to teach this. Should we use Socratic questioning, a real-world analogy, or just give the answer? Output your strategy.`,
+        assignedWorkMode
+          ? `You are the Pedagogical Agent. Given the Expert's facts: "${expertOutput}" and the student's emotion: "${emotionDetected}", choose exactly one next-smallest Socratic question. Giving the answer is forbidden. ${socraticContract}`
+          : `You are the Pedagogical Agent. Given the Expert's facts: "${expertOutput}" and the student's emotion: "${emotionDetected}", decide HOW to teach this. Should we use Socratic questioning, a real-world analogy, or just give the answer? Output your strategy.`,
         baseContext
       )
 
-      // 4. Meta Agent (Synthesizer)
+      // 3. Meta Agent (Synthesizer)
       finalResponse = await callGemini(
         `You are the Meta-Agent (StudyBud / ATLAS), the student's warm and encouraging AI study partner. Synthesize the final response to the student.
          Expert Facts: ${expertOutput}
          Teaching Strategy: ${pedagogyOutput}
          Tone to use based on emotion: ${emotionDetected}
+         ${socraticContract}
 
          GROUNDING REQUIREMENT: The user prompt below contains a "STUDENT ACTIVITY SNAPSHOT" with
          what they've actually done (tasks completed, uploads, tests, classes, videos, prescriptions, memories).
@@ -419,7 +551,8 @@ serve(async (req) => {
          - View their knowledge graph or atlas: append exactly [ACTION:NAVIGATE_ATLAS]
          - See their study plans or curriculum: append exactly [ACTION:NAVIGATE_PLANS]
          
-         Only append ONE tag if a transition is strongly requested. Otherwise, just output your normal conversational response.`,
+         Only append ONE tag if a transition is strongly requested. Otherwise, just output your normal conversational response.
+         ${openUIDirective}`,
         baseContext
       )
 
@@ -446,7 +579,7 @@ serve(async (req) => {
         // Fallback: single direct Gemini call so the user always gets a response
         try {
           finalResponse = await callGemini(
-            "You are ATLAS, a warm, friendly, and encouraging AI study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT — ground your answer in it and reference concrete items when relevant. Provide a kind, supportive, and motivating answer.",
+            `You are ATLAS, a warm, friendly, and encouraging AI study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT — ground your answer in it and reference concrete items when relevant. Provide a kind, supportive, and motivating answer. ${socraticContract}${openUIDirective}`,
             baseContext
           )
         } catch (fallbackErr) {
@@ -456,8 +589,17 @@ serve(async (req) => {
       }
     }
 
+    if (openUIRequested) {
+      finalResponse = normalizeAtlasOpenUIResponse(finalResponse)
+      if (/^root\s*=\s*AtlasResponse\s*\(/.test(finalResponse)) {
+        responseKind = 'openui'
+      }
+    }
+
     return new Response(JSON.stringify({ 
       response: finalResponse,
+      response_kind: responseKind,
+      fallback_response: responseKind === 'openui' ? ATLAS_OPENUI_FALLBACK : undefined,
       emotion_detected: emotionDetected,
       pedagogical_mode: pedagogicalMode,
       orchestration_used: use_full_orchestration
@@ -466,7 +608,7 @@ serve(async (req) => {
       status: 200,
     })
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
