@@ -100,13 +100,13 @@
 
 **Agent session prompt:** *"Complete the PERIR-O loop per `docs/prd.md` §4.3–4.6. Reuse PracticeTestEngine for retrieval, interleaving, and overlearning — do not write a new quiz runner. Extend `adaptive-difficulty` to accept a multi-topic `kc_ids[]` array for interleaved sets."*
 
-- [ ] P2.1 Reference stage — cards from the encoding artifact
-  Files: `src/curve/StageSession.tsx`, `src/components/FlashcardGenerator.tsx`, `supabase/functions/generate-flashcards/`
-  Notes: PRD §4.3. Seed `generate-flashcards` with the P1.10 artifact so cards carry the student's own framing; write to the existing `flashcards` table tagged with `kc_id` + `topic_id`. Gate at ≥5 accepted. This is a parking lot, not a study activity — do not add a card-review flow here.
+- [x] P2.1 Reference stage — cards from the encoding artifact
+  Files: `supabase/migrations/20260812000200_perir_o_reference.sql`, `supabase/functions/generate-flashcards/index.ts`, `src/curve/StageSession.tsx`, `src/curve/stageData.ts`
+  Notes: PRD §4.3. `flashcards` had no `kc_id`/`topic_id`, so the migration adds them plus a `source` column — the gate must count cards this student produced for this topic, not a deck imported from elsewhere. `generate-flashcards` gained a `context` field (the encoding artifact, so cards inherit the student's own phrasing) and a `persist: false` mode: it used to save every card it drafted, which would have double-written and filed cards the student never accepted. No card-review flow here by design — reviewing is Retrieval, one stage later.
 
-- [ ] P2.2 Retrieval stage — closed book, BKT-logged
-  Files: `src/curve/StageSession.tsx`, `src/components/PracticeTestEngine.tsx`, `src/lib/knowledgeTracing.ts`
-  Notes: PRD §4.4. Closed-book means no notes surface reachable mid-session. Every item calls `logInteraction` with a valid `kc_id` and `source: 'perir_retrieval'`. Gate at ≥10 items and `p_mastery ≥ 0.55`.
+- [x] P2.2 Retrieval stage — closed book, BKT-logged
+  Files: `supabase/functions/check-retrieval/index.ts`, `src/curve/StageSession.tsx`
+  Notes: PRD §4.4. Items come from `adaptive-difficulty`, which already accepted `kc_ids` and `topics` — no change needed there, and that also means P2.5's multi-topic sets are already supported at the function level. **New:** `check-retrieval`, because `adaptive-difficulty` deliberately strips answer keys (it reads `question_bank` with the service role, so shipping keys to the browser would hand students the answers). Bank items are graded against `correct_index`/`answer_text`; model-generated items are judged on whether the idea is right, not the wording. A grading failure throws rather than marking answers wrong — recording a false negative would push mastery down for something the student may well have known. Each item logs to BKT individually with `source: 'perir_retrieval'`; the gate reads the mastery the engine returned, not a score the screen calculated. **Deviation:** `PracticeTestEngine` was not reused — it grades client-side against `question.correct_answer`, which this pipeline never exposes.
 
 - [ ] P2.3 Spaced retrieval schedule
   Files: `src/lib/perirO.ts`, `src/lib/studyPlanner.ts`

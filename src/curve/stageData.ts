@@ -362,6 +362,59 @@ export async function recordStageOutcome(
   }
 }
 
+/** Reference cards this student kept for a topic. The Reference gate counts these. */
+export async function fetchReferenceCards(userId: string, topicId: string) {
+  const { data, error } = await supabase
+    .from('flashcards')
+    .select('id, question, answer, topic')
+    .eq('user_id', userId)
+    .eq('topic_id', topicId)
+    .order('created_at', { ascending: true });
+
+  if (error || !data) return [];
+  return data as Array<{ id: string; question: string; answer: string; topic: string }>;
+}
+
+export interface DraftCard {
+  question: string;
+  answer: string;
+}
+
+/**
+ * Saves the cards a student chose to keep.
+ *
+ * Written only when they accept them, never at generation time: an unreviewed
+ * card is the model's work, not the student's parking lot, and the gate counts
+ * the parking lot.
+ */
+export async function saveReferenceCards(
+  userId: string,
+  topicId: string,
+  kcId: string | null,
+  topicTitle: string,
+  cards: DraftCard[],
+): Promise<number> {
+  if (cards.length === 0) return 0;
+
+  const { error } = await supabase.from('flashcards').insert(
+    cards.map((card) => ({
+      user_id: userId,
+      topic: topicTitle,
+      topic_id: topicId,
+      kc_id: kcId,
+      question: card.question,
+      answer: card.answer,
+      source: 'perir_reference',
+    })),
+  );
+
+  if (error) {
+    console.error('Could not save reference cards:', error.message);
+    return 0;
+  }
+  return cards.length;
+}
+
 export async function fetchTopicStage(userId: string, topicId: string): Promise<TopicStage> {
   const { data, error } = await supabase
     .from('curve_topic_stage')

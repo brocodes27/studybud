@@ -1,6 +1,6 @@
 # ElevenFolks — Master Plan (Start Here)
 
-**Date:** 2026-08-12 (v2 — PERIR-O adoption) · **Status line:** Phase 0 COMPLETE · **Phase 1 code-complete** — P1.1–P1.15 all shipped (91 tests green, build green). Remaining gate is the 20-student beta, not more code
+**Date:** 2026-08-12 (v2 — PERIR-O adoption) · **Status line:** Phase 0 COMPLETE · **Phase 1 code-complete**, P2.1–P2.2 shipped — four of six stages live end to end (91 tests green, build green, migrations + functions deployed to production). Remaining gate is a real beta, not more code
 
 > **Mission:** Build the best B2C edtech product in the world — the AI Study OS that knows every syllabus a student carries, forecasts the grade, and runs every topic through the six stages of durable learning until the forecast comes true.
 

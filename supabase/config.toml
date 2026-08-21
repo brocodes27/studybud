@@ -354,3 +354,8 @@ entrypoint = "./functions/student-twin/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/generate-primer/index.ts"
+
+[functions.check-retrieval]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/check-retrieval/index.ts"

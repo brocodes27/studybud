@@ -6,18 +6,23 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { STAGE_EVENTS, trackStage } from '../lib/stageTelemetry';
 import {
+  STAGE_GATES,
   STAGE_MINUTES,
   labelFor,
   nextAction,
   type StageAction,
   type TopicStage,
 } from '../lib/perirO';
+import { KnowledgeTracingService } from '../lib/knowledgeTracing';
 import type { PlannerTopic } from '../lib/studyPlanner';
 import {
+  fetchReferenceCards,
   fetchStageSnapshot,
   localToday,
   recordStageCompletion,
   recordStageOutcome,
+  saveReferenceCards,
+  type DraftCard,
 } from './stageData';
 import {
   gradeEncoding,
@@ -284,8 +289,10 @@ interface BodyProps {
 function StageBody(props: BodyProps) {
   if (props.action === 'prime') return <PrimingBody {...props} />;
   if (props.action === 'encode') return <EncodingBody {...props} />;
-  // Reference through Overlearning land in Phase 2. Until then the topic opens
-  // in the existing coach session rather than a dead end.
+  if (props.action === 'reference') return <ReferenceBody {...props} />;
+  if (props.action === 'retrieve') return <RetrievalBody {...props} />;
+  // Interleaving and Overlearning land next. Until then the topic opens in the
+  // existing coach session rather than a dead end.
   return <StudySession />;
 }
 
@@ -730,6 +737,501 @@ function RubricCard({ rubric, passed }: { rubric: EncodingRubric; passed: boolea
         </p>
       ) : null}
     </div>
+  );
+}
+
+
+/* -------------------------------------------------------------- reference -- */
+
+/**
+ * Reference: the parking lot (PRD v2 §4.3).
+ *
+ * Its purpose is to get granular detail *out* of working memory so the student
+ * can think in concepts. That is why there is no "review your cards" flow here
+ * — reviewing is Retrieval, one stage later. Filing is the whole job.
+ *
+ * Cards are seeded from the encoding artifact so they carry the student's own
+ * framing rather than the textbook's, and nothing is saved until they accept
+ * it: an unreviewed card is the model's work, not the student's.
+ */
+function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, today, onDone }: BodyProps) {
+  const [drafts, setDrafts] = useState<DraftCard[]>([]);
+  const [kept, setKept] = useState<Set<number>>(new Set());
+  const [existing, setExisting] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const startedAt = useRef(Date.now());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const cards = await fetchReferenceCards(userId, topicId);
+      if (cancelled) return;
+      setExisting(cards.length);
+
+      // The encoding artifact is the seed. Without it the cards would be
+      // generic, which defeats the point of filing them in the student's own
+      // words.
+      const { data: events } = await supabase
+        .from('curve_stage_events')
+        .select('payload')
+        .eq('user_id', userId)
+        .eq('topic_id', topicId)
+        .eq('stage_action', 'encode')
+        .eq('outcome', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const artifact = (events?.[0] as any)?.payload?.artifact ?? '';
+
+      try {
+        const { data, error: invokeError } = await supabase.functions.invoke(
+          'generate-flashcards',
+          {
+            body: {
+              topic: topic.title,
+              subject: topic.subject,
+              count: 8,
+              context: artifact,
+              // Draft only. The student culls and edits first, and only what
+              // they keep is filed — with the topic and knowledge component
+              // attached, which the generator does not know about.
+              persist: false,
+            },
+          },
+        );
+        if (cancelled) return;
+        if (invokeError) throw invokeError;
+
+        const generated = Array.isArray(data?.flashcards) ? data.flashcards : data?.cards ?? [];
+        setDrafts(
+          (generated as any[])
+            .map((card) => ({
+              question: String(card.question ?? '').trim(),
+              answer: String(card.answer ?? '').trim(),
+            }))
+            .filter((card) => card.question && card.answer),
+        );
+        // Pre-selected: the student's job is to cull and correct, not to tick
+        // eight boxes.
+        setKept(new Set((generated as any[]).map((_, index) => index)));
+      } catch {
+        if (!cancelled) {
+          setError('Could not draft cards for this topic. You can still write your own below.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, topicId, topic.title, topic.subject]);
+
+  const keptCards = drafts.filter((_, index) => kept.has(index));
+  const total = existing + keptCards.length;
+  const enough = total >= STAGE_GATES.referenceCardsMin;
+
+  function toggle(index: number) {
+    setKept((current) => {
+      const next = new Set(current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
+
+  function edit(index: number, field: 'question' | 'answer', value: string) {
+    setDrafts((current) =>
+      current.map((card, i) => (i === index ? { ...card, [field]: value } : card)),
+    );
+  }
+
+  async function finish() {
+    setSaving(true);
+    setError(null);
+
+    const saved = await saveReferenceCards(userId, topicId, topic.kcId, topic.title, keptCards);
+    const result = await recordStageCompletion({
+      userId,
+      enrollmentId,
+      topicId,
+      action: 'reference',
+      evidence: { acceptedCards: existing + saved },
+      wasPrescribed,
+      durationSec: Math.round((Date.now() - startedAt.current) / 1000),
+      payload: { saved, existing },
+      examOn: topic.examOn,
+      today,
+    });
+
+    setSaving(false);
+    if (result.advanced) onDone();
+    else setError(result.reason || 'Could not save these cards.');
+  }
+
+  return (
+    <>
+      <p className="mt-2 text-sm text-curve-muted">
+        Park the details so they stop crowding your thinking · about {STAGE_MINUTES.reference} minutes
+      </p>
+
+      {loading ? (
+        <Panel className="mt-6 flex items-center gap-2 text-sm text-curve-muted">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Drafting cards from what you wrote
+        </Panel>
+      ) : (
+        <Panel className="mt-6">
+          <p className="curve-label">Keep what is worth remembering</p>
+          <p className="mt-1 text-xs text-curve-faint">
+            These come from your own explanation. Cut the ones you will never need and fix any that
+            are not quite right — you will be tested on exactly these.
+          </p>
+
+          {error ? (
+            <div className="mt-4">
+              <Banner tone="warn">{error}</Banner>
+            </div>
+          ) : null}
+
+          <ul className="mt-4 space-y-3">
+            {drafts.map((card, index) => (
+              <li
+                key={index}
+                className={`rounded-xl border p-3 transition ${
+                  kept.has(index) ? 'border-white/20' : 'border-white/5 opacity-50'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggle(index)}
+                    aria-pressed={kept.has(index)}
+                    aria-label={kept.has(index) ? `Drop card ${index + 1}` : `Keep card ${index + 1}`}
+                    className="curve-orb curve-orb-light curve-orb-static mt-1 shrink-0"
+                  >
+                    {kept.has(index) ? (
+                      <Check className="h-4 w-4" strokeWidth={2.2} />
+                    ) : (
+                      <X className="h-4 w-4" strokeWidth={2.2} />
+                    )}
+                  </button>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <TextInput
+                      value={card.question}
+                      onChange={(event) => edit(index, 'question', event.target.value)}
+                      aria-label={`Card ${index + 1} question`}
+                    />
+                    <TextArea
+                      value={card.answer}
+                      rows={2}
+                      onChange={(event) => edit(index, 'answer', event.target.value)}
+                      aria-label={`Card ${index + 1} answer`}
+                    />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDrafts((current) => [...current, { question: '', answer: '' }]);
+              setKept((current) => new Set(current).add(drafts.length));
+            }}
+            className="mt-3 inline-flex items-center gap-2 text-xs text-curve-faint underline underline-offset-4 transition hover:text-curve-muted"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add one of your own
+          </button>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <CurveButton onClick={() => void finish()} disabled={!enough || saving}>
+              {saving ? 'Filing' : `File ${keptCards.length} card${keptCards.length === 1 ? '' : 's'}`}
+            </CurveButton>
+            {!enough ? (
+              <span className="text-xs text-curve-faint">
+                Keep at least {STAGE_GATES.referenceCardsMin} — you have {total}
+              </span>
+            ) : null}
+          </div>
+        </Panel>
+      )}
+    </>
+  );
+}
+
+
+/* -------------------------------------------------------------- retrieval -- */
+
+interface RetrievalItem {
+  id?: string | null;
+  kc_id?: string | null;
+  question: string;
+  options: string[] | null;
+}
+
+interface GradedItem {
+  question: string;
+  is_correct: boolean;
+  expected: string | null;
+  note?: string;
+}
+
+/**
+ * Retrieval: closed-book testing (PRD v2 §4.4).
+ *
+ * Notes stay shut. That is not a UI preference — retrieval works because
+ * reconstructing something from memory is the act that strengthens it, and an
+ * open note turns the whole exercise into copying.
+ *
+ * Answers are graded server-side, because the item selector strips answer keys
+ * before they ever reach the browser. Each item is logged to the BKT engine
+ * individually; the gate then reads the mastery the engine produced, not a
+ * score this screen calculated.
+ */
+function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, today, onDone }: BodyProps) {
+  const [items, setItems] = useState<RetrievalItem[]>([]);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [graded, setGraded] = useState<GradedItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const startedAt = useRef(Date.now());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    supabase.functions
+      .invoke('adaptive-difficulty', {
+        body: {
+          subject: topic.subject,
+          topic: topic.title,
+          kc_ids: topic.kcId ? [topic.kcId] : undefined,
+          count: STAGE_GATES.retrievalItemsMin,
+          source: 'perir_retrieval',
+        },
+      })
+      .then(({ data, error: invokeError }) => {
+        if (cancelled) return;
+        if (invokeError || !Array.isArray(data?.questions) || data.questions.length === 0) {
+          setError('Could not put a set together for this topic. Try again in a moment.');
+          return;
+        }
+        setItems(
+          (data.questions as any[]).map((question) => ({
+            id: question.id ?? null,
+            kc_id: question.kc_id ?? topic.kcId ?? null,
+            question: String(question.question ?? ''),
+            options: Array.isArray(question.options) ? question.options.map(String) : null,
+          })),
+        );
+      })
+      .finally(() => !cancelled && setLoading(false));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [topic.subject, topic.title, topic.kcId]);
+
+  const answered = Object.values(answers).filter((value) => value.trim()).length;
+
+  async function submit() {
+    setSubmitting(true);
+    setError(null);
+    const elapsedMs = Date.now() - startedAt.current;
+
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('check-retrieval', {
+        body: {
+          topic: topic.title,
+          answers: items.map((item, index) => ({
+            question_id: item.id,
+            question: item.question,
+            answer: answers[index] ?? '',
+          })),
+        },
+      });
+
+      if (invokeError || !Array.isArray(data?.graded)) {
+        throw new Error(
+          'Could not mark this set. Nothing was recorded, so nothing was counted against you.',
+        );
+      }
+
+      const results = data.graded as GradedItem[];
+      setGraded(results);
+
+      // Per item, not per session: the mastery model runs on individual
+      // evidence, and an averaged session would erase it.
+      const perItemMs = Math.round(elapsedMs / Math.max(items.length, 1));
+      let latestMastery = topic.pMastery;
+
+      for (const item of items) {
+        const result = results.find((entry) => entry.question === item.question);
+        if (!result || !item.kc_id) continue;
+        const update = await KnowledgeTracingService.logInteraction(
+          item.kc_id,
+          result.is_correct,
+          perItemMs,
+          'perir_retrieval',
+          { topic_id: topicId },
+        );
+        if (update?.new_mastery !== undefined) latestMastery = update.new_mastery;
+      }
+
+      const correct = results.filter((result) => result.is_correct).length;
+      const accuracy = results.length > 0 ? correct / results.length : 0;
+
+      const outcome = await recordStageCompletion({
+        userId,
+        enrollmentId,
+        topicId,
+        action: 'retrieve',
+        evidence: {
+          items: results.length,
+          accuracy,
+          pMastery: latestMastery,
+        },
+        wasPrescribed,
+        durationSec: Math.round(elapsedMs / 1000),
+        payload: { correct, total: results.length },
+        examOn: topic.examOn,
+        today,
+      });
+
+      if (!outcome.advanced && outcome.reason) setError(outcome.reason);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not mark this set.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <Panel className="mt-6 flex items-center gap-2 text-sm text-curve-muted">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Putting a set together
+      </Panel>
+    );
+  }
+
+  if (graded) {
+    const correct = graded.filter((result) => result.is_correct).length;
+    return (
+      <Panel className="mt-6">
+        <p className="curve-figure text-3xl">
+          {correct} / {graded.length}
+        </p>
+        <p className="mt-1 text-sm text-curve-muted">
+          {correct === graded.length
+            ? 'Nothing slipped. This one is holding.'
+            : 'The ones you missed are the whole point — that is where the next review will start.'}
+        </p>
+
+        <ul className="mt-4 space-y-2">
+          {graded.map((result, index) => (
+            <li key={index} className="rounded-lg border border-white/10 px-3 py-2">
+              <div className="flex items-start gap-2">
+                {result.is_correct ? (
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-curve-good" />
+                ) : (
+                  <X className="mt-0.5 h-4 w-4 shrink-0 text-curve-bad" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm text-white">{result.question}</p>
+                  {!result.is_correct && result.expected ? (
+                    <p className="mt-1 text-xs text-curve-muted">{result.expected}</p>
+                  ) : null}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {error ? (
+          <div className="mt-4">
+            <Banner tone="warn">{error}</Banner>
+          </div>
+        ) : null}
+
+        <CurveButton className="mt-5" onClick={onDone}>
+          Done
+        </CurveButton>
+      </Panel>
+    );
+  }
+
+  return (
+    <>
+      <p className="mt-2 text-sm text-curve-muted">
+        Notes closed · about {STAGE_MINUTES.retrieve} minutes
+      </p>
+
+      {error ? (
+        <div className="mt-6">
+          <Banner tone="warn">{error}</Banner>
+        </div>
+      ) : null}
+
+      <Panel className="mt-6">
+        <p className="text-xs text-curve-faint">
+          Guessing badly is more useful than looking it up. A wrong answer you tried to reconstruct
+          tells the system exactly where the gap is; a copied one tells it nothing.
+        </p>
+
+        <ol className="mt-4 space-y-5">
+          {items.map((item, index) => (
+            <li key={index}>
+              <p className="text-sm font-medium text-white">
+                {index + 1}. {item.question}
+              </p>
+              {item.options ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {item.options.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setAnswers((current) => ({ ...current, [index]: option }))}
+                      aria-pressed={answers[index] === option}
+                      className="curve-chip"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <TextArea
+                  className="mt-2"
+                  rows={2}
+                  value={answers[index] ?? ''}
+                  onChange={(event) =>
+                    setAnswers((current) => ({ ...current, [index]: event.target.value }))
+                  }
+                  placeholder="From memory"
+                  aria-label={`Answer to question ${index + 1}`}
+                />
+              )}
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <CurveButton onClick={() => void submit()} disabled={submitting || items.length === 0}>
+            {submitting ? 'Marking' : 'Submit'}
+          </CurveButton>
+          <span className="text-xs text-curve-faint">
+            {answered} of {items.length} answered — blanks are marked wrong, which is honest data
+          </span>
+        </div>
+      </Panel>
+    </>
   );
 }
 

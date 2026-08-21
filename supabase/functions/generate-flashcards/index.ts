@@ -4,6 +4,20 @@ import { getCors } from "../_shared/cors.ts";
 
 interface FlashcardRequest {
   topic: string;
+  /**
+   * The student's own encoding artifact, when the Reference stage is the
+   * caller. Cards seeded from it inherit the student's framing instead of the
+   * textbook's, which is the difference between a parking lot they recognise
+   * and a generic deck they abandon.
+   */
+  context?: string;
+  /**
+   * When false, draft the cards and return them without writing any. The
+   * PERIR-O Reference stage needs this: the student culls and edits the draft
+   * first, and only what they keep is filed — with a topic and knowledge
+   * component attached, which this function does not know about.
+   */
+  persist?: boolean;
   subject: string;
   class?: string;
   chapters?: string;
@@ -95,7 +109,7 @@ serve(async (req: Request) => {
     console.log("Parsed body:", parsedBody);
 
     // Use parsedBody instead of await req.json()
-    const { topic, subject, class: studentClass, chapters, count }: FlashcardRequest = parsedBody || {};
+    const { topic, subject, class: studentClass, chapters, count, context, persist = true }: FlashcardRequest = parsedBody || {};
 
     // Log incoming request for debugging
     console.log("Flashcard request received:", { topic, subject, studentClass, chapters, count });
@@ -123,7 +137,11 @@ serve(async (req: Request) => {
 
     const topicText = topic === 'all_chapters' ? `all chapters (${chapters})` : topic;
 
-    const prompt = `Generate ${count} educational flashcards for the topic "${topicText}" based on the following context:
+    const seed = context && String(context).trim()
+      ? `\n\nThe student already explained this topic in their own words. Build the cards from THEIR framing, terminology and examples. Reuse their phrasing wherever it is correct, and correct it only where it is wrong:\n${String(context).slice(0, 4000)}\n`
+      : '';
+
+    const prompt = `Generate ${count} educational flashcards for the topic "${topicText}"${seed} based on the following context:
 
 ${contextInfo}
 
@@ -210,6 +228,12 @@ Make sure questions are specific and answers are educational. Include definition
       } else {
         throw new Error("Failed to parse AI response");
       }
+    }
+
+    if (!persist) {
+      return new Response(JSON.stringify({ flashcards: flashcardsData.flashcards }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Save flashcards to Supabase
