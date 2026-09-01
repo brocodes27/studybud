@@ -15,7 +15,7 @@ A="$ROOT/public/world/assets"
 RAW="$A/vid/raw"
 OUT="$A/vid"
 FR="$A/frames"
-IDS="syow atlas feynman planner simulator mastery"
+IDS="syllabus forecast stages briefing sprint gpa"
 
 mkdir -p "$RAW" "$OUT" "$FR"
 

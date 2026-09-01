@@ -85,6 +85,7 @@ export function CurveLanding() {
 
   // Drag & Drop Hero Parser State
   const [parsing, setParsing] = useState(false);
+  const [parsePass, setParsePass] = useState<{ pass: number; passes: number } | null>(null);
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [parsedCourses, setParsedCourses] = useState<ParsedSyllabus[]>([]);
   const [showAhaModal, setShowAhaModal] = useState(false);
@@ -125,7 +126,9 @@ export function CurveLanding() {
       }
 
       if (imageBatches.length > 0) {
-        const parsedMulti = await parseMultiSyllabusImages(imageBatches);
+        const parsedMulti = await parseMultiSyllabusImages(imageBatches, (pass, passes) =>
+          setParsePass(passes > 1 ? { pass, passes } : null),
+        );
         if (parsedMulti.courses.length > 0) {
           setParsedCourses(parsedMulti.courses);
           // P1.2: keep the parsed syllabi through the /auth round-trip so
@@ -141,6 +144,7 @@ export function CurveLanding() {
       setParsedCourses([]);
     } finally {
       setParsing(false);
+      setParsePass(null);
       setShowAhaModal(true);
     }
   }
@@ -233,7 +237,11 @@ export function CurveLanding() {
             {parsing ? (
               <div className="flex flex-col items-center justify-center py-4">
                 <Loader2 className="h-8 w-8 animate-spin text-[#a78bfa]" />
-                <p className="mt-3 text-sm font-bold text-white">Extracting Multi-Subject Syllabi...</p>
+                <p className="mt-3 text-sm font-bold text-white">
+                  {parsePass
+                    ? `Reading pass ${parsePass.pass} of ${parsePass.passes}…`
+                    : 'Extracting Multi-Subject Syllabi...'}
+                </p>
                 <p className="text-xs text-curve-muted mt-1">
                   Parsing course weights, midterm dates, and BKT mastery parameters.
                 </p>
@@ -244,10 +252,10 @@ export function CurveLanding() {
                   <Files className="h-7 w-7 text-amber-400" />
                 </div>
                 <h3 className="mt-4 text-lg font-bold text-white">
-                  Drop up to 5 Syllabus PDFs (or Photos) Here
+                  Drop Your Syllabus PDFs (or Photos) Here
                 </h3>
                 <p className="mt-1 text-xs text-curve-muted max-w-md">
-                  Single or multi-subject syllabi. Instantly reveals your projected GPA trajectory before you sign up.
+                  One file with every subject, or one file per course — both work. Instantly reveals your projected GPA trajectory before you sign up.
                 </p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                   <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-300">

@@ -3,24 +3,16 @@ import {
   Mail,
   Lock,
   User,
-  GraduationCap,
-  BookOpen,
   ArrowRight,
   Loader2,
-  Shield,
   Hash,
   Sparkles,
 } from "lucide-react";
-import { Logo } from "../components/Logo";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../hooks/useToast";
 import { supabase } from "../lib/supabase";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  canSchoolPortalRoleSignUp,
-  readSchoolPortalRole,
-  type SchoolPortalRole,
-} from "../lib/schoolAuth";
+import { isStudentRole, STAFF_SIGN_IN_MESSAGE } from "../lib/consumerAccess";
 
 async function enrollStudentInClass(userId: string, classId: string) {
   // Try inserting with user_id
@@ -63,27 +55,11 @@ async function checkEnrollmentExists(userId: string, classId: string) {
 
 export function Auth() {
   const [searchParams] = useSearchParams();
-  const schoolPortal = searchParams.get("portal") === "schools";
-  const studentPortal = searchParams.get("portal") === "students";
-  const initialSchoolRole = readSchoolPortalRole(searchParams.get("role"));
-  const [schoolRole, setSchoolRole] =
-    useState<SchoolPortalRole>(initialSchoolRole);
   const [isSignUp, setIsSignUp] = useState(
-    schoolPortal &&
-      canSchoolPortalRoleSignUp(initialSchoolRole) &&
-      searchParams.get("mode") === "signup",
-  );
-  const [userRole, setUserRole] = useState<"student" | "teacher">(
-    schoolPortal ? "teacher" : "student",
+    searchParams.get("mode") === "signup",
   );
   const [loading, setLoading] = useState(false);
   const [classCode, setClassCode] = useState("");
-  const [schoolCode, setSchoolCode] = useState("");
-  const [schoolLookupResult, setSchoolLookupResult] = useState<{
-    id: string;
-    name: string;
-    code?: string;
-  } | null>(null);
   const [classLookupResult, setClassLookupResult] = useState<{
     class_name: string;
     teacher_name: string;
@@ -97,24 +73,9 @@ export function Auth() {
   });
 
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [emailLinkLoading, setEmailLinkLoading] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth() as any;
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const leaderSignInOnly =
-    schoolPortal && !canSchoolPortalRoleSignUp(schoolRole);
-  const effectiveRole = schoolPortal
-    ? "teacher"
-    : studentPortal
-      ? "student"
-      : userRole;
-
-  const selectSchoolRole = (role: SchoolPortalRole) => {
-    setSchoolRole(role);
-    setUserRole("teacher");
-    setIsSignUp(false);
-    resetClassLookup();
-  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -128,92 +89,22 @@ export function Auth() {
     }
   };
 
-  const handleLeaderEmailLink = async () => {
-    const email = formData.email.trim().toLowerCase();
-    if (!email) {
-      showToast(
-        "Enter the email address that was provisioned for you.",
-        "error",
-      );
-      return;
-    }
-
-    setEmailLinkLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth?portal=schools`,
-        },
-      });
-      if (error) throw error;
-      showToast(
-        "If this email has been provisioned, a secure sign-in link is on its way.",
-        "success",
-      );
-    } catch (error: any) {
-      showToast(
-        error?.message || "The secure sign-in link could not be sent.",
-        "error",
-      );
-    } finally {
-      setEmailLinkLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const role = effectiveRole;
       const fullName = formData.full_name.trim();
 
       if (isSignUp) {
-        if (leaderSignInOnly) {
-          throw new Error(
-            "Chain heads and principals must use provisioned sign-in access.",
-          );
-        }
         if (!fullName) {
           throw new Error("Please enter your full name.");
-        }
-        // A class code is optional for students. Consumer signup must not be
-        // gated on belonging to a school; students who do have a code still
-        // get enrolled in their class further down.
-        if (role === "teacher" && isSignUp && !schoolLookupResult) {
-          throw new Error(
-            "Please enter your school code so we can link you to the right campus.",
-          );
-        }
-        if (role === "teacher" && schoolLookupResult) {
-          const { data: invited, error: inviteError } = await supabase.rpc(
-            "validate_teacher_signup",
-            {
-              p_code: schoolLookupResult.code || schoolCode.trim(),
-              p_email: formData.email.trim(),
-            },
-          );
-          if (inviteError) throw inviteError;
-          if (!invited) {
-            throw new Error(
-              "A school administrator must invite this email before teacher access is granted.",
-            );
-          }
         }
 
         const { error, data: signUpData } = await signUp(
           formData.email,
           formData.password,
-          {
-            full_name: fullName,
-            role,
-            school_code:
-              role === "teacher"
-                ? schoolLookupResult?.code || schoolCode.trim()
-                : undefined,
-          },
+          { full_name: fullName, role: "student" },
         );
 
         if (error) throw error;
@@ -225,24 +116,10 @@ export function Auth() {
           );
         }
 
-        if (role === "teacher" && schoolLookupResult && signUpData?.user) {
-          if (signUpData.session) {
-            const { error: joinError } = await supabase.rpc(
-              "join_school_as_teacher",
-              {
-                p_code: schoolLookupResult.code || schoolCode.trim(),
-              },
-            );
-            if (joinError) throw joinError;
-          }
-        }
-
         showToast(
           signUpData?.session
             ? "Account created!"
-            : role === "teacher"
-              ? "Check your email to confirm your account. Your selected school access is reserved."
-              : "Check your email to confirm your account.",
+            : "Check your email to confirm your account.",
           "success",
         );
         if (!signUpData?.session) return;
@@ -250,33 +127,37 @@ export function Auth() {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
 
-        if (leaderSignInOnly) {
-          const { error: claimError } = await supabase.rpc(
-            "claim_pending_invitations",
-          );
-          if (claimError && claimError.code !== "PGRST202") throw claimError;
-        }
-
-        if (effectiveRole === "teacher" && schoolLookupResult) {
-          const { error: joinError } = await supabase.rpc(
-            "join_school_as_teacher",
-            {
-              p_code: schoolLookupResult.code || schoolCode.trim(),
-            },
-          );
-          if (joinError) throw joinError;
+        // Student-only product: a staff account may still exist in the
+        // database, so check the role and end the session if it is not a
+        // student rather than dropping them into the student app.
+        const { data: userData } = await supabase.auth.getUser();
+        const authedUser = userData?.user;
+        if (authedUser) {
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("role, account_type")
+            .eq("id", authedUser.id)
+            .maybeSingle();
+          const role =
+            profile?.role ??
+            profile?.account_type ??
+            authedUser.user_metadata?.role;
+          if (!isStudentRole(role)) {
+            await supabase.auth.signOut();
+            throw new Error(STAFF_SIGN_IN_MESSAGE);
+          }
         }
 
         if (classLookupResult) {
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData?.user) {
+          const { data: enrolledUser } = await supabase.auth.getUser();
+          if (enrolledUser?.user) {
             const isEnrolled = await checkEnrollmentExists(
-              userData.user.id,
+              enrolledUser.user.id,
               classLookupResult.class_id,
             );
             if (!isEnrolled) {
               await enrollStudentInClass(
-                userData.user.id,
+                enrolledUser.user.id,
                 classLookupResult.class_id,
               );
             }
@@ -350,42 +231,9 @@ export function Auth() {
     }
   };
 
-  const handleSchoolCodeLookup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!schoolCode.trim()) return;
-
-    setCodeLoading(true);
-    try {
-      const { data, error } = await supabase.rpc("lookup_school_by_code", {
-        p_code: schoolCode.trim(),
-      });
-      const row = Array.isArray(data) ? data[0] : data;
-      if (error || !row?.id) {
-        showToast(
-          "Invalid school code. Ask your principal for the campus code.",
-          "error",
-        );
-        setSchoolLookupResult(null);
-        return;
-      }
-      setSchoolLookupResult({
-        id: row.id,
-        name: row.name,
-        code: row.code || schoolCode.trim().toUpperCase(),
-      });
-    } catch {
-      showToast("Error looking up school code.", "error");
-      setSchoolLookupResult(null);
-    } finally {
-      setCodeLoading(false);
-    }
-  };
-
   const resetClassLookup = () => {
     setClassLookupResult(null);
     setClassCode("");
-    setSchoolLookupResult(null);
-    setSchoolCode("");
   };
 
   return (
@@ -414,62 +262,8 @@ export function Auth() {
         </div>
 
         <div className="bg-[#130f24]/90 backdrop-blur-xl rounded-[28px] border border-white/10 shadow-2xl p-8">
-          {/* Role Selection */}
-          {schoolPortal ? (
-            <div className="grid grid-cols-3 gap-1 p-1 bg-white/5 rounded-2xl mb-4 border border-white/10">
-              {(
-                [
-                  ["chain_head", "Chain head", Shield],
-                  ["principal", "Principal", GraduationCap],
-                  ["teacher", "Teacher", BookOpen],
-                ] as const
-              ).map(([role, label, Icon]) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => selectSchoolRole(role)}
-                  className={`min-w-0 py-2.5 px-1 rounded-xl text-[11px] font-bold transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${schoolRole === role ? "bg-[#8b5cf6] text-white shadow-md" : "text-white/60 hover:text-white"}`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" /> {label}
-                </button>
-              ))}
-            </div>
-          ) : !studentPortal ? (
-            <div className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl mb-4 border border-white/10">
-              <button
-                type="button"
-                onClick={() => {
-                  setUserRole("student");
-                  resetClassLookup();
-                }}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${userRole === "student" ? "bg-[#8b5cf6] text-white shadow-md" : "text-white/60 hover:text-white"}`}
-              >
-                <GraduationCap className="w-4 h-4" /> Student
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setUserRole("teacher");
-                  resetClassLookup();
-                }}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${userRole === "teacher" ? "bg-[#8b5cf6] text-white shadow-md" : "text-white/60 hover:text-white"}`}
-              >
-                <BookOpen className="w-4 h-4" /> Teacher
-              </button>
-            </div>
-          ) : null}
-
           {/* Sign In / Sign Up Toggle */}
-          {leaderSignInOnly ? (
-            <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-              <p className="text-sm font-bold text-white">Sign in only</p>
-              <p className="mt-1 text-xs leading-5 text-curve-muted">
-                {schoolRole === "chain_head"
-                  ? "Chain-head access is provisioned by the platform administrator."
-                  : "Principal access is provisioned for a specific school."}
-              </p>
-            </div>
-          ) : (
+          {(
             <div className="flex items-center gap-2 p-1 bg-white/5 rounded-2xl mb-6 border border-white/10">
               <button
                 type="button"
@@ -495,10 +289,7 @@ export function Auth() {
           )}
 
           {/* Student: Class Code */}
-          {!schoolPortal &&
-            effectiveRole === "student" &&
-            isSignUp &&
-            !classLookupResult && (
+          {isSignUp && !classLookupResult && (
               <form onSubmit={handleClassCodeLookup} className="space-y-4 mb-6">
                 <div className="text-center">
                   <h2 className="text-lg font-bold text-white">
@@ -541,7 +332,7 @@ export function Auth() {
             )}
 
           {/* Student: Class Confirmed */}
-          {!schoolPortal && effectiveRole === "student" && classLookupResult && (
+          {classLookupResult && (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 text-center">
               <div className="w-10 h-10 rounded-full bg-[#8b5cf6]/20 border border-[#8b5cf6]/40 flex items-center justify-center text-[#c4b5fd] mx-auto mb-2">
                 <Sparkles className="h-5 w-5" />
@@ -558,59 +349,6 @@ export function Auth() {
               >
                 Use different code
               </button>
-            </div>
-          )}
-
-          {/* Teacher: School code */}
-          {effectiveRole === "teacher" && isSignUp && (
-            <div className="mb-6">
-              {!schoolLookupResult ? (
-                <form onSubmit={handleSchoolCodeLookup} className="space-y-3">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
-                    <p className="text-sm text-curve-muted font-medium">
-                      Enter the campus school code from your principal.
-                    </p>
-                  </div>
-                  <div className="relative">
-                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                    <input
-                      type="text"
-                      value={schoolCode}
-                      onChange={(e) =>
-                        setSchoolCode(e.target.value.toUpperCase())
-                      }
-                      className="w-full pl-11 py-3 bg-[#1c162e] border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-[#8b5cf6] focus:outline-none uppercase tracking-wider text-sm"
-                      placeholder="School code"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={codeLoading || !schoolCode.trim()}
-                    className="w-full py-2.5 rounded-full bg-[#8b5cf6] text-white text-xs font-black uppercase tracking-wide disabled:opacity-50"
-                  >
-                    {codeLoading ? "Checking…" : "Find school"}
-                  </button>
-                </form>
-              ) : (
-                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 text-center">
-                  <p className="text-sm font-bold text-emerald-300">
-                    {schoolLookupResult.name}
-                  </p>
-                  <p className="text-xs text-emerald-400/80 mt-1">
-                    Code {schoolLookupResult.code}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSchoolLookupResult(null);
-                      setSchoolCode("");
-                    }}
-                    className="text-curve-muted hover:text-white text-xs font-semibold mt-2 underline"
-                  >
-                    Use different code
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -666,10 +404,7 @@ export function Auth() {
 
             <button
               type="submit"
-              disabled={
-                loading ||
-                (effectiveRole === "teacher" && isSignUp && !schoolLookupResult)
-              }
+              disabled={loading}
               className="w-full py-3.5 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white font-extrabold text-sm rounded-full transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg"
             >
               {loading ? (
@@ -685,7 +420,7 @@ export function Auth() {
             </button>
           </form>
 
-          {!schoolPortal && (
+          {(
             <>
               <div className="flex items-center my-6">
                 <div className="flex-1 h-px bg-white/10" />
@@ -731,30 +466,7 @@ export function Auth() {
             </>
           )}
 
-          {leaderSignInOnly && (
-            <>
-              <div className="flex items-center my-6">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="mx-3 text-curve-faint text-xs font-bold uppercase tracking-wider">
-                  Or
-                </span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-              <button
-                type="button"
-                disabled={emailLinkLoading || loading}
-                onClick={handleLeaderEmailLink}
-                className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-sm rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {emailLinkLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Mail className="h-5 w-5" />
-                )}
-                Email me a secure sign-in link
-              </button>
-            </>
-          )}
+
         </div>
       </div>
     </div>

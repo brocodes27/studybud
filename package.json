@@ -23,7 +23,9 @@
     "test:stage-map": "tsx --test src/curve/stageMapView.test.ts",
     "video:preview": "npx remotion studio src/remotion/entry.tsx",
     "video:render": "npx remotion render src/remotion/entry.tsx SaasPromo out/saas-promo.mp4",
-    "video:render:hyper": "npx remotion render src/remotion/entry.tsx HyperPromo out/elevenfolks-hyper-promo.mp4"
+    "video:render:hyper": "npx remotion render src/remotion/entry.tsx HyperPromo out/elevenfolks-hyper-promo.mp4",
+    "test:consumer-access": "tsx src/lib/consumerAccess.test.ts",
+    "test:syllabus-merge": "tsx src/curve/syllabusMerge.test.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

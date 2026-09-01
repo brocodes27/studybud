@@ -13,6 +13,10 @@ const CurveApp = lazy(() => import('./curve/CurveApp').then((m) => ({ default: m
 const CurveLanding = lazy(() =>
   import('./curve/CurveLanding').then((m) => ({ default: m.CurveLanding })),
 );
+// Scroll-scrubbed camera flight. Heavy (video chain), so it stays code-split.
+const WorldLanding = lazy(() =>
+  import('./curve/WorldLanding').then((m) => ({ default: m.WorldLanding })),
+);
 const ExamEmergencySprint = lazy(() =>
   import('./curve/ExamEmergencySprint').then((m) => ({ default: m.ExamEmergencySprint })),
 );
@@ -89,6 +93,8 @@ function AppContent() {
         {!user ? (
           <>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<WorldLanding />} />
+            <Route path="/classic" element={<CurveLanding />} />
             <Route path="*" element={<CurveLanding />} />
           </>
         ) : (

@@ -86,6 +86,8 @@ export function AddCourse() {
 
   const [syllabus, setSyllabus] = useState('');
   const [parsing, setParsing] = useState(false);
+  // Set only for combined multi-subject files, which need more than one pass.
+  const [parsePass, setParsePass] = useState<{ pass: number; passes: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -201,13 +203,16 @@ export function AddCourse() {
         throw new Error('Could not extract pages from uploaded files.');
       }
 
-      const parsedMulti = await parseMultiSyllabusImages(imageBatches);
+      const parsedMulti = await parseMultiSyllabusImages(imageBatches, (pass, passes) =>
+        setParsePass(passes > 1 ? { pass, passes } : null),
+      );
       handleMultiParsed(parsedMulti);
     } catch (cause) {
       setFileNames([]);
       setError(cause instanceof Error ? cause.message : 'Could not read uploaded syllabus file(s).');
     } finally {
       setParsing(false);
+      setParsePass(null);
     }
   }
 
@@ -347,7 +352,7 @@ export function AddCourse() {
 
       <Display lead="Add">course syllabi.</Display>
       <p className="mt-3 max-w-xl text-sm text-curve-muted">
-        Upload one or multiple syllabus PDFs (or photos) for your subjects. Curve extracts grading weights,
+        Upload a single file holding every subject, or one file per course. Curve extracts grading weights,
         weekly topics, and BKT mastery parameters for each course simultaneously.
       </p>
 
@@ -380,7 +385,9 @@ export function AddCourse() {
           {parsing ? (
             <span className="flex items-center justify-center gap-2 text-sm font-medium text-curve-muted">
               <Loader2 className="h-4 w-4 animate-spin text-curve-violet-soft" />
-              Parsing multi-subject syllabus PDF(s)…
+              {parsePass
+                ? `Reading pass ${parsePass.pass} of ${parsePass.passes} — long multi-subject file…`
+                : 'Parsing multi-subject syllabus PDF(s)…'}
             </span>
           ) : (
             <span className="flex flex-col items-center gap-2">
@@ -390,7 +397,9 @@ export function AddCourse() {
                   ? `${fileNames.length} PDF(s) selected: ${fileNames.join(', ')}`
                   : 'Upload Syllabus PDF(s) — Single or Multiple Subjects'}
               </span>
-              <span className="text-xs text-curve-faint">PDFs or images. Drop multiple files at once.</span>
+              <span className="text-xs text-curve-faint">
+                PDFs or images. One combined multi-subject file, or several files at once.
+              </span>
             </span>
           )}
         </button>

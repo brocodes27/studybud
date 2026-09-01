@@ -3,97 +3,119 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ElevenFolks — the world of STEM mastery</title>
-  <meta name="description" content="Scroll to fly through the ElevenFolks world: ingest anything, teach it back, plan it, prove it." />
+  <title>Curve — know your grade before your professor does</title>
+  <meta name="description" content="Scroll to fly through Curve: syllabus in, forecast out, every study session pointed at the grade you want." />
   <style>
     /* Theme tokens. --sw-bg matches the scene background hex used in every image prompt. */
     :root, .sw-root {
-      --sw-bg: #FAF8F5;
-      --sw-ink: #2D2A26;
-      --sw-ink-soft: #8A8279;
-      --sw-accent: #8B7355;
+      --sw-bg: #0E0A14;
+      --sw-ink: #FFFFFF;
+      --sw-ink-soft: #A79FB5;
+      --sw-accent: #7B5CF0;
     }
     html, body { margin: 0; background: var(--sw-bg); }
+    /* Brand mark: engine ships a plain gradient blob; swap in the Curve logo. */
+    .sw-brand__mark {
+      width: 28px; height: 28px; border-radius: 9px;
+      background: url('curve-mark.svg') center / contain no-repeat;
+      box-shadow: 0 6px 14px color-mix(in srgb, var(--sw-accent) 35%, transparent);
+    }
+    /* Engine buttons default to ink-on-white; on a dark theme ink IS white, so recolor. */
+    .sw-topcta, .sw-btn--primary { background: var(--sw-accent); color: #fff; }
+    .sw-route__label { background: #251B33; color: #fff; }
+
+    /* Every Veo/Nano Banana render carries a sparkle + "Veo" mark in its bottom-right
+       corner. This scrim sits above the clips (z 10) and below the copy (z 20) and
+       fades to the page background, so it reads as a corner vignette. */
+    .wm-cover {
+      position: fixed; right: 0; bottom: 0; z-index: 15; pointer-events: none;
+      width: clamp(190px, 25vw, 330px); height: clamp(170px, 27vh, 320px);
+      background: radial-gradient(125% 125% at 100% 100%,
+        var(--sw-bg) 0%, var(--sw-bg) 62%,
+        color-mix(in srgb, var(--sw-bg) 68%, transparent) 76%,
+        transparent 92%);
+    }
   </style>
 </head>
 <body>
   <div id="top"></div>
   <div id="world"></div>
+  <div class="wm-cover" aria-hidden="true"></div>
 
   <script src="scrub-engine.js"></script>
   <script>
     mountScrollWorld(document.getElementById('world'), {
-      brand: { name: 'ElevenFolks', href: '#top' },
-      cta: { label: 'Start free', href: '/auth' },
+      brand: { name: 'Curve', href: '#top' },
+      cta: { label: 'Start free', href: '/curve' },
       hint: 'scroll to fly in',
       diveScroll: 1.3,
       connScroll: 0.9,
       sections: [
         {
-          id: 'syow', label: 'Ingest',
-          still: 'assets/syow.png',        stillMobile: 'assets/syow-m.png',
-          clip:  'assets/vid/syow.mp4',    clipMobile:  'assets/vid/syow-m.mp4',
-          accent: '#B8956A',
+          id: 'syllabus', label: 'Drop it in',
+          still: 'assets/syllabus.png',        stillMobile: 'assets/syllabus-m.png',
+          clip:  'assets/vid/syllabus.mp4',    clipMobile:  'assets/vid/syllabus-m.mp4',
+          accent: '#7B5CF0',
           scroll: 1.5, linger: 0.35,
-          eyebrow: 'Study your own way',
-          title: 'Feed it anything.',
-          body: 'PDFs, lecture links, YouTube, your own scrawled notes — they come out the other side as ordered study units.',
-          tags: ['PDF', 'Web', 'YouTube'],
+          eyebrow: 'The 10-second onboarding',
+          title: 'Know your grade before your professor does.',
+          body: 'Drop your syllabus PDFs. Curve pulls out every weighted category and weekly topic in ten seconds.',
+          tags: ['Multi-syllabus', 'Auto-weighted', 'No setup'],
         },
         {
-          id: 'atlas', label: 'ATLAS',
-          still: 'assets/atlas.png',       stillMobile: 'assets/atlas-m.png',
-          clip:  'assets/vid/atlas.mp4',   clipMobile:  'assets/vid/atlas-m.mp4',
-          accent: '#8B7355',
-          eyebrow: 'Your AI study partner',
-          title: 'ATLAS remembers everything.',
-          body: 'A persistent companion that knows your subjects, your history and every gap you left open last week.',
-          tags: ['Voice', 'Step-by-step', 'Context-aware'],
+          id: 'forecast', label: 'Forecast',
+          still: 'assets/forecast.png',      stillMobile: 'assets/forecast-m.png',
+          clip:  'assets/vid/forecast.mp4',  clipMobile:  'assets/vid/forecast-m.mp4',
+          accent: '#C9B8F7',
+          eyebrow: 'Interactive grade engine',
+          title: 'One number that never lies.',
+          body: 'Every returned score re-cuts the projection — you see the letter band move the day the grade lands, not at finals.',
+          tags: ['Live GPA', 'Per-course bands'],
         },
         {
-          id: 'feynman', label: 'Feynman',
-          still: 'assets/feynman.png',     stillMobile: 'assets/feynman-m.png',
-          clip:  'assets/vid/feynman.mp4', clipMobile:  'assets/vid/feynman-m.mp4',
-          accent: '#6B8E6B',
+          id: 'stages', label: 'Stages',
+          still: 'assets/stages.png',      stillMobile: 'assets/stages-m.png',
+          clip:  'assets/vid/stages.mp4',  clipMobile:  'assets/vid/stages-m.mp4',
+          accent: '#A8E6D8',
           scroll: 1.5, linger: 0.4,
-          eyebrow: 'The Feynman protocol',
-          title: 'You teach. It listens.',
-          body: 'ATLAS plays the pupil and asks the naive question that finds the hole in your explanation.',
-          tags: ['Explain-back', 'Gap detection'],
+          eyebrow: 'Priming → encoding → retrieval',
+          title: 'Studying, in the right order.',
+          body: 'Each topic walks a staged loop instead of one long re-read, so it actually sticks past the exam.',
+          tags: ['Staged sessions', 'Scored encoding'],
         },
         {
-          id: 'planner', label: 'Planner',
-          still: 'assets/planner.png',     stillMobile: 'assets/planner-m.png',
-          clip:  'assets/vid/planner.mp4', clipMobile:  'assets/vid/planner-m.mp4',
-          accent: '#C4A484',
-          eyebrow: 'Neural planner',
-          title: 'A year, mapped to today.',
-          body: 'One exam date in, a living roadmap out — re-cut every morning around what you actually finished.',
-          tags: ['SAT / AP / JEE', 'Daily missions'],
+          id: 'briefing', label: 'Today',
+          still: 'assets/briefing.png',      stillMobile: 'assets/briefing-m.png',
+          clip:  'assets/vid/briefing.mp4',  clipMobile:  'assets/vid/briefing-m.mp4',
+          accent: '#F5C451',
+          eyebrow: 'Daily briefing',
+          title: 'Exactly what to do today.',
+          body: 'A short queue cut from your real deadlines and your weakest weights — no blank planner to fill in.',
+          tags: ['Deadline-aware', 'Reordered nightly'],
         },
         {
-          id: 'simulator', label: 'Simulators',
-          still: 'assets/simulator.png',     stillMobile: 'assets/simulator-m.png',
-          clip:  'assets/vid/simulator.mp4', clipMobile:  'assets/vid/simulator-m.mp4',
-          accent: '#B87B6B',
-          eyebrow: 'Exam simulators',
-          title: 'Exam day, on repeat.',
-          body: 'Adaptive papers that get harder where you are strong and stay put where you are not.',
-          tags: ['Adaptive', 'Per-mistake feedback'],
+          id: 'sprint', label: 'Sprint',
+          still: 'assets/sprint.png',      stillMobile: 'assets/sprint-m.png',
+          clip:  'assets/vid/sprint.mp4',  clipMobile:  'assets/vid/sprint-m.mp4',
+          accent: '#F5B8D8',
+          eyebrow: 'Exam emergency sprint',
+          title: 'Forty-eight hours out.',
+          body: 'Curve triages what is still worth points and drops everything that is not.',
+          tags: ['Triaged', 'Highest-yield first'],
         },
         {
-          id: 'mastery', label: 'Mastery',
-          still: 'assets/mastery.png',     stillMobile: 'assets/mastery-m.png',
-          clip:  'assets/vid/mastery.mp4', clipMobile:  'assets/vid/mastery-m.mp4',
-          accent: '#7A6B8A',
+          id: 'gpa', label: 'The curve',
+          still: 'assets/gpa.png',      stillMobile: 'assets/gpa-m.png',
+          clip:  'assets/vid/gpa.mp4',  clipMobile:  'assets/vid/gpa-m.mp4',
+          accent: '#7B5CF0',
           scroll: 1.7, linger: 0.5,
-          eyebrow: 'And it all grows into',
-          title: 'Mastery you can point at.',
-          body: 'Every unit you closed, every concept you taught back, standing in one tree you own.',
+          eyebrow: 'And it all lands on',
+          title: 'The grade you planned for.',
+          body: 'No surprise at the end of term — just the number you have been watching climb all semester.',
           tags: [],
           cta: {
-            primary:   { label: 'Start free', href: '/auth' },
-            secondary: { label: 'See a demo', href: '/demo' },
+            primary:   { label: 'Start free', href: '/curve' },
+            secondary: { label: 'Try the forecast', href: '/curve#forecast' },
           },
         },
       ],

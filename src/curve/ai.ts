@@ -7,6 +7,13 @@ import {
   type ConfidenceLevel,
 } from './confidence';
 import {
+  chunkPages,
+  isEmptyCourse,
+  mergeParsedCourses,
+  MAX_PAGES,
+  PAGES_PER_CALL,
+} from './syllabusMerge';
+import {
   ARTIFACT_BRIEF,
   buildRubric,
   isCrossSubject,
@@ -266,26 +273,107 @@ export async function parseSyllabusImages(images: string[]): Promise<ParsedSylla
   return normalizeParsed(extractJson(raw));
 }
 
-/** Batch parse multiple syllabus texts for multiple subjects. */
-export async function parseMultiSyllabusTexts(texts: string[]): Promise<ParsedMultiSubjectSyllabus> {
-  const combinedText = texts.map((t, idx) => `--- DOCUMENT ${idx + 1} ---\n${t.slice(0, 16_000)}`).join('\n\n');
-  const raw = await callProxy('generate_chat_completion', {
-    systemPrompt: MULTI_SYLLABUS_SYSTEM,
-    prompt: `Extract all courses and subjects from the following syllabus text(s):\n\n${combinedText.slice(0, 32_000)}`,
-    temperature: 0.1,
-  });
-  return normalizeMultiParsed(extractJson(raw));
+/** How much text goes to the model per call. */
+const TEXT_CHARS_PER_CALL = 24_000;
+
+function splitText(text: string, size = TEXT_CHARS_PER_CALL): string[] {
+  if (text.length <= size) return [text];
+  const parts: string[] = [];
+  for (let i = 0; i < text.length; i += size) parts.push(text.slice(i, i + size));
+  return parts;
 }
 
-/** Batch parse multiple syllabus PDF image sets for multiple subjects. */
-export async function parseMultiSyllabusImages(imageBatches: string[][]): Promise<ParsedMultiSubjectSyllabus> {
-  const allImages = imageBatches.flat().slice(0, 12);
-  const raw = await callProxy('analyze_images', {
-    systemPrompt: MULTI_SYLLABUS_SYSTEM,
-    prompt: 'Extract all course syllabi and subjects contained in these syllabus pages as JSON with a top-level "courses" array.',
-    images: allImages,
-  });
-  return normalizeMultiParsed(extractJson(raw));
+/**
+ * Parse syllabus text for one or many subjects.
+ *
+ * A combined all-subject document is longer than one call can take, so the
+ * text is windowed and the per-window courses merged. Truncating instead
+ * (the old behaviour) silently lost every subject past the cut.
+ */
+export async function parseMultiSyllabusTexts(texts: string[]): Promise<ParsedMultiSubjectSyllabus> {
+  const combined = texts
+    .map((t, idx) => `--- DOCUMENT ${idx + 1} ---\n${t}`)
+    .join('\n\n');
+  const windows = splitText(combined);
+
+  const parsedWindows: ParsedSyllabus[][] = [];
+  for (const [index, window] of windows.entries()) {
+    const raw = await callProxy('generate_chat_completion', {
+      systemPrompt: MULTI_SYLLABUS_SYSTEM,
+      prompt:
+        `Extract all courses and subjects from the following syllabus text` +
+        (windows.length > 1 ? ` (part ${index + 1} of ${windows.length}; a course may continue across parts)` : '') +
+        `:\n\n${window}`,
+      temperature: 0.1,
+    });
+    parsedWindows.push(normalizeMultiParsed(extractJson(raw)).courses);
+  }
+
+  return combineWindows(parsedWindows, windows.length);
+}
+
+/**
+ * Parse rendered syllabus pages for one or many subjects.
+ *
+ * `imageBatches` is one array per uploaded file. All pages are flattened and
+ * sent in windows of PAGES_PER_CALL, so a single 40-page packet holding every
+ * subject comes back as every subject — previously everything after page 12
+ * was dropped without a word.
+ */
+export async function parseMultiSyllabusImages(
+  imageBatches: string[][],
+  /** Called before each pass so a long packet can show progress, not a silent spinner. */
+  onProgress?: (pass: number, passes: number) => void,
+): Promise<ParsedMultiSubjectSyllabus> {
+  const allPages = imageBatches.flat();
+  const pages = allPages.slice(0, MAX_PAGES);
+  const windows = chunkPages(pages, PAGES_PER_CALL);
+
+  const parsedWindows: ParsedSyllabus[][] = [];
+  for (const [index, window] of windows.entries()) {
+    onProgress?.(index + 1, windows.length);
+    const raw = await callProxy('analyze_images', {
+      systemPrompt: MULTI_SYLLABUS_SYSTEM,
+      prompt:
+        'Extract all course syllabi and subjects contained in these syllabus pages as JSON with a top-level "courses" array.' +
+        (windows.length > 1
+          ? ` These are pages ${index * PAGES_PER_CALL + 1}-${index * PAGES_PER_CALL + window.length} of a ${pages.length}-page document that may contain several subjects; a course can continue from the previous pages.`
+          : ''),
+      images: window,
+    });
+    parsedWindows.push(normalizeMultiParsed(extractJson(raw)).courses);
+  }
+
+  const result = combineWindows(parsedWindows, windows.length);
+  if (allPages.length > MAX_PAGES) {
+    result.globalWarnings.push(
+      `Only the first ${MAX_PAGES} pages were read (the upload had ${allPages.length}). Split the file if a subject is missing.`,
+    );
+  }
+  return result;
+}
+
+/** Stitch per-window parses into one course list. */
+function combineWindows(
+  parsedWindows: ParsedSyllabus[][],
+  windowCount: number,
+): ParsedMultiSubjectSyllabus {
+  const merged = mergeParsedCourses(parsedWindows).filter((course) => !isEmptyCourse(course));
+  const globalWarnings: string[] = [];
+
+  if (merged.length === 0) {
+    return {
+      courses: [normalizeParsedRecord({})],
+      globalWarnings: ['No course syllabi detected in the input.'],
+    };
+  }
+  if (windowCount > 1) {
+    globalWarnings.push(
+      `Read in ${windowCount} passes and found ${merged.length} ${merged.length === 1 ? 'subject' : 'subjects'}. Check that nothing is missing before saving.`,
+    );
+  }
+
+  return { courses: merged, globalWarnings };
 }
 
 /* ------------------------------------------------------------- encoding -- */
