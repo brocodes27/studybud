@@ -1,266 +1,83 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { checkRateLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
-import { isEventProcessed, markEventProcessed } from "../_shared/idempotency.ts";
-import { getCors } from "../_shared/cors.ts";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const DODO_WEBHOOK_SECRET = Deno.env.get("DODO_PAYMENTS_WEBHOOK_KEY");
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-async function verifyDodoSignature(req: Request, rawBody: string): Promise<boolean> {
-    if (!DODO_WEBHOOK_SECRET) {
-        console.warn("⚠️ DODO_PAYMENTS_WEBHOOK_KEY not set; skipping signature verification.");
-        return true;
-    }
-    const signature = req.headers.get("webhook-signature") || req.headers.get("x-webhook-signature");
-    if (!signature) {
-        console.error("❌ No webhook signature header found");
-        return false;
-    }
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(DODO_WEBHOOK_SECRET),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-    );
-    const sigBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
-    const computedSig = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
-    const expectedSig = signature.replace("sha256=", "").trim();
-    if (computedSig.length !== expectedSig.length) {
-        // Try hex comparison if lengths differ
-        const computedHex = Array.from(new Uint8Array(sigBuffer))
-            .map(b => b.toString(16).padStart(2, "0"))
-            .join("");
-        return computedHex === expectedSig.toLowerCase();
-    }
-    return computedSig === expectedSig;
-}
+import { isPassPlan, verifyPaymentWebhook } from "../_shared/curve-billing.ts";
 
 serve(async (req) => {
-    const cors = getCors(req);
-    const corsHeaders = {
-        ...cors.headers,
-        // Webhooks sometimes send extra headers; allow them explicitly.
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, webhook-id, webhook-signature, webhook-timestamp, x-webhook-signature",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-    };
-    if (req.method === "OPTIONS") {
-        return new Response("ok", { headers: corsHeaders });
-    }
-    if (!cors.allowed) {
-        return new Response(JSON.stringify({ error: "CORS origin not allowed" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
-    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-    const limit = checkRateLimit(`dodo-webhook:${clientIp}`, 60, 60000);
-    if (!limit.allowed) {
-        return rateLimitResponse(limit.remaining, limit.resetAt);
-    }
-
-    try {
-        if (req.method !== "POST") {
-            return new Response("Method not allowed", { status: 405, headers: corsHeaders });
-        }
-
-        const rawBody = await req.text();
-        const isValid = await verifyDodoSignature(req, rawBody);
-        if (!isValid) {
-            console.error("❌ Dodo webhook signature verification failed");
-            return new Response(JSON.stringify({ error: "Invalid signature" }), {
-                status: 401,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        const payload = JSON.parse(rawBody);
-        console.log("🔔 Dodo Webhook Received:", JSON.stringify(payload, null, 2));
-
-        // Idempotency: skip duplicate events
-        const eventId = payload.id || payload.data?.id || `dodo-${crypto.randomUUID()}`;
-        const alreadyProcessed = await isEventProcessed(supabase as any, eventId);
-        if (alreadyProcessed) {
-            console.log(`⏭️ Dodo event ${eventId} already processed — skipping.`);
-            return new Response(JSON.stringify({ received: true, idempotent: true }), {
-                status: 200,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-        }
-
-        // Handle various Dodo event types for successful payment
-        const eventType = payload.type || payload.event;
-        const data = payload.data || payload;
-
-        const isSuccess =
-            eventType === "payment.succeeded" ||
-            eventType === "payment_intent.succeeded" ||
-            eventType === "checkout.completed" ||
-            payload.status === "succeeded" ||
-            payload.payment_status === "paid" ||
-            data.status === "succeeded";
-
-        if (isSuccess) {
-            // Extract user email from various possible locations in payload
-            const userEmail =
-                data.customer?.email ||
-                data.customer_email ||
-                payload.customer_email ||
-                data.metadata?.email ||
-                payload.metadata?.email;
-
-            // Extract user_id from metadata (we set this during checkout creation)
-            let userId =
-                data.metadata?.user_id ||
-                payload.metadata?.user_id;
-
-            console.log(`✅ Payment success — Email: ${userEmail}, UserID from metadata: ${userId}`);
-
-            // If we don't have userId from metadata, look it up by email
-            if (!userId && userEmail) {
-                // Try user_profiles first (public table)
-                const { data: profile } = await supabase
-                    .from('user_profiles')
-                    .select('id')
-                    .eq('email', userEmail)
-                    .single();
-
-                if (profile?.id) {
-                    userId = profile.id;
-                } else {
-                    // Fallback: use admin API to find user by email
-                    const { data: authData } = await supabase.auth.admin.listUsers();
-                    const matchedUser = authData?.users?.find(
-                        (u: any) => u.email?.toLowerCase() === userEmail.toLowerCase()
-                    );
-                    userId = matchedUser?.id;
-                }
-            }
-
-            if (userId) {
-                console.log(`🔄 Upgrading user ${userId} to Premium...`);
-
-                // Which pass did they buy? metadata.plan is set by
-                // create-dodo-payment; fall back to amount (1299 / 3900).
-                const plan = String(
-                    data.metadata?.plan ||
-                    payload.metadata?.plan ||
-                    (Number(data.total_amount) === 3900 ? 'semester' : 'monthly')
-                ) === 'semester' ? 'semester' : 'monthly';
-                const accessDays = plan === 'semester' ? 120 : 30;
-                const now = new Date();
-                const periodEnd = new Date(now.getTime() + accessDays * 24 * 60 * 60 * 1000);
-
-                // Upsert into the subscriptions table
-                // This is what AuthContext.tsx checks: subscriptions.status === 'active'
-                const { error: subError } = await supabase
-                    .from('subscriptions')
-                    .upsert({
-                        user_id: userId,
-                        status: 'active',
-                        plan,
-                        payment_provider: 'dodo',
-                        subscription_start: now.toISOString(),
-                        subscription_end: periodEnd.toISOString(), // +30 / +120 days
-                        updated_at: now.toISOString(),
-                    }, {
-                        onConflict: 'user_id',
-                    });
-
-                if (subError) {
-                    console.error("❌ Subscription upsert failed:", subError);
-
-                    // Fallback: try insert if upsert fails
-                    const { error: insertError } = await supabase
-                        .from('subscriptions')
-                        .insert({
-                            user_id: userId,
-                            status: 'active',
-                            plan,
-                            payment_provider: 'dodo',
-                            subscription_start: now.toISOString(),
-                            subscription_end: periodEnd.toISOString(),
-                            created_at: now.toISOString(),
-                            updated_at: now.toISOString(),
-                        });
-
-                    if (insertError) {
-                        console.error("❌ Subscription insert also failed:", insertError);
-                        return new Response(JSON.stringify({ error: insertError.message }), {
-                            status: 500,
-                            headers: { ...corsHeaders, "Content-Type": "application/json" },
-                        });
-                    }
-                }
-
-                // Flip the premium flag the AI metering RPC reads. If the
-                // profile row is missing the update no-ops harmlessly.
-                const { error: premiumError } = await supabase
-                    .from('user_profiles')
-                    .update({ is_premium: true })
-                    .eq('id', userId);
-                if (premiumError) {
-                    console.error("❌ is_premium update failed:", premiumError);
-                }
-
-                console.log("🎉 User upgraded to Premium successfully!");
-                await markEventProcessed(supabase as any, eventId, "dodo", eventType, payload);
-
-                // Notify Dub.co of the sale
-                try {
-                    const dubApiKey = Deno.env.get("DUB_API_KEY");
-                    if (dubApiKey) {
-                        const dubResponse = await fetch("https://api.dub.co/track/sale", {
-                            method: "POST",
-                            headers: {
-                                "Authorization": `Bearer ${dubApiKey}`,
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                customerId: userEmail, // Used email as customerId in client tracking
-                                externalId: userId,
-                                amount: data.total_amount || 1599,
-                                currency: "usd",
-                                paymentProcessor: "dodo",
-                                metadata: { email: userEmail, userId: userId }
-                            })
-                        });
-
-                        if (!dubResponse.ok) {
-                            console.error(`❌ Dub.co sale tracking failed with status: ${dubResponse.status}`);
-                        } else {
-                            console.log("📈 Tracked sale in Dub.co successfully");
-                        }
-                    } else {
-                        console.warn("⚠️ DUB_API_KEY not set; skipping Dub.co sale tracking.");
-                    }
-                } catch (dubErr) {
-                    console.error("❌ Failed to track Dub.co sale:", dubErr);
-                }
-
-            } else {
-                console.warn("⚠️ Could not locate user. Email:", userEmail);
-            }
-        } else {
-            console.log(`ℹ️ Non-payment event received: ${eventType || payload.status || 'unknown'}`);
-        }
-
-        return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-
-    } catch (err: any) {
-        console.error("❌ Webhook Error:", err.message);
-        return new Response(JSON.stringify({ error: err.message }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const secret = Deno.env.get("DODO_PAYMENTS_WEBHOOK_KEY");
+  if (!secret) return json({ error: "Webhook is not configured" }, 503);
+  const raw = await req.text();
+  if (raw.length > 200000) return json({ error: "Payload too large" }, 413);
+  if (!(await verifyPaymentWebhook(raw, req.headers, secret)))
+    return json({ error: "Invalid signature" }, 401);
+  try {
+    const event = JSON.parse(raw);
+    const revoke = [
+      "refund.succeeded",
+      "dispute.accepted",
+      "dispute.lost",
+    ].includes(event.type);
+    if (event.type !== "payment.succeeded" && !revoke)
+      return json({ received: true });
+    const paymentId = event.data?.payment_id;
+    if (typeof paymentId !== "string")
+      return json({ error: "Missing payment identifier" }, 400);
+    // Reconcile against the provider rather than relying on checkout return parameters.
+    const key = Deno.env.get("DODO_PAYMENTS_API_KEY");
+    if (!key) return json({ error: "Payment verification unavailable" }, 503);
+    const base =
+      Deno.env.get("DODO_TEST_MODE") === "true"
+        ? "https://test.dodopayments.com"
+        : "https://live.dodopayments.com";
+    const response = await fetch(
+      `${base}/payments/${encodeURIComponent(paymentId)}`,
+      {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    if (!response.ok)
+      return json({ error: "Payment verification unavailable" }, 503);
+    const payment = await response.json();
+    const { user_id: userId, plan } = payment.metadata || {};
+    if (
+      !isPassPlan(plan) ||
+      typeof userId !== "string" ||
+      !/^[0-9a-f-]{36}$/i.test(userId)
+    )
+      return json({ received: true, ignored: true });
+    const product = Deno.env.get(
+      plan === "semester" ? "DODO_SEMESTER_PRODUCT_ID" : "DODO_PRODUCT_ID",
+    );
+    if (
+      !product ||
+      !payment.product_cart?.some(
+        (item: { product_id: string; quantity: number }) =>
+          item.product_id === product && item.quantity === 1,
+      )
+    )
+      return json({ error: "Payment product does not match" }, 400);
+    if (!revoke && payment.status !== "succeeded")
+      return json({ error: "Payment not settled" }, 409);
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { error } = await admin.rpc("curve_record_payment", {
+      p_payment: paymentId,
+      p_user: userId,
+      p_plan: plan,
+      p_revoke: revoke,
+    });
+    if (error)
+      return json({ error: "Unable to record payment. Retry delivery." }, 500);
+    return json({ received: true });
+  } catch {
+    return json({ error: "Unable to process payment event" }, 500);
+  }
 });

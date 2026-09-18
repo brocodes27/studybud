@@ -32,7 +32,7 @@ export function CurveShell({
   className?: string;
 }) {
   return (
-    <div className="curve-root">
+    <div className="curve-root curve-light">
       <div className="curve-canvas">
         <div
           className={cx(

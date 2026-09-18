@@ -3,7 +3,7 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
-import { NetworkFirst, NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies';
+import { NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -17,18 +17,15 @@ cleanupOutdatedCaches();
 // Precache build assets injected by Workbox at build time.
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Supabase / API: network-first with a small cache.
+// Account responses contain private material and must never survive sign-out
+// in a shared service-worker cache. Static assets remain available offline.
 registerRoute(
   ({ url }) => url.hostname.endsWith('supabase.co') || url.pathname.startsWith('/api/'),
-  new NetworkFirst({
-    cacheName: 'api-cache',
-    networkTimeoutSeconds: 5,
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 25, maxAgeSeconds: 60 * 60 * 24 * 7 }),
-    ],
-  })
+  new NetworkOnly(),
 );
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.delete('api-cache'));
+});
 
 // Videos: always network-only (avoid range/caching issues).
 registerRoute(({ url }) => url.pathname.includes('/videos/'), new NetworkOnly());
@@ -46,8 +43,8 @@ registerRoute(
 );
 
 // Offline fallback for navigations.
-setCatchHandler(async ({ event }) => {
-  if (event.request.mode === 'navigate') {
+setCatchHandler(async ({ request }) => {
+  if (request.mode === 'navigate') {
     return (await caches.match('/index.html')) ?? Response.error();
   }
   return Response.error();
@@ -103,7 +100,7 @@ self.addEventListener('message', (event) => {
   if (data.type === 'SHOW_NOTIFICATION') {
     const payload = data.payload || {};
     const title = payload.title || 'Notification';
-    const options: NotificationOptions = {
+    const options: NotificationOptions & { actions?: Array<{ action: string; title: string; icon?: string }> } = {
       body: payload.body,
       icon: payload.icon || '/pwa-192x192.png',
       badge: payload.badge || '/pwa-192x192.png',

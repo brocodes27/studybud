@@ -32,6 +32,7 @@ export interface GeminiCallOptions {
   /** Request strict JSON output (sets responseMimeType). */
   json?: boolean;
   apiKey?: string;
+  signal?: AbortSignal;
 }
 
 const DEFAULT_MODEL = "gemini-3-flash-preview";
@@ -119,6 +120,7 @@ export async function callGemini(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
+    signal: opts.signal,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -162,6 +164,7 @@ export async function callGeminiEmbedding(
   };
   if (opts.taskType) body.taskType = opts.taskType;
   const res = await fetch(url, {
+    signal: opts.signal,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

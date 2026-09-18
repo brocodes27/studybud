@@ -4,7 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 
 const ACTIVE_SCHOOL_KEY = 'elevenfolks.activeSchoolId';
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
@@ -30,7 +30,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const normalizeRole = (value: unknown) => {
   return typeof value === 'string' ? value.trim().toLowerCase() : null;
@@ -262,6 +262,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const payload = await applyAuthState(user.id, user.user_metadata?.role);
     publishState(payload);
+    const { data, error } = await supabase.rpc('curve_has_paid_access');
+    setIsPremium(!error && data === true);
   };
 
   useEffect(() => {
@@ -270,43 +272,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkPremiumStatus = async (authUser: any) => {
       if (!authUser || !isMounted) return;
 
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', authUser.id);
-
-      if (subData && subData.length > 0 && subData[0].status === 'active') {
-        if (isMounted) setIsPremium(true);
-        return;
-      }
-
-      if (!authUser.email) {
-        if (isMounted) setIsPremium(false);
-        return;
-      }
-
-      const { data: extData } = await supabase.from('premium_email_extensions').select('extension');
-      if (!extData) {
-        if (isMounted) setIsPremium(false);
-        return;
-      }
-
-      const userEmail = authUser.email.toLowerCase();
-      for (const item of extData) {
-        const extension = item.extension.trim().toLowerCase();
-        if (extension.startsWith('*.')) {
-          const domain = extension.substring(2);
-          if (userEmail.endsWith(domain)) {
-            if (isMounted) setIsPremium(true);
-            return;
-          }
-        } else if (userEmail.includes(extension)) {
-          if (isMounted) setIsPremium(true);
-          return;
-        }
-      }
-
-      if (isMounted) setIsPremium(false);
+      const { data, error } = await supabase.rpc('curve_has_paid_access');
+      if (isMounted) setIsPremium(!error && data === true);
     };
 
     const fetchUserAndRole = async () => {

@@ -439,3 +439,23 @@ textarea.curve-input {
     transform: none;
   }
 }
+
+/* Shared light treatment for the existing syllabus and course tools. */
+.curve-root.curve-light{--curve-void:#252824;--curve-bg:#f5f8f5;--curve-surface:#fff;--curve-raised:#edf1e9;--curve-line:#e0e5db;--curve-ink:#252824;--curve-muted:#687062;--curve-faint:#747b6f;--curve-violet:#7464ad;background:var(--curve-bg)}
+.curve-light .curve-canvas::before{background:radial-gradient(ellipse at 85% 0,#e6f1fa,transparent 65%),var(--curve-bg)}
+.curve-light .curve-canvas::after{display:none}
+.curve-light .curve-panel{background:#fff;border:1px solid var(--curve-line);box-shadow:0 3px 15px #25282403}
+.curve-light .text-white,.curve-light .text-curve-ink{color:var(--curve-ink)}
+.curve-light .text-curve-muted{color:var(--curve-muted)}
+.curve-light .text-curve-faint{color:var(--curve-faint)}
+.curve-light .bg-curve-bg,.curve-light .bg-curve-void{background:var(--curve-bg)}
+.curve-light .bg-curve-surface{background:var(--curve-surface)}
+.curve-light .bg-curve-raised{background:var(--curve-raised)}
+.curve-light .curve-cta{background:#252824;color:#fff;border-radius:12px}
+.curve-light .curve-cta-ghost{background:#fff;color:var(--curve-ink);border:1px solid var(--curve-line)}
+.curve-light .curve-input,.curve-light .curve-input option{background:#fff;color:var(--curve-ink)}
+.curve-light .curve-dock{background:#fff;border-color:var(--curve-line);box-shadow:0 6px 28px #25282412}
+.curve-light .curve-dock-item[aria-current="page"]{background:#252824;color:#fff}
+.curve-light .curve-chip{border-color:var(--curve-line);background:#fff;color:var(--curve-ink)}
+.curve-light .curve-chip[aria-pressed="true"]{background:#e2defa;color:#494162}
+.curve-light .text-curve-violet,.curve-light .text-curve-lilac{color:#655393}

@@ -25,7 +25,9 @@
     "video:render": "npx remotion render src/remotion/entry.tsx SaasPromo out/saas-promo.mp4",
     "video:render:hyper": "npx remotion render src/remotion/entry.tsx HyperPromo out/elevenfolks-hyper-promo.mp4",
     "test:consumer-access": "tsx src/lib/consumerAccess.test.ts",
-    "test:syllabus-merge": "tsx src/curve/syllabusMerge.test.ts"
+    "test:syllabus-merge": "tsx src/curve/syllabusMerge.test.ts",
+    "test:learning": "node --import tsx src/learning/model.test.ts && node --import tsx --test supabase/functions/material-study/validation.test.ts",
+    "test:billing": "node --import tsx supabase/functions/_shared/curve-billing.test.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

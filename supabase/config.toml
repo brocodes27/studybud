@@ -359,3 +359,13 @@ entrypoint = "./functions/generate-primer/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/check-retrieval/index.ts"
+[functions.material-study]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/material-study/index.ts"
+
+[functions.create-dodo-payment]
+verify_jwt = true
+
+[functions.dodo-webhook]
+verify_jwt = false
