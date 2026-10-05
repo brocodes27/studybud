@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -9,13 +12,17 @@ import {
   FileText,
   Layers3,
   Menu,
+  Pause,
   Play,
   Sparkles,
   Target,
   X,
 } from "lucide-react";
 import { CurveMark, ProductPreview } from "./Preview";
+import { StudyDoodle } from "./StudyDoodle";
 import "./learning.css";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const questions = [
   [
@@ -42,8 +49,121 @@ const questions = [
 
 export function LearningLanding() {
   const [menu, setMenu] = useState(false);
+  const [motion, setMotion] = useState(true);
+  const root = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      if (!motion) return;
+      const media = gsap.matchMedia();
+      media.add(
+        "(prefers-reduced-motion: no-preference)",
+        () => {
+          gsap
+            .timeline({
+              defaults: {
+                duration: 0.9,
+                ease: "power3.out",
+                clearProps: "all",
+              },
+            })
+            .from(".hero-eyebrow", { y: -18, opacity: 0 }, 0)
+            .from(
+              ".hero-line",
+              {
+                y: 65,
+                rotationX: -35,
+                opacity: 0,
+                stagger: 0.14,
+                transformOrigin: "50% 100%",
+              },
+              0.12,
+            )
+            .from(
+              ".hero-highlight svg",
+              { scaleX: 0, transformOrigin: "left center", duration: 0.65 },
+              0.75,
+            )
+            .from(
+              ".landing-hero > p, .hero-actions, .hero-caption",
+              { y: 24, opacity: 0, stagger: 0.1 },
+              0.5,
+            )
+            .from(
+              ".hero-doodle-left, .hero-doodle-right",
+              {
+                scale: 0.2,
+                rotation: -35,
+                opacity: 0,
+                stagger: 0.15,
+                ease: "elastic.out(1, 0.6)",
+                duration: 1.4,
+              },
+              0.3,
+            )
+            .from(
+              ".hero-preview-wrap",
+              { y: 65, scale: 0.94, opacity: 0, duration: 1.1 },
+              0.6,
+            );
+
+          root
+            .current!.querySelectorAll<HTMLElement>(
+              ".section-intro, .steps-grid > article, .feature-bento > article, .quiet-manifesto h2, .faq-section h2, .landing-final h2",
+            )
+            .forEach((element) => {
+              gsap.from(element, {
+                y: 48,
+                rotation: 1.5,
+                scale: 0.97,
+                opacity: 0.15,
+                duration: 0.85,
+                ease: "back.out(1.3)",
+                clearProps: "all",
+                scrollTrigger: {
+                  trigger: element,
+                  start: "top 92%",
+                  once: true,
+                },
+              });
+            });
+
+          // Decorative parallax only: the demo and study controls keep their position.
+          root
+            .current!.querySelectorAll<SVGSVGElement>(
+              ".section-doodle, .manifesto-doodle, .final-doodle-left, .final-doodle-right",
+            )
+            .forEach((element, index) => {
+              gsap.fromTo(
+                element,
+                { y: 22, rotation: index % 2 ? -10 : 10 },
+                {
+                  y: -22,
+                  rotation: index % 2 ? 10 : -10,
+                  ease: "none",
+                  scrollTrigger: {
+                    trigger: element.parentElement,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1,
+                  },
+                },
+              );
+            });
+        },
+        root,
+      );
+      return () => media.revert();
+    },
+    { scope: root, dependencies: [motion], revertOnUpdate: true },
+  );
+
   return (
-    <div className="learn landing">
+    <div
+      className="learn landing"
+      ref={root}
+      data-motion={motion ? "on" : "off"}
+    >
       <header className="landing-nav">
         <Link className="learn-brand" to="/">
           <CurveMark />
@@ -61,6 +181,14 @@ export function LearningLanding() {
           </a>
         </nav>
         <div className="nav-actions">
+          <button
+            className="icon-button motion-toggle"
+            aria-label={motion ? "Pause animations" : "Play animations"}
+            title={motion ? "Pause animations" : "Play animations"}
+            onClick={() => setMotion(!motion)}
+          >
+            {motion ? <Pause size={16} /> : <Play size={16} />}
+          </button>
           <Link to="/auth">Log in</Link>
           <Link className="learn-button dark" to="/auth?mode=signup">
             Start learning <ArrowUpRight size={15} />
@@ -77,25 +205,28 @@ export function LearningLanding() {
       </header>
       <main>
         <section className="landing-hero">
+          <StudyDoodle kind="notebook" className="hero-doodle-left" />
+          <StudyDoodle kind="pencil" className="hero-doodle-right" />
           <div className="hero-eyebrow">
             <span className="small-spark">✳</span> A little structure. A lot
             more understanding.
           </div>
           <h1>
-            Less “where do I start?”
-            <br />
-            More{" "}
-            <span className="hero-highlight">
-              “I’ve got this.”
-              <svg viewBox="0 0 450 18" aria-hidden="true">
-                <path
-                  d="M5 10 Q200 -2 442 8M38 16 Q225 6 410 14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
+            <span className="hero-line">Less “where do I start?”</span>
+            <span className="hero-line">
+              More{" "}
+              <span className="hero-highlight">
+                “I’ve got this.”
+                <svg viewBox="0 0 450 18" aria-hidden="true">
+                  <path
+                    d="M5 10 Q200 -2 442 8M38 16 Q225 6 410 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
             </span>
           </h1>
           <p>
@@ -153,6 +284,7 @@ export function LearningLanding() {
         </section>
         <section id="how-it-works" className="landing-section">
           <div className="section-intro">
+            <StudyDoodle kind="orbit" className="section-doodle" />
             <span className="section-kicker">
               FROM OVERWHELMED TO ON YOUR WAY
             </span>
@@ -221,6 +353,7 @@ export function LearningLanding() {
           className="landing-section workspace-section"
         >
           <div className="section-intro">
+            <StudyDoodle kind="notebook" className="section-doodle" />
             <span className="section-kicker">A WORKSPACE THAT GETS YOU</span>
             <h2>
               All your courses.
@@ -298,6 +431,7 @@ export function LearningLanding() {
           </div>
         </section>
         <section className="quiet-manifesto">
+          <StudyDoodle kind="sprout" className="manifesto-doodle" />
           <span>MADE FOR THE WAY LEARNING REALLY HAPPENS</span>
           <h2>
             Some days it clicks.
@@ -318,6 +452,7 @@ export function LearningLanding() {
               A FEW THINGS YOU MIGHT BE WONDERING
             </span>
             <h2>Good questions.</h2>
+            <StudyDoodle kind="pencil" className="faq-doodle" />
           </div>
           <div className="faq-list">
             {questions.map(([q, a]) => (
@@ -332,6 +467,8 @@ export function LearningLanding() {
           </div>
         </section>
         <section className="landing-final">
+          <StudyDoodle kind="orbit" className="final-doodle-left" />
+          <StudyDoodle kind="sprout" className="final-doodle-right" />
           <Sparkles size={30} />
           <h2>
             Your next “aha”

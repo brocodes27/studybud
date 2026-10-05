@@ -200,6 +200,300 @@
 .landing {
   background: #fcfdfa;
 }
+/* Decorative ink sketches stay outside reading and interaction areas. */
+.study-doodle {
+  display: block;
+  width: 120px;
+  height: auto;
+  flex: none;
+  color: #727768;
+  pointer-events: none;
+  user-select: none;
+  overflow: visible;
+}
+.hero-line {
+  display: block;
+}
+.landing .motion-toggle {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--learn-line);
+  border-radius: 50%;
+}
+.doodle-ink {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes curve-doodle-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(5deg);
+  }
+}
+@keyframes curve-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes curve-arrive {
+  from {
+    opacity: 0.3;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes curve-ink-in {
+  from {
+    stroke-dashoffset: 600;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing[data-motion="on"] .doodle-ink {
+    animation: curve-doodle-drift 5s ease-in-out infinite;
+  }
+  .landing[data-motion="on"] .doodle-pencil .doodle-ink {
+    animation-direction: reverse;
+    animation-duration: 4s;
+  }
+  .landing[data-motion="on"] .doodle-orbit .doodle-ink {
+    animation: curve-orbit 24s linear infinite;
+  }
+  .landing[data-motion="on"] .doodle-ink > path:not([fill]) {
+    stroke-dasharray: 600;
+    animation: curve-ink-in 2.2s ease-out both;
+  }
+  .workspace .workspace-heading,
+  .workspace .dashboard-grid > *,
+  .workspace .dashboard-bottom > *,
+  .workspace .material-grid > *,
+  .workspace .learn-empty,
+  .workspace .workspace-margin-note {
+    animation: curve-arrive 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .workspace .dashboard-right {
+    animation-delay: 0.1s;
+  }
+  .workspace .dashboard-bottom > :nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  .workspace .doodle-ink {
+    animation: curve-doodle-drift 3.5s ease-in-out 1;
+  }
+  .learn .learn-button > svg,
+  .landing .step-illustration,
+  .landing .folder-scene > span,
+  .landing .source-example,
+  .workspace .library-card {
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .learn .learn-button:active {
+    transform: scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .landing[data-motion="on"] .learn-button:hover > svg,
+  .workspace .learn-button:hover > svg {
+    transform: translateX(4px) rotate(-8deg);
+  }
+  .landing[data-motion="on"] .steps-grid article:hover .step-illustration {
+    transform: translateY(-9px) rotate(-2deg);
+  }
+  .landing[data-motion="on"]
+    .bento-library:hover
+    .folder-scene
+    > span:first-child {
+    transform: translate(-10px, -8px) rotate(-17deg);
+  }
+  .landing[data-motion="on"]
+    .bento-library:hover
+    .folder-scene
+    > span:last-child {
+    transform: translate(10px, -8px) rotate(19deg);
+  }
+  .landing[data-motion="on"] .bento-sources:hover .source-example {
+    transform: translateY(-6px) rotate(1deg);
+  }
+  .workspace .library-card:hover {
+    transform: translateY(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .motion-toggle {
+    display: none;
+  }
+}
+.landing[data-motion="off"] *,
+.landing[data-motion="off"] *::before,
+.landing[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.landing-hero,
+.section-intro,
+.quiet-manifesto,
+.landing-final {
+  position: relative;
+}
+.hero-doodle-left,
+.hero-doodle-right,
+.section-doodle,
+.manifesto-doodle,
+.final-doodle-left,
+.final-doodle-right {
+  position: absolute;
+}
+.hero-doodle-left {
+  width: clamp(105px, 12vw, 165px);
+  left: max(24px, calc(50% - 610px));
+  top: 132px;
+  transform: rotate(-12deg);
+}
+.hero-doodle-right {
+  width: clamp(105px, 12vw, 165px);
+  right: max(24px, calc(50% - 610px));
+  top: 214px;
+  transform: rotate(10deg);
+}
+.section-doodle {
+  width: 150px;
+  right: 65px;
+  top: 0;
+  transform: rotate(8deg);
+}
+.manifesto-doodle {
+  width: 155px;
+  left: max(30px, calc(50% - 555px));
+  top: 145px;
+  transform: rotate(-9deg);
+}
+.faq-doodle {
+  width: 135px;
+  margin: 30px 0 0 24px;
+  transform: rotate(-12deg);
+}
+.final-doodle-left {
+  width: 155px;
+  left: 8%;
+  top: 100px;
+  transform: rotate(-10deg);
+}
+.final-doodle-right {
+  width: 155px;
+  right: 8%;
+  bottom: 65px;
+  transform: rotate(9deg);
+}
+.landing-final > .study-doodle {
+  color: #727768;
+}
+.workspace-heading-doodle {
+  width: 76px;
+  margin: -8px 15px -8px auto;
+  transform: rotate(9deg);
+}
+.learn-empty > .empty-doodle {
+  width: 105px;
+  color: #727768;
+  transform: rotate(-7deg);
+  margin-bottom: 2px;
+}
+.workspace-margin-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 24px auto 0;
+  color: #767d70;
+  font-size: 12px;
+  font-style: italic;
+}
+.workspace-margin-note .study-doodle {
+  width: 65px;
+  transform: rotate(-7deg);
+}
+@media (max-width: 1000px) {
+  .manifesto-doodle {
+    width: 85px;
+    left: 18px;
+    top: 34px;
+  }
+  .final-doodle-left,
+  .final-doodle-right {
+    width: 85px;
+  }
+  .final-doodle-left {
+    left: 3%;
+    top: 38px;
+  }
+  .final-doodle-right {
+    right: 3%;
+    bottom: 24px;
+  }
+  .section-doodle {
+    right: 0;
+    width: 110px;
+  }
+}
+@media (max-width: 900px) {
+  .hero-doodle-left,
+  .hero-doodle-right {
+    width: 85px;
+    top: 210px;
+  }
+  .hero-doodle-left {
+    left: 20px;
+  }
+  .hero-doodle-right {
+    right: 20px;
+    top: 290px;
+  }
+  .workspace-heading-doodle {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .hero-doodle-left,
+  .hero-doodle-right {
+    width: 47px;
+    top: 2px;
+  }
+  .section-doodle,
+  .manifesto-doodle {
+    display: none;
+  }
+  .faq-doodle {
+    width: 75px;
+    margin: 15px 0 0;
+  }
+  .final-doodle-left,
+  .final-doodle-right {
+    width: 57px;
+  }
+  .final-doodle-left {
+    left: 12px;
+    top: 18px;
+  }
+  .final-doodle-right {
+    right: 12px;
+    bottom: 12px;
+  }
+  .workspace-margin-note {
+    font-size: 10px;
+    gap: 8px;
+  }
+  .workspace-margin-note .study-doodle {
+    width: 48px;
+  }
+}
 .landing-nav {
   max-width: 1280px;
   margin: 0 auto;
@@ -988,6 +1282,9 @@
 }
 .landing-final > svg {
   color: #9185b8;
+}
+.landing-final > svg:not(.study-doodle) {
+  margin-inline: auto;
 }
 .landing-final h2 {
   font-size: clamp(36px, 4.5vw, 56px);

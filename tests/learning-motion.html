@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Curve motion lifecycle check</title>
+  <p id="result" role="status">Checking motion lifecycle...</p>
+  <div class="hero-line" id="outside">Outside the animation scope</div>
+  <div id="root"></div>
+  <script type="module">
+    import React from "react";
+    import { createRoot } from "react-dom/client";
+    import { MemoryRouter } from "react-router-dom";
+    import { ScrollTrigger } from "gsap/ScrollTrigger";
+    import { LearningLanding } from "../src/learning/Landing";
+
+    const frame = () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+    const check = (condition, message) => {
+      if (!condition) throw new Error(message);
+    };
+    const host = document.querySelector("#root");
+    const root = createRoot(host);
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      root.render(
+        React.createElement(
+          React.StrictMode,
+          null,
+          React.createElement(
+            MemoryRouter,
+            null,
+            React.createElement(LearningLanding),
+          ),
+        ),
+      );
+      await frame();
+      const initialTriggers = ScrollTrigger.getAll().length;
+      check(
+        (initialTriggers === 0) === reduced,
+        "Reduced motion or initial triggers are incorrect",
+      );
+      check(
+        !document.querySelector("#outside").getAttribute("style"),
+        "Animation escaped its scope",
+      );
+      host.querySelector('[aria-label="Pause animations"]').click();
+      await frame();
+      check(
+        ScrollTrigger.getAll().length === 0,
+        "Pause left scroll animations running",
+      );
+      check(
+        getComputedStyle(host.querySelector(".doodle-ink")).animationName ===
+          "none",
+        "Pause left doodles running",
+      );
+      check(
+        [...host.querySelectorAll(".hero-line, .section-intro")].every(
+          (el) => getComputedStyle(el).opacity === "1",
+        ),
+        "Pause left content faded",
+      );
+      host.querySelector('[aria-label="Play animations"]').click();
+      await frame();
+      check(
+        ScrollTrigger.getAll().length === initialTriggers,
+        "Resume duplicated or lost triggers",
+      );
+      root.unmount();
+      await frame();
+      check(
+        ScrollTrigger.getAll().length === 0,
+        "Unmount leaked scroll triggers",
+      );
+      document.querySelector("#result").textContent =
+        `PASS: ${reduced ? "reduced" : "normal"} motion, pause, resume, scoped selectors and unmount cleanup.`;
+    } catch (error) {
+      root.unmount();
+      document.querySelector("#result").textContent = `FAIL: ${error.message}`;
+      console.error(error);
+    }
+  </script>
+</html>

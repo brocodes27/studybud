@@ -52,6 +52,7 @@ import {
 } from "./model";
 import { CurveMark, ProductPreview } from "./Preview";
 import { useStudyPreferences } from "./Onboarding";
+import { StudyDoodle } from "./StudyDoodle";
 import "./learning.css";
 
 const navigation = [
@@ -145,7 +146,7 @@ function Empty({
 }) {
   return (
     <div className="learn-empty">
-      <FolderOpen size={30} />
+      <StudyDoodle kind="notebook" className="empty-doodle" />
       <h3>{title}</h3>
       <p>{text}</p>
       {action}
@@ -348,6 +349,7 @@ export function LearningWorkspace() {
                   : "Let’s make a little progress."}
           </h1>
         </div>
+        <StudyDoodle kind="orbit" className="workspace-heading-doodle" />
         <button className="learn-button dark" onClick={() => setUpload(true)}>
           <Plus size={17} /> Add material
         </button>
@@ -678,6 +680,10 @@ export function LearningWorkspace() {
           )}
         </>
       )}
+      <div className="workspace-margin-note" aria-hidden="true">
+        <StudyDoodle kind="sprout" />
+        <span>Room to grow. One page at a time.</span>
+      </div>
       {upload && (
         <MaterialUpload
           onClose={() => setUpload(false)}
