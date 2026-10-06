@@ -161,7 +161,13 @@ export function useVoice({
       const { token, model, config } = await requestVoiceSession();
 
       // 3. Connect to Gemini Live WebSocket
-      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(
+      const isEphemeral = token.startsWith('auth_tokens/');
+      const method = isEphemeral
+        ? 'BidiGenerateContentConstrained'
+        : 'BidiGenerateContent';
+      const keyParam = isEphemeral ? 'access_token' : 'key';
+      const apiVersion = 'v1alpha';
+      const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.${method}?${keyParam}=${encodeURIComponent(
         token
       )}`;
 
@@ -170,9 +176,12 @@ export function useVoice({
 
       ws.onopen = () => {
         // Send initial setup frame
+        const modelName = model.startsWith('models/')
+          ? model
+          : `models/${model}`;
         const setupMessage = {
           setup: {
-            model: `models/${model}`,
+            model: modelName,
             ...(config && typeof config === 'object' ? config : {}),
           },
         };
