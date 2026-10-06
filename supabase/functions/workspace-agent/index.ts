@@ -81,5 +81,5 @@ serve(async req => {
       })();
     }});
     return new Response(stream,{headers:{...cors.headers,'Content-Type':'application/x-ndjson','Cache-Control':'no-cache'}});
-  }catch(e){return new Response(JSON.stringify({error:publicError(e)}),{status:400,headers});}
+  }catch(e){const status=(e as {status?:number})?.status||400; return new Response(JSON.stringify({error:publicError(e)}),{status,headers});}
 });

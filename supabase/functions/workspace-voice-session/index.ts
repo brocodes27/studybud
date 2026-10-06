@@ -25,5 +25,5 @@ serve(async req=>{
     // Never persist credentials in the action log.
     await finish(a,thread,requestId,{issued:true});cleanup=undefined;
     return new Response(JSON.stringify({token:token.name,model,config,checkpointId:thread.state.checkpointId}),{headers:{...headers,'Cache-Control':'no-store'}});
-  }catch(e){await cleanup?.();return new Response(JSON.stringify({error:publicError(e)}),{status:400,headers});}
+  }catch(e){await cleanup?.();const status=(e as {status?:number})?.status||400;return new Response(JSON.stringify({error:publicError(e)}),{status,headers});}
 });

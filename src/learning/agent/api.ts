@@ -1,45 +1,59 @@
 import { supabase } from '../../lib/supabase';
-import type {
-  WorkspaceSnapshot,
-  WorkspaceEvent,
-  WorkspaceTool,
+import {
+  emptyWorkspace,
+  type WorkspaceSnapshot,
+  type WorkspaceEvent,
+  type WorkspaceTool,
 } from './contracts';
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
-async function getAuthHeader(): Promise<Record<string, string>> {
+async function getAuthHeader(): Promise<Record<string, string> | null> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const token = session?.access_token;
+  if (!token) return null;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
   return {
-    Authorization: `Bearer ${token || anonKey}`,
+    Authorization: `Bearer ${token}`,
     apikey: anonKey,
     'Content-Type': 'application/json',
   };
 }
 
 export async function loadWorkspaceSnapshot(): Promise<WorkspaceSnapshot> {
-  const headers = await getAuthHeader();
-  const res = await fetch(`${FUNCTION_URL}/workspace-agent`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ operation: 'load' }),
-  });
+  const defaultLocalSnapshot: WorkspaceSnapshot = {
+    thread: {
+      id: 'local',
+      state: emptyWorkspace(),
+      updated_at: new Date().toISOString(),
+    },
+    messages: [],
+  };
 
-  if (!res.ok) {
-    let errMessage = 'Could not load workspace.';
-    try {
-      const err = await res.json();
-      if (err?.error) errMessage = err.error;
-    } catch {
-      /* fallback */
-    }
-    throw new Error(errMessage);
+  const headers = await getAuthHeader();
+  if (!headers) {
+    // Unauthenticated user - use clean local state
+    return defaultLocalSnapshot;
   }
 
-  return (await res.json()) as WorkspaceSnapshot;
+  try {
+    const res = await fetch(`${FUNCTION_URL}/workspace-agent`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ operation: 'load' }),
+    });
+
+    if (!res.ok) {
+      // Gracefully fall back to local snapshot if 401/402/offline
+      return defaultLocalSnapshot;
+    }
+
+    return (await res.json()) as WorkspaceSnapshot;
+  } catch (_e) {
+    return defaultLocalSnapshot;
+  }
 }
 
 export async function streamAgentRequest(
@@ -48,6 +62,10 @@ export async function streamAgentRequest(
   signal?: AbortSignal
 ): Promise<WorkspaceSnapshot | null> {
   const headers = await getAuthHeader();
+  if (!headers) {
+    throw new Error('Sign in to interact with your study workspace.');
+  }
+
   const res = await fetch(`${FUNCTION_URL}/workspace-agent`, {
     method: 'POST',
     headers,
@@ -155,8 +173,9 @@ export async function executeWorkspaceTool(
 export async function activateWorkspaceArtifact(
   artifactId: string
 ): Promise<void> {
-  const requestId = crypto.randomUUID();
   const headers = await getAuthHeader();
+  if (!headers) return;
+  const requestId = crypto.randomUUID();
   const res = await fetch(`${FUNCTION_URL}/workspace-agent`, {
     method: 'POST',
     headers,
@@ -183,8 +202,9 @@ export async function recordWorkspaceTranscript(
   text: string,
   role: 'user' | 'assistant'
 ): Promise<void> {
-  const requestId = crypto.randomUUID();
   const headers = await getAuthHeader();
+  if (!headers) return;
+  const requestId = crypto.randomUUID();
   await fetch(`${FUNCTION_URL}/workspace-agent`, {
     method: 'POST',
     headers,
@@ -203,8 +223,11 @@ export async function requestVoiceSession(): Promise<{
   config: unknown;
   checkpointId: string | null;
 }> {
-  const requestId = crypto.randomUUID();
   const headers = await getAuthHeader();
+  if (!headers) {
+    throw new Error('Sign in to start a voice conversation.');
+  }
+  const requestId = crypto.randomUUID();
   const res = await fetch(`${FUNCTION_URL}/workspace-voice-session`, {
     method: 'POST',
     headers,
