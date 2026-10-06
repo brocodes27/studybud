@@ -42,7 +42,7 @@ import {
 } from "./api";
 import {
   detectSubjectsFromPages,
-  slicePagesForSubject,
+  extractPagesForSubject,
   type DetectedSubject,
 } from "./syllabusSegmenter";
 import {
@@ -215,7 +215,7 @@ export function LearningWorkspace() {
     void refresh();
   }, [refresh]);
   const filtered = materials.filter((m) =>
-    `${m.title} ${m.metadata.course} ${m.metadata.topics?.join(" ")}`
+    `${m.title} ${m.metadata.course} ${m.metadata.semester || ""} ${m.metadata.topics?.join(" ")}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -272,6 +272,7 @@ export function LearningWorkspace() {
         <div className="course-card-top">
           <span className="tiny-label">
             {m.metadata.course || "YOUR COURSE"}
+            {m.metadata.semester && ` · ${m.metadata.semester}`}
           </span>
           <button
             className="icon-button"
@@ -816,7 +817,15 @@ function Modal({
       previous.current?.focus();
     };
   }, [inline]);
-  if (inline) return <section className="learn-modal agent-inline-form"><header><h2>{title}</h2></header>{children}</section>;
+  if (inline)
+    return (
+      <section className="learn-modal agent-inline-form">
+        <header>
+          <h2>{title}</h2>
+        </header>
+        {children}
+      </section>
+    );
   return (
     <div
       className="modal-backdrop"
@@ -886,53 +895,66 @@ export function MaterialUpload({
   const [file, setFile] = useState<File | null>(null);
   const [rawPages, setRawPages] = useState<SourcePage[] | null>(null);
   const [readingFile, setReadingFile] = useState(false);
-  const [detectedSubjects, setDetectedSubjects] = useState<DetectedSubject[]>([]);
+  const [detectedSubjects, setDetectedSubjects] = useState<DetectedSubject[]>(
+    [],
+  );
   const [isMultiSubject, setIsMultiSubject] = useState(false);
-  const [importMode, setImportMode] = useState<"all" | "single" | "combined">("all");
+  const [importMode, setImportMode] = useState<"all" | "single" | "combined">(
+    "all",
+  );
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const inputVersion = useRef(0);
 
   // Automatically parse pages and detect subjects when a file or text changes
-  const processInputPages = useCallback(async (selectedFile: File | null, pastedText: string) => {
-    if (!selectedFile && pastedText.trim().length < 100) {
+  const processInputPages = useCallback(
+    async (selectedFile: File | null, pastedText: string) => {
+      const version = ++inputVersion.current;
       setRawPages(null);
       setDetectedSubjects([]);
       setIsMultiSubject(false);
-      return;
-    }
-    setReadingFile(true);
-    setError("");
-    try {
-      let pages: SourcePage[];
-      if (selectedFile) {
-        pages = await readMaterialFile(selectedFile);
-      } else {
-        pages = [{ page: 1, text: pastedText.trim() }];
+      if (!selectedFile && pastedText.trim().length < 100) {
+        setReadingFile(false);
+        return;
       }
-      setRawPages(pages);
-
-      const subjects = detectSubjectsFromPages(pages);
-      if (subjects.length > 1) {
-        setDetectedSubjects(subjects);
-        setIsMultiSubject(true);
-        setSelectedSubjectId(subjects[0].id);
-        if (!course) setCourse(subjects[0].courseCode || subjects[0].title);
-        if (!title) setTitle(subjects[0].title);
-      } else {
-        setDetectedSubjects(subjects);
-        if (subjects[0]) {
-          if (!course && subjects[0].courseCode) setCourse(subjects[0].courseCode);
-          if (!title && subjects[0].title) setTitle(subjects[0].title);
+      setReadingFile(true);
+      setError("");
+      try {
+        let pages: SourcePage[];
+        if (selectedFile) {
+          pages = await readMaterialFile(selectedFile);
+        } else {
+          if (pastedText.length > 300000)
+            throw new Error(
+              "Paste up to 300,000 characters, or split the curriculum into smaller files.",
+            );
+          pages = [{ page: 1, text: pastedText.trim() }];
         }
+        if (version !== inputVersion.current) return;
+        setRawPages(pages);
+
+        const subjects = detectSubjectsFromPages(pages);
+        setDetectedSubjects(subjects);
+        setIsMultiSubject(subjects.length > 1);
+        setSelectedSubjectId(subjects[0]?.id || "");
+        if (subjects[0]) {
+          setCourse(
+            (previous) =>
+              previous || subjects[0].courseCode || subjects[0].title,
+          );
+          setTitle((previous) => previous || subjects[0].title);
+        }
+      } catch (e) {
+        if (version === inputVersion.current)
+          setError(e instanceof Error ? e.message : "Could not read pages.");
+      } finally {
+        if (version === inputVersion.current) setReadingFile(false);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not read pages.");
-    } finally {
-      setReadingFile(false);
-    }
-  }, [course, title]);
+    },
+    [],
+  );
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -960,13 +982,16 @@ export function MaterialUpload({
 
           let firstSaved: Material | null = null;
           for (const sub of toImport) {
-            const sliced = slicePagesForSubject(pages, sub.startPage, sub.endPage);
+            const sliced = extractPagesForSubject(pages, sub);
+            if (!sliced.length)
+              throw new Error(`No readable content found for ${sub.title}.`);
             const saved = await saveMaterial(
               user.id,
               sub.title.trim() || `Subject ${sub.startPage}`,
               sub.courseCode?.trim() || sub.title.trim(),
               exam,
-              sliced.length > 0 ? sliced : pages
+              sliced,
+              sub.semester,
             );
             if (!firstSaved) firstSaved = saved;
           }
@@ -976,13 +1001,16 @@ export function MaterialUpload({
           const chosen =
             detectedSubjects.find((s) => s.id === selectedSubjectId) ||
             detectedSubjects[0];
-          const sliced = slicePagesForSubject(pages, chosen.startPage, chosen.endPage);
+          const sliced = extractPagesForSubject(pages, chosen);
+          if (!sliced.length)
+            throw new Error(`No readable content found for ${chosen.title}.`);
           const saved = await saveMaterial(
             user.id,
             chosen.title.trim() || title.trim(),
             chosen.courseCode?.trim() || course.trim(),
             exam,
-            sliced.length > 0 ? sliced : pages
+            sliced,
+            chosen.semester,
           );
           onSaved(saved);
           return;
@@ -991,7 +1019,16 @@ export function MaterialUpload({
 
       // Standard single material import
       onSaved(
-        await saveMaterial(user.id, title.trim(), course.trim(), exam, pages)
+        await saveMaterial(
+          user.id,
+          title.trim(),
+          course.trim(),
+          exam,
+          pages,
+          detectedSubjects.length === 1
+            ? detectedSubjects[0].semester
+            : undefined,
+        ),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not read material.");
@@ -1002,17 +1039,17 @@ export function MaterialUpload({
 
   const toggleSubjectSelect = (id: string) => {
     setDetectedSubjects((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, selected: !s.selected } : s))
+      prev.map((s) => (s.id === id ? { ...s, selected: !s.selected } : s)),
     );
   };
 
   const updateSubjectField = (
     id: string,
-    field: "title" | "courseCode",
-    value: string
+    field: "title" | "courseCode" | "semester",
+    value: string,
   ) => {
     setDetectedSubjects((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
     );
   };
 
@@ -1025,7 +1062,8 @@ export function MaterialUpload({
       }}
     >
       <p className="modal-description">
-        Your material sets the curriculum. Bring any course or complete syllabus.
+        Your material sets the curriculum. Bring any course or complete
+        syllabus.
       </p>
       <form onSubmit={(e) => void submit(e)}>
         {/* File Upload Zone */}
@@ -1058,7 +1096,9 @@ export function MaterialUpload({
         >
           <UploadCloud size={30} />
           <strong>
-            {file ? file.name : "Drop your material or syllabus here, or browse"}
+            {file
+              ? file.name
+              : "Drop your material or syllabus here, or browse"}
           </strong>
           <span>Searchable PDF, TXT, Markdown · up to 160 pages & 20 MB</span>
         </button>
@@ -1069,9 +1109,7 @@ export function MaterialUpload({
             className="text-button"
             onClick={() => {
               setFile(null);
-              setRawPages(null);
-              setDetectedSubjects([]);
-              setIsMultiSubject(false);
+              void processInputPages(null, text);
             }}
           >
             Remove file
@@ -1085,9 +1123,7 @@ export function MaterialUpload({
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
-                if (e.target.value.length >= 100) {
-                  void processInputPages(null, e.target.value);
-                }
+                void processInputPages(null, e.target.value);
               }}
             />
           </label>
@@ -1096,7 +1132,7 @@ export function MaterialUpload({
         {readingFile && (
           <div className="parsing-notice">
             <Loader2 size={15} className="spin text-accent" />
-            <span>Scanning pages for course subjects and topics…</span>
+            <span>Scanning semesters, subjects, and topics…</span>
           </div>
         )}
 
@@ -1108,7 +1144,9 @@ export function MaterialUpload({
           >
             <div className="syllabus-header-row">
               <div>
-                <span className="pill lavender">COMPILED SYLLABUS DETECTED</span>
+                <span className="pill lavender">
+                  COMPILED SYLLABUS DETECTED
+                </span>
                 <h4 className="syllabus-title">
                   Found {detectedSubjects.length} subjects in this packet
                 </h4>
@@ -1126,8 +1164,9 @@ export function MaterialUpload({
             {isMultiSubject && (
               <>
                 <p className="syllabus-desc">
-                  This document contains multiple subjects. You can import each subject
-                  as its own course material, pick one, or keep them combined.
+                  Subjects are organised by semester. Import each separately,
+                  pick one, or keep the curriculum combined. Review the detected
+                  names and semesters before importing.
                 </p>
 
                 {/* Import Mode Switcher */}
@@ -1137,7 +1176,8 @@ export function MaterialUpload({
                     className={`mode-btn ${importMode === "all" ? "active" : ""}`}
                     onClick={() => setImportMode("all")}
                   >
-                    Import all separately ({detectedSubjects.filter((s) => s.selected).length})
+                    Import all separately (
+                    {detectedSubjects.filter((s) => s.selected).length})
                   </button>
                   <button
                     type="button"
@@ -1158,57 +1198,101 @@ export function MaterialUpload({
                 {/* Subject List */}
                 {importMode !== "combined" && (
                   <div className="syllabus-subjects-list">
-                    {detectedSubjects.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className={`subject-row ${
-                          importMode === "single" && selectedSubjectId === sub.id
-                            ? "selected-single"
-                            : ""
-                        }`}
-                        onClick={() => {
-                          if (importMode === "single") setSelectedSubjectId(sub.id);
-                        }}
-                      >
-                        {importMode === "all" ? (
-                          <input
-                            type="checkbox"
-                            checked={sub.selected}
-                            onChange={() => toggleSubjectSelect(sub.id)}
-                            title="Include this subject"
-                          />
-                        ) : (
-                          <input
-                            type="radio"
-                            name="selectedSubjectRadio"
-                            checked={selectedSubjectId === sub.id}
-                            onChange={() => setSelectedSubjectId(sub.id)}
-                          />
-                        )}
+                    {[
+                      ...new Set(
+                        detectedSubjects.map(
+                          (sub) => sub.semester || "Semester unspecified",
+                        ),
+                      ),
+                    ].map((semester) => (
+                      <div key={semester}>
+                        <h5>{semester}</h5>
+                        {detectedSubjects
+                          .filter(
+                            (sub) =>
+                              (sub.semester || "Semester unspecified") ===
+                              semester,
+                          )
+                          .map((sub) => (
+                            <div
+                              key={sub.id}
+                              className={`subject-row ${
+                                importMode === "single" &&
+                                selectedSubjectId === sub.id
+                                  ? "selected-single"
+                                  : ""
+                              }`}
+                              onClick={() => {
+                                if (importMode === "single")
+                                  setSelectedSubjectId(sub.id);
+                              }}
+                            >
+                              {importMode === "all" ? (
+                                <input
+                                  type="checkbox"
+                                  checked={sub.selected}
+                                  onChange={() => toggleSubjectSelect(sub.id)}
+                                  title="Include this subject"
+                                />
+                              ) : (
+                                <input
+                                  type="radio"
+                                  name="selectedSubjectRadio"
+                                  checked={selectedSubjectId === sub.id}
+                                  onChange={() => setSelectedSubjectId(sub.id)}
+                                />
+                              )}
 
-                        <div className="subject-meta">
-                          <div className="subject-inputs-row">
-                            <input
-                              className="subject-title-input"
-                              value={sub.title}
-                              onChange={(e) =>
-                                updateSubjectField(sub.id, "title", e.target.value)
-                              }
-                              placeholder="Subject name"
-                            />
-                            <input
-                              className="subject-code-input"
-                              value={sub.courseCode || ""}
-                              onChange={(e) =>
-                                updateSubjectField(sub.id, "courseCode", e.target.value)
-                              }
-                              placeholder="Code (e.g. CS101)"
-                            />
-                          </div>
-                          <span className="page-range-pill">
-                            Pages {sub.startPage}–{sub.endPage} · {sub.pageCount} pages
-                          </span>
-                        </div>
+                              <div className="subject-meta">
+                                <div className="subject-inputs-row">
+                                  <input
+                                    className="subject-title-input"
+                                    value={sub.title}
+                                    onChange={(e) =>
+                                      updateSubjectField(
+                                        sub.id,
+                                        "title",
+                                        e.target.value,
+                                      )
+                                    }
+                                    aria-label="Subject name"
+                                    placeholder="Subject name"
+                                  />
+                                  <input
+                                    className="subject-code-input"
+                                    value={sub.courseCode || ""}
+                                    onChange={(e) =>
+                                      updateSubjectField(
+                                        sub.id,
+                                        "courseCode",
+                                        e.target.value,
+                                      )
+                                    }
+                                    aria-label="Course code"
+                                    placeholder="Code (e.g. CS101)"
+                                  />
+                                </div>
+                                <input
+                                  className="subject-semester-input"
+                                  aria-label={`Semester for ${sub.title}`}
+                                  defaultValue={sub.semester || ""}
+                                  maxLength={40}
+                                  onBlur={(e) =>
+                                    updateSubjectField(
+                                      sub.id,
+                                      "semester",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="Semester (if known)"
+                                />
+                                <span className="page-range-pill">
+                                  Pages {sub.startPage}–{sub.endPage} ·{" "}
+                                  {sub.pageCount} pages
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                       </div>
                     ))}
                   </div>
@@ -1275,7 +1359,8 @@ export function MaterialUpload({
             </>
           ) : isMultiSubject && importMode === "all" ? (
             <>
-              Import {detectedSubjects.filter((s) => s.selected).length} subjects separately <ArrowRight size={16} />
+              Import {detectedSubjects.filter((s) => s.selected).length}{" "}
+              subjects separately <ArrowRight size={16} />
             </>
           ) : (
             <>
@@ -1387,8 +1472,10 @@ export function MaterialEditor({
       }}
     >
       <p className="modal-description">
-        {material.metadata.course} · {material.metadata.pages?.length ?? 1}{" "}
-        pages
+        {material.metadata.course}
+        {material.metadata.semester &&
+          ` · ${material.metadata.semester}`} ·{" "}
+        {material.metadata.pages?.length ?? 1} pages
       </p>
       {summary && <p className="material-summary">{summary}</p>}
       <button

@@ -29,7 +29,7 @@ export async function fetchLibrary(
     supabase
       .from("materials")
       .select(
-        "id,title,created_at,course:metadata->>course,exam_on:metadata->>exam_on,topics:metadata->topics,confirmed:metadata->confirmed,page_count:metadata->page_count",
+        "id,title,created_at,course:metadata->>course,semester:metadata->>semester,exam_on:metadata->>exam_on,topics:metadata->topics,confirmed:metadata->confirmed,page_count:metadata->page_count",
       )
       .eq("owner_user_id", userId)
       .contains("metadata", { workspace: "curve" })
@@ -55,6 +55,7 @@ export async function fetchLibrary(
       extracted_text: null,
       metadata: {
         course: m.course,
+        semester: m.semester,
         exam_on: m.exam_on,
         topics: m.topics,
         confirmed: m.confirmed,
@@ -71,6 +72,7 @@ export async function saveMaterial(
   course: string,
   exam: string,
   pages: SourcePage[],
+  semester?: string,
 ): Promise<Material> {
   const text = pages.map((p) => `[Page ${p.page}]\n${p.text}`).join("\n\n");
   const { data, error } = await supabase
@@ -84,6 +86,7 @@ export async function saveMaterial(
       metadata: {
         workspace: "curve",
         course,
+        semester: semester || null,
         exam_on: exam || null,
         pages,
         page_count: pages.length,
@@ -110,7 +113,9 @@ export async function readMaterialFile(file: File): Promise<SourcePage[]> {
     }).promise;
     try {
       if (document.numPages > 160)
-        throw new Error("Use a chapter, lecture, or syllabus PDF of up to 160 pages.");
+        throw new Error(
+          "Use a chapter, lecture, or syllabus PDF of up to 160 pages.",
+        );
       const pages: SourcePage[] = [];
       for (let n = 1; n <= document.numPages; n++) {
         const content = await (await document.getPage(n)).getTextContent();

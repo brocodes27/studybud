@@ -10,6 +10,7 @@ export interface Material {
   metadata: {
     workspace?: string;
     course?: string;
+    semester?: string | null;
     exam_on?: string | null;
     topics?: string[];
     pages?: SourcePage[];
