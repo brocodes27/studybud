@@ -16,8 +16,13 @@ function isAllowedOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
     const host = url.hostname.toLowerCase();
-    // Allow the production domain and any subdomain (e.g. staging.elevenfolks.com)
-    return host === 'elevenfolks.com' || host.endsWith('.elevenfolks.com');
+    // Allow curveapp.tech, elevenfolks.com and their subdomains
+    return (
+      host === 'curveapp.tech' ||
+      host.endsWith('.curveapp.tech') ||
+      host === 'elevenfolks.com' ||
+      host.endsWith('.elevenfolks.com')
+    );
   } catch {
     return false;
   }

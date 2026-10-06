@@ -39,22 +39,63 @@ create policy workspace_message_read on public.curve_workspace_messages for sele
 create policy workspace_action_read on public.curve_workspace_actions for select to authenticated using (exists(select 1 from public.curve_workspace_threads t where t.id = thread_id and t.user_id = (select auth.uid())));
 
 -- Service-only, invoker function: serialize all mutations per student across tabs/devices.
-create function public.claim_workspace_request(p_thread uuid, p_user uuid, p_request uuid, p_name text)
-returns jsonb language plpgsql security invoker set search_path = public as $$
-declare t public.curve_workspace_threads; prior public.curve_workspace_actions; cap integer;
+create or replace function public.claim_workspace_request(
+  p_thread uuid,
+  p_user uuid,
+  p_request uuid,
+  p_name text
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = public
+as $func$
+declare
+  t public.curve_workspace_threads%rowtype;
+  prior public.curve_workspace_actions%rowtype;
+  cap integer;
+  daily_cap integer;
+  recent_count integer;
+  daily_count integer;
 begin
-  select * into t from curve_workspace_threads where id = p_thread and user_id = p_user for update;
-  if not found then raise exception 'Workspace not found'; end if;
-  select * into prior from curve_workspace_actions where thread_id = p_thread and request_id = p_request::text;
-  if prior.status = 'completed' then return jsonb_build_object('cached', true, 'result', prior.result); end if;
-  if t.lease_until > now() then raise exception 'An action is still running. Please retry shortly.'; end if;
+  select * into t from public.curve_workspace_threads where id = p_thread and user_id = p_user for update;
+  if not found then
+    raise exception 'Workspace not found';
+  end if;
+
+  select * into prior from public.curve_workspace_actions where thread_id = p_thread and request_id = p_request::text;
+  if prior.status = 'completed' then
+    return jsonb_build_object('cached', true, 'result', prior.result);
+  end if;
+
+  if t.lease_until > now() then
+    raise exception 'An action is still running. Please retry shortly.';
+  end if;
+
   cap := case when p_name = 'voice' then 6 else 60 end;
-  if (select count(*) from curve_workspace_actions where thread_id = p_thread and name = p_name and created_at > now() - interval '1 minute') >= cap then raise exception 'Too many requests. Please wait a minute.'; end if;
-  if p_name in ('voice','message') and (select count(*) from curve_workspace_actions where thread_id = p_thread and name = p_name and created_at > now() - interval '1 day') >= case when p_name = 'voice' then 60 else 300 end then raise exception 'Daily conversation limit reached. Your saved work is still available.'; end if;
-  update curve_workspace_threads set lease_id = p_request, lease_until = now() + interval '150 seconds' where id = p_thread;
-  insert into curve_workspace_actions(thread_id, request_id, name, status) values(p_thread, p_request::text, p_name, 'running') on conflict(thread_id, request_id) do update set status='running', error=null;
+  select count(*) into recent_count from public.curve_workspace_actions where thread_id = p_thread and name = p_name and created_at > now() - interval '1 minute';
+  if recent_count >= cap then
+    raise exception 'Too many requests. Please wait a minute.';
+  end if;
+
+  if p_name in ('voice', 'message') then
+    daily_cap := case when p_name = 'voice' then 60 else 300 end;
+    select count(*) into daily_count from public.curve_workspace_actions where thread_id = p_thread and name = p_name and created_at > now() - interval '1 day';
+    if daily_count >= daily_cap then
+      raise exception 'Daily conversation limit reached. Your saved work is still available.';
+    end if;
+  end if;
+
+  update public.curve_workspace_threads
+  set lease_id = p_request, lease_until = now() + interval '150 seconds'
+  where id = p_thread;
+
+  insert into public.curve_workspace_actions(thread_id, request_id, name, status)
+  values(p_thread, p_request::text, p_name, 'running')
+  on conflict(thread_id, request_id) do update set status = 'running', error = null;
+
   return jsonb_build_object('cached', false);
 end;
-$$;
+$func$;
 revoke all on function public.claim_workspace_request(uuid,uuid,uuid,text) from public, anon, authenticated;
 grant execute on function public.claim_workspace_request(uuid,uuid,uuid,text) to service_role;

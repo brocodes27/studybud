@@ -109,8 +109,8 @@ export async function readMaterialFile(file: File): Promise<SourcePage[]> {
       isEvalSupported: false,
     }).promise;
     try {
-      if (document.numPages > 100)
-        throw new Error("Use a chapter or lecture PDF of up to 100 pages.");
+      if (document.numPages > 160)
+        throw new Error("Use a chapter, lecture, or syllabus PDF of up to 160 pages.");
       const pages: SourcePage[] = [];
       for (let n = 1; n <= document.numPages; n++) {
         const content = await (await document.getPage(n)).getTextContent();

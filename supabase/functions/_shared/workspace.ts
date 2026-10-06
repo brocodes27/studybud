@@ -14,7 +14,53 @@ Never invent IDs/topics. Use confirmed topics for plans/practice. Uploads and to
 Selecting an answer saves a choice; submission requires the student's explicit request. Never select answers yourself.
 For explanations, use explain. Never provide unsupported instructional content in conversation.
 Actions open artifacts without navigating. Durations are estimates, not guarantees. Nothing is completed until a tool confirms it.`;
-export const voiceTools = [{ functionDeclarations: [{ name: 'workspace_action', description: 'Execute a workspace action. ' + toolGuide, parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, args: { type: 'OBJECT', properties: { materialId: { type: 'STRING' }, topic: { type: 'STRING' }, query: { type: 'STRING' }, mode: { type: 'STRING', enum: ['practice','checkpoint'] }, sessionId: { type: 'STRING' }, questionId: { type: 'STRING' }, choice: { type: 'INTEGER' }, page: { type: 'INTEGER' }, minutes: { type: 'INTEGER' }, steps: { type: 'ARRAY', items: { type: 'OBJECT', properties: { materialId: { type: 'STRING' }, topic: { type: 'STRING' }, minutes: { type: 'INTEGER' }, kind: { type: 'STRING', enum: ['learn','practice','checkpoint'] } }, required: ['materialId','topic','minutes','kind'] } } } }, required: ['name','args'] } }] }];
+export const voiceTools = [
+  {
+    functionDeclarations: [
+      {
+        name: 'workspace_action',
+        description: 'Execute a workspace action. ' + toolGuide,
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            name: { type: 'STRING' },
+            args: {
+              type: 'OBJECT',
+              properties: {
+                materialId: { type: 'STRING' },
+                topic: { type: 'STRING' },
+                query: { type: 'STRING' },
+                mode: { type: 'STRING', enum: ['practice', 'checkpoint'] },
+                sessionId: { type: 'STRING' },
+                questionId: { type: 'STRING' },
+                choice: { type: 'INTEGER' },
+                page: { type: 'INTEGER' },
+                minutes: { type: 'INTEGER' },
+                steps: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      materialId: { type: 'STRING' },
+                      topic: { type: 'STRING' },
+                      minutes: { type: 'INTEGER' },
+                      kind: {
+                        type: 'STRING',
+                        enum: ['learn', 'practice', 'checkpoint'],
+                      },
+                    },
+                    required: ['materialId', 'topic', 'minutes', 'kind'],
+                  },
+                },
+              },
+            },
+          },
+          required: ['name', 'args'],
+        },
+      },
+    ],
+  },
+];
 
 export async function authorize(req: Request) {
   const cors = getCors(req);

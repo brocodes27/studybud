@@ -41,6 +41,11 @@ import {
   saveMaterial,
 } from "./api";
 import {
+  detectSubjectsFromPages,
+  slicePagesForSubject,
+  type DetectedSubject,
+} from "./syllabusSegmenter";
+import {
   daysToExam,
   independentAccuracy,
   normalizeTopics,
@@ -879,24 +884,114 @@ export function MaterialUpload({
   const [exam, setExam] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [rawPages, setRawPages] = useState<SourcePage[] | null>(null);
+  const [readingFile, setReadingFile] = useState(false);
+  const [detectedSubjects, setDetectedSubjects] = useState<DetectedSubject[]>([]);
+  const [isMultiSubject, setIsMultiSubject] = useState(false);
+  const [importMode, setImportMode] = useState<"all" | "single" | "combined">("all");
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Automatically parse pages and detect subjects when a file or text changes
+  const processInputPages = useCallback(async (selectedFile: File | null, pastedText: string) => {
+    if (!selectedFile && pastedText.trim().length < 100) {
+      setRawPages(null);
+      setDetectedSubjects([]);
+      setIsMultiSubject(false);
+      return;
+    }
+    setReadingFile(true);
+    setError("");
+    try {
+      let pages: SourcePage[];
+      if (selectedFile) {
+        pages = await readMaterialFile(selectedFile);
+      } else {
+        pages = [{ page: 1, text: pastedText.trim() }];
+      }
+      setRawPages(pages);
+
+      const subjects = detectSubjectsFromPages(pages);
+      if (subjects.length > 1) {
+        setDetectedSubjects(subjects);
+        setIsMultiSubject(true);
+        setSelectedSubjectId(subjects[0].id);
+        if (!course) setCourse(subjects[0].courseCode || subjects[0].title);
+        if (!title) setTitle(subjects[0].title);
+      } else {
+        setDetectedSubjects(subjects);
+        if (subjects[0]) {
+          if (!course && subjects[0].courseCode) setCourse(subjects[0].courseCode);
+          if (!title && subjects[0].title) setTitle(subjects[0].title);
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not read pages.");
+    } finally {
+      setReadingFile(false);
+    }
+  }, [course, title]);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!user) return;
     setBusy(true);
     setError("");
     try {
-      let pages: SourcePage[];
-      if (file) pages = await readMaterialFile(file);
-      else {
-        if (text.trim().length < 100 || text.length > 300000)
-          throw new Error("Paste at least 100 characters, up to 300,000.");
-        pages = [{ page: 1, text: text.trim() }];
+      let pages: SourcePage[] = rawPages || [];
+      if (pages.length === 0) {
+        if (file) pages = await readMaterialFile(file);
+        else {
+          if (text.trim().length < 100 || text.length > 300000)
+            throw new Error("Paste at least 100 characters, up to 300,000.");
+          pages = [{ page: 1, text: text.trim() }];
+        }
       }
+
+      // Handle Compiled Multi-Subject Import
+      if (isMultiSubject && detectedSubjects.length > 1) {
+        if (importMode === "all") {
+          const toImport = detectedSubjects.filter((s) => s.selected);
+          if (toImport.length === 0) {
+            throw new Error("Select at least one subject to import.");
+          }
+
+          let firstSaved: Material | null = null;
+          for (const sub of toImport) {
+            const sliced = slicePagesForSubject(pages, sub.startPage, sub.endPage);
+            const saved = await saveMaterial(
+              user.id,
+              sub.title.trim() || `Subject ${sub.startPage}`,
+              sub.courseCode?.trim() || sub.title.trim(),
+              exam,
+              sliced.length > 0 ? sliced : pages
+            );
+            if (!firstSaved) firstSaved = saved;
+          }
+          if (firstSaved) onSaved(firstSaved);
+          return;
+        } else if (importMode === "single") {
+          const chosen =
+            detectedSubjects.find((s) => s.id === selectedSubjectId) ||
+            detectedSubjects[0];
+          const sliced = slicePagesForSubject(pages, chosen.startPage, chosen.endPage);
+          const saved = await saveMaterial(
+            user.id,
+            chosen.title.trim() || title.trim(),
+            chosen.courseCode?.trim() || course.trim(),
+            exam,
+            sliced.length > 0 ? sliced : pages
+          );
+          onSaved(saved);
+          return;
+        }
+      }
+
+      // Standard single material import
       onSaved(
-        await saveMaterial(user.id, title.trim(), course.trim(), exam, pages),
+        await saveMaterial(user.id, title.trim(), course.trim(), exam, pages)
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not read material.");
@@ -904,6 +999,23 @@ export function MaterialUpload({
       setBusy(false);
     }
   }
+
+  const toggleSubjectSelect = (id: string) => {
+    setDetectedSubjects((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, selected: !s.selected } : s))
+    );
+  };
+
+  const updateSubjectField = (
+    id: string,
+    field: "title" | "courseCode",
+    value: string
+  ) => {
+    setDetectedSubjects((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+    );
+  };
+
   return (
     <Modal
       inline={inline}
@@ -913,37 +1025,10 @@ export function MaterialUpload({
       }}
     >
       <p className="modal-description">
-        Your material sets the curriculum. Bring any course.
+        Your material sets the curriculum. Bring any course or complete syllabus.
       </p>
       <form onSubmit={(e) => void submit(e)}>
-        <label>
-          Course name
-          <input
-            required
-            maxLength={120}
-            placeholder="e.g. Introduction to psychology"
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-          />
-        </label>
-        <label>
-          Material title
-          <input
-            required
-            maxLength={160}
-            placeholder="e.g. Week 4 · Memory and learning"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
-        <label>
-          Next exam <span className="optional">optional</span>
-          <input
-            type="date"
-            value={exam}
-            onChange={(e) => setExam(e.target.value)}
-          />
-        </label>
+        {/* File Upload Zone */}
         <input
           className="sr-only"
           type="file"
@@ -953,6 +1038,7 @@ export function MaterialUpload({
             const f = e.target.files?.[0] ?? null;
             setFile(f);
             if (f && !title) setTitle(f.name.replace(/\.[^.]+$/, ""));
+            void processInputPages(f, text);
           }}
         />
         <button
@@ -966,34 +1052,207 @@ export function MaterialUpload({
             if (f) {
               setFile(f);
               if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
+              void processInputPages(f, text);
             }
           }}
         >
           <UploadCloud size={30} />
           <strong>
-            {file ? file.name : "Drop your material here, or browse"}
+            {file ? file.name : "Drop your material or syllabus here, or browse"}
           </strong>
-          <span>Searchable PDF, TXT, Markdown · up to 20 MB</span>
+          <span>Searchable PDF, TXT, Markdown · up to 160 pages & 20 MB</span>
         </button>
+
         {file ? (
           <button
             type="button"
             className="text-button"
-            onClick={() => setFile(null)}
+            onClick={() => {
+              setFile(null);
+              setRawPages(null);
+              setDetectedSubjects([]);
+              setIsMultiSubject(false);
+            }}
           >
             Remove file
           </button>
         ) : (
           <label>
-            Or paste your notes
+            Or paste your notes / syllabus text
             <textarea
-              rows={5}
-              placeholder="Definitions, explanations, worked examples…"
+              rows={4}
+              placeholder="Paste lecture notes or full syllabus outlines…"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (e.target.value.length >= 100) {
+                  void processInputPages(null, e.target.value);
+                }
+              }}
             />
           </label>
         )}
+
+        {readingFile && (
+          <div className="parsing-notice">
+            <Loader2 size={15} className="spin text-accent" />
+            <span>Scanning pages for course subjects and topics…</span>
+          </div>
+        )}
+
+        {/* Multi-Subject Syllabus Detection Card */}
+        {detectedSubjects.length > 1 && (
+          <section
+            className="compiled-syllabus-card"
+            aria-label="Compiled Syllabus Splitting"
+          >
+            <div className="syllabus-header-row">
+              <div>
+                <span className="pill lavender">COMPILED SYLLABUS DETECTED</span>
+                <h4 className="syllabus-title">
+                  Found {detectedSubjects.length} subjects in this packet
+                </h4>
+              </div>
+              <label className="multi-subject-toggle">
+                <input
+                  type="checkbox"
+                  checked={isMultiSubject}
+                  onChange={(e) => setIsMultiSubject(e.target.checked)}
+                />
+                <span>Split by subject</span>
+              </label>
+            </div>
+
+            {isMultiSubject && (
+              <>
+                <p className="syllabus-desc">
+                  This document contains multiple subjects. You can import each subject
+                  as its own course material, pick one, or keep them combined.
+                </p>
+
+                {/* Import Mode Switcher */}
+                <div className="import-mode-selector">
+                  <button
+                    type="button"
+                    className={`mode-btn ${importMode === "all" ? "active" : ""}`}
+                    onClick={() => setImportMode("all")}
+                  >
+                    Import all separately ({detectedSubjects.filter((s) => s.selected).length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-btn ${importMode === "single" ? "active" : ""}`}
+                    onClick={() => setImportMode("single")}
+                  >
+                    Choose 1 subject
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-btn ${importMode === "combined" ? "active" : ""}`}
+                    onClick={() => setImportMode("combined")}
+                  >
+                    Keep combined
+                  </button>
+                </div>
+
+                {/* Subject List */}
+                {importMode !== "combined" && (
+                  <div className="syllabus-subjects-list">
+                    {detectedSubjects.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className={`subject-row ${
+                          importMode === "single" && selectedSubjectId === sub.id
+                            ? "selected-single"
+                            : ""
+                        }`}
+                        onClick={() => {
+                          if (importMode === "single") setSelectedSubjectId(sub.id);
+                        }}
+                      >
+                        {importMode === "all" ? (
+                          <input
+                            type="checkbox"
+                            checked={sub.selected}
+                            onChange={() => toggleSubjectSelect(sub.id)}
+                            title="Include this subject"
+                          />
+                        ) : (
+                          <input
+                            type="radio"
+                            name="selectedSubjectRadio"
+                            checked={selectedSubjectId === sub.id}
+                            onChange={() => setSelectedSubjectId(sub.id)}
+                          />
+                        )}
+
+                        <div className="subject-meta">
+                          <div className="subject-inputs-row">
+                            <input
+                              className="subject-title-input"
+                              value={sub.title}
+                              onChange={(e) =>
+                                updateSubjectField(sub.id, "title", e.target.value)
+                              }
+                              placeholder="Subject name"
+                            />
+                            <input
+                              className="subject-code-input"
+                              value={sub.courseCode || ""}
+                              onChange={(e) =>
+                                updateSubjectField(sub.id, "courseCode", e.target.value)
+                              }
+                              placeholder="Code (e.g. CS101)"
+                            />
+                          </div>
+                          <span className="page-range-pill">
+                            Pages {sub.startPage}–{sub.endPage} · {sub.pageCount} pages
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        )}
+
+        {/* Standard Single Subject Fields (if not importing all separately) */}
+        {(!isMultiSubject || importMode !== "all") && (
+          <>
+            <label>
+              Course name
+              <input
+                required
+                maxLength={120}
+                placeholder="e.g. Engineering Mathematics or CS101"
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+              />
+            </label>
+            <label>
+              Material title
+              <input
+                required
+                maxLength={160}
+                placeholder="e.g. Semester 1 Syllabus or Week 4 Notes"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </label>
+          </>
+        )}
+
+        <label>
+          Next exam <span className="optional">optional</span>
+          <input
+            type="date"
+            value={exam}
+            onChange={(e) => setExam(e.target.value)}
+          />
+        </label>
+
         <p className="field-note">
           Saved privately to your account. AI uses excerpts to suggest topics
           and practice.
@@ -1001,12 +1260,22 @@ export function MaterialUpload({
         {error && <ErrorNotice error={error} />}
         <button
           className="learn-button dark full-width"
-          disabled={busy || !course.trim() || !title.trim()}
+          disabled={
+            busy ||
+            readingFile ||
+            (isMultiSubject && importMode === "all"
+              ? detectedSubjects.filter((s) => s.selected).length === 0
+              : !course.trim() || !title.trim())
+          }
         >
           {busy ? (
             <>
               <Loader2 className="spin" size={17} />
-              Reading your material…
+              Saving course materials…
+            </>
+          ) : isMultiSubject && importMode === "all" ? (
+            <>
+              Import {detectedSubjects.filter((s) => s.selected).length} subjects separately <ArrowRight size={16} />
             </>
           ) : (
             <>
