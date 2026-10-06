@@ -789,16 +789,19 @@ function ActivityChart({
 
 function Modal({
   title,
+  inline = false,
   onClose,
   children,
 }: {
   title: string;
+  inline?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const previous = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    if (inline) return;
     previous.current = document.activeElement as HTMLElement;
     const before = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -807,7 +810,8 @@ function Modal({
       document.body.style.overflow = before;
       previous.current?.focus();
     };
-  }, []);
+  }, [inline]);
+  if (inline) return <section className="learn-modal agent-inline-form"><header><h2>{title}</h2></header>{children}</section>;
   return (
     <div
       className="modal-backdrop"
@@ -860,12 +864,14 @@ function Modal({
     </div>
   );
 }
-function MaterialUpload({
+export function MaterialUpload({
+  inline = false,
   onClose,
   onSaved,
 }: {
   onClose: () => void;
   onSaved: (m: Material) => void;
+  inline?: boolean;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -900,6 +906,7 @@ function MaterialUpload({
   }
   return (
     <Modal
+      inline={inline}
       title="Make room for something new."
       onClose={() => {
         if (!busy) onClose();
@@ -1012,13 +1019,15 @@ function MaterialUpload({
   );
 }
 
-function MaterialEditor({
+export function MaterialEditor({
+  inline = false,
   material,
   onClose,
   onSaved,
   onStart,
 }: {
   material: Material;
+  inline?: boolean;
   onClose: () => void;
   onSaved: () => void;
   onStart: (s: StudySession) => void;
@@ -1102,6 +1111,7 @@ function MaterialEditor({
   }
   return (
     <Modal
+      inline={inline}
       title={material.title}
       onClose={() => {
         if (!busy) onClose();

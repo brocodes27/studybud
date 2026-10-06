@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 
 import { AddCourse } from "./AddCourse";
 import { CourseDetail } from "./CourseDetail";
@@ -8,6 +8,7 @@ import {
   MaterialStudy,
   WorkspaceSettings,
 } from "../learning/Workspace";
+import { AgentWorkspace } from "../learning/agent/AgentWorkspace";
 import { StageMap } from "./StageMap";
 import { StageSession } from "./StageSession";
 import { StudySession } from "./StudySession";
@@ -18,9 +19,17 @@ import "./curve.css";
  * students so the forecast is the app, not a section of one.
  */
 export function CurveApp() {
+  const [params] = useSearchParams();
+  const classic = params.get("classic") === "1" || params.get("legacy") === "1";
+
   return (
     <Routes>
-      <Route path="/" element={<LearningWorkspace />} />
+      <Route
+        path="/"
+        element={classic ? <LearningWorkspace /> : <AgentWorkspace />}
+      />
+      <Route path="/workspace" element={<AgentWorkspace />} />
+      <Route path="/classic" element={<LearningWorkspace />} />
       <Route path="/preview" element={<LearningWorkspace />} />
       <Route path="/library" element={<LearningWorkspace />} />
       <Route path="/courses" element={<LearningWorkspace />} />
