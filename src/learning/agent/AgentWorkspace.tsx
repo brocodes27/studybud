@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, FormEvent, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
+  Home,
+  Settings2,
   CheckCircle2,
   FileText,
   HelpCircle,
@@ -41,17 +43,18 @@ import {
 import { useVoice } from './useVoice';
 import {
   ExplanationView,
-  HomeView,
   MaterialView,
   ProgressView,
   SessionView,
   StudyPlanBanner,
 } from './WorkspaceViews';
+import { HomeView } from './DashboardHome';
+import { CurveMark } from '../Preview';
 import { CurveOrb } from './CurveOrb';
 import './workspace.css';
 
 export function AgentWorkspace() {
-  const { user } = useAuth();
+  const { user, fullName } = useAuth();
   const [, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [thread, setThread] = useState<WorkspaceThread>({
     id: 'local',
@@ -68,6 +71,9 @@ export function AgentWorkspace() {
   // Library & sessions data for home state & fallback
   const [materials, setMaterials] = useState<Material[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+  const [libraryError, setLibraryError] = useState('');
+  const [libraryRevision, setLibraryRevision] = useState(0);
   const [showUpload, setShowUpload] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -78,11 +84,13 @@ export function AgentWorkspace() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText, runningActions]);
 
-  // Load library & thread snapshot on mount
+  // Reload the library independently so retries preserve the conversation.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
+    setLibraryLoading(true);
+    setLibraryError('');
     // Load materials and past sessions
     fetchLibrary(user.id)
       .then((data) => {
@@ -90,8 +98,24 @@ export function AgentWorkspace() {
         setMaterials(data.materials);
         setSessions(data.sessions);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled)
+          setLibraryError(
+            'Your library could not load. Try again to pick up where you left off.'
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setLibraryLoading(false);
+      });
 
+    return () => {
+      cancelled = true;
+    };
+  }, [user, libraryRevision]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
     // Load workspace agent state
     loadWorkspaceSnapshot()
       .then((snap) => {
@@ -350,16 +374,42 @@ export function AgentWorkspace() {
       className="learn agent-workspace-container"
       data-mobile-view={mobileTab}
     >
+      <header className="agent-app-header">
+        <Link className="learn-brand" to="/" aria-label="Curve dashboard">
+          <CurveMark />
+          curve
+        </Link>
+        <nav aria-label="Workspace">
+          <Link className="active" aria-current="page" to="/">
+            Dashboard
+          </Link>
+          <Link to="/library">Library</Link>
+          <Link to="/courses">Courses</Link>
+          <Link to="/progress">Progress</Link>
+        </nav>
+        <Link
+          className="agent-account"
+          to="/settings"
+          aria-label="Account settings"
+        >
+          <Settings2 size={17} />
+          <span className="user-avatar">
+            {(fullName || user?.email || 'S')[0].toUpperCase()}
+          </span>
+        </Link>
+      </header>
       {/* Mobile Switcher */}
       <nav className="agent-mobile-tabs" aria-label="View selection">
         <button
           className={`mobile-tab-btn ${mobileTab === 'workspace' ? 'active' : ''}`}
+          aria-pressed={mobileTab === 'workspace'}
           onClick={() => setMobileTab('workspace')}
         >
-          Workspace
+          Dashboard
         </button>
         <button
           className={`mobile-tab-btn ${mobileTab === 'chat' ? 'active' : ''}`}
+          aria-pressed={mobileTab === 'chat'}
           onClick={() => setMobileTab('chat')}
         >
           Conversation {messages.length > 0 && `(${messages.length})`}
@@ -370,8 +420,8 @@ export function AgentWorkspace() {
       <aside className="agent-chat-pane">
         <header className="chat-pane-header">
           <div className="chat-header-brand">
-            <strong>Curve</strong>
-            <span className="beta-pill">Workspace</span>
+            <Sparkles size={16} />
+            <strong>Your study companion</strong>
           </div>
           <div className="chat-header-actions">
             <Link to="/library" className="nav-link-subtle" title="Library">
@@ -407,26 +457,26 @@ export function AgentWorkspace() {
                 {voice.state === 'disconnected'
                   ? 'Talk to Curve'
                   : voice.state === 'connecting'
-                  ? 'Connecting…'
-                  : voice.state === 'listening'
-                  ? 'Listening'
-                  : voice.state === 'working'
-                  ? 'Synthesizing'
-                  : voice.state === 'speaking'
-                  ? 'Speaking'
-                  : 'Muted'}
+                    ? 'Connecting…'
+                    : voice.state === 'listening'
+                      ? 'Listening'
+                      : voice.state === 'working'
+                        ? 'Synthesizing'
+                        : voice.state === 'speaking'
+                          ? 'Speaking'
+                          : 'Muted'}
               </span>
             </div>
             <p className="orb-caption">
               {voice.state === 'disconnected'
                 ? 'Tap orb to start voice conversation'
                 : voice.state === 'listening'
-                ? 'Speak your goal or question naturally'
-                : voice.state === 'speaking'
-                ? 'Tap orb anytime to interrupt'
-                : voice.state === 'working'
-                ? 'Reasoning over materials…'
-                : 'Microphone is currently muted'}
+                  ? 'Speak your goal or question naturally'
+                  : voice.state === 'speaking'
+                    ? 'Tap orb anytime to interrupt'
+                    : voice.state === 'working'
+                      ? 'Reasoning over materials…'
+                      : 'Microphone is currently muted'}
             </p>
 
             {voice.state !== 'disconnected' && (
@@ -435,7 +485,9 @@ export function AgentWorkspace() {
                   type="button"
                   className={`orb-btn-compact ${voice.isMuted ? 'active-mute' : ''}`}
                   onClick={voice.toggleMute}
-                  title={voice.isMuted ? 'Unmute microphone' : 'Mute microphone'}
+                  title={
+                    voice.isMuted ? 'Unmute microphone' : 'Mute microphone'
+                  }
                 >
                   {voice.isMuted ? <MicOff size={13} /> : <Mic size={13} />}
                   <span>{voice.isMuted ? 'Unmute' : 'Mute'}</span>
@@ -468,8 +520,8 @@ export function AgentWorkspace() {
             <div className="chat-empty-hint">
               <Sparkles size={24} className="text-mint" />
               <p>
-                Tell Curve what you want to study, ask a question, or talk through
-                your materials.
+                Tell Curve what you want to study, ask a question, or talk
+                through your materials.
               </p>
             </div>
           )}
@@ -557,6 +609,7 @@ export function AgentWorkspace() {
 
             <textarea
               ref={textareaRef}
+              aria-label="Message Curve"
               rows={1}
               className="composer-textarea"
               placeholder={
@@ -616,6 +669,7 @@ export function AgentWorkspace() {
           <div className="tabs-scroll-area">
             <button
               className={`artifact-tab ${!activeArtifact ? 'active' : ''}`}
+              aria-pressed={!activeArtifact}
               onClick={() =>
                 setThread((prev) => ({
                   ...prev,
@@ -623,7 +677,7 @@ export function AgentWorkspace() {
                 }))
               }
             >
-              <Sparkles size={14} /> Home
+              <Home size={14} /> Dashboard
             </button>
 
             {artifacts.map((a) => (
@@ -632,13 +686,18 @@ export function AgentWorkspace() {
                 className={`artifact-tab ${
                   activeArtifact?.id === a.id ? 'active' : ''
                 }`}
-                onClick={() => handleSelectTab(a.id)}
               >
-                {a.kind === 'material' && <FileText size={14} />}
-                {a.kind === 'session' && <HelpCircle size={14} />}
-                {a.kind === 'explanation' && <BookOpen size={14} />}
-                {a.kind === 'progress' && <CheckCircle2 size={14} />}
-                <span>{a.title}</span>
+                <button
+                  className="artifact-tab-select"
+                  aria-pressed={activeArtifact?.id === a.id}
+                  onClick={() => void handleSelectTab(a.id)}
+                >
+                  {a.kind === 'material' && <FileText size={14} />}
+                  {a.kind === 'session' && <HelpCircle size={14} />}
+                  {a.kind === 'explanation' && <BookOpen size={14} />}
+                  {a.kind === 'progress' && <CheckCircle2 size={14} />}
+                  <span>{a.title}</span>
+                </button>
                 <button
                   type="button"
                   className="tab-close-btn"
@@ -646,6 +705,7 @@ export function AgentWorkspace() {
                     e.stopPropagation();
                     handleCloseTab(a.id);
                   }}
+                  aria-label={`Close ${a.title}`}
                   title="Close tab"
                 >
                   <X size={12} />
@@ -695,12 +755,20 @@ export function AgentWorkspace() {
             ) : null
           ) : (
             <HomeView
+              firstName={fullName?.trim().split(/\s+/)[0] || 'friend'}
+              loading={libraryLoading}
+              error={libraryError}
+              busy={busy}
+              onRetry={() => setLibraryRevision((value) => value + 1)}
               materials={materials}
               sessions={sessions}
               onOpenMaterial={handleOpenMaterial}
               onOpenSession={handleOpenSession}
               onUploadClick={() => setShowUpload(true)}
-              onPromptClick={(p) => void handleSendMessage(p)}
+              onPromptClick={(p) => {
+                setMobileTab('chat');
+                void handleSendMessage(p);
+              }}
             />
           )}
         </div>

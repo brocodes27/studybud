@@ -9,9 +9,6 @@ import {
   Lightbulb,
   Loader2,
   Play,
-  RotateCcw,
-  Sparkles,
-  Upload,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -602,109 +599,6 @@ export function ProgressView({ sessions }: { sessions: StudySession[] }) {
               </div>
             );
           })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function HomeView({
-  materials,
-  sessions,
-  onOpenMaterial,
-  onOpenSession,
-  onUploadClick,
-  onPromptClick,
-}: {
-  materials: Material[];
-  sessions: StudySession[];
-  onOpenMaterial: (m: Material) => void;
-  onOpenSession: (sessionId: string) => void;
-  onUploadClick: () => void;
-  onPromptClick: (prompt: string) => void;
-}) {
-  const pendingSession = sessions.find(
-    (s) => !s.completed_at && s.questions && s.questions.length > 0
-  );
-  const confirmedMaterials = materials.filter(
-    (m) => m.metadata?.confirmed && m.metadata?.topics?.length
-  );
-
-  return (
-    <div className="agent-home-view">
-      <div className="home-hero">
-        <Sparkles size={32} className="home-sparkle-icon" />
-        <h2>What are we learning today?</h2>
-        <p>Speak or type below to plan a session, practice, or inspect your notes.</p>
-      </div>
-
-      {pendingSession && (
-        <div className="home-card resume-card">
-          <div className="card-left">
-            <span className="pill lavender">UNFINISHED SESSION</span>
-            <h3>{pendingSession.topic}</h3>
-            <p>
-              {pendingSession.mode === 'checkpoint'
-                ? 'Independent check in progress'
-                : 'Guided practice in progress'}
-            </p>
-          </div>
-          <button
-            className="learn-button dark"
-            onClick={() => onOpenSession(pendingSession.id)}
-          >
-            <RotateCcw size={14} /> Resume session
-          </button>
-        </div>
-      )}
-
-      {confirmedMaterials.length > 0 ? (
-        <div className="home-materials-shelf">
-          <h3>Your course notes</h3>
-          <div className="materials-grid">
-            {confirmedMaterials.slice(0, 4).map((m) => (
-              <div
-                key={m.id}
-                className="home-material-tile"
-                onClick={() => onOpenMaterial(m)}
-              >
-                <h4>{m.title}</h4>
-                <span>{m.metadata.topics?.length || 0} topics confirmed</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="home-card upload-prompt-card">
-          <h3>Add your first course notes</h3>
-          <p>Upload a PDF, Markdown, or paste lecture notes to begin.</p>
-          <button className="learn-button dark" onClick={onUploadClick}>
-            <Upload size={14} /> Add course notes
-          </button>
-        </div>
-      )}
-
-      <div className="home-quick-prompts">
-        <h4>Try asking Curve:</h4>
-        <div className="prompt-chips">
-          <button
-            className="prompt-chip"
-            onClick={() => onPromptClick('My exam is Friday. I have 40 minutes.')}
-          >
-            "My exam is Friday. I have 40 minutes."
-          </button>
-          <button
-            className="prompt-chip"
-            onClick={() => onPromptClick('Create a 30-minute focused study plan.')}
-          >
-            "Create a 30-minute focused study plan."
-          </button>
-          <button
-            className="prompt-chip"
-            onClick={() => onPromptClick('Start an independent check on my notes.')}
-          >
-            "Start an independent check on my notes."
-          </button>
         </div>
       </div>
     </div>
