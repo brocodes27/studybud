@@ -679,20 +679,65 @@ export function AgentWorkspace() {
                 onSaved={() => setLibraryRevision(r => r + 1)}
                 onStartPractice={handleStartPracticeFromMaterial}
               />
-            ) : activeArtifact.kind === 'session' ? (
-              <SessionView
-                revision={thread.updated_at}
-                key={activeArtifact.sessionId}
-                sessionId={activeArtifact.sessionId}
-                onCompleted={(s) => {
-                  void handleSendMessage('I finished my independent check. Review my saved results and help me with the remaining gaps.');
-                  setSessions((prev) => [
-                    s,
-                    ...prev.filter((x) => x.id !== s.id),
-                  ]);
-                }}
-              />
-            ) : activeArtifact.kind === 'explanation' ? (
+            ) : activeArtifact.kind === 'session' ? (() => {
+              const readyAssessment = thread.state.artifacts.find(
+                (a) => a.kind === 'assessment' && a.status === 'ready'
+              ) as AssessmentArtifact | undefined;
+              let nextTopicName: string | null = null;
+              let targetStepIdx = 0;
+              if (readyAssessment) {
+                const sessionTopic = (activeArtifact.title || '').trim().toLowerCase();
+                const currentIdx = (readyAssessment.steps || []).findIndex(
+                  (st) => st.topic.trim().toLowerCase() === sessionTopic
+                );
+                if (currentIdx !== -1) {
+                  const nextIdx = currentIdx + 1;
+                  if (nextIdx < (readyAssessment.steps?.length || 0)) {
+                    targetStepIdx = nextIdx;
+                    nextTopicName = readyAssessment.steps![nextIdx].topic;
+                  } else {
+                    targetStepIdx = currentIdx;
+                  }
+                }
+              }
+              return (
+                <SessionView
+                  revision={thread.updated_at}
+                  key={activeArtifact.sessionId}
+                  sessionId={activeArtifact.sessionId}
+                  onReturnToPlan={
+                    readyAssessment
+                      ? () => {
+                          sessionStorage.setItem(`curve:assessment-step:${readyAssessment.id}`, String(targetStepIdx));
+                          void launchTool({ name: 'activate', args: { artifactId: readyAssessment.id } });
+                        }
+                      : undefined
+                  }
+                  nextTopic={nextTopicName}
+                  onCompleted={(s) => {
+                    setSessions((prev) => [
+                      s,
+                      ...prev.filter((x) => x.id !== s.id),
+                    ]);
+                    const correct = s.results?.filter((r) => r.correct).length ?? 0;
+                    const total = s.results?.length ?? 5;
+                    if (readyAssessment && nextTopicName) {
+                      void handleSendMessage(
+                        `I completed the gap check for ${s.topic} (${correct}/${total} correct). Ready to move to the next topic: ${nextTopicName}.`
+                      );
+                    } else if (readyAssessment) {
+                      void handleSendMessage(
+                        `I completed the final gap check for ${s.topic} (${correct}/${total} correct). All topics in my recovery plan are completed!`
+                      );
+                    } else {
+                      void handleSendMessage(
+                        `I completed my practice check on ${s.topic} (${correct}/${total} correct).`
+                      );
+                    }
+                  }}
+                />
+              );
+            })() : activeArtifact.kind === 'explanation' ? (
               <ExplanationView
                 title={activeArtifact.title}
                 text={activeArtifact.text}

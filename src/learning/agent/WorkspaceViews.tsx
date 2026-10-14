@@ -204,10 +204,14 @@ export function SessionView({
   sessionId,
   onCompleted,
   revision,
+  onReturnToPlan,
+  nextTopic,
 }: {
   sessionId: string;
   onCompleted?: (session: StudySession) => void;
   revision?: string;
+  onReturnToPlan?: () => void;
+  nextTopic?: string | null;
 }) {
   const { user } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
@@ -370,6 +374,16 @@ export function SessionView({
                 ? 'Your independent check is recorded in your progress history.'
                 : 'Guided practice complete. Ready for an independent check?'}
             </p>
+            {onReturnToPlan && (
+              <button
+                type="button"
+                className="learn-button dark"
+                style={{ marginTop: 16 }}
+                onClick={onReturnToPlan}
+              >
+                {nextTopic ? `Continue to next topic: ${nextTopic} →` : 'Back to recovery plan →'}
+              </button>
+            )}
           </div>
 
           <div className="results-list">

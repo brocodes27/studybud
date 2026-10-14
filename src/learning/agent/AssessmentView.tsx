@@ -16,7 +16,19 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
   const {targets,minutes,confidence,examDate,report,score,total} = draft;
   const [reading,setReading] = useState(false);
   const [error,setError] = useState('');
-  const [step,setStep] = useState(0);
+  const [step, setStep] = useState(() => {
+    const saved = sessionStorage.getItem(`curve:assessment-step:${artifact.id}`);
+    const parsed = saved ? parseInt(saved, 10) : 0;
+    return Number.isFinite(parsed) ? Math.min(Math.max(0, parsed), (artifact.steps?.length || 1) - 1) : 0;
+  });
+  function changeStep(newStep: number | ((s: number) => number)) {
+    setStep(prev => {
+      const next = typeof newStep === 'function' ? newStep(prev) : newStep;
+      const bounded = Math.min(Math.max(0, next), (artifact.steps?.length || 1) - 1);
+      sessionStorage.setItem(`curve:assessment-step:${artifact.id}`, String(bounded));
+      return bounded;
+    });
+  }
   const ready = materials.filter(m => m.metadata.topics?.length);
   async function action(tool:WorkspaceTool) {
     setError('');
@@ -63,8 +75,8 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
       {artifact.mode === 'exam' && <p className="workflow-note">Exam: {artifact.examDate}. Complete the highest-priority gaps first, then stop for sleep. These sampled topics are a starting point, not a prediction of your exam score.</p>}
       {!!artifact.issues?.length && <section className="workflow-issues"><h3>What your exam feedback shows</h3>{artifact.issues.map((i,n)=><article key={n}><h4>{i.issue}</h4><blockquote>{i.evidence}</blockquote><p>{i.action}</p></article>)}</section>}
       {current && <article className="workflow-study-step"><span className="pill mint">STEP {step+1} OF {artifact.steps!.length} · {current.minutes} MIN</span><h3>{current.topic}</h3><p>{current.accuracy}% on the diagnostic. {current.instruction}</p>{current.gaps.map((gap,i)=><p key={i} className="workflow-gap">{gap}</p>)}
-        <div className="workflow-actions"><button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'explain',args:{materialId:current.materialId,topic:current.topic}})}>Review the explanation</button><button className="learn-button dark" disabled={busy} onClick={()=>void action({name:'start_practice',args:{materialId:current.materialId,topic:current.topic,mode:'checkpoint'}})}>Check the gap is fixed</button></div>
-        <nav className="workflow-actions" aria-label="Revision steps"><button className="text-button" disabled={step===0} onClick={()=>setStep(s=>s-1)}>Previous</button><button className="text-button" disabled={step===artifact.steps!.length-1} onClick={()=>setStep(s=>s+1)}>Next topic <ArrowRight size={14}/></button></nav>
+        <div className="workflow-actions"><button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'explain',args:{materialId:current.materialId,topic:current.topic}})}>Review the explanation</button><button className="learn-button dark" disabled={busy} onClick={()=>{sessionStorage.setItem(`curve:assessment-step:${artifact.id}`, String(step));void action({name:'start_practice',args:{materialId:current.materialId,topic:current.topic,mode:'checkpoint'}});}}>Check the gap is fixed</button></div>
+        <nav className="workflow-actions" aria-label="Revision steps"><button className="text-button" disabled={step===0} onClick={()=>changeStep(s=>s-1)}>Previous</button><button className="text-button" disabled={step===artifact.steps!.length-1} onClick={()=>changeStep(s=>s+1)}>Next topic <ArrowRight size={14}/></button></nav>
       </article>}
     </>}
   </section>;
