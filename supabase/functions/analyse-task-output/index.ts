@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { encodeBase64 } from 'https://deno.land/std@0.168.0/encoding/base64.ts'
+import { encode as encodeBase64 } from 'https://deno.land/std@0.168.0/encoding/base64.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
@@ -87,7 +87,7 @@ serve(async (req: Request) => {
       analysisContext = "A PDF file was uploaded. Provide general encouraging feedback."
     }
 
-    const messages: GeminiMessage[] = [
+    const messages: MetaMessage[] = [
       {
         role: "system",
         content: `You are Ranjan Sir, a warm and encouraging JEE mentor. Evaluate the student's task output for "${task_title}" with kindness and constructive encouragement. Provide JSON response: { "effort_score": number(1-10), "accuracy_score": number(1-10), "feedback": "string", "identified_weaknesses": ["string"], "next_steps": ["string"] }`
@@ -106,7 +106,7 @@ serve(async (req: Request) => {
       messages.push({ role: "user", content: analysisContext })
     }
 
-    const parsed = await callGeminiJSON<any>(messages, { temperature: 0.3 })
+    const parsed = await callMetaJSON<any>(messages, { temperature: 0.3 })
 
     // Record weaknesses in knowledge graph
     if (parsed.identified_weaknesses?.length > 0) {

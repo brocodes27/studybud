@@ -4,7 +4,7 @@
 // test_results record (visible on teacher/student/parent dashboards).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { callGemini, callGeminiJSON } from "../_shared/gemini.ts";
+import { callMeta, callMetaJSON } from "../_shared/meta.ts";
 import { getCors } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -206,7 +206,7 @@ serve(async (req) => {
 
             let pageText = page.ocr_text as string | null;
             if (!pageText) {
-                pageText = await callGemini(
+                pageText = await callMeta(
                     [{
                         role: "user",
                         content: [
@@ -253,7 +253,7 @@ ${questionsList}
 Student's Answers:
 ${studentText}`;
 
-        const results = await callGeminiJSON<EvaluationItem[]>(
+        const results = await callMetaJSON<EvaluationItem[]>(
             [
                 { role: "system", content: "You are a strict CBSE examiner. Output strictly JSON." },
                 { role: "user", content: prompt },
@@ -296,7 +296,7 @@ ${studentText}`;
                     await writePageAnnotations(page.id, runToken, [], "review");
                     continue;
                 }
-                const rawAnnotations = await callGeminiJSON<unknown[]>(
+                const rawAnnotations = await callMetaJSON<unknown[]>(
                     [{
                         role: "user",
                         content: [

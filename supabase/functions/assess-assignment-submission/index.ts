@@ -1,9 +1,9 @@
+import { callMeta } from "../_shared/meta.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { encodeBase64 } from 'https://deno.land/std@0.168.0/encoding/base64.ts'
+import { encode as encodeBase64 } from 'https://deno.land/std@0.168.0/encoding/base64.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || ''
 
 type Assessment = {
   score: number
@@ -159,7 +159,7 @@ Return one question_results entry for every assignment question, in order.
 Mark missing answers as unanswered. Do not award correctness merely because text was submitted.
 If the attached image is unreadable or incomplete, do not invent correctness: set score to 0.5, evidence_quality to 0.2, and say it is queued for visual review.`
 
-    const parts: Array<Record<string, unknown>> = [{ text: prompt }]
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: prompt }]
     if (storedAttachment) {
       try {
         let bytes: Uint8Array | null = null
@@ -204,24 +204,11 @@ If the attached image is unreadable or incomplete, do not invent correctness: se
       }
     }
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json',
-          },
-        }),
-      },
-    )
-    if (!geminiResponse.ok) throw new Error(`Assessment model unavailable (${geminiResponse.status})`)
-    const geminiData = await geminiResponse.json()
-    const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!raw) throw new Error('Assessment model returned no evidence')
+    const raw = await callMeta([{ role: 'user', content: parts.map((part) =>
+      'text' in part ? { type: 'text' as const, text: part.text } : {
+        type: 'image' as const, mimeType: part.inlineData.mimeType, base64: part.inlineData.data,
+      }
+    ) }], { json: true });
     const parsed = JSON.parse(String(raw).replace(/```json|```/g, '').trim()) as Assessment
     const score = clamp(parsed.score)
     const evidenceQuality = clamp(parsed.evidence_quality)

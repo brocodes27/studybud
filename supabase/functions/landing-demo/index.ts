@@ -3,7 +3,7 @@
 // abuse is bounded by CORS origin allow-listing, a server-locked system
 // prompt, input-size caps, and a small output-token budget.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { callGemini } from '../_shared/gemini.ts'
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts'
 
 const MAX_MESSAGE_CHARS = 1500
@@ -46,12 +46,12 @@ serve(async (req: Request) => {
       })
     }
 
-    const response = await callGemini(
+    const response = await callMeta(
       [
         { role: 'system', content: DEMO_SYSTEM },
         { role: 'user', content: message.slice(0, MAX_MESSAGE_CHARS) },
       ],
-      { temperature: 0.4, maxOutputTokens: 300 },
+      { reasoningEffort: 'minimal', maxOutputTokens: 300 },
     )
 
     // Match generateEmpatheticChat's response shape so callers stay uniform

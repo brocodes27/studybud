@@ -1,3 +1,4 @@
+import { callMeta } from "../_shared/meta.ts";
 import { isUserPremium } from "../generate-study-plan/_utils_subscription.ts";
 import { getCors } from "../_shared/cors.ts";
 
@@ -94,11 +95,11 @@ Deno.serve(async (req: Request) => {
 
     const { subject, class: studentClass, chapters, question_count, duration_minutes }: PracticeTestRequest = await req.json();
 
-    // Prepare Gemini API request
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
+    // Prepare Meta API request
+    const metaApiKey = Deno.env.get("MODEL_API_KEY");
+    if (!metaApiKey) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "Meta API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -161,35 +162,9 @@ Return the response in this exact JSON format:
 
 Make sure questions are challenging but fair, and test real understanding of ${subject} concepts at Class ${studentClass || ''} level.`;
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    const generatedText = await callMeta([{ role: "user", content: prompt }], { json: true });
 
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const generatedText = geminiData.candidates[0].content.parts[0].text;
-
-    // Parse the JSON response from Gemini
+    // Parse the JSON response from Meta
     let testData;
     try {
       const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
@@ -199,7 +174,7 @@ Make sure questions are challenging but fair, and test real understanding of ${s
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse Gemini response:", {
+      console.error("Failed to parse Meta response:", {
         error: parseError.message,
         responseLength: generatedText.length,
         responsePreview: generatedText.substring(0, 500) + "...",

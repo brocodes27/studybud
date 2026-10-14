@@ -43,7 +43,7 @@ Live authenticated AI generation has not been smoke-tested against a real user a
 
 This is the first material-driven beta slice, not a validated exam-readiness predictor. Generated questions require subject review before any accuracy or exam-outcome claims. Progress describes attempted questions; exact-repeat filtering is not a guarantee of semantically independent assessment.
 
-Current intake limits: 20 MB, 100 PDF pages, 300,000 text characters, and 30 editable topics per material. Scanned PDFs, images, audio, and presentations are not supported. AI works from bounded excerpts, so it does not promise exhaustive document coverage. A student can make 30 new AI requests per rolling 24 hours, including failed attempts. Saved sessions remain usable. Progress currently summarizes the latest 500 sessions.
+Current intake limits: 20 MB, 100 PDF pages, 300,000 text characters, and 30 editable topics per material. Scanned PDFs, images, audio, and presentations are not supported. AI works from bounded excerpts, so it does not promise exhaustive document coverage. A student can make 250 new AI requests per rolling 24 hours, and failed attempts are refunded. Saved sessions remain usable. Progress currently summarizes the latest 500 sessions.
 
 ## Repeat the browser check
 

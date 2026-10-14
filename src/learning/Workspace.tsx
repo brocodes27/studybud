@@ -133,10 +133,40 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   );
 }
 
-function ErrorNotice({ error }: { error: string }) {
+function ErrorNotice({
+  error,
+  sessions,
+  onContinue,
+}: {
+  error: string;
+  sessions?: StudySession[];
+  onContinue?: (session: StudySession) => void;
+}) {
+  const isLimit = /Daily AI limit reached/i.test(error);
+  const savedSession =
+    isLimit &&
+    sessions &&
+    (sessions.find((s) => s.questions?.length && !s.completed_at) ||
+      sessions.find((s) => s.questions?.length));
+
   return (
-    <div role="alert" className="learn-error">
-      {error}
+    <div role="alert" className={`learn-error ${isLimit ? "limit-notice" : ""}`}>
+      <div>{error}</div>
+      {isLimit && savedSession && onContinue && (
+        <button
+          type="button"
+          className="btn-pill"
+          style={{
+            marginTop: 8,
+            fontSize: "0.85rem",
+            padding: "6px 14px",
+            cursor: "pointer",
+          }}
+          onClick={() => onContinue(savedSession)}
+        >
+          Continue saved session: {savedSession.topic}
+        </button>
+      )}
     </div>
   );
 }
@@ -251,6 +281,17 @@ export function LearningWorkspace() {
     setError("");
     try {
       const topic = nextTopic(material, sessions);
+      const existingIncomplete = sessions.find(
+        (s) =>
+          s.material_id === material.id &&
+          s.topic === topic &&
+          !s.completed_at &&
+          s.questions?.length,
+      );
+      if (existingIncomplete) {
+        navigate(`/learn/${existingIncomplete.id}`);
+        return;
+      }
       const session = await learningAction<StudySession>({
         action: "generate",
         material_id: material.id,
@@ -379,7 +420,11 @@ export function LearningWorkspace() {
       )}
       {error && (
         <>
-          <ErrorNotice error={error} />
+          <ErrorNotice
+            error={error}
+            sessions={sessions}
+            onContinue={(s) => navigate(`/learn/${s.id}`)}
+          />
           <button className="text-button" onClick={() => void refresh()}>
             Retry loading workspace
           </button>
@@ -907,6 +952,7 @@ export function MaterialUpload({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const inputVersion = useRef(0);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   // Automatically parse pages and detect subjects when a file or text changes
   const processInputPages = useCallback(
@@ -960,6 +1006,7 @@ export function MaterialUpload({
     e.preventDefault();
     if (!user) return;
     setBusy(true);
+    setUploadStatus("Saving material and fetching topics…");
     setError("");
     try {
       let pages: SourcePage[] = rawPages || [];
@@ -981,7 +1028,11 @@ export function MaterialUpload({
           }
 
           let firstSaved: Material | null = null;
-          for (const sub of toImport) {
+          const failedTopics: string[] = [];
+          for (const [index, sub] of toImport.entries()) {
+            setUploadStatus(
+              `Fetching topics for ${sub.title} (${index + 1}/${toImport.length})…`,
+            );
             const sliced = extractPagesForSubject(pages, sub);
             if (!sliced.length)
               throw new Error(`No readable content found for ${sub.title}.`);
@@ -994,8 +1045,17 @@ export function MaterialUpload({
               sub.semester,
             );
             if (!firstSaved) firstSaved = saved;
+            if (saved.topicAnalysisError) failedTopics.push(sub.title);
           }
-          if (firstSaved) onSaved(firstSaved);
+          if (firstSaved)
+            onSaved(
+              failedTopics.length
+                ? {
+                    ...firstSaved,
+                    topicAnalysisError: `Your subjects are saved. Topics could not be fetched for ${failedTopics.join(", ")}. Open each material to retry topic suggestions.`,
+                  }
+                : firstSaved,
+            );
           return;
         } else if (importMode === "single") {
           const chosen =
@@ -1338,8 +1398,8 @@ export function MaterialUpload({
         </label>
 
         <p className="field-note">
-          Saved privately to your account. AI uses excerpts to suggest topics
-          and practice.
+          Saved privately to your account. Topics are fetched during upload and
+          ready for you to review.
         </p>
         {error && <ErrorNotice error={error} />}
         <button
@@ -1355,7 +1415,7 @@ export function MaterialUpload({
           {busy ? (
             <>
               <Loader2 className="spin" size={17} />
-              Saving course materials…
+              {uploadStatus || "Saving material and fetching topics…"}
             </>
           ) : isMultiSubject && importMode === "all" ? (
             <>
@@ -1393,7 +1453,11 @@ export function MaterialEditor({
   const [summary, setSummary] = useState(material.metadata.summary ?? "");
   const [exam, setExam] = useState(material.metadata.exam_on ?? "");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    material.topicAnalysisError
+      ? `Your material is saved. ${material.topicAnalysisError}`
+      : "",
+  );
   const [deleting, setDeleting] = useState(false);
   const [mode, setMode] = useState<"practice" | "checkpoint">("practice");
   const [selectedTopic, setSelectedTopic] = useState(
@@ -1787,7 +1851,7 @@ export function MaterialStudy() {
                     </p>
                     <p>{r.explanation}</p>
                     <blockquote>
-                      <span>YOUR MATERIAL · PAGE {r.page}</span>
+                      <span>{r.source ? <a href={r.source.url} target="_blank" rel="noreferrer">{r.source.title} ↗</a> : <>YOUR MATERIAL · PAGE {r.page}</>}</span>
                       {r.quote}
                     </blockquote>
                   </article>
@@ -1830,7 +1894,7 @@ export function MaterialStudy() {
                   <span>
                     Question {index + 1} of {session.questions.length}
                   </span>
-                  <span>Source · page {question.page}</span>
+                  <span>{question.source ? 'Topic concepts' : <>Source · page {question.page}</>}</span>
                 </div>
                 <div className="question-progress">
                   <span

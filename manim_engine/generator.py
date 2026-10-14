@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 try:
-    import google.generativeai as genai
+    from meta_client import MODEL, generate_text
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    print("❌ Google Generative AI library not installed. Install with: pip install google-generativeai python-dotenv")
+    print("❌ Video generation dependencies missing. Install with: pip install python-dotenv")
     sys.exit(1)
 
 try:
@@ -26,20 +26,6 @@ except ImportError as e:
 # Use absolute path to ensure correct directory in Docker
 BASE_DIR = Path(__file__).parent / "jobs"
 BASE_DIR.mkdir(parents=True, exist_ok=True)
-
-# Default model
-MODEL = "gemini-3-flash-preview"  # Fast and reliable for code generation
-
-# Initialize Gemini with error handling
-try:
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("No Gemini API key found in environment")
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(MODEL)
-except Exception as e:
-    print(f"❌ Gemini initialization failed: {e}")
-    model = None
 
 # ============================================================================
 # LOGGING & ERROR HANDLING
@@ -167,10 +153,10 @@ def normalize_segments(raw: List) -> List[Dict]:
     return cleaned
 
 def get_segments_from_ai(topic: str, script_text: str) -> List[Dict]:
-    """Call AI to generate segments with Gemini."""
+    """Call AI to generate segments with Meta."""
     
-    if not model:
-        log.error("Gemini model not initialized. Using fallback.")
+    if not os.getenv("MODEL_API_KEY"):
+        log.error("MODEL_API_KEY not configured. Using fallback.")
         return fallback_segments(topic, script_text)
     
     prompt = f"""You are a Manim animation expert. Generate educational animation segments.
@@ -197,17 +183,8 @@ Script (first 500 chars): {script_text[:500]}
     
     for attempt in range(2):
         try:
-            # Gemini generation
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.3,
-                    max_output_tokens=8192,
-                )
-            )
-            
-            raw = response.text.strip()
-            
+            raw = generate_text(prompt, max_tokens=8192, json_output=True)
+
             if not raw:
                 log.warn(f"Attempt {attempt+1}: Empty response")
                 continue
@@ -241,7 +218,7 @@ Script (first 500 chars): {script_text[:500]}
             log.debug(f"Attempt {attempt+1}: {type(e).__name__}: {str(e)[:100]}")
             continue
     
-    log.error("Gemini failed after retries. Using fallback segmentation.")
+    log.error("Meta failed after retries. Using fallback segmentation.")
     return fallback_segments(topic, script_text)
 
 # ============================================================================

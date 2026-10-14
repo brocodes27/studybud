@@ -1,3 +1,4 @@
+import { callMeta } from "../_shared/meta.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isUserPremium } from "../generate-study-plan/_utils_subscription.ts";
 import { getCors } from "../_shared/cors.ts";
@@ -83,20 +84,6 @@ serve(async (req: Request) => {
     const userData = await userResponse.json();
     const userId = userData.id;
 
-    // Free tier limits
-    const { premium } = await isUserPremium(userId);
-    if (!premium) {
-      if (!count || count > 20) {
-        return new Response(
-          JSON.stringify({ error: 'Free tier limit: Max 20 flashcards per deck. Upgrade for unlimited.' }),
-          {
-            status: 403,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-    }
-
     // Log and parse the raw request body for debugging
     const rawBody = await req.text();
     console.log("Raw request body:", rawBody);
@@ -111,14 +98,28 @@ serve(async (req: Request) => {
     // Use parsedBody instead of await req.json()
     const { topic, subject, class: studentClass, chapters, count, context, persist = true }: FlashcardRequest = parsedBody || {};
 
+    // Free tier limits
+    const { premium } = await isUserPremium(userId);
+    if (!premium) {
+      if (!count || count > 20) {
+        return new Response(
+          JSON.stringify({ error: 'Free tier limit: Max 20 flashcards per deck. Upgrade for unlimited.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+    }
+
     // Log incoming request for debugging
     console.log("Flashcard request received:", { topic, subject, studentClass, chapters, count });
 
-    // Prepare Gemini API request
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
+    // Prepare Meta API request
+    const metaApiKey = Deno.env.get("MODEL_API_KEY");
+    if (!metaApiKey) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "Meta API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -178,35 +179,9 @@ Return the response in this exact JSON format (do NOT include markdown/code fenc
 
 Make sure questions are specific and answers are educational. Include definitions, explanations, examples, and key concepts relevant to Class ${studentClass || ''} ${subject}.`;
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    const generatedText = await callMeta([{ role: "user", content: prompt }], { json: true });
 
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const generatedText = geminiData.candidates[0].content.parts[0].text;
-
-    // Parse the JSON response from Gemini
+    // Parse the JSON response from Meta
     let flashcardsData;
     try {
       const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
@@ -216,7 +191,7 @@ Make sure questions are specific and answers are educational. Include definition
         throw new Error("No JSON found in response");
       }
     } catch (parseError) {
-      console.error("Failed to parse Gemini response:", {
+      console.error("Failed to parse Meta response:", {
         error: parseError.message,
         responseLength: generatedText.length,
         responsePreview: generatedText.substring(0, 500) + "...",

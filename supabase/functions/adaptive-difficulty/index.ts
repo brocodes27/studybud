@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
-import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
 
 // Configuration & Default CORS Headers
 // CORS handled per-request via getCors()
@@ -70,7 +70,7 @@ serve(async (req) => {
     ) => {
       if (needed <= 0) return []
       const topicList = requestedTopics.length ? requestedTopics : [String(topic || 'the selected lesson')]
-      const messages: GeminiMessage[] = [
+      const messages: MetaMessage[] = [
         {
           role: 'system',
           content: `You write teacher-ready, curriculum-aligned homework questions.
@@ -100,7 +100,7 @@ Rules:
           }),
         },
       ]
-      const generated = await callGeminiJSON<{ questions?: any[] }>(messages, {
+      const generated = await callMetaJSON<{ questions?: any[] }>(messages, {
         temperature: 0.45,
         maxOutputTokens: 4096,
       })
@@ -205,7 +205,7 @@ Rules:
       .in('kc_id', target_kc_ids)
     
     // Map of kc_id -> mastery (default to 0.1 if unseen)
-    const masteryMap = new Map(target_kc_ids.map(id => [id, 0.1]))
+    const masteryMap = new Map<string, number>(target_kc_ids.map(id => [id, 0.1]))
     profiles?.forEach(p => masteryMap.set(p.kc_id, p.p_mastery))
 
     // Average mastery to approximate overall 'theta' (student ability)

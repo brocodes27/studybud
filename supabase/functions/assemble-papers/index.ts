@@ -1,10 +1,11 @@
+import { callMetaJSON } from "../_shared/meta.ts";
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCors } from "../_shared/cors.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const MODEL_API_KEY = Deno.env.get("MODEL_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
 }
@@ -385,7 +386,7 @@ async function generateMissingQuestions({
   count,
   contexts
 }: { class_level: string; subject: string; qtype: string; count: number; contexts?: string }) {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+  if (!MODEL_API_KEY) throw new Error("MODEL_API_KEY not configured");
   const constrained = coerceQType(qtype);
   const typeHint = constrained === "mcq"
     ? "type: \"mcq\", options: [A,B,C,D], correct_index: 0..3"
@@ -411,20 +412,7 @@ Ensure each item strictly follows CBSE style and weightage relevance. Output str
   ]
 }
 For MCQ, provide exactly 4 options and a numeric correct_index. Use only CBSE syllabus content.`;
-  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY;
-  const body = { contents: [{ parts: [{ text: prompt }] }] } as any;
-  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (!r.ok) throw new Error("Gemini API error: " + r.statusText);
-  const j = await r.json();
-  let text = j?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  text = String(text || "").trim().replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
-  let data: any = null;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) data = JSON.parse(m[0]);
-  }
+  const data = await callMetaJSON([{ role: "user", content: prompt }]);
   const items = Array.isArray(data?.questions) ? data.questions : [];
   const out: any[] = [];
   for (const it of items) {

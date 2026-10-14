@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
-import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
 
 export interface GradingComponentExtract {
   name: string
@@ -118,7 +118,7 @@ serve(async (req: Request) => {
       throw new Error('pages array is required')
     }
 
-    const messages: GeminiMessage[] = [
+    const messages: MetaMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
       {
         role: 'user',
@@ -129,7 +129,7 @@ serve(async (req: Request) => {
       },
     ]
 
-    const parsed = await callGeminiJSON<CollegeSyllabusScanResult>(messages, {
+    const parsed = await callMetaJSON<CollegeSyllabusScanResult>(messages, {
       temperature: 0.1,
       maxOutputTokens: 8192,
     })

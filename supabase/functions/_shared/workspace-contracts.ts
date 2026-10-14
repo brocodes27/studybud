@@ -1,10 +1,13 @@
+import { topicConfirmed, type TopicMetadata, type AssessmentArtifact, type ResearchArtifact, type ResearchStatus } from './learning-workflows.ts';
 /** Shared wire contracts. Artifact payloads contain references, never answer keys. */
 export interface StudyPlan {
   minutes: number;
   steps: { materialId: string; topic: string; minutes: number; kind: 'learn' | 'practice' | 'checkpoint' }[];
 }
-export interface Citation { materialId: string; page: number; quote: string }
+export interface Citation { materialId: string; page: number; quote: string; source?: {title:string;url:string} }
 export type WorkspaceArtifact =
+  | AssessmentArtifact
+  | ResearchArtifact
   | { id: string; kind: 'material'; title: string; materialId: string; page?: number }
   | { id: string; kind: 'session'; title: string; sessionId: string }
   | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
@@ -14,11 +17,14 @@ export interface WorkspaceState {
   activeId: string | null;
   plan: StudyPlan | null;
   checkpointId: string | null;
+  closedArtifactIds?: string[];
+  reviewedArtifactIds?: string[];
 }
 export interface WorkspaceThread { id: string; state: WorkspaceState; updated_at: string }
-export interface WorkspaceMessage { id: string; role: 'user' | 'assistant'; content: string; created_at: string }
+export interface WorkspaceMessage { id: string; request_id?: string; role: 'user' | 'assistant'; content: string; created_at: string }
 export interface AgentAction { id: string; name: string; status: 'running' | 'completed' | 'failed'; error?: string }
-export interface WorkspaceSnapshot { thread: WorkspaceThread; messages: WorkspaceMessage[] }
+export interface WorkspaceSnapshot {
+  research?: ResearchStatus; thread: WorkspaceThread; messages: WorkspaceMessage[] }
 export type WorkspaceEvent =
   | { type: 'text'; text: string }
   | { type: 'action'; action: AgentAction }
@@ -26,10 +32,10 @@ export type WorkspaceEvent =
   | { type: 'done'; snapshot: WorkspaceSnapshot; result?: unknown }
   | { type: 'error'; error: string };
 export const emptyWorkspace = (): WorkspaceState => ({ artifacts: [], activeId: null, plan: null, checkpointId: null });
-export const TOOL_NAMES = ['find_materials', 'open_material', 'review_topics', 'build_plan', 'explain', 'start_practice', 'resume_session', 'read_question', 'select_answer', 'hint', 'submit_session', 'show_progress'] as const;
+export const TOOL_NAMES = ['open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'find_materials', 'open_material', 'review_topics', 'build_plan', 'explain', 'start_practice', 'resume_session', 'read_question', 'select_answer', 'hint', 'submit_session', 'show_progress'] as const;
 export type ToolName = typeof TOOL_NAMES[number];
 export interface WorkspaceTool { name: ToolName; args: Record<string, unknown> }
-export const CHECKPOINT_TOOLS: readonly string[] = ['read_question', 'select_answer', 'submit_session', 'resume_session'];
+export const CHECKPOINT_TOOLS: readonly string[] = ['read_question', 'select_answer', 'submit_session', 'resume_session', 'restart_assessment'];
 export function assertTool(name: unknown, checkpoint: boolean): asserts name is ToolName {
   if (typeof name !== 'string' || !TOOL_NAMES.includes(name as ToolName)) throw new Error('Unsupported workspace action.');
   if (checkpoint && !CHECKPOINT_TOOLS.includes(name)) throw new Error('Finish your independent check before opening notes or getting help.');
@@ -45,21 +51,21 @@ export function uuid(value: unknown): string {
 export function putArtifact(state: WorkspaceState, artifact: WorkspaceArtifact): WorkspaceState {
   return { ...state, artifacts: [...state.artifacts.filter(a => a.id !== artifact.id), artifact], activeId: artifact.id };
 }
-export function validatePlan(raw: unknown, materials: { id: string; metadata: { confirmed?: boolean; topics?: string[] } }[]): StudyPlan {
+export function validatePlan(raw: unknown, materials: { id: string; metadata: TopicMetadata }[]): StudyPlan {
   const p = raw as StudyPlan;
   if (!p || !Number.isInteger(p.minutes) || p.minutes < 5 || p.minutes > 240 || !Array.isArray(p.steps) || !p.steps.length || p.steps.length > 12) throw new Error('Choose a study plan between 5 and 240 minutes.');
   for (const s of p.steps) {
     const m = materials.find(m => m.id === s.materialId);
-    if (!m?.metadata.confirmed || !m.metadata.topics?.includes(s.topic) || !['learn', 'practice', 'checkpoint'].includes(s.kind) || !Number.isInteger(s.minutes) || s.minutes < 1) throw new Error('Plans must use confirmed topics from your library.');
+    if (!m || !topicConfirmed(m.metadata,s.topic) || !['learn', 'practice', 'checkpoint'].includes(s.kind) || !Number.isInteger(s.minutes) || s.minutes < 1) throw new Error('Plans must use confirmed topics from your library.');
   }
   if (p.steps.reduce((n, s) => n + s.minutes, 0) !== p.minutes) throw new Error('Plan durations must add up to the available time.');
   return { minutes: p.minutes, steps: p.steps.map(s => ({ materialId: s.materialId, topic: s.topic, minutes: s.minutes, kind: s.kind })) };
 }
-export function validateCitations(raw: unknown, materialId: string, pages: { page: number; text: string }[]): Citation[] {
+export function validateCitations(raw: unknown, materialId: string, pages: { page: number; text: string; source?: {title:string;url:string} }[]): Citation[] {
   if (!Array.isArray(raw) || !raw.length || raw.length > 8) throw new Error('Could not verify the explanation against your notes.');
   return raw.map(c => {
     const page = pages.find(p => p.page === c.page);
     if (!page || typeof c.quote !== 'string' || c.quote.length < 20 || !page.text.includes(c.quote)) throw new Error('Could not verify the explanation against your notes.');
-    return { materialId, page: page.page, quote: c.quote };
+    return { materialId, page: page.page, quote: c.quote, ...(page.source ? {source:page.source} : {}) };
   });
 }

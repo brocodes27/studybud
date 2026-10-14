@@ -1,10 +1,10 @@
+import { callMeta } from "../_shared/meta.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
 
 // CORS handled per-request via getCors()
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || ''
 
 serve(async (req) => {
   const cors = getCors(req)
@@ -49,7 +49,7 @@ serve(async (req) => {
       ndcfState = newState
     }
 
-    // 2. Emotion Detection & Tripartite Assessment (using Gemini Flash)
+    // 2. Emotion Detection & Tripartite Assessment (using Meta Flash)
     const emotionPrompt = `
       Analyze the student's message: "${message}"
       Determine:
@@ -57,12 +57,7 @@ serve(async (req) => {
       2. Cognitive Level: (anoetic - just reacting/rote, noetic - understanding concepts, autonoetic - metacognitive/self-aware)
       Return valid JSON only: {"emotion": "...", "cognitive_level": "..."}
     `
-    const emotionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: emotionPrompt }] }] })
-    })
-    const emotionData = await emotionRes.json()
-    const emotionText = emotionData.candidates?.[0]?.content?.parts?.[0]?.text || '{"emotion":"neutral", "cognitive_level":"anoetic"}'
+    const emotionText = await callMeta([{ role: "user", content: emotionPrompt }], { json: true });
     let detected_emotion = 'neutral'
     let cognitive_level = 'anoetic'
     try {
@@ -131,19 +126,7 @@ serve(async (req) => {
       { role: "user", content: message }
     ]
 
-    // Map to Gemini format
-    const contents = messages.map(m => ({
-      role: m.role === 'system' ? 'user' : (m.role === 'assistant' ? 'model' : 'user'),
-      parts: [{ text: m.role === 'system' ? `SYSTEM INSTRUCTION: ${m.content}` : m.content }]
-    }))
-
-    const chatRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents })
-    })
-
-    const chatData = await chatRes.json()
-    const responseText = chatData.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble connecting right now."
+    const responseText = await callMeta(messages);
 
     return new Response(JSON.stringify({ 
       response: responseText,

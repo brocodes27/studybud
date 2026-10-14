@@ -1,5 +1,5 @@
 import { isUserPremium } from './_utils_subscription.ts';
-import { callGemini } from '../_shared/gemini.ts';
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts';
 
 // CORS handled per-request via getCors()
@@ -101,11 +101,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Prepare Gemini API request
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
+    // Prepare Meta API request
+    const metaApiKey = Deno.env.get("MODEL_API_KEY");
+    if (!metaApiKey) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "Meta API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -211,11 +211,11 @@ Return the response in this exact JSON format:
 
 IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep responses concise to avoid truncation.`;
 
-      const callGeminiWithRetry = async (): Promise<string> => {
+      const callMetaWithRetry = async (): Promise<string> => {
         let lastErr: unknown;
         for (let i = 0; i < 3; i++) {
           try {
-            return await callGemini(
+            return await callMeta(
               [
                 {
                   role: "system",
@@ -223,27 +223,27 @@ IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep
                 },
                 { role: "user", content: prompt }
               ],
-              { temperature: 0.7, maxOutputTokens: 4096, json: true, apiKey: geminiApiKey }
+              { temperature: 0.7, maxOutputTokens: 4096, json: true, apiKey: metaApiKey }
             );
           } catch (e) {
             lastErr = e;
             await new Promise(r => setTimeout(r, 500 * (i + 1)));
           }
         }
-        throw lastErr instanceof Error ? lastErr : new Error('Gemini call failed');
+        throw lastErr instanceof Error ? lastErr : new Error('Meta call failed');
       };
 
-      const generatedText = await callGeminiWithRetry();
-      console.log("GEMINI_LEN", generatedText?.length || 0);
+      const generatedText = await callMetaWithRetry();
+      console.log("META_LEN", generatedText?.length || 0);
 
       // Validate response size and content
       if (!generatedText || generatedText.length < 50) {
-        throw new Error("Gemini response is too short or empty");
+        throw new Error("Meta response is too short or empty");
       }
 
       // Check if response might be truncated
       if (generatedText.length > 10000) {
-        console.warn("Large Gemini response detected, may be truncated");
+        console.warn("Large Meta response detected, may be truncated");
       }
 
       // Parse the JSON response with improved error handling
@@ -286,7 +286,7 @@ IMPORTANT: Always include a numeric days_until_exam field exactly as shown. Keep
         return studyPlan;
 
       } catch (parseError) {
-        console.error("Failed to parse Gemini response:", {
+        console.error("Failed to parse Meta response:", {
           error: parseError.message,
           responseLength: generatedText.length,
           responsePreview: generatedText.substring(0, 500) + "...",

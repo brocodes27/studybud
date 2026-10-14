@@ -1,3 +1,4 @@
+import { callMeta } from "../_shared/meta.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
@@ -9,7 +10,6 @@ import {
   shouldUseAtlasOpenUI,
 } from '../_shared/atlas-openui.ts'
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') || ''
 
 serve(async (req) => {
   const cors = getCors(req)
@@ -38,7 +38,7 @@ serve(async (req) => {
 
     // Meter AI cost: school users pass through (school entitlement governs
     // them); free B2C users are capped per day. This orchestrator makes
-    // several Gemini calls per message, so it is the most important gate.
+    // several Meta calls per message, so it is the most important gate.
     const { data: hasBudget } = await supabaseClient.rpc('check_ai_budget', {
       p_user_id: user.id,
     })
@@ -461,32 +461,10 @@ serve(async (req) => {
       ? `\n\nINTERACTIVE RESPONSE CONTRACT (OVERRIDES PROSE AND NAVIGATION-TAG INSTRUCTIONS):\n${ATLAS_OPENUI_SYSTEM_PROMPT}${assignedWorkOpenUIRule}`
       : ''
 
-    // Internal helper to call Gemini
-    const callGemini = async (systemPrompt: string, userPrompt: string) => {
-      const contents = [
-        { role: 'user', parts: [{ text: `SYSTEM INSTRUCTION: ${systemPrompt}\n\nUSER PROMPT: ${userPrompt}` }]}
-      ]
-      
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
-         method: "POST", headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({ 
-           contents,
-           generationConfig: { temperature: 0.3 }
-         })
-      })
-      if (!res.ok) {
-        const errText = await res.text()
-        console.error('Gemini call failed', res.status, errText)
-        throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`)
-      }
-      const data = await res.json()
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text || typeof text !== 'string' || !text.trim()) {
-        console.error('Gemini returned empty candidate', JSON.stringify(data).slice(0, 500))
-        throw new Error('Gemini returned empty response (possible safety block or quota)')
-      }
-      return text
-    }
+    const complete = (systemPrompt: string, userPrompt: string) => callMeta([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ]);
 
     let finalResponse = ''
     let emotionDetected = 'neutral'
@@ -495,7 +473,7 @@ serve(async (req) => {
 
     if (!use_full_orchestration) {
       // Fast path (Route to NDCF mentor or direct)
-       finalResponse = await callGemini(
+       finalResponse = await complete(
          `You are ATLAS, a warm, friendly, and encouraging study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT of what this student has actually done (completions, uploads, tests, classes, videos, memories). Ground your answer in that snapshot — reference concrete items when relevant. Never claim you don't know what they've done. Be supportive and celebrate their progress. ${socraticContract}${openUIDirective}`,
          baseContext
        )
@@ -503,11 +481,11 @@ serve(async (req) => {
       try {
       // 1. Emotional Agent
       const [emotionalOutput, expertOutput] = await Promise.all([
-        callGemini(
+        complete(
           "You are the Emotional Intelligence Agent. Analyze the student's emotional state (frustration, confidence, confusion). Output a short JSON with { 'emotion': '...', 'recommended_tone': '...' }",
           baseContext
         ),
-        callGemini(
+        complete(
           assignedWorkMode
             ? `You are the Subject Expert Agent. Privately identify the relevant facts and likely misconception, but DO NOT output a final answer or complete solution. Give the synthesizer only the minimum principle needed to choose one next question. ${socraticContract}`
             : "You are the Subject Expert Agent. Ignore teaching style. Just analyze the factual correctness of the student's statement or precisely answer their technical question. Output pure facts.",
@@ -521,7 +499,7 @@ serve(async (req) => {
       } catch(e) {}
 
       // 2. Pedagogical Agent
-      const pedagogyOutput = await callGemini(
+      const pedagogyOutput = await complete(
         assignedWorkMode
           ? `You are the Pedagogical Agent. Given the Expert's facts: "${expertOutput}" and the student's emotion: "${emotionDetected}", choose exactly one next-smallest Socratic question. Giving the answer is forbidden. ${socraticContract}`
           : `You are the Pedagogical Agent. Given the Expert's facts: "${expertOutput}" and the student's emotion: "${emotionDetected}", decide HOW to teach this. Should we use Socratic questioning, a real-world analogy, or just give the answer? Output your strategy.`,
@@ -529,7 +507,7 @@ serve(async (req) => {
       )
 
       // 3. Meta Agent (Synthesizer)
-      finalResponse = await callGemini(
+      finalResponse = await complete(
         `You are the Meta-Agent (StudyBud / ATLAS), the student's warm and encouraging AI study partner. Synthesize the final response to the student.
          Expert Facts: ${expertOutput}
          Teaching Strategy: ${pedagogyOutput}
@@ -576,14 +554,14 @@ serve(async (req) => {
       Promise.all(logPromises).catch(console.error)
       } catch (orchErr) {
         console.error('Orchestration failed, falling back to single call:', orchErr)
-        // Fallback: single direct Gemini call so the user always gets a response
+        // Fallback: single direct Meta call so the user always gets a response
         try {
-          finalResponse = await callGemini(
+          finalResponse = await complete(
             `You are ATLAS, a warm, friendly, and encouraging AI study partner. The user prompt contains a STUDENT ACTIVITY SNAPSHOT — ground your answer in it and reference concrete items when relevant. Provide a kind, supportive, and motivating answer. ${socraticContract}${openUIDirective}`,
             baseContext
           )
         } catch (fallbackErr) {
-          console.error('Fallback Gemini call also failed:', fallbackErr)
+          console.error('Fallback Meta call also failed:', fallbackErr)
           finalResponse = "I'm having trouble reaching my reasoning engine right now. Please try again in a moment."
         }
       }

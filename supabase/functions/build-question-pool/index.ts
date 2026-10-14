@@ -1,10 +1,11 @@
+import { callMetaJSON } from "../_shared/meta.ts";
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCors } from "../_shared/cors.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+const MODEL_API_KEY = Deno.env.get("MODEL_API_KEY");
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
 }
@@ -149,37 +150,8 @@ async function fetchUserId(req) {
     return null;
   }
 }
-async function generateWithGemini(prompt) {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY not configured");
-  }
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`;
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: prompt
-            }
-          ]
-        }
-      ]
-    })
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${txt}`);
-  }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Gemini response missing JSON");
-  return JSON.parse(match[0]);
+async function generateWithMeta(prompt) {
+  return await callMetaJSON([{ role: "user", content: prompt }]);
 }
 serve(async (req)=>{
   const cors = getCors(req);
@@ -281,9 +253,9 @@ serve(async (req)=>{
     } else {
       // Generate per-qtype quotas derived from CBSE pattern
       stage = "ai_generate_by_type";
-      if (!GEMINI_API_KEY) {
+      if (!MODEL_API_KEY) {
         await supabase.from("question_pools").update({ status: "failed" }).eq("id", pool_id);
-        return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured", stage }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }});
+        return new Response(JSON.stringify({ error: "MODEL_API_KEY not configured", stage }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }});
       }
       const pattern = getCBSEPattern(class_level, subject);
       const totals = pattern.sections.reduce((acc: any, s)=>{ acc.total += s.count; acc[s.type]=(acc[s.type]||0)+s.count; return acc; }, { total:0 });
@@ -310,7 +282,7 @@ serve(async (req)=>{
           const need = Math.min(batchSize, desired[t] - have[t]);
           const prompt = `Generate exactly ${need} CBSE syllabus-aligned ${t.toUpperCase()} questions for Class ${class_level} ${subject}.
 Output strict JSON: { "questions": [ { "qtype": "${t}", "question": string, ${t==="mcq"? '"options": [string,string,string,string], "correct_index": 0|1|2|3,' : '"answer_text": string,'} "difficulty": "easy"|"medium"|"hard", "chapter": string } ] }`;
-          const ai = await generateWithGemini(prompt);
+          const ai = await generateWithMeta(prompt);
           const batchQs = (Array.isArray(ai?.questions)? ai.questions: []).map((q:any)=>{
             const qt = coerceQType(q.qtype);
             const opts = Array.isArray(q.options)? q.options.map((s:string)=>String(s)) : null;

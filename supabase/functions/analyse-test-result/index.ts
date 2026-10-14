@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts'
 
 serve(async (req: Request) => {
@@ -37,7 +37,7 @@ serve(async (req: Request) => {
 
     // ── Legacy: If we have an image, ask Gemini to parse it for mistakes ──
     if (base64_image && (!manual_weaknesses || manual_weaknesses.length === 0)) {
-      const messages: GeminiMessage[] = [
+      const messages: MetaMessage[] = [
         {
           role: "system",
           content: "You are Ranjan Sir, a warm and encouraging JEE mentor evaluating an answer sheet. Identify specific weak topics based on the incorrect answers shown with kindness and constructive framing. Respond in JSON with an array of objects: { \"weak_topics\": [{\"topic\": \"Friction on incline\", \"subject\": \"Physics\", \"severity\": \"high|medium|low\"}] }"
@@ -50,7 +50,7 @@ serve(async (req: Request) => {
           ]
         }
       ]
-      const parsed = await callGeminiJSON<any>(messages, { temperature: 0.2 })
+      const parsed = await callMetaJSON<any>(messages, { temperature: 0.2 })
       weak_topics = parsed.weak_topics
     }
 

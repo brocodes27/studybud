@@ -11,7 +11,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { callGeminiJSON, callGeminiEmbedding, GeminiMessage } from '../_shared/gemini.ts';
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
+import { callGeminiEmbedding } from "../_shared/gemini.ts";
 import { getCors } from '../_shared/cors.ts';
 
 // CORS handled per-request via getCors()
@@ -122,7 +123,7 @@ serve(async (req: Request) => {
       .join('\n');
 
     // 1. Extract memories with Gemini
-    const messages: GeminiMessage[] = [
+    const messages: MetaMessage[] = [
       { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
       {
         role: 'user',
@@ -132,7 +133,7 @@ serve(async (req: Request) => {
 
     let result: { memories: MemoryCandidate[] } = { memories: [] };
     try {
-      result = await callGeminiJSON<{ memories: MemoryCandidate[] }>(messages, {
+      result = await callMetaJSON<{ memories: MemoryCandidate[] }>(messages, {
         temperature: 0.15,
         maxOutputTokens: 1200,
       });

@@ -1,3 +1,7 @@
+import ReactMarkdown from 'react-markdown';
+import { AssessmentView, ResearchView } from './AssessmentView';
+import type { AssessmentDraftCache } from './useAssessmentDraft';
+import type { ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
 import { useEffect, useRef, useState, FormEvent, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -25,14 +29,13 @@ import {
   type AgentAction,
   type Citation,
   type StudyPlanStep,
-  type WorkspaceArtifact,
+  type WorkspaceTool,
   type WorkspaceEvent,
   type WorkspaceMessage,
   type WorkspaceSnapshot,
   type WorkspaceThread,
   emptyWorkspace,
-  putArtifact,
-  removeArtifact,
+  mergeWorkspaceMessages,
 } from './contracts';
 import {
   activateWorkspaceArtifact,
@@ -66,6 +69,15 @@ export function AgentWorkspace() {
   const [streamingText, setStreamingText] = useState<string>('');
   const [input, setInput] = useState<string>('');
   const [busy, setBusy] = useState<boolean>(false);
+  const operationRef = useRef(false);
+  const assessmentDrafts = useRef<AssessmentDraftCache>(new Map());
+  useEffect(() => { assessmentDrafts.current.clear(); },[user?.id]);
+  const [research,setResearch] = useState<ResearchStatus | undefined>();
+  const [actionError,setActionError] = useState('');
+  const [workspaceLoading, setWorkspaceLoading] = useState(true);
+  const [workspaceError, setWorkspaceError] = useState('');
+  const [workspaceRevision, setWorkspaceRevision] = useState(0);
+  const loadedUserRef = useRef<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'chat' | 'workspace'>('workspace');
 
   // Library & sessions data for home state & fallback
@@ -82,7 +94,7 @@ export function AgentWorkspace() {
   // Auto-scroll chat on new message or streaming delta
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingText, runningActions]);
+  }, [messages, streamingText, runningActions, busy]);
 
   // Reload the library independently so retries preserve the conversation.
   useEffect(() => {
@@ -116,28 +128,31 @@ export function AgentWorkspace() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    if (loadedUserRef.current !== user.id) {
+      loadedUserRef.current = user.id;
+      setMessages([]);
+      setThread({ id: 'local', state: emptyWorkspace(), updated_at: new Date().toISOString() });
+    }
+    setWorkspaceLoading(true);
+    setWorkspaceError('');
     // Load workspace agent state
     loadWorkspaceSnapshot()
       .then((snap) => {
         if (cancelled) return;
+        setResearch(snap.research);
         setSnapshot(snap);
         setThread(snap.thread);
-        setMessages(snap.messages);
+        setMessages(current => mergeWorkspaceMessages(current, snap.messages));
       })
       .catch(() => {
-        // Fallback: start with clean local state
-        if (cancelled) return;
-        setThread({
-          id: 'local',
-          state: emptyWorkspace(),
-          updated_at: new Date().toISOString(),
-        });
-      });
+        if (!cancelled) setWorkspaceError('Your saved conversation could not load. Please retry.');
+      })
+      .finally(() => { if (!cancelled) setWorkspaceLoading(false); });
 
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user?.id, workspaceRevision]);
 
   const handleEvent = (event: WorkspaceEvent) => {
     if (event.type === 'text') {
@@ -151,42 +166,28 @@ export function AgentWorkspace() {
       });
     } else if (event.type === 'state') {
       setThread(event.thread);
+      if (event.thread.state.activeId) setMobileTab('workspace');
     } else if (event.type === 'done') {
       if (event.snapshot) {
+        setResearch(event.snapshot.research);
         setSnapshot(event.snapshot);
         setThread(event.snapshot.thread);
-        setMessages(event.snapshot.messages);
+        setMessages(current => mergeWorkspaceMessages(current, event.snapshot.messages));
       }
       setStreamingText('');
       setRunningActions([]);
-      setBusy(false);
     } else if (event.type === 'error') {
-      setBusy(false);
+      setActionError(event.error);
       setStreamingText('');
       setRunningActions([]);
     }
   };
 
-  // Voice hook
-  const voice = useVoice({
-    onEvent: handleEvent,
-    onTranscript: (role, text) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role,
-          content: text,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    },
-    checkpointId: thread.state.checkpointId,
-  });
-
-  const handleSendMessage = async (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string, signal?: AbortSignal) => {
     const text = (textToSend ?? input).trim();
-    if (!text || busy) return;
+    if (!text || operationRef.current || workspaceLoading || workspaceError) return;
+    operationRef.current = true;
+    setActionError('');
 
     setInput('');
     setBusy(true);
@@ -199,16 +200,20 @@ export function AgentWorkspace() {
       content: text,
       created_at: new Date().toISOString(),
     };
+    tempUserMsg.request_id = tempUserMsg.id;
     setMessages((prev) => [...prev, tempUserMsg]);
 
     try {
-      const snap = await sendWorkspaceMessage(text, handleEvent);
+      const snap = await sendWorkspaceMessage(text, handleEvent, signal, tempUserMsg.id);
       if (snap) {
+        setResearch(snap.research);
         setSnapshot(snap);
         setThread(snap.thread);
-        setMessages(snap.messages);
+        setMessages(current => mergeWorkspaceMessages(current, snap.messages));
+        return [...snap.messages].reverse().find(message => message.role === 'assistant' && message.request_id === tempUserMsg.id)?.content || null;
       }
     } catch (err) {
+      if (signal?.aborted) return null;
       const errText =
         err instanceof Error ? err.message : 'Could not complete action.';
       setMessages((prev) => [
@@ -221,10 +226,14 @@ export function AgentWorkspace() {
         },
       ]);
     } finally {
+      operationRef.current = false;
       setBusy(false);
       setStreamingText('');
+      setRunningActions([]);
     }
   };
+
+  const voice = useVoice({ onMessage: (text, signal) => handleSendMessage(text, signal), busy: busy || workspaceLoading || !!workspaceError });
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -233,137 +242,49 @@ export function AgentWorkspace() {
     }
   };
 
-  const handleSelectTab = async (artifactId: string) => {
-    setThread((prev) => ({
-      ...prev,
-      state: { ...prev.state, activeId: artifactId },
-    }));
-    try {
-      await activateWorkspaceArtifact(artifactId);
-    } catch {
-      /* local optimistic switch succeeded */
-    }
+  const runTool = async (tool: WorkspaceTool) => {
+    if (operationRef.current || workspaceLoading || workspaceError) throw new Error('Please wait for the current action to finish.');
+    operationRef.current = true; setBusy(true); setActionError('');
+    try { await executeWorkspaceTool(tool,handleEvent); }
+    catch(e) { setActionError(e instanceof Error ? e.message : 'Could not finish. Please retry.'); throw e; }
+    finally { operationRef.current=false;setBusy(false);setStreamingText('');setRunningActions([]); }
+  };
+  const launchTool = (tool: WorkspaceTool) => { void runTool(tool).catch(()=>{}); };
+
+  const handleSelectTab = async (artifactId: string | null) => {
+    if (operationRef.current) return;
+    operationRef.current=true;setBusy(true);setActionError('');
+    try { await activateWorkspaceArtifact(artifactId,handleEvent); }
+    catch(e) {setActionError(e instanceof Error ? e.message : 'Could not switch tabs.');}
+    finally {operationRef.current=false;setBusy(false);}
   };
 
-  const handleCloseTab = (artifactId: string) => {
-    setThread((prev) => ({
-      ...prev,
-      state: removeArtifact(prev.state, artifactId),
-    }));
-  };
+  const handleCloseTab = (artifactId: string) => launchTool({name:'close_artifact',args:{artifactId}});
 
-  const handlePlanStepClick = async (step: StudyPlanStep) => {
-    if (step.kind === 'learn') {
-      const m = materials.find((x) => x.id === step.materialId);
-      if (m) {
-        const art: WorkspaceArtifact = {
-          id: `material:${m.id}`,
-          kind: 'material',
-          materialId: m.id,
-          title: m.title,
-          page: 1,
-        };
-        setThread((prev) => ({
-          ...prev,
-          state: putArtifact(prev.state, art),
-        }));
-        setMobileTab('workspace');
-      }
-    } else {
-      // Start or resume practice / checkpoint session
-      setBusy(true);
-      try {
-        await executeWorkspaceTool(
-          {
-            name: 'start_practice',
-            args: {
-              materialId: step.materialId,
-              topic: step.topic,
-              mode: step.kind === 'checkpoint' ? 'checkpoint' : 'practice',
-            },
-          },
-          handleEvent
-        );
-        setMobileTab('workspace');
-      } catch {
-        /* handled via event */
-      } finally {
-        setBusy(false);
-      }
-    }
-  };
-
-  const handleOpenMaterial = (m: Material) => {
-    const art: WorkspaceArtifact = {
-      id: `material:${m.id}`,
-      kind: 'material',
-      materialId: m.id,
-      title: m.title,
-      page: 1,
+  // Refresh completed background work on return and while the dashboard is open.
+  // A response started before a foreground action must never overwrite that action.
+  useEffect(() => {
+    if (!user || workspaceLoading || workspaceError) return;
+    let cancelled=false;
+    const refresh=async()=>{
+      if(operationRef.current || document.visibilityState==='hidden')return;
+      const before=thread.updated_at;
+      try {const snap=await loadWorkspaceSnapshot();if(cancelled || operationRef.current)return;
+        setThread(current=>current.updated_at===before ? snap.thread : current);
+        setResearch(snap.research);
+        setMessages(current=>mergeWorkspaceMessages(current,snap.messages));
+      }catch{/* Existing saved work stays visible; foreground retry remains available. */}
     };
-    setThread((prev) => ({
-      ...prev,
-      state: putArtifact(prev.state, art),
-    }));
-    setMobileTab('workspace');
-  };
+    const timer=window.setInterval(()=>void refresh(),30000);
+    const visible=()=>{void refresh();};window.addEventListener('focus',visible);document.addEventListener('visibilitychange',visible);
+    return()=>{cancelled=true;clearInterval(timer);window.removeEventListener('focus',visible);document.removeEventListener('visibilitychange',visible);};
+  },[user?.id,workspaceLoading,workspaceError,thread.updated_at]);
 
-  const handleOpenSession = (sessionId: string) => {
-    const s = sessions.find((x) => x.id === sessionId);
-    const art: WorkspaceArtifact = {
-      id: `session:${sessionId}`,
-      kind: 'session',
-      sessionId,
-      title: s?.topic || 'Practice session',
-    };
-    setThread((prev) => ({
-      ...prev,
-      state: putArtifact(prev.state, art),
-    }));
-    setMobileTab('workspace');
-  };
-
-  const handleStartPracticeFromMaterial = async (
-    material: Material,
-    topic: string
-  ) => {
-    setBusy(true);
-    try {
-      await executeWorkspaceTool(
-        {
-          name: 'start_practice',
-          args: {
-            materialId: material.id,
-            topic,
-            mode: 'practice',
-          },
-        },
-        handleEvent
-      );
-      setMobileTab('workspace');
-    } catch {
-      /* handled via event */
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleOpenCitation = (c: Citation) => {
-    const m = materials.find((x) => x.id === c.materialId);
-    if (!m) return;
-    const art: WorkspaceArtifact = {
-      id: `material:${m.id}`,
-      kind: 'material',
-      materialId: m.id,
-      title: m.title,
-      page: c.page,
-    };
-    setThread((prev) => ({
-      ...prev,
-      state: putArtifact(prev.state, art),
-    }));
-    setMobileTab('workspace');
-  };
+  const handlePlanStepClick = (step: StudyPlanStep) => launchTool({name:step.kind === 'learn' ? 'explain' : 'start_practice',args:{materialId:step.materialId,topic:step.topic,mode:step.kind === 'checkpoint' ? 'checkpoint' : 'practice'}});
+  const handleOpenMaterial = (m: Material) => launchTool({name:'open_material',args:{materialId:m.id}});
+  const handleOpenSession = (sessionId:string) => launchTool({name:'resume_session',args:{sessionId}});
+  const handleStartPracticeFromMaterial = (material:Material,topic:string) => launchTool({name:'open_assessment',args:{goal:`Study ${topic}`,materialId:material.id,topic}});
+  const handleOpenCitation = (c:Citation) => launchTool({name:'open_material',args:{materialId:c.materialId,page:c.page}});
 
   // Active artifact
   const artifacts = thread.state.artifacts || [];
@@ -371,21 +292,21 @@ export function AgentWorkspace() {
 
   return (
     <div
-      className="learn agent-workspace-container"
+      className={`learn agent-workspace-container ${activeArtifact ? 'has-artifact' : 'is-dashboard'} ${messages.length || busy ? 'has-conversation' : 'is-welcome'}`}
       data-mobile-view={mobileTab}
     >
       <header className="agent-app-header">
         <Link className="learn-brand" to="/" aria-label="Curve dashboard">
           <CurveMark />
-          curve
+          <span className="rail-brand-name">curve</span>
         </Link>
         <nav aria-label="Workspace">
-          <Link className="active" aria-current="page" to="/">
-            Dashboard
+          <Link className="active" aria-current="page" to="/" title="Dashboard">
+            <Home size={20} /><span>Dashboard</span>
           </Link>
-          <Link to="/library">Library</Link>
-          <Link to="/courses">Courses</Link>
-          <Link to="/progress">Progress</Link>
+          <Link to="/library" title="Library"><BookOpen size={20} /><span>Library</span></Link>
+          <Link to="/courses" title="Courses"><FileText size={20} /><span>Courses</span></Link>
+          <Link to="/progress" title="Progress"><TrendingUp size={20} /><span>Progress</span></Link>
         </nav>
         <Link
           className="agent-account"
@@ -416,7 +337,7 @@ export function AgentWorkspace() {
         </button>
       </nav>
 
-      {/* LEFT PANE: Conversation & Agent */}
+      {/* Conversation and voice assistant */}
       <aside className="agent-chat-pane">
         <header className="chat-pane-header">
           <div className="chat-header-brand">
@@ -433,6 +354,10 @@ export function AgentWorkspace() {
           </div>
         </header>
 
+        <div className="assistant-greeting">
+          <div><h1>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {fullName?.trim().split(/\s+/)[0] || 'friend'}.</h1><p>Your learning, a little more connected.</p></div>
+          <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'})}<span>Your study workspace</span></time>
+        </div>
         {/* Living Curve Orb Stage */}
         <section
           className={`orb-hero-stage state-${voice.state}`}
@@ -441,7 +366,7 @@ export function AgentWorkspace() {
           <CurveOrb
             state={voice.state}
             isMuted={voice.isMuted}
-            size={112}
+            size={156}
             onClick={() => {
               if (voice.state !== 'disconnected') {
                 voice.disconnect();
@@ -455,7 +380,7 @@ export function AgentWorkspace() {
               <span className={`orb-status-light ${voice.state}`} />
               <span className="orb-status-text">
                 {voice.state === 'disconnected'
-                  ? 'Talk to Curve'
+                  ? 'Curve is ready'
                   : voice.state === 'connecting'
                     ? 'Connecting…'
                     : voice.state === 'listening'
@@ -469,7 +394,9 @@ export function AgentWorkspace() {
             </div>
             <p className="orb-caption">
               {voice.state === 'disconnected'
-                ? 'Tap orb to start voice conversation'
+                ? 'Waiting for your instructions or voice command'
+                : voice.state === 'connecting'
+                  ? 'Connecting voice…'
                 : voice.state === 'listening'
                   ? 'Speak your goal or question naturally'
                   : voice.state === 'speaking'
@@ -515,10 +442,18 @@ export function AgentWorkspace() {
         </section>
 
         {/* Scrollable messages */}
-        <div className="chat-messages-container">
-          {messages.length === 0 && !streamingText && (
+        <div className="chat-messages-container" role="log" aria-label="Study conversation" aria-live="polite">
+          {actionError && <p role="alert" className="learn-error">{actionError}</p>}
+          {workspaceLoading && <p role="status">Loading your conversation…</p>}
+          {voice.error && <p role="alert" className="learn-error">{voice.error}</p>}
+          {workspaceError && (
+            <div role="alert" className="learn-error">
+              {workspaceError}{' '}
+              <button type="button" onClick={() => setWorkspaceRevision(value => value + 1)}>Retry</button>
+            </div>
+          )}
+          {!workspaceLoading && !workspaceError && messages.length === 0 && !streamingText && (
             <div className="chat-empty-hint">
-              <Sparkles size={24} className="text-mint" />
               <p>
                 Tell Curve what you want to study, ask a question, or talk
                 through your materials.
@@ -528,7 +463,7 @@ export function AgentWorkspace() {
 
           {messages.map((m) => (
             <div key={m.id} className={`message-bubble ${m.role}`}>
-              <div className="message-content">{m.content}</div>
+              <div className="message-content"><ReactMarkdown>{m.content}</ReactMarkdown></div>
               <span className="message-time">
                 {new Date(m.created_at).toLocaleTimeString([], {
                   hour: '2-digit',
@@ -537,6 +472,8 @@ export function AgentWorkspace() {
               </span>
             </div>
           ))}
+
+          {busy && !streamingText && <div className="message-bubble assistant typing-bubble" role="status" aria-label="Curve is thinking"><span className="typing-dots" aria-hidden="true"><i/><i/><i/></span><span>Curve is {runningActions.length ? 'preparing your workspace' : 'thinking'}…</span></div>}
 
           {/* Running Action Badges */}
           {runningActions.map((action) => (
@@ -551,7 +488,7 @@ export function AgentWorkspace() {
           {/* Assistant Streaming Response */}
           {streamingText && (
             <div className="message-bubble assistant">
-              <div className="message-content">{streamingText}</div>
+              <div className="message-content"><ReactMarkdown>{streamingText}</ReactMarkdown></div>
             </div>
           )}
 
@@ -566,19 +503,19 @@ export function AgentWorkspace() {
                 className="chip-btn"
                 onClick={() =>
                   void handleSendMessage(
-                    'My exam is Friday. I have 40 minutes.'
+                    'My exam is tomorrow. Assess me and help me revise.'
                   )
                 }
               >
-                40 min session
+                Exam tomorrow
               </button>
               <button
                 className="chip-btn"
                 onClick={() =>
-                  void handleSendMessage('Build a focused study plan.')
+                  void handleSendMessage('I want to submit my latest exam results and fix my mistakes.')
                 }
               >
-                Build study plan
+                Review exam results
               </button>
               <button
                 className="chip-btn"
@@ -615,12 +552,12 @@ export function AgentWorkspace() {
               placeholder={
                 thread.state.checkpointId
                   ? 'Independent check: type A, B, C, or D…'
-                  : 'Speak or type your goal…'
+                  : 'Ask Curve or give instructions…'
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={busy}
+              disabled={busy || workspaceLoading || !!workspaceError}
             />
 
             {/* Talk to Curve (Voice toggle) */}
@@ -645,7 +582,7 @@ export function AgentWorkspace() {
             <button
               type="submit"
               className="composer-send-btn"
-              disabled={!input.trim() || busy}
+              disabled={!input.trim() || busy || workspaceLoading || !!workspaceError}
               title="Send"
             >
               <Send size={15} />
@@ -654,8 +591,15 @@ export function AgentWorkspace() {
         </div>
       </aside>
 
-      {/* RIGHT PANE: Working Area */}
+      {/* Study activity and artifact workspace */}
       <main className="agent-working-pane">
+        <section className="workspace-mode-bar" aria-label="Study modes">
+          <button className="learn-button subtle small" disabled={busy || workspaceLoading} onClick={()=>launchTool({name:'open_assessment',args:{mode:'exam',goal:'Prepare for tomorrow’s exam based on what I already know.'}})}>Exam tomorrow</button>
+          <button className="learn-button subtle small" disabled={busy || workspaceLoading} onClick={()=>launchTool({name:'open_exam_results',args:{goal:'Review my latest exam and fix the gaps.'}})}>Add exam results</button>
+          <label className="research-toggle"><input type="checkbox" checked={research?.enabled ?? true} disabled={busy || !research} onChange={e=>launchTool({name:'set_daily_research',args:{enabled:e.target.checked}})}/> Daily research</label>
+          <span className="research-status" role="status">{research?.enabled ? research.status === 'ready' ? 'Research ready in your tabs' : research.status === 'running' ? 'Research in progress' : research.status === 'failed' ? 'Research will retry' : 'Research scheduled' : 'Research paused'}</span>
+        </section>
+        {research?.error && <p className="research-notice">{research.error}</p>}
         {/* Compact Study Plan Banner */}
         {thread.state.plan && (
           <StudyPlanBanner
@@ -670,12 +614,8 @@ export function AgentWorkspace() {
             <button
               className={`artifact-tab ${!activeArtifact ? 'active' : ''}`}
               aria-pressed={!activeArtifact}
-              onClick={() =>
-                setThread((prev) => ({
-                  ...prev,
-                  state: { ...prev.state, activeId: null },
-                }))
-              }
+              disabled={busy}
+              onClick={() => void handleSelectTab(null)}
             >
               <Home size={14} /> Dashboard
             </button>
@@ -695,6 +635,7 @@ export function AgentWorkspace() {
                   {a.kind === 'material' && <FileText size={14} />}
                   {a.kind === 'session' && <HelpCircle size={14} />}
                   {a.kind === 'explanation' && <BookOpen size={14} />}
+                  {(a.kind === 'assessment' || a.kind === 'research') && <Sparkles size={14} />}
                   {a.kind === 'progress' && <CheckCircle2 size={14} />}
                   <span>{a.title}</span>
                 </button>
@@ -727,16 +668,24 @@ export function AgentWorkspace() {
         {/* Working Area Canvas View */}
         <div className="agent-view-canvas">
           {activeArtifact ? (
-            activeArtifact.kind === 'material' ? (
+            activeArtifact.kind === 'assessment' ? (
+              <AssessmentView drafts={assessmentDrafts.current} revision={thread.updated_at} key={activeArtifact.id} artifact={activeArtifact} materials={materials} busy={busy} onAction={runTool}/>
+            ) : activeArtifact.kind === 'research' ? (
+              <ResearchView artifact={activeArtifact} busy={busy} reviewed={!!thread.state.reviewedArtifactIds?.includes(activeArtifact.id)} onNext={()=>launchTool({name:'review_artifact',args:{artifactId:activeArtifact.id}})}/>
+            ) : activeArtifact.kind === 'material' ? (
               <MaterialView
                 materialId={activeArtifact.materialId}
                 initialPage={activeArtifact.page}
+                onSaved={() => setLibraryRevision(r => r + 1)}
                 onStartPractice={handleStartPracticeFromMaterial}
               />
             ) : activeArtifact.kind === 'session' ? (
               <SessionView
+                revision={thread.updated_at}
+                key={activeArtifact.sessionId}
                 sessionId={activeArtifact.sessionId}
                 onCompleted={(s) => {
+                  void handleSendMessage('I finished my independent check. Review my saved results and help me with the remaining gaps.');
                   setSessions((prev) => [
                     s,
                     ...prev.filter((x) => x.id !== s.id),

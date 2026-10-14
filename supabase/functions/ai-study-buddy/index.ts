@@ -1,3 +1,4 @@
+import { callMeta } from "../_shared/meta.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { getCors } from "../_shared/cors.ts";
 
@@ -78,11 +79,11 @@ serve(async (req) => {
       });
     }
 
-    // Prepare Gemini API request
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
+    // Prepare Meta API request
+    const metaApiKey = Deno.env.get("MODEL_API_KEY");
+    if (!metaApiKey) {
       return new Response(
-        JSON.stringify({ error: "Gemini API key not configured" }),
+        JSON.stringify({ error: "Meta API key not configured" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -121,33 +122,7 @@ If the student asks for practice questions, provide 2-3 relevant questions with 
 
 Keep your response concise but comprehensive, and always maintain a supportive and educational tone.`;
 
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
-
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const response = geminiData.candidates[0].content.parts[0].text;
+    const response = await callMeta([{ role: "user", content: prompt }], { json: false });
 
     // Save chat history to Supabase (optional - for analytics)
     try {

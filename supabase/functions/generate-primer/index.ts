@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
-import { callGeminiJSON } from '../_shared/gemini.ts'
+import { callMetaJSON, META_MODEL } from "../_shared/meta.ts";
 
 /**
  * Priming content for one syllabus topic (PRD v2 §4.1).
@@ -17,7 +17,7 @@ import { callGeminiJSON } from '../_shared/gemini.ts'
  * role writes to it: a client that could write here could poison another
  * student's priming.
  *
- * Generation is never allowed to block the stage. If Gemini is unavailable or
+ * Generation is never allowed to block the stage. If Meta is unavailable or
  * returns something unusable, a deterministic primer is built from the syllabus
  * itself and returned uncached, so a later call can still fill the cache with a
  * real one.
@@ -181,7 +181,7 @@ serve(async (req: Request) => {
     let model: string | null = null
 
     try {
-      const raw = await callGeminiJSON([
+      const raw = await callMetaJSON([
         { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
@@ -198,7 +198,7 @@ serve(async (req: Request) => {
       ], { temperature: 0.4, maxOutputTokens: 900 })
 
       content = normalize(raw, fallback)
-      model = 'gemini-3-flash-preview'
+      model = META_MODEL
     } catch (err) {
       // Priming has a hard time window — a generation failure must never be
       // what stops a student priming before tomorrow's lecture.

@@ -62,9 +62,11 @@ export function MaterialView({
   materialId,
   initialPage = 1,
   onStartPractice,
+  onSaved,
 }: {
   materialId: string;
   initialPage?: number;
+  onSaved?: () => void;
   onStartPractice: (material: Material, topic: string) => void;
 }) {
   const { user } = useAuth();
@@ -138,6 +140,7 @@ export function MaterialView({
           onSaved={() => {
             fetchMaterial(materialId, user!.id).then((m) => setMaterial(m));
             setShowEditor(false);
+            onSaved?.();
           }}
           onStart={(s) => {
             setShowEditor(false);
@@ -200,9 +203,11 @@ export function MaterialView({
 export function SessionView({
   sessionId,
   onCompleted,
+  revision,
 }: {
   sessionId: string;
   onCompleted?: (session: StudySession) => void;
+  revision?: string;
 }) {
   const { user } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
@@ -253,7 +258,7 @@ export function SessionView({
     return () => {
       cancelled = true;
     };
-  }, [sessionId, user]);
+  }, [sessionId, user, revision]);
 
   async function next() {
     if (!session) return;
@@ -350,6 +355,7 @@ export function SessionView({
         <h3>{session.topic}</h3>
       </div>
 
+      {error && <p role="alert" className="learn-error">{error}</p>}
       {session.results ? (
         <div className="session-results-pane">
           <div className="learn-panel session-finish">
@@ -380,7 +386,7 @@ export function SessionView({
                 <p>{r.explanation}</p>
                 {r.quote && (
                   <blockquote>
-                    <span>SOURCE EXCERPT · PAGE {r.page}</span>
+                    <span>{r.source ? <a href={r.source.url} target="_blank" rel="noreferrer">{r.source.title} ↗</a> : <>SOURCE EXCERPT · PAGE {r.page}</>}</span>
                     {r.quote}
                   </blockquote>
                 )}
@@ -414,7 +420,7 @@ export function SessionView({
             <span>
               Question {index + 1} of {questions.length}
             </span>
-            <span>Source Page {question.page}</span>
+            <span>{question.source ? 'Topic concepts' : <>Source Page {question.page}</>}</span>
           </div>
 
           <div className="question-progress-track">
@@ -538,7 +544,7 @@ export function ExplanationView({
                 onClick={() => onOpenCitation(c)}
               >
                 <div className="citation-top">
-                  <span className="citation-page">Page {c.page}</span>
+                  <span className="citation-page">{c.source ? <a href={c.source.url} target="_blank" rel="noreferrer">{c.source.title} ↗</a> : <>Page {c.page}</>}</span>
                   <ExternalLink size={12} />
                 </div>
                 <blockquote className="citation-quote">"{c.quote}"</blockquote>

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini } from "../_shared/gemini.ts";
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
@@ -28,7 +28,7 @@ Assignments: ${JSON.stringify(assignments)}
 
 ${prompt}`;
 
-    const summary = await callGemini([
+    const summary = await callMeta([
       { role: "system", content: "You are an expert personalized educational consultant for a teacher." },
       { role: "user", content: fullPrompt }
     ]);

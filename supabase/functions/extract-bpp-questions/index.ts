@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
-import { callGeminiJSON, GeminiMessage } from '../_shared/gemini.ts'
+import { callMetaJSON, MetaMessage } from "../_shared/meta.ts";
 
 interface ExtractedQuestion {
   topic: string;
@@ -87,7 +87,7 @@ serve(async (req: Request) => {
       const batch = pages.slice(i, i + 3);
       const batchNum = Math.floor(i / 3) + 1;
 
-      const messages: GeminiMessage[] = [
+      const messages: MetaMessage[] = [
         { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
@@ -99,7 +99,7 @@ serve(async (req: Request) => {
       ];
 
       try {
-        const result = await callGeminiJSON<ExtractionResult>(messages, { temperature: 0.1 });
+        const result = await callMetaJSON<ExtractionResult>(messages, { temperature: 0.1 });
         if (result.questions && result.questions.length > 0) {
           allQuestions.push(...result.questions);
         }

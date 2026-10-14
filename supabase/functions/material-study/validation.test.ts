@@ -79,3 +79,15 @@ test("grades against private keys and distinguishes hint use", () => {
   assert.equal(results[1].expected, question.options[0]);
   assert.equal(results[0].page, 4);
 });
+
+test('rejects curriculum placement questions even when the quote is real',()=>{
+  const outline=[{page:7,text:'Module 3: Permissions & Ownership Process Management'}];
+  const bad=raw.map(q=>({...q,page:7,quote:outline[0].text,question:'According to the Module 3 outline, in which context does Process Management reappear?'}));
+  assert.throws(()=>validateQuestions(bad,outline),/topic, not the curriculum/);
+});
+test('teaching source links are assigned by the server and remain with graded evidence',()=>{
+  const source={title:'Biology textbook',url:'https://example.edu/biology'};
+  const keys=validateQuestions(raw.map(q=>({...q,source:{title:'Fake',url:'javascript:alert(1)'}})),pages.map(p=>({...p,source})));
+  assert.deepEqual(keys[0].source,source);
+  assert.deepEqual(gradeChoices(keys,{q1:0,q2:0,q3:0},[])[0].source,source);
+});

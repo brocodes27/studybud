@@ -29,7 +29,7 @@ export async function fetchLibrary(
     supabase
       .from("materials")
       .select(
-        "id,title,created_at,course:metadata->>course,semester:metadata->>semester,exam_on:metadata->>exam_on,topics:metadata->topics,confirmed:metadata->confirmed,page_count:metadata->page_count",
+        "id,title,created_at,course:metadata->>course,semester:metadata->>semester,exam_on:metadata->>exam_on,topics:metadata->topics,confirmed:metadata->confirmed,confirmed_topics:metadata->confirmed_topics,page_count:metadata->page_count",
       )
       .eq("owner_user_id", userId)
       .contains("metadata", { workspace: "curve" })
@@ -59,6 +59,7 @@ export async function fetchLibrary(
         exam_on: m.exam_on,
         topics: m.topics,
         confirmed: m.confirmed,
+        confirmed_topics: m.confirmed_topics,
         page_count: m.page_count,
       },
     })) as Material[],
@@ -97,7 +98,34 @@ export async function saveMaterial(
     .select("id,title,created_at,extracted_text,metadata")
     .single();
   if (error) throw new Error("Could not save this material. Please retry.");
-  return data as Material;
+  const saved = data as Material;
+  try {
+    const analysis = await learningAction<{
+      topics: string[];
+      summary: string;
+    }>({
+      action: "analyze",
+      material_id: saved.id,
+    });
+    return {
+      ...saved,
+      metadata: {
+        ...saved.metadata,
+        topics: analysis.topics,
+        summary: analysis.summary,
+      },
+    };
+  } catch (error) {
+    // The insert succeeded. Keep the upload and allow topic analysis to be
+    // retried from its editor without inserting a duplicate material.
+    return {
+      ...saved,
+      topicAnalysisError:
+        error instanceof Error
+          ? error.message
+          : "Could not fetch topics. Please retry from your material.",
+    };
+  }
 }
 
 export async function readMaterialFile(file: File): Promise<SourcePage[]> {

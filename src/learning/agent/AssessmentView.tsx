@@ -1,0 +1,79 @@
+import { useState, type FormEvent } from 'react';
+import { CheckCircle2, ClipboardCheck, ArrowRight, FileUp } from 'lucide-react';
+import { readMaterialFile } from '../api';
+import type { Material } from '../model';
+import { MAX_ASSESSMENT_TOPICS, type AssessmentArtifact, type ResearchArtifact } from '../../../supabase/functions/_shared/learning-workflows';
+import type { WorkspaceTool } from './contracts';
+import { SessionView } from './WorkspaceViews';
+import ReactMarkdown from 'react-markdown';
+import { useAssessmentDraft, type AssessmentDraftCache } from './useAssessmentDraft';
+
+export function AssessmentView({artifact,materials,busy,onAction,revision,drafts}: {
+  artifact: AssessmentArtifact; materials:Material[]; busy:boolean; revision?:string; drafts?:AssessmentDraftCache;
+  onAction:(tool:WorkspaceTool)=>Promise<void>;
+}) {
+  const {draft,setField} = useAssessmentDraft(artifact,drafts);
+  const {targets,minutes,confidence,examDate,report,score,total} = draft;
+  const [reading,setReading] = useState(false);
+  const [error,setError] = useState('');
+  const [step,setStep] = useState(0);
+  const ready = materials.filter(m => m.metadata.topics?.length);
+  async function action(tool:WorkspaceTool) {
+    setError('');
+    try { await onAction(tool); } catch(e) { setError(e instanceof Error ? e.message : 'Could not save. Please retry.'); }
+  }
+  async function submit(e:FormEvent) {
+    e.preventDefault();
+    await action({name:'begin_assessment',args:{artifactId:artifact.id,targets,minutes,confidence,confirmTopics:true,examDate:artifact.mode === 'exam' ? examDate : '',report,score,total}});
+  }
+  const current = artifact.steps?.[Math.min(step,(artifact.steps?.length || 1)-1)];
+  return <section className="workflow-view" aria-label={artifact.title}>
+    <header className="workflow-heading"><span className="pill lavender"><ClipboardCheck size={14}/> {artifact.mode === 'exam' ? 'EXAM TOMORROW' : artifact.mode === 'results' ? 'EXAM RECOVERY' : 'ASSESS FIRST'}</span><h2>{artifact.title}</h2><p>{artifact.goal}</p></header>
+    <ol className="workflow-stages" aria-label="Assessment progress"><li className={artifact.status === 'setup' ? 'current' : ''}>1. Your starting point</li><li className={artifact.status === 'assessing' ? 'current' : ''}>2. Check understanding</li><li className={artifact.status === 'ready' ? 'current' : ''}>3. Close the gaps</li></ol>
+    {artifact.status !== 'setup' && <button className="learn-button subtle small" disabled={busy} onClick={()=>void action({name:'restart_assessment',args:{artifactId:artifact.id}})}>Restart assessment with fresh questions</button>}
+    {error && <p className="learn-error" role="alert">{error}</p>}
+    {artifact.status === 'setup' ? <form onSubmit={submit} className="workflow-form">
+      <fieldset disabled={busy || reading}>
+        <legend>What should we assess?</legend><p>Choose up to {MAX_ASSESSMENT_TOPICS} topics. Starting confirms your selected topics. Each gets a short independent check before your plan is built.</p>
+        {!ready.length && <p>Add notes to your library and extract their topics first. Your syllabus alone may not contain enough teaching material for a fair assessment.</p>}
+        <div className="workflow-topic-list">{ready.map(m => <div key={m.id}><strong>{m.title}</strong>{m.metadata.topics!.map(topic => {
+          const selected = targets.some(t => t.materialId === m.id && t.topic === topic);
+          return <label key={topic}><input type="checkbox" checked={selected} disabled={!selected && targets.length >= MAX_ASSESSMENT_TOPICS} onChange={() => setField('targets',selected ? targets.filter(t => !(t.materialId === m.id && t.topic === topic)) : [...targets,{materialId:m.id,topic}])}/><span>{topic}</span></label>;
+        })}</div>)}</div>
+        <div className="workflow-fields"><label>Revision time after the check<input type="number" min={15} max={240} required value={minutes} onChange={e => setField('minutes',Number(e.target.value))}/> minutes</label>
+        <label>How familiar does it feel?<select value={confidence} onChange={e=>setField('confidence',e.target.value)}><option value="new">Starting from scratch</option><option value="unsure">Some knowledge, some gaps</option><option value="confident">Confident — check me</option></select></label>
+        {artifact.mode === 'exam' && <label>Exam date<input type="date" required value={examDate} onChange={e=>setField('examDate',e.target.value)}/></label>}</div>
+        {artifact.mode === 'results' && <div className="workflow-exam-input">
+          <h3>Your latest result</h3><div className="workflow-fields"><label>Marks earned<input type="number" min="0" step="0.5" required value={score} onChange={e=>setField('score',e.target.value)}/></label><label>Out of<input type="number" min="1" max="10000" step="0.5" required value={total} onChange={e=>setField('total',e.target.value)}/></label></div>
+          <label>Mistakes, questions you missed, or teacher feedback<textarea rows={7} minLength={20} maxLength={12000} required value={report} onChange={e=>setField('report',e.target.value)} placeholder="Paste your marked answers or feedback. Include topics and where marks were lost — a total score alone cannot show the cause."/></label>
+          <label className="workflow-upload"><FileUp size={16}/> Import a result PDF or text file<input type="file" accept=".pdf,.txt,.md" onChange={async e => {
+            const file=e.target.files?.[0]; if(!file)return; setReading(true);setError('');
+            try { const pages=await readMaterialFile(file);const text=pages.map(p=>p.text).join('\n\n');if(text.length>12000)throw new Error('This report is too long. Paste the marked questions and feedback (up to 12,000 characters).');setField('report',text); }
+            catch(err){setError(err instanceof Error?err.message:'Could not read the result.');}finally{setReading(false);e.target.value='';}
+          }}/></label><small>Searchable PDF, TXT or Markdown. Review the imported text before submitting.</small>
+        </div>}
+        <button className="learn-button dark" disabled={!targets.length || busy || reading}>{busy ? 'Preparing your assessment…' : reading ? 'Reading report…' : 'Assess my knowledge'}<ArrowRight size={16}/></button>
+      </fieldset>
+    </form> : artifact.status === 'assessing' ? <>
+      <p className="workflow-progress">Topic {artifact.sessionIds.length} of {artifact.targets.length}. Your answers will update this plan and the conversation.</p>
+      <SessionView revision={revision} key={artifact.sessionIds[artifact.sessionIds.length-1]} sessionId={artifact.sessionIds[artifact.sessionIds.length-1]} onCompleted={() => {void action({name:'complete_assessment',args:{artifactId:artifact.id}});}}/>
+      <button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'complete_assessment',args:{artifactId:artifact.id}})}>{busy ? 'Preparing the next step…' : 'Continue after submitting answers'}</button>
+    </> : <>
+      <div className="workflow-summary"><CheckCircle2 size={24}/><div><h3>Your {artifact.minutes}-minute recovery plan</h3><p>Based on your independent answers. Weakest topics come first; familiar topics get a shorter check.</p></div></div>
+      {artifact.mode === 'exam' && <p className="workflow-note">Exam: {artifact.examDate}. Complete the highest-priority gaps first, then stop for sleep. These sampled topics are a starting point, not a prediction of your exam score.</p>}
+      {!!artifact.issues?.length && <section className="workflow-issues"><h3>What your exam feedback shows</h3>{artifact.issues.map((i,n)=><article key={n}><h4>{i.issue}</h4><blockquote>{i.evidence}</blockquote><p>{i.action}</p></article>)}</section>}
+      {current && <article className="workflow-study-step"><span className="pill mint">STEP {step+1} OF {artifact.steps!.length} · {current.minutes} MIN</span><h3>{current.topic}</h3><p>{current.accuracy}% on the diagnostic. {current.instruction}</p>{current.gaps.map((gap,i)=><p key={i} className="workflow-gap">{gap}</p>)}
+        <div className="workflow-actions"><button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'explain',args:{materialId:current.materialId,topic:current.topic}})}>Review the explanation</button><button className="learn-button dark" disabled={busy} onClick={()=>void action({name:'start_practice',args:{materialId:current.materialId,topic:current.topic,mode:'checkpoint'}})}>Check the gap is fixed</button></div>
+        <nav className="workflow-actions" aria-label="Revision steps"><button className="text-button" disabled={step===0} onClick={()=>setStep(s=>s-1)}>Previous</button><button className="text-button" disabled={step===artifact.steps!.length-1} onClick={()=>setStep(s=>s+1)}>Next topic <ArrowRight size={14}/></button></nav>
+      </article>}
+    </>}
+  </section>;
+}
+
+export function ResearchView({artifact,onNext,busy,reviewed}: {artifact:ResearchArtifact;onNext:()=>void;busy:boolean;reviewed:boolean}) {
+  return <article className="workflow-view"><header className="workflow-heading"><span className="pill mint">PREPARED FOR YOU · {new Date(artifact.createdAt).toLocaleDateString()}</span><h2>{artifact.title}</h2><p>Research selected from your syllabus and recent knowledge checks.</p></header>
+    <div className="workflow-research"><ReactMarkdown>{artifact.text}</ReactMarkdown></div>
+    <aside className="workflow-sources"><h3>Read the sources</h3>{artifact.sources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">[{i+1}] {s.title} ↗</a>)}</aside>
+    <button className="learn-button dark" disabled={busy} onClick={onNext}>{reviewed ? 'Continue to next unread brief' : 'Mark reviewed & continue'}<ArrowRight size={16}/></button>
+  </article>;
+}

@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini, callGeminiEmbedding } from "../_shared/gemini.ts";
+import { callMeta } from "../_shared/meta.ts";
+import { callGeminiEmbedding } from "../_shared/gemini.ts";
 import { getCors } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -36,7 +37,7 @@ Each unit should have:
 
 Do not output anything else.`;
 
-            const text = await callGemini(
+            const text = await callMeta(
                 [
                     { role: "system", content: "You are a CBSE syllabus expert. Output strictly JSON." },
                     { role: "user", content: prompt }
@@ -108,7 +109,7 @@ Return ONLY a valid JSON object with a "questions" key. Each question object mus
 
 Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMarks} marks total.`;
 
-            const text = await callGemini(
+            const text = await callMeta(
                 [
                     { role: "system", content: "You are an expert CBSE exam setter." },
                     { role: "user", content: prompt }
@@ -142,7 +143,7 @@ Generate approximately ${Math.ceil(totalMarks / 3)} questions to reach ${totalMa
                 return new Response(JSON.stringify({ text: "Please upload image files for handwritten OCR. PDF support is coming soon (needs conversion to images)." }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
 
-            const text = await callGemini(
+            const text = await callMeta(
                 [ { role: "user", content: contentParts } ],
                 { maxOutputTokens: 4000 }
             );
@@ -175,7 +176,7 @@ ${questionsList}
 Student's Answers:
 ${studentText}`;
 
-            const text = await callGemini(
+            const text = await callMeta(
                 [
                     { role: "system", content: "You are a strict CBSE examiner. Output strictly JSON." },
                     { role: "user", content: prompt }

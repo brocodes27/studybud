@@ -4,6 +4,7 @@ import {
   emptyWorkspace,
   putArtifact,
   removeArtifact,
+  mergeWorkspaceMessages,
   type WorkspaceArtifact,
 } from './contracts';
 
@@ -86,4 +87,13 @@ describe('Agent Workspace Contracts & State', () => {
     assert.equal(ws.artifacts.length, 0);
     assert.equal(ws.activeId, null);
   });
+});
+
+it('keeps messages newer than a snapshot and reconciles saved requests without duplicating them', () => {
+  const local = { id: 'request-1', request_id: 'request-1', role: 'user' as const, content: 'Study loops', created_at: '2026-10-10T10:00:00Z' };
+  const voice = { ...local, id: 'voice-1', request_id: 'voice-1', content: 'Explain this', created_at: '2026-10-10T10:00:01Z' };
+  assert.deepEqual(mergeWorkspaceMessages([local, voice], []), [local, voice]);
+  const saved = { ...local, id: 'database-1' };
+  assert.deepEqual(mergeWorkspaceMessages([local, voice], [saved]), [saved, voice]);
+  assert.deepEqual(mergeWorkspaceMessages([saved, voice], [saved]), [saved, voice]);
 });

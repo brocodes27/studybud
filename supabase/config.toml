@@ -369,3 +369,13 @@ verify_jwt = true
 
 [functions.dodo-webhook]
 verify_jwt = false
+
+[functions.workspace-research]
+verify_jwt = false
+
+[functions.research-specialist]
+verify_jwt = false
+
+[functions.workspace-voice]
+# Validate the user session inside the handler, including origin checks.
+verify_jwt = false

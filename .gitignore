@@ -48,3 +48,5 @@ graphify-out/
 # Rendered video output
 out/
 tmp/
+.vercel/
+.vercel_python_packages/

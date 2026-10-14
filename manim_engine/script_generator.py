@@ -1,23 +1,15 @@
 import os
 import sys
-import google.generativeai as genai
+from meta_client import generate_text
 from dotenv import load_dotenv
 load_dotenv()
-
-# Initialize Gemini
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("VITE_GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-3-flash-preview')
-else:
-    model = None
 
 def generate_educational_script(topic):
     """
     Generates a concise, visually descriptive educational script for a given topic.
     """
-    if not model:
-        print("Error: Gemini API key not found", file=sys.stderr)
+    if not os.getenv("MODEL_API_KEY"):
+        print("Error: MODEL_API_KEY not configured", file=sys.stderr)
         return None
 
     prompt = (
@@ -30,16 +22,9 @@ def generate_educational_script(topic):
     )
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=2048
-            )
-        )
-        return response.text.strip()
+        return generate_text(prompt, max_tokens=4096)
     except Exception as e:
-        print(f"Error generating script with Gemini: {e}", file=sys.stderr)
+        print(f"Error generating script with Meta: {e}", file=sys.stderr)
         return None
 
 if __name__ == "__main__":

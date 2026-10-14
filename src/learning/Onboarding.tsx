@@ -537,7 +537,7 @@ export function PlanSelection({
                 ))}
               </ul>
               <p>
-                Includes up to 30 AI requests per rolling 24 hours. Saved
+                Includes up to 250 AI requests per rolling 24 hours. Saved
                 sessions remain available during your pass.
               </p>
             </div>

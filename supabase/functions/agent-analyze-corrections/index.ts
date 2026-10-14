@@ -2,11 +2,11 @@
 // Daily cron: aggregates agent_corrections, detects patterns,
 // generates prompt template updates for high-confidence patterns.
 //
-// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MODEL_API_KEY
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callGemini, GeminiMessage } from '../_shared/gemini.ts'
+import { callMeta, MetaMessage } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts'
 
 const MIN_CORRECTION_FREQUENCY = 3
@@ -123,7 +123,7 @@ serve(async (req) => {
         if (confidence >= CONFIDENCE_THRESHOLD) {
           const sampleCorrections = cats.slice(0, 5)
 
-          const messages: GeminiMessage[] = [{
+          const messages: MetaMessage[] = [{
             role: 'user',
             content: `Analyze these agent corrections and generate a prompt template delta.
 
@@ -142,7 +142,7 @@ Respond only with valid JSON.`
           }]
 
           try {
-            const response = await callGemini(messages, { json: true })
+            const response = await callMeta(messages, { json: true })
             const parsed = JSON.parse(response)
 
             if (parsed.suggested_template_delta) {

@@ -4,18 +4,16 @@ export type CorsResult = {
 };
 
 function isAllowedOrigin(origin: string): boolean {
-  // Local development
-  if (
-    origin.startsWith('http://localhost:') ||
-    origin.startsWith('http://127.0.0.1:') ||
-    origin.startsWith('http://0.0.0.0:')
-  ) {
-    return true;
-  }
-
   try {
     const url = new URL(origin);
+    if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin) {
+      return false;
+    }
     const host = url.hostname.toLowerCase();
+    // Local development, with or without a port, over HTTP or HTTPS.
+    if (['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(host)) {
+      return true;
+    }
     // Allow curveapp.tech, elevenfolks.com and their subdomains
     return (
       host === 'curveapp.tech' ||
@@ -32,7 +30,7 @@ function isAllowedOrigin(origin: string): boolean {
  * CORS helper for Supabase Edge Functions.
  *
  * - If Origin header is missing (server-to-server calls), allow it.
- * - If Origin is present, allow only localhost (dev) and *.elevenfolks.com (prod/staging).
+ * - If Origin is present, allow localhost/loopback (dev), curveapp.tech, elevenfolks.com, and their subdomains.
  */
 export function getCors(req: Request): CorsResult {
   const origin = req.headers.get('origin') ?? '';
@@ -52,4 +50,3 @@ export function getCors(req: Request): CorsResult {
     },
   };
 }
-

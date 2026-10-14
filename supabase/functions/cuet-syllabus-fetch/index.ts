@@ -1,9 +1,9 @@
 // supabase/functions/cuet-syllabus-fetch/index.ts
 // Deno Edge Function: Fetches CUET-UG domain syllabi via Tavily search and normalizes with Gemini
-// Env: GEMINI_API_KEY, TAVILY_API_KEY
+// Env: MODEL_API_KEY, TAVILY_API_KEY
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { callGemini } from '../_shared/gemini.ts';
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts';
 
 type FetchPayload = {
@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
       const system = `You are an expert educational content curator for CUET-UG. Extract the official syllabus topics for the subject. Return STRICT JSON only.`;
       const user = `Subject: ${entry.subject}\nYear: ${year}\n\nFrom the web context below, extract a clean hierarchical syllabus aligned to NCERT Class 12 and CUET-UG official notices.\n\nReturn this JSON shape only (no markdown):\n{\n  "subject": "${entry.subject}",\n  "year": "${year}",\n  "topics": [\n    { "unit": "string", "subtopics": ["string", "string", "..."] }\n  ],\n  "sources": [ { "title": "string", "url": "string" } ]\n}\n\nWeb context:\n${context}`;
 
-      const text = await callGemini(
+      const text = await callMeta(
         [ { role: 'system', content: system }, { role: 'user', content: user } ],
         { temperature: 0.2, maxOutputTokens: 3000, json: true }
       );

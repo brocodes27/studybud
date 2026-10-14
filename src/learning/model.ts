@@ -7,6 +7,8 @@ export interface Material {
   title: string;
   created_at: string;
   extracted_text: string | null;
+  /** Transient upload warning; the saved material remains available for retry. */
+  topicAnalysisError?: string;
   metadata: {
     workspace?: string;
     course?: string;
@@ -17,6 +19,7 @@ export interface Material {
     page_count?: number;
     summary?: string;
     confirmed?: boolean;
+    confirmed_topics?: string[];
   };
 }
 export interface StudyQuestion {
@@ -25,6 +28,7 @@ export interface StudyQuestion {
   question: string;
   options: string[];
   page: number;
+  source?: { title: string; url: string };
 }
 export interface StudyResult {
   question_id: string;
@@ -33,6 +37,7 @@ export interface StudyResult {
   explanation: string;
   quote: string;
   page: number;
+  source?: { title: string; url: string };
   assisted: boolean;
 }
 export interface StudySession {

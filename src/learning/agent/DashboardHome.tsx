@@ -6,7 +6,6 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
-  Clock,
   FileText,
   Plus,
   Search,
@@ -14,14 +13,12 @@ import {
   X,
 } from "lucide-react";
 import {
-  daysToExam,
   independentAccuracy,
   recommendedMaterials,
   weeklyActivity,
   type Material,
   type StudySession,
 } from "../model";
-import { StudyDoodle } from "../StudyDoodle";
 import "./dashboard.css";
 
 export function HomeView({
@@ -61,41 +58,19 @@ export function HomeView({
     (sum, day) => sum + day.practice + day.checkpoint,
     0,
   );
-  const activeDays = activity.filter(
-    (day) => day.practice + day.checkpoint > 0,
-  ).length;
-  const maxActivity = Math.max(
-    3,
-    ...activity.map((day) => day.practice + day.checkpoint),
+  const ready = materials.some(
+    (material) =>
+      material.metadata.confirmed && material.metadata.topics?.length,
   );
   const visible = materials.filter((material) =>
     `${material.title} ${material.metadata.course || ""} ${(material.metadata.topics || []).join(" ")}`
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
   );
-  const ready = materials.some(
-    (material) =>
-      material.metadata.confirmed && material.metadata.topics?.length,
-  );
 
   return (
     <div className="curve-dashboard" aria-busy={loading}>
-      <header className="dash-heading">
-        <div>
-          <p className="dash-eyebrow">YOUR LEARNING SPACE</p>
-          <h1>A little progress, {firstName}.</h1>
-          <p>Your notes, your next step, your own pace.</p>
-        </div>
-        <span className="dash-date">
-          <CalendarDays size={15} />
-          {new Date().toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            weekday: "short",
-          })}
-        </span>
-      </header>
-
+      <h1 className="sr-only">{firstName}'s learning dashboard</h1>
       {error ? (
         <div className="dash-error" role="alert">
           <p>{error}</p>
@@ -112,316 +87,234 @@ export function HomeView({
         </div>
       ) : (
         <>
-          <div className="dash-overview">
-            <section className="dash-focus" aria-labelledby="dash-focus-title">
-              <div className="dash-focus-copy">
-                <span className="dash-focus-label">
-                  <span />
-                  {pending
-                    ? "READY TO PICK BACK UP"
-                    : recommended
-                      ? "A GOOD NEXT STEP"
-                      : "LET’S START SOMETHING GOOD"}
-                </span>
-                <h2 id="dash-focus-title">
-                  {pending
-                    ? pending.topic
-                    : recommended
-                      ? recommended.title
-                      : "Big ideas. Small beginnings."}
-                </h2>
-                <p>
-                  {pending
-                    ? "Your session is right where you left it. Make a little more room for understanding."
-                    : recommended
-                      ? `${recommended.metadata.course || "Your notes"} · Open your material, revisit a topic, and put it into practice.`
-                      : "Bring your notes. We’ll help turn them into a clear path from “not quite” to “got it”."}
-                </p>
-                <button
-                  className="learn-button dark"
-                  disabled={busy}
-                  onClick={() =>
-                    pending
-                      ? onOpenSession(pending.id)
-                      : recommended
-                        ? onOpenMaterial(recommended)
-                        : onUploadClick()
-                  }
-                >
-                  {pending
-                    ? "Continue session"
-                    : recommended
-                      ? "Open your notes"
-                      : "Add your first material"}
-                  <ArrowRight size={16} />
-                </button>
-                <span className="dash-focus-note">
-                  <BookOpen size={13} />
-                  {pending
-                    ? pending.mode === "checkpoint"
-                      ? "Independent check"
-                      : "Guided practice"
-                    : "Built around what you’re learning"}
-                </span>
-              </div>
-              <StudyDoodle kind="notebook" className="dash-focus-doodle" />
-            </section>
-            <section className="dash-week" aria-labelledby="dash-week-title">
-              <div className="dash-section-title">
-                <h2 id="dash-week-title">Your week, so far</h2>
-                <span className="dash-mini-icon">
-                  <CalendarDays size={17} />
-                </span>
-              </div>
-              <div className="dash-week-total">
-                <strong>{weeklyTotal}</strong>
-                <span>
-                  session{weeklyTotal === 1 ? "" : "s"} completed
-                  <small>Over the last 7 days</small>
-                </span>
-              </div>
-              <div
-                className="dash-chart"
-                role="img"
-                aria-label={`Last seven days: ${activity.map((day) => `${day.label}: ${day.practice} practice, ${day.checkpoint} checks`).join("; ")}`}
-              >
-                {activity.map((day, index) => (
-                  <div
-                    className={`dash-chart-day ${index === 6 ? "today" : ""}`}
-                    key={index}
-                    aria-hidden="true"
-                  >
-                    <div className="dash-bar-track">
-                      <div
-                        className="dash-bar-stack"
-                        style={{
-                          height: `${((day.practice + day.checkpoint) / maxActivity) * 100}%`,
-                        }}
-                      >
-                        <span
-                          className="dash-bar-check"
-                          style={{ flex: day.checkpoint }}
-                        />
-                        <span
-                          className="dash-bar-practice"
-                          style={{ flex: day.practice }}
-                        />
-                      </div>
-                    </div>
-                    <span>{day.label.slice(0, 1)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="dash-chart-legend">
-                <span>
-                  <i />
-                  Practice
-                </span>
-                <span>
-                  <i />
-                  Independent checks
-                </span>
-              </div>
-              <p className="dash-week-note">
-                {activeDays
-                  ? `${activeDays} learning day${activeDays === 1 ? "" : "s"}. Every bit counts.`
-                  : "Your first session starts the story."}
-              </p>
-            </section>
-          </div>
-
-          <dl className="dash-stats" aria-label="Learning overview">
-            <div>
-              <span className="dash-stat-icon lavender">
-                <FileText size={18} />
-              </span>
-              <div>
-                <dt>In your library</dt>
-                <dd>
-                  {materials.length}
-                  <span>material{materials.length === 1 ? "" : "s"}</span>
-                </dd>
-              </div>
-            </div>
-            <div>
-              <span className="dash-stat-icon mint">
-                <CheckCircle2 size={18} />
-              </span>
-              <div>
-                <dt>Sessions completed</dt>
-                <dd>
-                  {completed.length}
-                  <span>all time</span>
-                </dd>
-              </div>
-            </div>
-            <div>
-              <span className="dash-stat-icon peach">
-                <Sparkles size={18} />
-              </span>
-              <div>
-                <dt>Independent accuracy</dt>
-                <dd>
-                  {accuracy === null ? "—" : `${accuracy}%`}
-                  <span>
-                    {accuracy === null
-                      ? "Try your first check"
-                      : "without hints"}
-                  </span>
-                </dd>
-              </div>
-            </div>
-          </dl>
-
           <section
-            className="dash-library"
-            aria-labelledby="dash-library-title"
+            className="study-agent-card"
+            aria-labelledby="study-agent-title"
           >
-            <div className="dash-section-title">
+            <header className="study-agent-header">
+              <span className="study-agent-icon peach">
+                <CalendarDays size={21} />
+              </span>
               <div>
-                <h2 id="dash-library-title">On your bookshelf</h2>
-                <p>A familiar place to pick things up.</p>
+                <h2 id="study-agent-title">Study planner</h2>
+                <p>Your next step</p>
               </div>
-              <Link className="text-button" to="/library">
-                View library <ArrowUpRight size={15} />
-              </Link>
+              <span className="study-agent-status">
+                <i />
+                {pending
+                  ? "Ready to resume"
+                  : recommended
+                    ? "Ready for you"
+                    : "Getting started"}
+              </span>
+            </header>
+            <div className="study-agent-intro">
+              <h3>
+                {pending
+                  ? "Pick up where you left off."
+                  : recommended
+                    ? "Make room for your next idea."
+                    : "A good place to begin."}
+              </h3>
+              <p>
+                {pending
+                  ? "Your practice is saved. Continue whenever you’re ready."
+                  : recommended
+                    ? "A focused session starts with the notes you already have."
+                    : "Bring your notes. Curve will help you find a clear path through them."}
+              </p>
             </div>
-            {materials.length > 0 && (
-              <div className="dash-search">
-                <Search size={16} />
-                <input
-                  aria-label="Search your bookshelf"
-                  placeholder="Find a course, topic, or note…"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                {query && (
-                  <button
-                    className="icon-button"
-                    aria-label="Clear search"
-                    onClick={() => setQuery("")}
-                  >
-                    <X size={15} />
-                  </button>
-                )}
+            <div className="study-next-step">
+              <div className="study-next-title">
+                <BookOpen size={19} />
+                <h3>
+                  {pending?.topic ||
+                    recommended?.title ||
+                    "Your first study session"}
+                </h3>
+                <span>{pending ? "In progress" : "Next up"}</span>
+              </div>
+              <p>
+                {pending
+                  ? pending.mode === "checkpoint"
+                    ? "Independent check · Without hints"
+                    : "Guided practice · At your pace"
+                  : recommended?.metadata.course ||
+                    "Upload a PDF, Markdown file, or lecture notes"}
+              </p>
+              <div className="study-next-meta">
                 <span>
-                  {visible.length} material{visible.length === 1 ? "" : "s"}
+                  <FileText size={14} />
+                  {materials.length} material{materials.length === 1 ? "" : "s"}
+                </span>
+                <span>
+                  <CheckCircle2 size={14} />
+                  {completed.length} completed
                 </span>
               </div>
-            )}
-            {materials.length === 0 ? (
-              <div className="dash-empty">
-                <StudyDoodle kind="sprout" />
-                <div>
-                  <h3>A fresh shelf for fresh ideas.</h3>
-                  <p>Add a PDF, Markdown file, or paste your lecture notes.</p>
-                </div>
-                <button className="learn-button subtle" onClick={onUploadClick}>
-                  <Plus size={16} />
-                  Add material
-                </button>
-              </div>
-            ) : visible.length === 0 ? (
-              <div className="dash-no-results" role="status">
-                <p>No materials match “{query}”.</p>
-                <button className="text-button" onClick={() => setQuery("")}>
-                  Clear search <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <div className="dash-materials">
-                {visible.slice(0, 4).map((material, index) => {
-                  const days = daysToExam(material.metadata.exam_on);
-                  return (
-                    <button
-                      className={`dash-material dash-tone-${index % 4}`}
-                      key={material.id}
-                      onClick={() => onOpenMaterial(material)}
-                    >
-                      <div className="dash-material-top">
-                        <span className="dash-book-icon">
-                          <BookOpen size={20} />
-                        </span>
-                        <ArrowUpRight size={17} />
-                      </div>
-                      <span className="dash-course-label">
-                        {material.metadata.course || "Course notes"}
-                      </span>
-                      <h3>{material.title}</h3>
-                      <p>
-                        {material.metadata.topics?.slice(0, 2).join(" · ") ||
-                          "Your next ideas are in here."}
-                      </p>
-                      <div className="dash-material-meta">
-                        <span>
-                          {material.metadata.confirmed
-                            ? `${material.metadata.topics?.length || 0} topics`
-                            : "Review topics"}
-                        </span>
-                        <span>
-                          {days !== null && days >= 0
-                            ? days === 0
-                              ? "Exam today"
-                              : `Exam in ${days}d`
-                            : `${material.metadata.page_count || material.metadata.pages?.length || 1} pages`}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              <button
+                className="learn-button dark"
+                disabled={busy}
+                onClick={() =>
+                  pending
+                    ? onOpenSession(pending.id)
+                    : recommended
+                      ? onOpenMaterial(recommended)
+                      : onUploadClick()
+                }
+              >
+                {pending
+                  ? "Continue session"
+                  : recommended
+                    ? "Open material"
+                    : "Add your first material"}
+                <ArrowRight size={15} />
+              </button>
+            </div>
           </section>
 
           <section
-            className="dash-shortcuts"
-            aria-labelledby="dash-shortcut-title"
+            className="study-agent-card"
+            aria-labelledby="library-agent-title"
           >
-            <div>
-              <span className="dash-mini-icon">
-                <Sparkles size={18} />
+            <header className="study-agent-header">
+              <span className="study-agent-icon lavender">
+                <BookOpen size={21} />
               </span>
-              <h2 id="dash-shortcut-title">A little help from Curve</h2>
-              <p>
-                {ready
-                  ? "Find your focus. We’ll take it from there."
-                  : "Add your notes to unlock a plan and practice."}
+              <div>
+                <h2 id="library-agent-title">Your library</h2>
+                <p>Knowledge, collected</p>
+              </div>
+              <button
+                className="icon-button"
+                aria-label="Add material"
+                onClick={onUploadClick}
+              >
+                <Plus size={18} />
+              </button>
+            </header>
+            {materials.length > 0 ? (
+              <>
+                <div className="study-library-search">
+                  <Search size={15} />
+                  <input
+                    aria-label="Search your bookshelf"
+                    placeholder="Find a course, topic, or note…"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                  {query && (
+                    <button
+                      className="icon-button"
+                      aria-label="Clear search"
+                      onClick={() => setQuery("")}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <div className="study-library-list">
+                  {visible.slice(0, 3).map((material) => (
+                    <button
+                      key={material.id}
+                      onClick={() => onOpenMaterial(material)}
+                    >
+                      <span>
+                        <strong>{material.title}</strong>
+                        <small>
+                          {material.metadata.course || "Course notes"} ·{" "}
+                          {material.metadata.confirmed
+                            ? `${material.metadata.topics?.length || 0} topics`
+                            : "Review topics"}
+                        </small>
+                      </span>
+                      <ArrowUpRight size={17} />
+                    </button>
+                  ))}
+                  {visible.length === 0 && (
+                    <p role="status">No materials match “{query}”.</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="study-card-note">
+                Your notes belong here. Add your first material to start
+                learning with Curve.
               </p>
+            )}
+            <Link className="study-card-link" to="/library">
+              View library
+              <ArrowUpRight size={14} />
+            </Link>
+          </section>
+
+          <section
+            className="study-agent-card"
+            aria-labelledby="progress-agent-title"
+          >
+            <header className="study-agent-header">
+              <span className="study-agent-icon mint">
+                <Sparkles size={21} />
+              </span>
+              <div>
+                <h2 id="progress-agent-title">Learning progress</h2>
+                <p>One session at a time</p>
+              </div>
+              <Link
+                className="icon-button"
+                to="/progress"
+                aria-label="View your progress"
+              >
+                <ArrowUpRight size={18} />
+              </Link>
+            </header>
+            <p className="study-card-note">
+              {weeklyTotal} session{weeklyTotal === 1 ? "" : "s"} completed this
+              week
+            </p>
+            <div className="study-progress-metric">
+              <div>
+                <p>Independent accuracy</p>
+                <strong>{accuracy === null ? "—" : `${accuracy}%`}</strong>
+                <span>
+                  {accuracy === null
+                    ? "Take a check to see your progress"
+                    : "Without hints"}
+                </span>
+              </div>
+              <div
+                className="study-week-chart"
+                role="img"
+                aria-label={activity
+                  .map(
+                    (day) =>
+                      `${day.label}: ${day.practice + day.checkpoint} sessions`,
+                  )
+                  .join("; ")}
+              >
+                {activity.map((day, index) => (
+                  <div key={index} aria-hidden="true">
+                    <span
+                      style={{
+                        height: `${Math.max(4, ((day.practice + day.checkpoint) / Math.max(1, ...activity.map((item) => item.practice + item.checkpoint))) * 48)}px`,
+                      }}
+                    />
+                    <small>{day.label.slice(0, 1)}</small>
+                  </div>
+                ))}
+              </div>
             </div>
             <button
-              disabled={busy || !ready}
-              onClick={() =>
-                onPromptClick(
-                  "Create a 30-minute focused study plan from my course notes.",
-                )
-              }
-            >
-              <Clock size={17} />
-              <span>
-                Make a study plan<small>A focused 30-minute session</small>
-              </span>
-              <ArrowUpRight size={16} />
-            </button>
-            <button
+              className="study-card-link"
               disabled={busy || !ready}
               onClick={() =>
                 onPromptClick("Start an independent check on my notes.")
               }
             >
-              <CheckCircle2 size={17} />
-              <span>
-                See what’s sticking<small>Try an independent check</small>
-              </span>
-              <ArrowUpRight size={16} />
+              Check your understanding
+              <ArrowRight size={14} />
             </button>
           </section>
-          <footer className="dash-footer">
-            <StudyDoodle kind="sprout" />
-            <span>Room to grow. One page at a time.</span>
-            <Link to="/progress">
-              See your progress <ArrowRight size={14} />
-            </Link>
-          </footer>
         </>
       )}
     </div>

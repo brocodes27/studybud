@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callGemini } from "../_shared/gemini.ts";
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
@@ -33,7 +33,7 @@ Rules:
 Each question item: {"index": number, "type": "mcq"|"short"|"long", "question": string, "marks": number, "options"?: string[]}
 `;
 
-        const text = await callGemini(
+        const text = await callMeta(
             [
                 { role: "system", content: "You are a helpful assistant that outputs only JSON." },
                 { role: "user", content: prompt }

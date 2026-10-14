@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callGemini, callGeminiJSON, callGeminiEmbedding } from '../_shared/gemini.ts'
+import { callMeta, callMetaJSON, META_MODEL } from "../_shared/meta.ts";
+import { callGeminiEmbedding, callGeminiJSON } from "../_shared/gemini.ts";
 import { getCors } from '../_shared/cors.ts'
 
 const PROMPT_TEMPLATES: Record<string, (payload: any) => { messages: any[]; opts: any }> = {
@@ -98,14 +99,14 @@ serve(async (req: Request) => {
 
     const { messages, opts } = tmpl(payload);
     const isJson = opts.json;
-    const result = isJson ? await callGeminiJSON(messages, opts) : await callGemini(messages, opts);
+    const result = action === 'transcribe_audio' ? await callGeminiJSON(messages, opts) : isJson ? await callMetaJSON(messages, opts) : await callMeta(messages, opts);
 
     // 2. Log AI usage details asynchronously
     const promptLen = JSON.stringify(messages).length;
     const completionLen = typeof result === 'string' ? result.length : JSON.stringify(result).length;
     void sb.rpc('log_ai_usage', {
       p_user_id: user.id,
-      p_model: 'gemini-1.5-flash',
+      p_model: action === 'transcribe_audio' ? 'gemini-3-flash-preview' : META_MODEL,
       p_feature_name: action,
       p_prompt_len: promptLen,
       p_completion_len: completionLen

@@ -1,3 +1,4 @@
+import { requestMeta } from "../_shared/meta.ts";
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
@@ -236,86 +237,31 @@ serve(async (req: Request) => {
 
     const systemPrompt = buildSystemPrompt(context)
 
-    // Build Gemini contents from conversation
-    const contents: any[] = []
-
-    // System prompt as first user message (Gemini doesn't have a native system role in contents)
-    contents.push({
-      role: 'user',
-      parts: [{ text: systemPrompt }],
-    })
-
-    // Add conversation history
-    for (const m of (messages || [])) {
-      contents.push({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
-      })
-    }
-
-    // If there was a tool result from a previous turn, add it
-    if (tool_results) {
-      contents.push({
-        role: 'user',
-        parts: [{ text: `Tool result: ${JSON.stringify(tool_results)}` }],
-      })
-    }
-
-    const geminiBody: any = {
-      contents,
-      generationConfig: {
-        temperature: 0.65,
-        maxOutputTokens: 2048,
-      },
-    }
-
-    // Add function declarations
-    geminiBody.tools = [{
-      functionDeclarations: TOOLS.map(t => ({
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters,
+    // Build Meta messages from the conversation
+    const response = await requestMeta([
+      { role: 'system', content: systemPrompt },
+      ...(messages || []).map((m: { role: string; content: string }) => ({
+        role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content,
       })),
-    }]
-
-    const apiKey = Deno.env.get('GEMINI_API_KEY') || ''
-    const model = Deno.env.get('AGENT_MODEL') || 'gemini-3-flash-preview'
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
-      }
-    )
-
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`Gemini API error ${res.status}: ${errText}`)
+      ...(tool_results ? [{ role: 'user' as const, content: `Tool result: ${JSON.stringify(tool_results)}` }] : []),
+    ], {
+      maxOutputTokens: 4096,
+      tools: TOOLS.map(t => ({ type: 'function', function: {
+        name: t.name, description: t.description, parameters: t.parameters,
+      } })),
+    });
+    const data = await response.json();
+    const choice = data?.choices?.[0];
+    if (choice?.finish_reason === 'length' || choice?.message?.refusal) throw new Error('Meta returned an incomplete response');
+    const reply = choice?.message;
+    const fc = reply?.tool_calls?.[0]?.function;
+    if (fc) {
+      return new Response(JSON.stringify({
+        type: 'tool_call', tool: fc.name, args: JSON.parse(fc.arguments || '{}'), text: reply.content || '',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
-
-    const geminiData = await res.json()
-    const candidate = geminiData?.candidates?.[0]
-    const parts = candidate?.content?.parts || []
-
-    // Check for function call
-    const functionCallPart = parts.find((p: any) => p.functionCall)
-    if (functionCallPart) {
-      const fc = functionCallPart.functionCall
-      return new Response(
-        JSON.stringify({
-          type: 'tool_call',
-          tool: fc.name,
-          args: fc.args || {},
-          text: parts.find((p: any) => p.text)?.text || '',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      )
-    }
-
-    // Plain text response
-    const text = parts.map((p: any) => p.text || '').join('').trim()
+    const text = reply?.content;
+    if (typeof text !== 'string' || !text.trim()) throw new Error('Meta returned no text');
 
     return new Response(
       JSON.stringify({ type: 'message', text }),

@@ -1,3 +1,4 @@
+import type { AssessmentArtifact, ResearchArtifact, ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
 /**
  * Curve Agent Workspace Contracts
  * Matches backend supabase/functions/_shared/workspace-contracts.ts
@@ -19,9 +20,12 @@ export interface Citation {
   materialId: string;
   page: number;
   quote: string;
+  source?: {title:string;url:string};
 }
 
 export type WorkspaceArtifact =
+  | AssessmentArtifact
+  | ResearchArtifact
   | { id: string; kind: 'material'; title: string; materialId: string; page?: number }
   | { id: string; kind: 'session'; title: string; sessionId: string }
   | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
@@ -32,6 +36,8 @@ export interface WorkspaceState {
   activeId: string | null;
   plan: StudyPlan | null;
   checkpointId: string | null;
+  closedArtifactIds?: string[];
+  reviewedArtifactIds?: string[];
 }
 
 export interface WorkspaceThread {
@@ -42,9 +48,18 @@ export interface WorkspaceThread {
 
 export interface WorkspaceMessage {
   id: string;
+  request_id?: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+}
+
+// A snapshot may predate a typed message or an in-flight voice transcript.
+export function mergeWorkspaceMessages(current: WorkspaceMessage[], saved: WorkspaceMessage[]): WorkspaceMessage[] {
+  const persisted = new Map(saved.map(message => [message.id, message]));
+  const requests = new Set(saved.filter(message => message.request_id).map(message => `${message.request_id}:${message.role}`));
+  return [...current.filter(message => !persisted.has(message.id) && !requests.has(`${message.request_id}:${message.role}`)), ...saved]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 export interface AgentAction {
@@ -55,6 +70,7 @@ export interface AgentAction {
 }
 
 export interface WorkspaceSnapshot {
+  research?: ResearchStatus;
   thread: WorkspaceThread;
   messages: WorkspaceMessage[];
 }
@@ -74,7 +90,7 @@ export const emptyWorkspace = (): WorkspaceState => ({
 });
 
 export const TOOL_NAMES = [
-  'find_materials',
+  'open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'find_materials',
   'open_material',
   'review_topics',
   'build_plan',

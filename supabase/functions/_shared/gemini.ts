@@ -31,11 +31,17 @@ export interface GeminiCallOptions {
   maxOutputTokens?: number;
   /** Request strict JSON output (sets responseMimeType). */
   json?: boolean;
+  responseJsonSchema?: Record<string, unknown>;
+  thinkingLevel?: "minimal" | "low" | "medium" | "high";
+  /** Retry incomplete JSON once, within the original request's deadline. */
+  retryInvalidJSON?: boolean;
   apiKey?: string;
   signal?: AbortSignal;
 }
 
 const DEFAULT_MODEL = "gemini-3-flash-preview";
+
+class GeminiIncompleteJSONError extends Error {}
 
 function partsFromContent(content: string | GeminiPart[]): any[] {
   if (typeof content === "string") {
@@ -110,6 +116,12 @@ export async function callGemini(
   }
   if (opts.json) {
     generationConfig.responseMimeType = "application/json";
+    if (opts.responseJsonSchema) {
+      generationConfig.responseJsonSchema = opts.responseJsonSchema;
+    }
+  }
+  if (opts.thinkingLevel) {
+    generationConfig.thinkingConfig = { thinkingLevel: opts.thinkingLevel };
   }
 
   const body: Record<string, unknown> = { contents };
@@ -128,11 +140,19 @@ export async function callGemini(
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    // Google can echo the consumer API key in permission errors.
+    throw new Error(`Gemini API error ${res.status}: ${errText.replaceAll(apiKey, "[redacted]")}`);
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts
+  const candidate = data?.candidates?.[0];
+  if (opts.json && candidate?.finishReason === "MAX_TOKENS") {
+    // Even syntactically valid JSON can be incomplete when the provider hits
+    // its output limit. Never accept or save a partial topic list.
+    throw new GeminiIncompleteJSONError("Gemini JSON response exceeded its output limit.");
+  }
+  const text = candidate?.content?.parts
+    ?.filter((p: any) => !p?.thought)
     ?.map((p: any) => p?.text || "")
     .join("")
     .trim();
@@ -152,7 +172,7 @@ export async function callGemini(
  */
 export async function callGeminiEmbedding(
   text: string,
-  opts: { model?: string; apiKey?: string; taskType?: string } = {},
+  opts: { model?: string; apiKey?: string; taskType?: string; signal?: AbortSignal } = {},
 ): Promise<number[]> {
   const apiKey = opts.apiKey || Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY not configured");
@@ -188,16 +208,31 @@ export async function callGeminiJSON<T = any>(
   messages: GeminiMessage[],
   opts: GeminiCallOptions = {},
 ): Promise<T> {
-  const text = await callGemini(messages, { ...opts, json: true });
-  const cleaned = text
-    .replace(/^\s*```(?:json)?\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
-    .trim();
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch (err) {
-    throw new Error(
-      `Failed to parse Gemini JSON response: ${err instanceof Error ? err.message : err}. Raw: ${cleaned.slice(0, 500)}`,
-    );
+  const attempts = opts.retryInvalidJSON ? 2 : 1;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      opts.signal?.throwIfAborted();
+      const text = await callGemini(messages, {
+        ...opts,
+        json: true,
+        maxOutputTokens: attempt === 0
+          ? opts.maxOutputTokens
+          : Math.min((opts.maxOutputTokens ?? 4096) * 2, 65536),
+      });
+      const cleaned = text
+        .replace(/^\s*```(?:json)?\s*/i, "")
+        .replace(/\s*```\s*$/i, "")
+        .trim();
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch {
+        throw new GeminiIncompleteJSONError("Gemini returned invalid JSON.");
+      }
+    } catch (error) {
+      if (!(error instanceof GeminiIncompleteJSONError) || attempt + 1 === attempts) {
+        throw error;
+      }
+    }
   }
+  throw new Error("Gemini returned invalid JSON.");
 }

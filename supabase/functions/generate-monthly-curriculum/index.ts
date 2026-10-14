@@ -1,9 +1,9 @@
 // supabase/functions/generate-monthly-curriculum/index.ts
 // Generates or updates a monthly curriculum using Gemini and (optionally) Tavily, then materializes tasks
-// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, [TAVILY_API_KEY optional]
+// Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MODEL_API_KEY, [TAVILY_API_KEY optional]
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { callGemini } from '../_shared/gemini.ts';
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts';
 
 type Payload = {
@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
     const user = `Month: ${monthStartStr}..${monthEndStr}\nAim: ${aim}\nClass Level: ${classLevel || 'N/A'}\nSubjects: ${subjects.join(', ')}\n\nReturn exactly this JSON shape:\n{\n  "month": "${monthStartStr.slice(0,7)}",\n  "weeks": [\n    {\n      "week_start": "YYYY-MM-DD",\n      "tasks": [\n        { "date": "YYYY-MM-DD", "subject": "<one of subjects>", "title": "short title", "description": "1-2 lines" }\n      ]\n    }\n  ]\n}\n\nRules:\n- Dates must be within the month and not Sunday.\n- Balance per subject across the month.\n- 1-2 tasks per weekday is fine.\n\nWeb context (no need to cite, just align topics):\n${context}`;
 
     stage = 'geminiRequest';
-    const text = await callGemini(
+    const text = await callMeta(
       [ { role: 'system', content: system }, { role: 'user', content: user } ],
       { temperature: 0.2, maxOutputTokens: 3500, json: true }
     );

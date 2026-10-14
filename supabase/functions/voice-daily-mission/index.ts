@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { callGeminiJSON } from '../_shared/gemini.ts'
+import { callMetaJSON } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts'
 
 const RANJAN_VOICE_SYSTEM = `You are Ranjan Sir, a warm, perceptive JEE mentor who has been coaching students for 15+ years. You speak with the rhythm of someone who cares deeply but never panics. Your tone is encouraging, specific, and occasionally uses gentle humor. You never use generic motivational fluff. Every sentence must reference the student's actual plan, weak areas, or upcoming test. You are writing the voiceover script for their daily study briefing.`;
@@ -54,7 +54,6 @@ serve(async (req: Request) => {
   }
   try {
     const sb = createClient(Deno.env.get('SUPABASE_URL')??'', Deno.env.get('SUPABASE_ANON_KEY')??'', { global: { headers: { Authorization: req.headers.get('Authorization')! } } });
-    const sb = createClient(Deno.env.get('SUPABASE_URL')??'', Deno.env.get('SUPABASE_ANON_KEY')??'', { global: { headers: { Authorization: req.headers.get('Authorization')! } } });
     const token = req.headers.get('Authorization')!.replace('Bearer ','');
     const { data:{user}, error: authErr } = await sb.auth.getUser(token);
     if (authErr||!user) return new Response(JSON.stringify({error:'Unauthorized'}), {status:401, headers:{...corsHeaders,'Content-Type':'application/json'}});
@@ -66,7 +65,7 @@ serve(async (req: Request) => {
     const name = user_name || profile?.nickname || 'Student';
 
     const prompt = buildVoicePrompt(plan, profile, name);
-    const voiceJSON = await callGeminiJSON<any>(
+    const voiceJSON = await callMetaJSON<any>(
       [{ role: 'system', content: 'You output JSON only.' }, { role: 'user', content: prompt }],
       { temperature: 0.7 }
     );

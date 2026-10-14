@@ -1,6 +1,7 @@
 export interface Page {
   page: number;
   text: string;
+  source?: { title: string; url: string };
 }
 export interface Key {
   id: string;
@@ -12,6 +13,10 @@ export interface Key {
   hint: string;
   quote: string;
   page: number;
+  source?: { title: string; url: string };
+}
+export function isOutlineQuestion(question: string): boolean {
+  return /\b(?:syllabus|curriculum|(?:course|module|unit) outline)\b|\b(?:which|what)\s+(?:module|unit|week|semester|page|chapter)\b|\b(?:how many|number of)\b.{0,40}\b(?:modules|units|weeks|credits|hours|chapters)\b|\b(?:module|unit|week|semester|page|chapter)\s+\d+\b.{0,100}\b(?:covers?|lists?|includes?|appears?|reappears?|introduced|scheduled|taught)\b/i.test(question);
 }
 export function sourcePages(value: unknown): Page[] {
   if (!Array.isArray(value)) throw new Error("Add readable material first.");
@@ -34,6 +39,7 @@ export function validateQuestions(raw: unknown, pages: Page[]): Key[] {
       "Could not create a complete practice set. Please try again.",
     );
   return raw.map((q, index) => {
+    if (typeof q?.question === 'string' && isOutlineQuestion(q.question)) throw new Error('Questions must test the topic, not the curriculum structure.');
     const source = pages.find((p) => p.page === q.page);
     const quote = typeof q.quote === "string" ? q.quote.trim() : "";
     const normalized = (s: string) =>
@@ -72,6 +78,7 @@ export function validateQuestions(raw: unknown, pages: Page[]): Key[] {
       hint: q.hint.slice(0, 500),
       quote,
       page: q.page,
+      ...(source.source ? {source:source.source} : {}),
     };
   });
 }
@@ -96,6 +103,7 @@ export function gradeChoices(
     explanation: k.explanation,
     quote: k.quote,
     page: k.page,
+    ...(k.source ? {source:k.source} : {}),
     assisted: hints.includes(k.id),
   }));
 }

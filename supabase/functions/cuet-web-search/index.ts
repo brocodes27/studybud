@@ -1,9 +1,9 @@
 // supabase/functions/cuet-web-search/index.ts
 // Deno Edge Function: Searches the web for CUET-style MCQs and normalizes them via Gemini
-// Env required: GEMINI_API_KEY (string), TAVILY_API_KEY (string)
+// Env required: MODEL_API_KEY (string), TAVILY_API_KEY (string)
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { callGemini } from '../_shared/gemini.ts';
+import { callMeta } from "../_shared/meta.ts";
 import { getCors } from '../_shared/cors.ts';
 
 type Quota = { domain: string; take: number };
@@ -87,7 +87,7 @@ Web context:
 ${context}`;
 
     // Call Gemini
-    const text = await callGemini(
+    const text = await callMeta(
       [ { role: 'system', content: system }, { role: 'user', content: user } ],
       { temperature: 0.2, maxOutputTokens: 3000 }
     );

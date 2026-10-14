@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCors } from '../_shared/cors.ts'
-import { callGeminiJSON } from '../_shared/gemini.ts'
+import { callMetaJSON } from "../_shared/meta.ts";
 
 /**
  * Grades a closed-book retrieval set (PRD v2 §4.4).
@@ -81,7 +81,7 @@ async function judgeAnswers(
     .join('\n')
 
   try {
-    const raw = await callGeminiJSON(
+    const raw = await callMetaJSON(
       [
         { role: 'system', content: JUDGE_SYSTEM },
         { role: 'user', content: topic ? `Topic: ${topic}\n\n${prompt}` : prompt },
