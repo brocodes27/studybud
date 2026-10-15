@@ -1,3 +1,4 @@
+import { adaptRecovery } from './learning-memory.ts';
 import { assessmentInput, assessmentTargets, nextExamDate, topicConfirmed, recoverySteps, type AssessmentArtifact } from './learning-workflows.ts';
 import { libraryFor, materialFor, saveState, stableId, studyAction, sessionFor, type Access } from './workspace.ts';
 import { putArtifact, boundedText, type WorkspaceThread, type WorkspaceTool } from './workspace-contracts.ts';
@@ -11,7 +12,7 @@ export async function assessmentAction(a: Access, thread: WorkspaceThread, tool:
     const goal = boundedText(x.goal || 'Find out what I know and what to study next.', 1000);
     const library = await libraryFor(a);
     const targets = library.flatMap(m => m.metadata.topics.filter((t: string) => topicConfirmed(m.metadata,t) && t === x.topic && (!x.materialId || x.materialId === m.id)).map((topic: string) => ({materialId:m.id,topic})));
-    return save({id:`assessment:${actionId}`,kind:'assessment',title:mode === 'exam' ? 'Exam tomorrow' : mode === 'results' ? 'Exam recovery' : 'Knowledge check',goal,mode,status:'setup',targets,sessionIds:[],...(mode === 'exam' ? {examDate:nextExamDate(x.localDate)} : {})});
+    return save({id:`assessment:${actionId}`,kind:'assessment',title:mode === 'exam' ? 'Exam preparation' : mode === 'results' ? 'External exam review' : 'Knowledge check',goal,mode,status:'setup',targets,sessionIds:[],...(mode === 'exam' ? {examDate:nextExamDate(x.localDate)} : {})});
   }
   const artifact = thread.state.artifacts.find(t => t.id === x.artifactId && t.kind === 'assessment') as AssessmentArtifact | undefined;
   if (!artifact) throw new Error('Assessment unavailable. Open a new assessment tab.');
@@ -70,7 +71,7 @@ export async function assessmentAction(a: Access, thread: WorkspaceThread, tool:
     const next = await studyAction(a, {action:'generate',material_id:target.materialId,topic:target.topic,mode:'checkpoint',session_id:await stableId(`${artifact.runId || artifact.id}:${i}`)});
     return save({...artifact,sessionIds:[...artifact.sessionIds,next.id]}, next.id);
   }
-  const steps = recoverySteps(artifact.targets,sessions,artifact.minutes!);
+  const steps = adaptRecovery(recoverySteps(artifact.targets,sessions,artifact.minutes!),thread.state.learningMemory);
   let issues: AssessmentArtifact['issues'] = [];
   if (artifact.report) {
     const raw = await callMetaJSON<{issues:{issue:string;evidence:string;action:string}[]}>([

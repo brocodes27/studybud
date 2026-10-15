@@ -4,9 +4,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  FileText,
   Plus,
   Search,
   Sparkles,
@@ -14,11 +11,14 @@ import {
 } from "lucide-react";
 import {
   independentAccuracy,
-  recommendedMaterials,
   weeklyActivity,
   type Material,
   type StudySession,
 } from "../model";
+import type { EnlistedExam, SemesterPlan, StudyPlan, StudyPlanStep } from "./contracts";
+import { buildSemesterSchedule } from './semesterPlanner';
+import { SemesterIntake } from "./SemesterIntake";
+import { SemesterRoadmapView } from "./SemesterRoadmapView";
 import "./dashboard.css";
 
 export function HomeView({
@@ -28,6 +28,11 @@ export function HomeView({
   loading = false,
   error = "",
   busy = false,
+  semesterPlan = null,
+  initialCourses = [],
+  onSaveSemesterPlan,
+  onStartPlanStep,
+  onReviewExam,
   onRetry,
   onOpenMaterial,
   onOpenSession,
@@ -40,6 +45,11 @@ export function HomeView({
   loading?: boolean;
   error?: string;
   busy?: boolean;
+  semesterPlan?: SemesterPlan | null;
+  initialCourses?: string[];
+  onSaveSemesterPlan?: (plan: SemesterPlan, studyPlan: StudyPlan) => Promise<void> | void;
+  onStartPlanStep?: (step: StudyPlanStep) => void;
+  onReviewExam?: (exam: EnlistedExam) => void;
   onRetry: () => void;
   onOpenMaterial: (material: Material) => void;
   onOpenSession: (sessionId: string) => void;
@@ -47,10 +57,11 @@ export function HomeView({
   onPromptClick: (prompt: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [isEditingSemester, setIsEditingSemester] = useState(false);
+
   const pending = sessions.find(
     (session) => !session.completed_at && session.questions?.length,
   );
-  const recommended = recommendedMaterials(materials, sessions)[0];
   const completed = sessions.filter((session) => session.completed_at);
   const accuracy = independentAccuracy(completed);
   const activity = weeklyActivity(sessions);
@@ -67,6 +78,10 @@ export function HomeView({
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
   );
+
+  const derivedInitialCourses = initialCourses.length
+    ? initialCourses
+    : (Array.from(new Set(materials.map((m) => m.metadata.course).filter(Boolean))) as string[]);
 
   return (
     <div className="curve-dashboard" aria-busy={loading}>
@@ -87,92 +102,69 @@ export function HomeView({
         </div>
       ) : (
         <>
-          <section
-            className="study-agent-card"
-            aria-labelledby="study-agent-title"
-          >
-            <header className="study-agent-header">
-              <span className="study-agent-icon peach">
-                <CalendarDays size={21} />
-              </span>
-              <div>
-                <h2 id="study-agent-title">Study planner</h2>
-                <p>Your next step</p>
-              </div>
-              <span className="study-agent-status">
-                <i />
-                {pending
-                  ? "Ready to resume"
-                  : recommended
-                    ? "Ready for you"
-                    : "Getting started"}
-              </span>
-            </header>
-            <div className="study-agent-intro">
-              <h3>
-                {pending
-                  ? "Pick up where you left off."
-                  : recommended
-                    ? "Make room for your next idea."
-                    : "A good place to begin."}
-              </h3>
-              <p>
-                {pending
-                  ? "Your practice is saved. Continue whenever you’re ready."
-                  : recommended
-                    ? "A focused session starts with the notes you already have."
-                    : "Bring your notes. Curve will help you find a clear path through them."}
-              </p>
-            </div>
-            <div className="study-next-step">
-              <div className="study-next-title">
-                <BookOpen size={19} />
-                <h3>
-                  {pending?.topic ||
-                    recommended?.title ||
-                    "Your first study session"}
-                </h3>
-                <span>{pending ? "In progress" : "Next up"}</span>
-              </div>
-              <p>
-                {pending
-                  ? pending.mode === "checkpoint"
-                    ? "Independent check · Without hints"
-                    : "Guided practice · At your pace"
-                  : recommended?.metadata.course ||
-                    "Upload a PDF, Markdown file, or lecture notes"}
-              </p>
-              <div className="study-next-meta">
-                <span>
-                  <FileText size={14} />
-                  {materials.length} material{materials.length === 1 ? "" : "s"}
-                </span>
-                <span>
-                  <CheckCircle2 size={14} />
-                  {completed.length} completed
-                </span>
+          {/* Primary Semester & Exam Hub */}
+          {semesterPlan && !isEditingSemester ? (
+            <SemesterRoadmapView
+              plan={semesterPlan}
+              materials={materials}
+              sessions={sessions}
+              onOpenSession={onOpenSession}
+              onEditPlan={() => setIsEditingSemester(true)}
+              onStartStep={(step) => {
+                if (onStartPlanStep) {
+                  onStartPlanStep(step);
+                } else {
+                  onPromptClick(`Let's study ${step.topic}`);
+                }
+              }}
+              onFinishExam={onSaveSemesterPlan ? async (examId) => {
+                const updated = buildSemesterSchedule({ ...semesterPlan, exams: semesterPlan.exams.map(exam => exam.id === examId ? { ...exam, isRecent: true } : exam) }, semesterPlan.dailyMinutes || 30);
+                await onSaveSemesterPlan(updated.semesterPlan, updated.studyPlan);
+              } : undefined}
+              onReviewExam={(examId) => {
+                const exam = semesterPlan.exams.find(exam => exam.id === examId)!;
+                if (onReviewExam) onReviewExam(exam);
+                else onPromptClick(`Help me review ${exam.title} (${exam.course}) and identify gaps. Do not assume I completed my revision or mastered its topics.`);
+              }}
+              busy={busy}
+            />
+          ) : (
+            <SemesterIntake
+              materials={materials}
+              initialCourses={derivedInitialCourses}
+              initialPlan={semesterPlan}
+              onSavePlan={async (newPlan, studyPlan) => {
+                if (onSaveSemesterPlan) {
+                  await onSaveSemesterPlan(newPlan, studyPlan);
+                }
+                setIsEditingSemester(false);
+              }}
+              onCancel={semesterPlan ? () => setIsEditingSemester(false) : undefined}
+              onUploadSyllabusClick={onUploadClick}
+              busy={busy}
+            />
+          )}
+
+          {/* Active Pending Session Alert if exists */}
+          {pending && (
+            <div className="pending-session-banner">
+              <div className="pending-info">
+                <span className="pending-dot" />
+                <span>Optional: continue your saved session on <strong>{pending.topic}</strong>.</span>
               </div>
               <button
-                className="learn-button dark"
+                type="button"
+                className="learn-button dark compact-btn"
+                onClick={() => onOpenSession(pending.id)}
                 disabled={busy}
-                onClick={() =>
-                  pending
-                    ? onOpenSession(pending.id)
-                    : recommended
-                      ? onOpenMaterial(recommended)
-                      : onUploadClick()
-                }
               >
-                {pending
-                  ? "Continue session"
-                  : recommended
-                    ? "Open material"
-                    : "Add your first material"}
-                <ArrowRight size={15} />
+                <span>Resume Session</span>
+                <ArrowRight size={14} />
               </button>
             </div>
-          </section>
+          )}
 
+          {/* Library Section */}
           <section
             className="study-agent-card"
             aria-labelledby="library-agent-title"
@@ -238,8 +230,7 @@ export function HomeView({
               </>
             ) : (
               <p className="study-card-note">
-                Your notes belong here. Add your first material to start
-                learning with Curve.
+                Your notes belong here. Add your first material or lecture slides to deepen your semester plan.
               </p>
             )}
             <Link className="study-card-link" to="/library">
@@ -248,6 +239,7 @@ export function HomeView({
             </Link>
           </section>
 
+          {/* Learning Progress Section */}
           <section
             className="study-agent-card"
             aria-labelledby="progress-agent-title"

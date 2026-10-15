@@ -1,3 +1,4 @@
+import type { LearningMemory } from '../../../supabase/functions/_shared/learning-memory';
 import type { AssessmentArtifact, ResearchArtifact, ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
 /**
  * Curve Agent Workspace Contracts
@@ -31,10 +32,54 @@ export type WorkspaceArtifact =
   | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
   | { id: string; kind: 'progress'; title: string };
 
+export interface EnlistedExam {
+  id: string;
+  title: string;
+  course: string;
+  date: string;
+  isRecent?: boolean;
+  topics: string[];
+}
+
+export interface SemesterCourseInfo {
+  course: string;
+  taughtTopics: string[];
+}
+
+export interface BreakPreferences {
+  restDaysPerWeek: number;
+  preExamBufferHours: number;
+  preferredRestDays?: string[];
+}
+
+export interface RoadmapDay {
+  date: string;
+  dayLabel: string;
+  type: 'study' | 'rest' | 'buffer' | 'exam';
+  title: string;
+  course?: string;
+  minutes?: number;
+  topics?: string[];
+}
+
+export interface SemesterPlan {
+  dailyMinutes?: number;
+  stage: 'early' | 'mid' | 'late' | 'finals';
+  stageLabel: string;
+  courses: SemesterCourseInfo[];
+  exams: EnlistedExam[];
+  breaks: BreakPreferences;
+  roadmap: RoadmapDay[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WorkspaceState {
+  learningMemory?: LearningMemory;
   artifacts: WorkspaceArtifact[];
   activeId: string | null;
   plan: StudyPlan | null;
+  semesterPlan?: SemesterPlan | null;
   checkpointId: string | null;
   closedArtifactIds?: string[];
   reviewedArtifactIds?: string[];

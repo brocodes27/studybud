@@ -1,28 +1,22 @@
+import { passPrice } from '../../supabase/functions/_shared/curve-billing';
+import { LearningPageFrame } from './LearningPageFrame';
+import { FreeStudyPreview } from './agent/FreeStudyPreview';
 import {
   createContext,
   useContext,
   useEffect,
   useRef,
   useState,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  Check,
-  Clock3,
-  ShieldCheck,
-  Sparkles,
-  Target,
-} from "lucide-react";
+import { ArrowRight, BookOpen, Check, ShieldCheck } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { usePayment, type CurvePlan } from "../hooks/usePayment";
-import { CurveMark } from "./Preview";
 import "./learning.css";
+import { GuidedSemesterSetup } from "./agent/GuidedSemesterSetup";
+import type { OnboardingAnswers } from "../../supabase/functions/_shared/onboarding-profile";
 
 export type StudyPreferences = {
   goal: string;
@@ -30,6 +24,7 @@ export type StudyPreferences = {
   exam_date: string;
   daily_minutes: number;
   completed: boolean;
+  onboarding_answers?: OnboardingAnswers;
 };
 const StudyPreferencesContext = createContext<StudyPreferences | null>(null);
 export const useStudyPreferences = () => useContext(StudyPreferencesContext);
@@ -41,110 +36,15 @@ const empty: StudyPreferences = {
   daily_minutes: 20,
   completed: false,
 };
-const goals = [
-  {
-    id: "exam",
-    title: "Feel ready for my exams",
-    detail: "Practice the topics that need more attention.",
-    icon: Target,
-  },
-  {
-    id: "understand",
-    title: "Understand difficult concepts",
-    detail: "Break ideas down, then check what sticks.",
-    icon: Sparkles,
-  },
-  {
-    id: "routine",
-    title: "Build a study routine",
-    detail: "Make steady progress between classes.",
-    icon: Clock3,
-  },
-];
-export function SetupFrame({
-  children,
-  step,
-  demo = false,
-}: {
+export function SetupFrame({ children, step, demo = false }: {
   children: ReactNode;
   step: number;
   demo?: boolean;
+  immersive?: boolean;
 }) {
-  const { signOut } = useAuth();
-  return (
-    <div className="learn setup-page">
-      <header className="setup-header">
-        <Link className="learn-brand" to="/welcome">
-          <CurveMark />
-          curve
-        </Link>
-        <span>
-          {demo
-            ? "Interactive preview · nothing is saved"
-            : "A little setup. A clearer direction."}
-        </span>
-        {demo ? (
-          <Link to="/welcome">Exit preview</Link>
-        ) : (
-          <button onClick={() => void signOut()}>Sign out</button>
-        )}
-      </header>
-      <main className="setup-layout">
-        <aside className="setup-aside">
-          <span className="eyebrow">YOUR NEXT CHAPTER</span>
-          <h1>
-            A study space.
-            <br />
-            Built around <em>you.</em>
-          </h1>
-          <p>
-            Your courses, your goals, your pace. Let’s make room for the way you
-            learn.
-          </p>
-          <ol className="setup-steps">
-            {["Your focus", "Your courses", "Your rhythm", "Your plan"].map(
-              (s, i) => (
-                <li
-                  key={s}
-                  aria-current={step === i ? "step" : undefined}
-                  className={i === step ? "current" : i < step ? "done" : ""}
-                >
-                  <span>{i < step ? <Check size={15} /> : `0${i + 1}`}</span>
-                  <div>
-                    {s}
-                    <small>
-                      {
-                        [
-                          "Start with what matters",
-                          "Bring any subject",
-                          "Keep it manageable",
-                          "Unlock your workspace",
-                        ][i]
-                      }
-                    </small>
-                  </div>
-                </li>
-              ),
-            )}
-          </ol>
-          <div className="setup-note">
-            <BookOpen size={20} />
-            <p>
-              No fixed subject list.
-              <br />
-              <strong>Your materials set the curriculum.</strong>
-            </p>
-          </div>
-        </aside>
-        <section className="setup-content">{children}</section>
-      </main>
-      <footer className="setup-footer">
-        <span>Small steps. Real understanding.</span>
-        <Link to="/privacy">Privacy</Link>
-        <Link to="/terms">Terms</Link>
-      </footer>
-    </div>
-  );
+  return <LearningPageFrame label={step === 3 ? "Choose your access" : "Set up your semester"} demo={demo}>
+    {children}
+  </LearningPageFrame>;
 }
 
 export function OnboardingForm({
@@ -156,251 +56,7 @@ export function OnboardingForm({
   onSave: (value: StudyPreferences) => Promise<void>;
   demo?: boolean;
 }) {
-  const [value, setValue] = useState(initial);
-  const [step, setStep] = useState(0);
-  const [course, setCourse] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const title = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    title.current?.focus();
-  }, [step]);
-  function addCourse() {
-    const name = course.trim();
-    if (!name) return;
-    if (value.courses.some((c) => c.toLowerCase() === name.toLowerCase())) {
-      setError("That course is already on your list.");
-      return;
-    }
-    if (value.courses.length >= 12) {
-      setError(
-        "Start with up to 12 courses. You can upload other subjects in your library later.",
-      );
-      return;
-    }
-    setValue({ ...value, courses: [...value.courses, name] });
-    setCourse("");
-    setError("");
-  }
-  async function next(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (step === 1 && course.trim()) {
-      addCourse();
-      return;
-    }
-    if (step === 1 && !value.courses.length) {
-      setError("Add at least one course to continue.");
-      return;
-    }
-    if (step < 2) {
-      setStep(step + 1);
-      return;
-    }
-    setBusy(true);
-    try {
-      await onSave({ ...value, completed: true });
-    } catch {
-      setError(
-        "We couldn’t save your setup. Your answers are still here. Please try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <SetupFrame step={step} demo={demo}>
-      <form onSubmit={next} className="setup-card">
-        <span className="eyebrow">STEP {step + 1} OF 4 · ABOUT A MINUTE</span>
-        <h2 ref={title} tabIndex={-1}>
-          {
-            [
-              "What brings you to Curve?",
-              "What are you learning?",
-              "Find your everyday pace.",
-            ][step]
-          }
-        </h2>
-        <p className="setup-intro">
-          {
-            [
-              "Choose your main focus. You can change it anytime.",
-              "Name your courses in your own words. Add your materials once your workspace is unlocked.",
-              "Choose a daily target you can come back to. This is a goal, not a notification schedule.",
-            ][step]
-          }
-        </p>
-        {step === 0 && (
-          <fieldset className="setup-options">
-            <legend className="sr-only">Main study goal</legend>
-            {goals.map((g) => (
-              <label
-                key={g.id}
-                className={value.goal === g.id ? "selected" : ""}
-              >
-                <input
-                  type="radio"
-                  name="goal"
-                  value={g.id}
-                  checked={value.goal === g.id}
-                  onChange={() => setValue({ ...value, goal: g.id })}
-                />
-                <g.icon size={23} />
-                <span>
-                  <strong>{g.title}</strong>
-                  <small>{g.detail}</small>
-                </span>
-                <span className="setup-radio" />
-              </label>
-            ))}
-          </fieldset>
-        )}
-        {step === 1 && (
-          <div className="setup-fields">
-            <label htmlFor="setup-course">Course name</label>
-            <div className="setup-add">
-              <input
-                id="setup-course"
-                maxLength={80}
-                placeholder="e.g. Organic chemistry, History of art…"
-                value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCourse();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="learn-button dark"
-                onClick={addCourse}
-              >
-                Add
-              </button>
-            </div>
-            <div className="setup-course-list">
-              {value.courses.map((c, i) => (
-                <span key={c} className={`setup-course tone-${i % 3}`}>
-                  <BookOpen size={16} />
-                  {c}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${c}`}
-                    onClick={() =>
-                      setValue({
-                        ...value,
-                        courses: value.courses.filter((x) => x !== c),
-                      })
-                    }
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <small>
-              {value.courses.length
-                ? `${value.courses.length} course${value.courses.length === 1 ? "" : "s"} in your study plan`
-                : "Any subject belongs here. Start with one or add a few."}
-            </small>
-            <label htmlFor="setup-exam">
-              Next exam <span>Optional</span>
-            </label>
-            <input
-              id="setup-exam"
-              type="date"
-              value={value.exam_date}
-              min={new Date().toLocaleDateString("en-CA")}
-              onChange={(e) =>
-                setValue({ ...value, exam_date: e.target.value })
-              }
-            />
-            <small>
-              A reminder of your next milestone. Set dates for individual
-              materials in your library.
-            </small>
-          </div>
-        )}
-        {step === 2 && (
-          <>
-            <fieldset className="setup-rhythm">
-              <legend className="sr-only">Daily study target</legend>
-              {[10, 20, 30, 45].map((n) => (
-                <label
-                  key={n}
-                  className={value.daily_minutes === n ? "selected" : ""}
-                >
-                  <input
-                    type="radio"
-                    name="minutes"
-                    checked={value.daily_minutes === n}
-                    onChange={() => setValue({ ...value, daily_minutes: n })}
-                  />
-                  <strong>
-                    {n}
-                    <small>min / day</small>
-                  </strong>
-                  <span>
-                    {n === 10
-                      ? "A small start"
-                      : n === 20
-                        ? "Steady progress"
-                        : n === 30
-                          ? "More focus"
-                          : "A deeper dive"}
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-            <div className="setup-summary">
-              <span className="eyebrow">YOUR STARTING POINT</span>
-              <h3>{goals.find((g) => g.id === value.goal)?.title}</h3>
-              <p>{value.courses.join(" · ")}</p>
-              <p>
-                <Clock3 size={16} /> {value.daily_minutes} minutes a day
-                {value.exam_date ? ` · Next exam: ${value.exam_date}` : ""}
-              </p>
-              <small>
-                Next, choose a paid plan to unlock your private library and
-                practice sessions.
-              </small>
-            </div>
-          </>
-        )}
-        {error && (
-          <p role="alert" className="setup-error">
-            {error}
-          </p>
-        )}
-        <div className="setup-actions">
-          {step > 0 && (
-            <button
-              type="button"
-              className="learn-button subtle"
-              disabled={busy}
-              onClick={() => {
-                setError("");
-                setStep(step - 1);
-              }}
-            >
-              <ArrowLeft size={16} />
-              Back
-            </button>
-          )}
-          <button className="learn-button dark" disabled={busy}>
-            {busy
-              ? "Saving your setup…"
-              : step === 2
-                ? "Save & choose a plan"
-                : "Continue"}
-            <ArrowRight size={17} />
-          </button>
-        </div>
-      </form>
-    </SetupFrame>
-  );
+  return <GuidedSemesterSetup initial={initial} onSave={onSave} demo={demo} />;
 }
 
 export function PlanSelection({
@@ -456,16 +112,16 @@ export function PlanSelection({
   return (
     <SetupFrame step={3} demo={demo}>
       <div className="setup-card plans-card">
-        <span className="eyebrow">STEP 4 OF 4 · YOUR PLAN</span>
+        <span className="eyebrow">CONTINUE YOUR STUDY PLAN</span>
         <h2>
           {paid
             ? "Your workspace is unlocked."
-            : "Give your learning a little room."}
+            : "Continue beyond Day 1."}
         </h2>
         <p className="setup-intro">
           {paid
             ? "Your paid access is confirmed. Your courses and study setup are ready."
-            : "One plan. All your subjects. Choose how long you want to study with Curve."}
+            : "Your plan and Day 1 are free. Unlock Day 2 onward, dynamic assessments, and more uploads for all your subjects."}
         </p>
         {paid ? (
           <div className="setup-summary">
@@ -484,14 +140,14 @@ export function PlanSelection({
                   {
                     id: "monthly",
                     name: "Monthly pass",
-                    price: "12.99",
+                    price: passPrice.monthly / 100,
                     days: 30,
                     detail: "For your next exam or a focused month.",
                   },
                   {
                     id: "semester",
                     name: "Semester pass",
-                    price: "39",
+                    price: passPrice.semester / 100,
                     days: 120,
                     detail: "Stay with it through the semester.",
                   },
@@ -525,6 +181,8 @@ export function PlanSelection({
               <h3>Everything you need to get into it</h3>
               <ul>
                 {[
+                  "Day 2 onward of your personal study plan",
+                  "Dynamic assessments that adapt to your progress",
                   "Your own courses and private material library",
                   "Practice questions grounded in your notes",
                   "Hints, feedback, and source excerpts",
@@ -606,7 +264,7 @@ export function PlanSelection({
               </button>
             )}
             <p className="plan-fine">
-              Paid access is required to enter your workspace.
+              Your study plan and Day 1 are free. Unlock Day 2+ and dynamic assessments.
             </p>
           </>
         )}
@@ -706,7 +364,7 @@ export function LearningEntry({ children }: { children: ReactNode }) {
             });
           if (error) throw error;
           setState({ ...state, preferences: value });
-          navigate("/subscription");
+          navigate("/");
         }}
       />
     );
@@ -721,7 +379,7 @@ export function LearningEntry({ children }: { children: ReactNode }) {
         checking={checking}
       />
     );
-  if (!state.paid) return <Navigate to="/subscription" replace />;
+  if (!state.paid) return <FreeStudyPreview preferences={state.preferences} />;
   return (
     <StudyPreferencesContext.Provider value={state.preferences}>
       {children}

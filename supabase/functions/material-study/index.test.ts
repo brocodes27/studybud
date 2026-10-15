@@ -29,12 +29,12 @@ before(async () => {
 });
 afterEach(() => mock.restoreAll());
 
-function materialStore() {
+function materialStore(paid = true, claimed = true) {
   const writes: Record<string, unknown>[] = [];
   const reservations: unknown[] = [];
   const material = {
     id: "python-material", title: "Python Programming", owner_user_id: "test-user",
-    metadata: { workspace: "curve", course: "CS201", semester: "Semester 3", topics: [],
+    metadata: { workspace: "curve", course: "CS201", semester: "Semester 3", topics: [] as string[],
       pages: [{ page: 12, text: "Module 1: Variables, data types, decision-making structures and loops. Module 2: Tuples, dictionaries and sets." }],
     },
   };
@@ -42,7 +42,7 @@ function materialStore() {
     auth: { getUser: async () => ({ data: { user: { id: "test-user" } } }) },
     rpc: async (name: string, args: unknown) => {
       if (name === "reserve_material_analysis") reservations.push(args);
-      return { data: true, error: null };
+      return { data: name === "curve_has_paid_access" ? paid : true, error: null };
     },
     from: () => {
       let updating = false;
@@ -50,6 +50,7 @@ function materialStore() {
         select: () => query,
         eq: () => updating ? Promise.resolve({ error: null }) : query,
         single: async () => ({ data: material, error: null }),
+        maybeSingle: async () => ({ data: claimed ? { material_id: material.id } : null, error: null }),
         update: (body: Record<string, unknown>) => { updating = true; writes.push(body); return query; },
       };
       return query;
@@ -122,7 +123,7 @@ test("practice and checkpoint generation use Meta and keep answer keys private",
       from: (table: string) => {
         const query = {
           select: () => query, eq: () => query, order: () => query,
-          maybeSingle: async () => ({ data: null }),
+          maybeSingle: async () => ({ data: table === 'curve_workspace_threads' ? {state:{learningMemory:{observations:[{key:'example_style',kind:'preference',statement:'Prefers short examples.',adjustment:'Use short concrete examples.',evidence:[{requestId:'m',sessionId:'s',quote:'I prefer short examples',at:new Date().toISOString()}]}]}}} : null }),
           limit: async () => ({ data: [] }),
           insert: async (data: unknown) => { keyWrites.push(data); return { error: null }; },
           update: (data: Record<string, unknown>) => { saved = data; return query; },
@@ -139,6 +140,9 @@ test("practice and checkpoint generation use Meta and keep answer keys private",
       const body = JSON.parse(String(init.body));
       assert.equal(body.model, "muse-spark-1.3-contributor");
       assert.equal(body.reasoning_effort, "low");
+      const context = JSON.parse(body.messages.find((m: {role:string}) => m.role === 'user').content);
+      if(mode === 'practice') assert.equal(context.learningAdaptation.patterns[0].key,'example_style');
+      else { assert.equal(context.learningAdaptation,undefined);assert.equal(context.performancePatterns,undefined); }
       assert.equal(body.response_format.json_schema.schema.properties.questions.items.properties.options.minItems, 4);
       return new Response(JSON.stringify({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify({
         source_kind: 'teaching',
@@ -195,4 +199,26 @@ test('syllabus placement questions are replaced with concept questions from teac
   assert.ok(session.questions.every((q:any)=>!q.question.includes('Module 3') && !('correct_index' in q)));
   assert.equal(session.questions[0].source.url,'https://man7.org/linux/man-pages/man7/sched.7.html');
   assert.equal(savedKeys[0].keys[0].quote,quote);
+});
+
+
+test("unpaid student can analyze only their claimed free syllabus", async () => {
+  const store = materialStore(false);
+  store.material.metadata.topics = ["Loops"];
+  const response = await analyze();
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).topics, ["Loops"]);
+  materialStore(false, false);
+  assert.equal((await analyze()).status, 402);
+});
+
+test("unpaid students cannot generate dynamic assessments even for the free syllabus", async () => {
+  const store = materialStore(false);
+  const response = await handler(new Request("https://project.supabase.co/functions/v1/material-study", {
+    method: "POST", headers: { Origin: "https://www.curveapp.tech", Authorization: "Bearer test-only" },
+    body: JSON.stringify({ action: "generate", material_id: store.material.id }),
+  }));
+  assert.equal(response.status, 402);
+  assert.equal(store.reservations.length, 0);
+  assert.equal(store.writes.length, 0);
 });

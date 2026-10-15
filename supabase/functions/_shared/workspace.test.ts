@@ -5,12 +5,14 @@ import { assessmentConfirmation } from './learning-workflows.ts';
 
 let workspace: typeof import('./workspace.ts');
 before(async () => {
+  (globalThis as any).__workspaceTestEnv = () => 'test';
   const bundle = await build({
     entryPoints: [new URL('./workspace.ts', import.meta.url).pathname],
     bundle: true, write: false, platform: 'node', format: 'esm',
+    define: { 'Deno.env.get': 'globalThis.__workspaceTestEnv' },
     plugins: [{ name: 'edge-imports', setup(build) {
       build.onResolve({filter: /^https:\/\//}, args => ({path: args.path, namespace: 'fake'}));
-      build.onLoad({filter: /.*/, namespace: 'fake'}, () => ({contents: 'export const createClient = () => {};'}));
+      build.onLoad({filter: /.*/, namespace: 'fake'}, () => ({contents: 'export const createClient = () => globalThis.__workspaceAuthClient;'}));
     }}],
   });
   workspace = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
@@ -160,4 +162,56 @@ test('restarting a flawed diagnostic preserves scope and uses fresh sessions for
   const ready:any=await workspace.execute(f.access,t,{name:'complete_assessment',args:{artifactId:opened.id}},'finish-new',emit);
   assert.equal(ready.steps.find((s:any)=>s.topic==='Algebra').accuracy,0);
   assert.ok(ready.steps.every((s:any)=>!s.gaps.includes('Outline trivia')));
+});
+
+test('chat context labels in-app checks and keeps exam preparation separate from external result drafts',async()=>{
+  const t:any=thread();
+  const prep={id:'prep',kind:'assessment',title:'Exam tomorrow',goal:'Revise',mode:'exam',status:'ready',targets:[],sessionIds:['check']};
+  t.state.artifacts=[{...prep,id:'old-review',mode:'results',status:'setup',sessionIds:[]},prep];t.state.activeId='prep';
+  const db={from(table:string){
+    const q:any={select:()=>q,eq:()=>q,not:()=>q,contains:()=>q,order:()=>q,
+      limit:async()=>({data:table==='curve_material_sessions'?[{id:'check',material_id:'systems',topic:'Git',mode:'checkpoint',completed_at:'2026-10-15',results:[{correct:true}]}]:[],error:null}),
+      maybeSingle:async()=>({data:null,error:null})};return q;
+  }};
+  const context:any=await workspace.contextFor({sb:db,admin:db,user:{id:'student'}} as any,t);
+  assert.equal(context.sessions[0].source,'in_app');assert.equal(context.sessions[0].activityType,'diagnostic');
+  assert.equal(context.activeAssessment.id,'prep');assert.equal(context.activeAssessment.title,'Exam preparation');
+  assert.equal(context.state.artifacts[0].activityType,'external_exam_review');
+  assert.equal(context.state.artifacts[0].title,'External exam review');
+  assert.equal(t.state.artifacts[1].title,'Exam tomorrow');
+});
+
+test('saved onboarding preferences reach the first coordinator context without becoming measured mastery',async()=>{
+  const selected:string[]=[];
+  const db={from(table:string){
+    const q:any={select:(columns:string)=>{if(table==='curve_study_preferences')selected.push(columns);return q;},eq:()=>q,not:()=>q,contains:()=>q,order:()=>q,
+      limit:async()=>({data:[],error:null}),
+      maybeSingle:async()=>({data:table==='curve_study_preferences'?{courses:['Math'],onboarding_answers:{daily_minutes:'20',days:'4',focus:'10',explanation:'steps',feedback:'gentle'}}:null,error:null})};return q;
+  }};
+  const context:any=await workspace.contextFor({sb:db,admin:db,user:{id:'student'}} as any,thread() as any);
+  assert.ok(selected[0].includes('onboarding_answers'));
+  assert.equal(context.initialAdaptation.source,'self_reported_onboarding');
+  assert.equal(context.initialAdaptation.weeklyMinutes,80);
+  assert.equal(context.initialAdaptation.focusMinutes,10);
+  assert.equal(context.initialAdaptation.explanation,'steps');
+  assert.equal(context.initialAdaptation.feedback,'gentle');
+  assert.deepEqual(context.performancePatterns,[]);
+});
+
+
+test('workspace authorization requires paid access and fails closed on billing errors', async () => {
+  const state = globalThis as typeof globalThis & { __workspaceAuthClient: unknown };
+  const req = new Request('https://project.supabase.co/functions/v1/workspace-agent', { headers: { Authorization: 'Bearer test' } });
+  for (const [paid, error, status] of [[false, null, 402], [null, { message: 'unavailable' }, 503], [null, null, 402]] as const) {
+    state.__workspaceAuthClient = {
+      auth: { getUser: async () => ({ data: { user: { id: 'student' } }, error: null }) },
+      rpc: async () => ({ data: paid, error }),
+    };
+    await assert.rejects(workspace.authorize(req), (e: any) => e.status === status);
+  }
+  state.__workspaceAuthClient = {
+    auth: { getUser: async () => ({ data: { user: { id: 'student' } }, error: null }) },
+    rpc: async () => ({ data: true, error: null }),
+  };
+  assert.equal((await workspace.authorize(req)).user.id, 'student');
 });

@@ -1,3 +1,4 @@
+import type { LearningMemory } from './learning-memory.ts';
 import { topicConfirmed, type TopicMetadata, type AssessmentArtifact, type ResearchArtifact, type ResearchStatus } from './learning-workflows.ts';
 /** Shared wire contracts. Artifact payloads contain references, never answer keys. */
 export interface StudyPlan {
@@ -13,6 +14,7 @@ export type WorkspaceArtifact =
   | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
   | { id: string; kind: 'progress'; title: string };
 export interface WorkspaceState {
+  learningMemory?: LearningMemory;
   artifacts: WorkspaceArtifact[];
   activeId: string | null;
   plan: StudyPlan | null;

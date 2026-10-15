@@ -206,12 +206,14 @@ export function SessionView({
   revision,
   onReturnToPlan,
   nextTopic,
+  returnToPlanLabel,
 }: {
   sessionId: string;
   onCompleted?: (session: StudySession) => void;
   revision?: string;
   onReturnToPlan?: () => void;
   nextTopic?: string | null;
+  returnToPlanLabel?: string;
 }) {
   const { user } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
@@ -381,7 +383,7 @@ export function SessionView({
                 style={{ marginTop: 16 }}
                 onClick={onReturnToPlan}
               >
-                {nextTopic ? `Continue to next topic: ${nextTopic} →` : 'Back to recovery plan →'}
+                {nextTopic ? `Continue to next topic: ${nextTopic} →` : returnToPlanLabel || 'Back to recovery plan →'}
               </button>
             )}
           </div>

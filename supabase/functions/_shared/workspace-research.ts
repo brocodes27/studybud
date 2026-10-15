@@ -1,6 +1,6 @@
 import { researchViaA2A } from './a2a-research.ts';
 import { researchTopic } from './research-topic.ts';
-import { type ResearchArtifact } from './learning-workflows.ts';
+import { topicConfirmed, type ResearchArtifact } from './learning-workflows.ts';
 import type { Access } from './workspace.ts';
 
 export async function researchSnapshot(a: Access) {
@@ -19,11 +19,11 @@ export async function researchSnapshot(a: Access) {
 /** Search queries contain only course/topic names, never exam reports or chat. */
 export async function buildDailyResearch(db: Access['admin'], userId: string, jobId: string): Promise<ResearchArtifact[]> {
   const [materials, sessions] = await Promise.all([
-    db.from('materials').select('id,title,metadata').eq('owner_user_id', userId).contains('metadata', {workspace:'curve', confirmed:true}).limit(50),
+    db.from('materials').select('id,title,metadata').eq('owner_user_id', userId).contains('metadata', {workspace:'curve'}).limit(50),
     db.from('curve_material_sessions').select('material_id,topic,results').eq('user_id', userId).eq('mode','checkpoint').not('completed_at', 'is', null).order('completed_at', {ascending:false}).limit(50),
   ]);
   if (materials.error || sessions.error) throw new Error('Your learning context is temporarily unavailable.');
-  const targets = (materials.data || []).flatMap(m => (m.metadata.topics || []).map((topic: string) => {
+  const targets = (materials.data || []).flatMap(m => (m.metadata.topics || []).filter((topic: string) => topicConfirmed(m.metadata, topic)).map((topic: string) => {
     const recent = sessions.data?.find(s => s.material_id === m.id && s.topic === topic);
     const results = (recent?.results || []).filter((r: {assisted?:boolean}) => !r.assisted);
     return {material: m, topic, accuracy: results.length ? results.filter((r: {correct:boolean}) => r.correct).length / results.length : -1};
@@ -32,7 +32,7 @@ export async function buildDailyResearch(db: Access['admin'], userId: string, jo
   const key = Deno.env.get('TAVILY_API_KEY');
   const cardUrl = Deno.env.get('A2A_RESEARCH_CARD_URL');
   if (!key && !cardUrl) throw new Error('Daily web research is not configured yet. Your saved notes are available.');
-  return await Promise.all(targets.map(async ({material, topic}, i) => {
+  const results = await Promise.allSettled(targets.map(async ({material, topic}, i) => {
     if (cardUrl) {
       try {
         const brief = await researchViaA2A({cardUrl,token:Deno.env.get('A2A_RESEARCH_TOKEN')}, {course:String(material.metadata.course || ''),topic});
@@ -43,6 +43,18 @@ export async function buildDailyResearch(db: Access['admin'], userId: string, jo
       }
     }
     const brief = await researchTopic(String(material.metadata.course || ''),topic);
-    return {id:`research:${jobId}:${i}`,kind:'research',title:topic,topic,materialId:material.id,...brief,createdAt:new Date().toISOString()};
+    return {id:`research:${jobId}:${i}`,kind:'research' as const,title:topic,topic,materialId:material.id,...brief,createdAt:new Date().toISOString()};
   }));
+  const artifacts = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
+  if (!artifacts.length) throw (results[0] as PromiseRejectedResult).reason;
+  return artifacts;
+}
+
+export function researchFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  if (message === 'Add and confirm course material to start daily research.' ||
+      message === 'Daily web research is not configured yet. Your saved notes are available.' ||
+      message === 'The research agent is temporarily unavailable.' ||
+      message === 'No teaching sources were found for this topic. Add lecture notes or a textbook excerpt and retry.') return message;
+  return 'Research could not finish. We will retry automatically; your saved notes are still available.';
 }

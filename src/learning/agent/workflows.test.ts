@@ -92,3 +92,29 @@ test('selected topic confirmation does not authorize other topics in the materia
   assert.equal(topicConfirmed(metadata,'Invented'),false);
   assert.deepEqual(assessmentInput({minutes:60,targets:[{materialId:'systems',topic:'Git'}]},[{id:'systems',metadata}]).targets,[{materialId:'systems',topic:'Git'}]);
 });
+
+test('in-app results never route to external exam intake, while real exam results still do',async()=>{
+  const {studyIntent,resultSource}=await import('../../../supabase/functions/_shared/learning-workflows');
+  for(const text of ['My scores from the practice here were low','Show my test results from this assessment','My mock scores here improved','I scored 4/5 in the independent check','Review my exam preparation assessment results here']) {
+    assert.equal(resultSource(text),'workspace',text);assert.equal(studyIntent(text),null,text);
+  }
+  for(const text of ['My school exam results arrived','I got 72/100 on my college exam','Review my latest exam results','My official mock test score is 80']) {
+    assert.equal(resultSource(text),'external',text);assert.equal(studyIntent(text),'results',text);
+  }
+  assert.equal(resultSource('Show my test results'),'ambiguous');
+  assert.equal(studyIntent('Show my test results'),null);
+  assert.equal(resultSource('My performance was good'),null);
+  assert.equal(studyIntent('My exam is tomorrow. Assess me and help me revise.'),'exam');
+});
+
+test('session context links its own diagnostic or recovery plan instead of an unrelated exam draft',async()=>{
+  const {assessmentForSession,assessmentLabel}=await import('../../../supabase/functions/_shared/learning-workflows');
+  const base={kind:'assessment' as const,title:'Exam tomorrow',goal:'Study',mode:'exam' as const,status:'ready' as const,targets:[],sessionIds:[]};
+  const unrelated={...base,id:'unrelated',mode:'results' as const,status:'setup' as const};
+  const linked={...base,id:'linked',sessionIds:['diagnostic'],steps:[{materialId:'systems',topic:'Git',minutes:10,accuracy:60,gaps:[],instruction:'Revise'}]};
+  assert.equal(assessmentForSession([unrelated,linked],{id:'diagnostic',material_id:'systems',topic:'Git'})?.id,'linked');
+  assert.equal(assessmentForSession([unrelated,linked],{id:'gap-check',material_id:'systems',topic:'Git'})?.id,'linked');
+  assert.equal(assessmentForSession([unrelated,linked],{id:'other',material_id:'other-course',topic:'Git'}),undefined);
+  assert.equal(assessmentLabel(linked),'Exam preparation');
+  assert.equal(assessmentLabel(unrelated),'External exam review');
+});

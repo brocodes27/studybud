@@ -37,6 +37,7 @@ export interface RecoveryStep extends TopicTarget {
   accuracy: number;
   gaps: string[];
   instruction: string;
+  baseInstruction?: string;
 }
 export interface AssessmentArtifact {
   id: string;
@@ -73,11 +74,33 @@ export interface ResearchStatus {
   error?: string;
   completedAt?: string;
 }
+export const RESULT_SOURCE_QUESTION = 'Do you mean a practice or knowledge check here, or an exam you took at school or college?';
+export const RESULT_SOURCE_GUIDE = `All curve_material_sessions are in-app learning activities, never external exams. Practice, diagnostics, gap checks and mock tests here must not be counted as exams the student has taken. An assessment with mode exam is preparation for an upcoming exam; completing its diagnostic does not mean the real exam happened. Mode results is an external exam review draft, not evidence the student took an exam or supplied marks. Only a student-supplied external exam report/marks are external exam evidence. Prioritize the active activity and its linked assessment; never treat an unrelated setup draft as the current session. For in-app results use saved sessions and continue the linked revision plan. Never open_exam_results or start another assessment to review in-app results. If the source of results is unclear, ask whether they mean an in-app check or an external exam before opening intake.`;
+
+export function resultSource(text: string): 'workspace' | 'external' | 'ambiguous' | null {
+  if (!/\b(results?|marks?|scores?|scored|performance|got \d+|\d+\s*\/\s*\d+)\b/i.test(text)) return null;
+  if (/\bperformance\b/i.test(text) && !/\b(results?|marks?|scores?|test|exam|practice|diagnostic|assessment|check|mock)\b/i.test(text)) return null;
+  const workspace = /\b(practice|diagnostic|assessment|independent check|gap check|knowledge check|workspace|in.app|here|mock)\b/i.test(text);
+  const external = /\b(school|college|university|teacher|professor|external|outside|official|real exam|actual exam|board exam|semester exam|midterm|endterm)\b/i.test(text);
+  if (external) return 'external';
+  if (workspace) return 'workspace';
+  if (/\b(tomorrow|upcoming|prepare|target|aim)\b/i.test(text) && !/\b(results?|marks?|scored|got|last|previous|earned)\b/i.test(text)) return null;
+  if (/\bexam\b/i.test(text)) return 'external';
+  return 'ambiguous';
+}
 export function studyIntent(text: string): 'exam' | 'results' | 'study' | null {
-  if (/\b(exam|test|mock)\s+(results?|marks?|scores?)\b|\b(marks?|scores?)\s+(from|in|on)\b/i.test(text)) return 'results';
+  const source = resultSource(text);
+  if (source === 'external') return 'results';
+  if (source) return null;
   if (/\b(exam|test)\b/i.test(text) && /\b(tomorrow|next day|tonight|24 hours?)\b/i.test(text)) return 'exam';
   if (/\b(i (?:want|need|would like) to (?:study|learn|revise)|i (?:have|have got) (?:a |some )?doubts?|help me (?:study|learn|understand)|teach me)\b/i.test(text)) return 'study';
   return null;
+}
+export function assessmentLabel(artifact: AssessmentArtifact): string {
+  return artifact.mode === 'exam' ? 'Exam preparation' : artifact.mode === 'results' ? 'External exam review' : 'Knowledge check';
+}
+export function assessmentForSession(assessments: AssessmentArtifact[], session: {id:string;material_id:string;topic:string}): AssessmentArtifact | undefined {
+  return assessments.find(a => a.sessionIds.includes(session.id)) || assessments.find(a => a.status === 'ready' && a.steps?.some(step => step.materialId === session.material_id && step.topic === session.topic));
 }
 export function safeSourceUrl(value: unknown): string | null {
   try {

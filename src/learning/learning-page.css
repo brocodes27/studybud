@@ -1,0 +1,68 @@
+.learn.learning-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--learn-bg);
+  color: var(--learn-ink);
+}
+.learning-page-header {
+  background: var(--learn-surface);
+  border-bottom: 1px solid var(--learn-line);
+}
+.learning-page-header-inner {
+  width: min(100% - 48px, 1040px);
+  min-height: 80px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.learning-page-label { color: var(--learn-muted); font-size: 12px; }
+.learning-page-content {
+  width: min(100% - 48px, 960px);
+  margin: 40px auto;
+  flex: 1;
+  min-width: 0;
+}
+.learning-page-footer {
+  width: min(100% - 48px, 960px);
+  margin: 0 auto;
+  padding: 20px 0 28px;
+  border-top: 1px solid var(--learn-line);
+  display: flex;
+  gap: 20px;
+  color: var(--learn-muted);
+  font-size: 12px;
+}
+.learning-page-footer > span { margin-right: auto; }
+.learning-skip-link {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  transform: translateY(-160%);
+  background: var(--learn-surface);
+  padding: 10px 16px;
+  border-radius: var(--learn-small-radius);
+  z-index: 20;
+}
+.learning-skip-link:focus { transform: translateY(0); }
+.learning-page .setup-card {
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 32px;
+  border: 1px solid var(--learn-line);
+  border-radius: var(--learn-radius);
+  background: var(--learn-surface);
+  box-shadow: none;
+}
+.learning-page .setup-card h2 { font-size: 28px; line-height: 1.25; }
+.learning-page .plan-options label { background: var(--learn-surface); border-color: var(--learn-line); }
+.learning-page .plan-options label.selected { background: var(--learn-lavender); border-color: var(--learn-accent); }
+@media (max-width: 600px) {
+  .learning-page-header-inner { width: calc(100% - 32px); min-height: 72px; gap: 12px; }
+  .learning-page-label { display: none; }
+  .learning-page-content { width: calc(100% - 32px); margin-block: 24px; }
+  .learning-page-footer { width: calc(100% - 32px); gap: 14px; flex-wrap: wrap; }
+  .learning-page .setup-card { padding: 24px 20px; }
+}

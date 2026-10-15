@@ -1,16 +1,16 @@
+import { buildSemesterSchedule, localDate } from './semesterPlanner';
 import ReactMarkdown from 'react-markdown';
 import { AssessmentView, ResearchView } from './AssessmentView';
 import type { AssessmentDraftCache } from './useAssessmentDraft';
-import type { ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
+import { assessmentLabel, assessmentForSession, type AssessmentArtifact, type ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
 import { useEffect, useRef, useState, FormEvent, KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen,
+  CalendarDays,
   Home,
   Settings2,
-  CheckCircle2,
   FileText,
-  HelpCircle,
   Mic,
   MicOff,
   Paperclip,
@@ -21,6 +21,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchLibrary } from '../api';
 import type { Material, StudySession } from '../model';
@@ -28,6 +29,8 @@ import { MaterialUpload } from '../Workspace';
 import {
   type AgentAction,
   type Citation,
+  type SemesterPlan,
+  type StudyPlan,
   type StudyPlanStep,
   type WorkspaceTool,
   type WorkspaceEvent,
@@ -87,6 +90,41 @@ export function AgentWorkspace() {
   const [libraryError, setLibraryError] = useState('');
   const [libraryRevision, setLibraryRevision] = useState(0);
   const [showUpload, setShowUpload] = useState<boolean>(false);
+  const [semesterPlan, setSemesterPlan] = useState<SemesterPlan | null>(() => {
+    if (!user) return null;
+    try {
+      const raw = localStorage.getItem(`curve:semester-plan:${user.id}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [userCourses, setUserCourses] = useState<string[]>([]);
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('curve_study_preferences')
+      .select('courses, onboarding_answers')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setPreferencesLoading(false);
+        if (!data) return;
+        if (Array.isArray(data.courses) && data.courses.length) {
+          setUserCourses(data.courses);
+        }
+        const answers = data.onboarding_answers as Record<string, unknown> | undefined;
+        const remotePlan = answers?.semester_plan as SemesterPlan | undefined;
+        if (remotePlan) {
+          setSemesterPlan(remotePlan);
+          try {
+            localStorage.setItem(`curve:semester-plan:${user.id}`, JSON.stringify(remotePlan));
+          } catch {}
+        }
+      }, () => setPreferencesLoading(false));
+  }, [user?.id]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -280,7 +318,69 @@ export function AgentWorkspace() {
     return()=>{cancelled=true;clearInterval(timer);window.removeEventListener('focus',visible);document.removeEventListener('visibilitychange',visible);};
   },[user?.id,workspaceLoading,workspaceError,thread.updated_at]);
 
-  const handlePlanStepClick = (step: StudyPlanStep) => launchTool({name:step.kind === 'learn' ? 'explain' : 'start_practice',args:{materialId:step.materialId,topic:step.topic,mode:step.kind === 'checkpoint' ? 'checkpoint' : 'practice'}});
+  const handlePlanStepClick = (step: StudyPlanStep) => {
+    if (step.materialId) {
+      launchTool({
+        name: step.kind === 'learn' ? 'explain' : 'start_practice',
+        args: {
+          materialId: step.materialId,
+          topic: step.topic,
+          mode: step.kind === 'checkpoint' ? 'checkpoint' : 'practice',
+        },
+      });
+    } else {
+      launchTool({
+        name: 'open_assessment',
+        args: {
+          mode: 'exam',
+          goal: `Prepare for ${step.topic}`,
+          topic: step.topic,
+        },
+      });
+    }
+  };
+
+  const handleStartPlanStep = (step: StudyPlanStep) => {
+    handlePlanStepClick(step);
+  };
+
+  const handleSaveSemesterPlan = async (newPlan: SemesterPlan, newStudyPlan: StudyPlan) => {
+    if (!user) return;
+    const { data: current, error: readError } = await supabase
+      .from('curve_study_preferences').select('onboarding_answers').eq('user_id', user.id).maybeSingle();
+    if (readError) throw new Error('Could not load your plan. Please retry.');
+    const existingAnswers = (current?.onboarding_answers as Record<string, unknown>) || {};
+    const { error: saveError } = await supabase.from('curve_study_preferences').update({
+      courses: newPlan.courses.map(c => c.course),
+      exam_date: newPlan.exams.filter(e => !e.isRecent && e.date >= localDate()).sort((a, b) => a.date.localeCompare(b.date))[0]?.date || null,
+      onboarding_answers: { ...existingAnswers, semester_plan: newPlan, day_one_plan: newStudyPlan, semester_stage: newPlan.stage },
+    }).eq('user_id', user.id);
+    if (saveError) throw new Error('Could not save your updated plan. Your answers are still here.');
+    setSemesterPlan(newPlan);
+    try { localStorage.setItem(`curve:semester-plan:${user.id}`, JSON.stringify(newPlan)); } catch {}
+    setThread(prev => ({ ...prev, state: { ...prev.state, plan: newStudyPlan, semesterPlan: newPlan } }));
+
+    const assistantMsg: WorkspaceMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: `I've updated your semester plan across **${newPlan.courses.map((c) => c.course).join(', ')}** around your remaining exams and study routine. We've built in **${newPlan.breaks.restDaysPerWeek} weekly rest day(s)** and pre-exam buffers so you don't burn out.\n\n${newStudyPlan.steps.length ? `Your next focus session is on **${newStudyPlan.steps[0].topic}**. Start from your dashboard.` : 'Today is reserved for your exam or rest. Your next study block is already scheduled.'}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+  };
+
+  useEffect(() => {
+    const refresh = () => {
+      if (preferencesLoading || !semesterPlan || !semesterPlan.courses.length || semesterPlan.roadmap[0]?.date === localDate() || operationRef.current) return;
+      const updated = buildSemesterSchedule(semesterPlan, semesterPlan.dailyMinutes || 30);
+      void handleSaveSemesterPlan(updated.semesterPlan, updated.studyPlan).catch(() => setActionError('Your daily plan could not refresh. Please retry from Adjust Plan & Exams.'));
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 60000);
+    return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
+  }, [semesterPlan, user?.id, preferencesLoading]);
+
   const handleOpenMaterial = (m: Material) => launchTool({name:'open_material',args:{materialId:m.id}});
   const handleOpenSession = (sessionId:string) => launchTool({name:'resume_session',args:{sessionId}});
   const handleStartPracticeFromMaterial = (material:Material,topic:string) => launchTool({name:'open_assessment',args:{goal:`Study ${topic}`,materialId:material.id,topic}});
@@ -289,6 +389,7 @@ export function AgentWorkspace() {
   // Active artifact
   const artifacts = thread.state.artifacts || [];
   const activeArtifact = artifacts.find((a) => a.id === thread.state.activeId);
+  const activityTitle = (artifact: typeof artifacts[number]) => artifact.kind === 'assessment' ? assessmentLabel(artifact) : artifact.title;
 
   return (
     <div
@@ -359,7 +460,7 @@ export function AgentWorkspace() {
           <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'})}<span>Your study workspace</span></time>
         </div>
         {/* Living Curve Orb Stage */}
-        <section
+        {(!messages.length || voice.state !== 'disconnected') && <section
           className={`orb-hero-stage state-${voice.state}`}
           aria-label="Curve Voice Orb"
         >
@@ -439,7 +540,7 @@ export function AgentWorkspace() {
               <p className="ticker-text">{voice.liveTranscript}</p>
             </div>
           )}
-        </section>
+        </section>}
 
         {/* Scrollable messages */}
         <div className="chat-messages-container" role="log" aria-label="Study conversation" aria-live="polite">
@@ -453,11 +554,50 @@ export function AgentWorkspace() {
             </div>
           )}
           {!workspaceLoading && !workspaceError && messages.length === 0 && !streamingText && (
-            <div className="chat-empty-hint">
+            <div className="chat-proactive-kickoff">
+              <div className="kickoff-header">
+                <Sparkles size={15} />
+                <span>SEMESTER ONBOARDING</span>
+              </div>
+              <h3>Where are you in your semester?</h3>
               <p>
-                Tell Curve what you want to study, ask a question, or talk
-                through your materials.
+                What has been taught to you so far? Let’s enlist your upcoming exams and build your break-respectful study plan.
               </p>
+              <div className="kickoff-chips">
+                <button
+                  type="button"
+                  className="chip-btn"
+                  onClick={() =>
+                    void handleSendMessage(
+                      "I'm in mid-semester. We've covered core chapters and I have midterms coming up in 10 days."
+                    )
+                  }
+                >
+                  Mid-semester · Prep for midterms
+                </button>
+                <button
+                  type="button"
+                  className="chip-btn"
+                  onClick={() =>
+                    void handleSendMessage(
+                      'Early semester. Setting up my study rhythm for my subjects.'
+                    )
+                  }
+                >
+                  Early semester · Daily rhythm
+                </button>
+                <button
+                  type="button"
+                  className="chip-btn"
+                  onClick={() =>
+                    void handleSendMessage(
+                      'Finals countdown. I need an intensive break-respectful revision plan.'
+                    )
+                  }
+                >
+                  Finals countdown · Full revision
+                </button>
+              </div>
             </div>
           )}
 
@@ -508,14 +648,6 @@ export function AgentWorkspace() {
                 }
               >
                 Exam tomorrow
-              </button>
-              <button
-                className="chip-btn"
-                onClick={() =>
-                  void handleSendMessage('I want to submit my latest exam results and fix my mistakes.')
-                }
-              >
-                Review exam results
               </button>
               <button
                 className="chip-btn"
@@ -593,77 +725,31 @@ export function AgentWorkspace() {
 
       {/* Study activity and artifact workspace */}
       <main className="agent-working-pane">
-        <section className="workspace-mode-bar" aria-label="Study modes">
-          <button className="learn-button subtle small" disabled={busy || workspaceLoading} onClick={()=>launchTool({name:'open_assessment',args:{mode:'exam',goal:'Prepare for tomorrow’s exam based on what I already know.'}})}>Exam tomorrow</button>
-          <button className="learn-button subtle small" disabled={busy || workspaceLoading} onClick={()=>launchTool({name:'open_exam_results',args:{goal:'Review my latest exam and fix the gaps.'}})}>Add exam results</button>
-          <label className="research-toggle"><input type="checkbox" checked={research?.enabled ?? true} disabled={busy || !research} onChange={e=>launchTool({name:'set_daily_research',args:{enabled:e.target.checked}})}/> Daily research</label>
-          <span className="research-status" role="status">{research?.enabled ? research.status === 'ready' ? 'Research ready in your tabs' : research.status === 'running' ? 'Research in progress' : research.status === 'failed' ? 'Research will retry' : 'Research scheduled' : 'Research paused'}</span>
-        </section>
-        {research?.error && <p className="research-notice">{research.error}</p>}
-        {/* Compact Study Plan Banner */}
-        {thread.state.plan && (
-          <StudyPlanBanner
-            plan={thread.state.plan}
-            onStepClick={handlePlanStepClick}
-          />
-        )}
-
-        {/* Artifact Tabs Header */}
-        <div className="agent-tabs-bar">
-          <div className="tabs-scroll-area">
-            <button
-              className={`artifact-tab ${!activeArtifact ? 'active' : ''}`}
-              aria-pressed={!activeArtifact}
-              disabled={busy}
-              onClick={() => void handleSelectTab(null)}
-            >
-              <Home size={14} /> Dashboard
-            </button>
-
-            {artifacts.map((a) => (
-              <div
-                key={a.id}
-                className={`artifact-tab ${
-                  activeArtifact?.id === a.id ? 'active' : ''
-                }`}
-              >
-                <button
-                  className="artifact-tab-select"
-                  aria-pressed={activeArtifact?.id === a.id}
-                  onClick={() => void handleSelectTab(a.id)}
-                >
-                  {a.kind === 'material' && <FileText size={14} />}
-                  {a.kind === 'session' && <HelpCircle size={14} />}
-                  {a.kind === 'explanation' && <BookOpen size={14} />}
-                  {(a.kind === 'assessment' || a.kind === 'research') && <Sparkles size={14} />}
-                  {a.kind === 'progress' && <CheckCircle2 size={14} />}
-                  <span>{a.title}</span>
-                </button>
-                <button
-                  type="button"
-                  className="tab-close-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseTab(a.id);
-                  }}
-                  aria-label={`Close ${a.title}`}
-                  title="Close tab"
-                >
-                  <X size={12} />
-                </button>
+        <header className="workspace-toolbar">
+          <div className="workspace-activity-picker">
+            <label htmlFor="workspace-activity">Study space</label>
+            <select id="workspace-activity" aria-label="Open activity" value={activeArtifact?.id || ''} disabled={busy || workspaceLoading} onChange={e=>void handleSelectTab(e.target.value || null)}>
+              <option value="">Dashboard</option>
+              {artifacts.map(a=><option key={a.id} value={a.id}>{activityTitle(a)}{a.kind === 'assessment' ? ` · ${a.status === 'ready' ? 'Revision plan' : a.status === 'assessing' ? 'In progress' : 'Draft'} · ${a.goal.slice(0,55)}` : ''}</option>)}
+            </select>
+          </div>
+          {activeArtifact && <button type="button" className="workspace-icon-button" disabled={busy} onClick={()=>handleCloseTab(activeArtifact.id)} aria-label={`Close ${activityTitle(activeArtifact)}`} title="Close activity"><X size={16}/></button>}
+          <details className="workspace-options">
+            <summary>Study options</summary>
+            <div className="workspace-options-panel">
+              <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;setShowUpload(true);}}><Plus size={16}/> Add material</button>
+              <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;void handleSelectTab(null);}}><CalendarDays size={16}/> Adjust semester plan & exams</button>
+              <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;launchTool({name:'open_assessment',args:{mode:'exam',goal:'Prepare for my upcoming exam based on what I already know.'}});}}>Prepare for an exam</button>
+              <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;launchTool({name:'open_exam_results',args:{goal:'Review an exam I took outside Curve and fix the gaps.'}});}}>Add external exam result</button>
+              <div className="workspace-research-settings">
+                <label className="research-toggle"><input type="checkbox" checked={research?.enabled ?? true} disabled={busy || !research} onChange={e=>launchTool({name:'set_daily_research',args:{enabled:e.target.checked}})}/> Daily research</label>
+                <p className="research-status" role="status">{!research ? 'Loading research…' : research.enabled ? research.status === 'ready' ? 'Research is ready in your activities' : research.status === 'running' ? 'Research in progress' : research.status === 'failed' ? 'Research will retry automatically' : 'Research scheduled' : 'Research paused'}</p>
+                {research?.error && <p className="research-notice">{research.error}</p>}
               </div>
-            ))}
-          </div>
-
-          <div className="tabs-quick-action">
-            <button
-              className="learn-button subtle small"
-              onClick={() => setShowUpload(true)}
-            >
-              <Plus size={13} /> Add material
-            </button>
-          </div>
-        </div>
+            </div>
+          </details>
+        </header>
+        {thread.state.plan && <StudyPlanBanner plan={thread.state.plan} onStepClick={handlePlanStepClick}/>}
 
         {/* Working Area Canvas View */}
         <div className="agent-view-canvas">
@@ -673,16 +759,19 @@ export function AgentWorkspace() {
             ) : activeArtifact.kind === 'research' ? (
               <ResearchView artifact={activeArtifact} busy={busy} reviewed={!!thread.state.reviewedArtifactIds?.includes(activeArtifact.id)} onNext={()=>launchTool({name:'review_artifact',args:{artifactId:activeArtifact.id}})}/>
             ) : activeArtifact.kind === 'material' ? (
+              <>
+              <button type="button" className="learn-button subtle" disabled={busy} onClick={() => { void handleSelectTab(null); }}>Back to today’s plan</button>
               <MaterialView
                 materialId={activeArtifact.materialId}
                 initialPage={activeArtifact.page}
                 onSaved={() => setLibraryRevision(r => r + 1)}
                 onStartPractice={handleStartPracticeFromMaterial}
               />
+              </>
             ) : activeArtifact.kind === 'session' ? (() => {
-              const readyAssessment = thread.state.artifacts.find(
-                (a) => a.kind === 'assessment' && a.status === 'ready'
-              ) as AssessmentArtifact | undefined;
+              const currentSession = sessions.find(s => s.id === activeArtifact.sessionId);
+              const linkedAssessment = currentSession ? assessmentForSession(artifacts.filter((a): a is AssessmentArtifact => a.kind === 'assessment'),currentSession) : undefined;
+              const readyAssessment = linkedAssessment?.status === 'ready' ? linkedAssessment : undefined;
               let nextTopicName: string | null = null;
               let targetStepIdx = 0;
               if (readyAssessment) {
@@ -709,10 +798,11 @@ export function AgentWorkspace() {
                     readyAssessment
                       ? () => {
                           sessionStorage.setItem(`curve:assessment-step:${readyAssessment.id}`, String(targetStepIdx));
-                          void launchTool({ name: 'activate', args: { artifactId: readyAssessment.id } });
+                          void handleSelectTab(readyAssessment.id);
                         }
-                      : undefined
+                      : () => { void handleSelectTab(null); }
                   }
+                  returnToPlanLabel={readyAssessment ? undefined : "Back to today’s plan →"}
                   nextTopic={nextTopicName}
                   onCompleted={(s) => {
                     setSessions((prev) => [
@@ -727,7 +817,7 @@ export function AgentWorkspace() {
                       );
                     } else if (readyAssessment) {
                       void handleSendMessage(
-                        `I completed the final gap check for ${s.topic} (${correct}/${total} correct). All topics in my recovery plan are completed!`
+                        `I completed the final gap check for ${s.topic} (${correct}/${total} correct). Review my recorded results and recommend the next action based on any remaining gaps.`
                       );
                     } else {
                       void handleSendMessage(
@@ -750,9 +840,14 @@ export function AgentWorkspace() {
           ) : (
             <HomeView
               firstName={fullName?.trim().split(/\s+/)[0] || 'friend'}
-              loading={libraryLoading}
+              loading={libraryLoading || preferencesLoading}
               error={libraryError}
               busy={busy}
+              semesterPlan={semesterPlan}
+              initialCourses={userCourses}
+              onSaveSemesterPlan={handleSaveSemesterPlan}
+              onStartPlanStep={handleStartPlanStep}
+              onReviewExam={(exam) => launchTool({ name: 'open_exam_results', args: { goal: `Review ${exam.title} (${exam.course}, ${exam.date}) and identify gaps. Unfinished revision is not evidence of mastery.`, topic: exam.topics.join(', ') } })}
               onRetry={() => setLibraryRevision((value) => value + 1)}
               materials={materials}
               sessions={sessions}

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { CheckCircle2, ClipboardCheck, ArrowRight, FileUp } from 'lucide-react';
+import { ClipboardCheck, ArrowRight, FileUp } from 'lucide-react';
 import { readMaterialFile } from '../api';
 import type { Material } from '../model';
-import { MAX_ASSESSMENT_TOPICS, type AssessmentArtifact, type ResearchArtifact } from '../../../supabase/functions/_shared/learning-workflows';
+import { assessmentLabel, MAX_ASSESSMENT_TOPICS, type AssessmentArtifact, type ResearchArtifact } from '../../../supabase/functions/_shared/learning-workflows';
 import type { WorkspaceTool } from './contracts';
 import { SessionView } from './WorkspaceViews';
 import ReactMarkdown from 'react-markdown';
@@ -39,10 +39,12 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
     await action({name:'begin_assessment',args:{artifactId:artifact.id,targets,minutes,confidence,confirmTopics:true,examDate:artifact.mode === 'exam' ? examDate : '',report,score,total}});
   }
   const current = artifact.steps?.[Math.min(step,(artifact.steps?.length || 1)-1)];
-  return <section className="workflow-view" aria-label={artifact.title}>
-    <header className="workflow-heading"><span className="pill lavender"><ClipboardCheck size={14}/> {artifact.mode === 'exam' ? 'EXAM TOMORROW' : artifact.mode === 'results' ? 'EXAM RECOVERY' : 'ASSESS FIRST'}</span><h2>{artifact.title}</h2><p>{artifact.goal}</p></header>
-    <ol className="workflow-stages" aria-label="Assessment progress"><li className={artifact.status === 'setup' ? 'current' : ''}>1. Your starting point</li><li className={artifact.status === 'assessing' ? 'current' : ''}>2. Check understanding</li><li className={artifact.status === 'ready' ? 'current' : ''}>3. Close the gaps</li></ol>
-    {artifact.status !== 'setup' && <button className="learn-button subtle small" disabled={busy} onClick={()=>void action({name:'restart_assessment',args:{artifactId:artifact.id}})}>Restart assessment with fresh questions</button>}
+  return <section className="workflow-view" aria-label={assessmentLabel(artifact)}>
+    <header className="workflow-heading">
+      <div><span className="workflow-eyebrow"><ClipboardCheck size={14}/> {assessmentLabel(artifact)}</span><h2>{artifact.status === 'ready' ? 'Your revision plan' : artifact.status === 'assessing' ? 'Check your understanding' : 'Find your starting point'}</h2>{artifact.status === 'setup' && <p>{artifact.goal}</p>}</div>
+      {artifact.status !== 'setup' && <details className="assessment-options"><summary>Options</summary><button className="learn-button subtle small" disabled={busy} onClick={()=>void action({name:'restart_assessment',args:{artifactId:artifact.id}})}>Restart with fresh questions</button></details>}
+    </header>
+    {artifact.status !== 'ready' && <ol className="workflow-stages" aria-label="Assessment progress"><li className={artifact.status === 'setup' ? 'current' : ''}>1. Choose topics</li><li className={artifact.status === 'assessing' ? 'current' : ''}>2. Knowledge check</li><li>3. Revision plan</li></ol>}
     {error && <p className="learn-error" role="alert">{error}</p>}
     {artifact.status === 'setup' ? <form onSubmit={submit} className="workflow-form">
       <fieldset disabled={busy || reading}>
@@ -71,10 +73,10 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
       <SessionView revision={revision} key={artifact.sessionIds[artifact.sessionIds.length-1]} sessionId={artifact.sessionIds[artifact.sessionIds.length-1]} onCompleted={() => {void action({name:'complete_assessment',args:{artifactId:artifact.id}});}}/>
       <button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'complete_assessment',args:{artifactId:artifact.id}})}>{busy ? 'Preparing the next step…' : 'Continue after submitting answers'}</button>
     </> : <>
-      <div className="workflow-summary"><CheckCircle2 size={24}/><div><h3>Your {artifact.minutes}-minute recovery plan</h3><p>Based on your independent answers. Weakest topics come first; familiar topics get a shorter check.</p></div></div>
-      {artifact.mode === 'exam' && <p className="workflow-note">Exam: {artifact.examDate}. Complete the highest-priority gaps first, then stop for sleep. These sampled topics are a starting point, not a prediction of your exam score.</p>}
+      <p className="workflow-plan-meta">{artifact.minutes} minutes · {artifact.steps?.length || 0} topics · Based on your in-app diagnostic</p>
+      {artifact.mode === 'exam' && <p className="workflow-note">Upcoming exam · {artifact.examDate}. Start with the highest-priority gaps.</p>}
       {!!artifact.issues?.length && <section className="workflow-issues"><h3>What your exam feedback shows</h3>{artifact.issues.map((i,n)=><article key={n}><h4>{i.issue}</h4><blockquote>{i.evidence}</blockquote><p>{i.action}</p></article>)}</section>}
-      {current && <article className="workflow-study-step"><span className="pill mint">STEP {step+1} OF {artifact.steps!.length} · {current.minutes} MIN</span><h3>{current.topic}</h3><p>{current.accuracy}% on the diagnostic. {current.instruction}</p>{current.gaps.map((gap,i)=><p key={i} className="workflow-gap">{gap}</p>)}
+      {current && <article className="workflow-study-step"><span className="pill mint">STEP {step+1} OF {artifact.steps!.length} · {current.minutes} MIN</span><h3>{current.topic}</h3><p>{current.accuracy}% on the diagnostic. {current.instruction}</p>{!!current.gaps.length && <details className="workflow-gap-details"><summary>Review diagnostic feedback ({current.gaps.length})</summary>{current.gaps.map((gap,i)=><p key={i} className="workflow-gap">{gap}</p>)}</details>}
         <div className="workflow-actions"><button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'explain',args:{materialId:current.materialId,topic:current.topic}})}>Review the explanation</button><button className="learn-button dark" disabled={busy} onClick={()=>{sessionStorage.setItem(`curve:assessment-step:${artifact.id}`, String(step));void action({name:'start_practice',args:{materialId:current.materialId,topic:current.topic,mode:'checkpoint'}});}}>Check the gap is fixed</button></div>
         <nav className="workflow-actions" aria-label="Revision steps"><button className="text-button" disabled={step===0} onClick={()=>changeStep(s=>s-1)}>Previous</button><button className="text-button" disabled={step===artifact.steps!.length-1} onClick={()=>changeStep(s=>s+1)}>Next topic <ArrowRight size={14}/></button></nav>
       </article>}

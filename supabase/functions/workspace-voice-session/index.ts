@@ -1,3 +1,5 @@
+import { LEARNING_ADAPTATION_GUIDE } from '../_shared/learning-memory.ts';
+import { SESSION_REFLECTION_GUIDE } from '../_shared/session-reflection.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCors } from '../_shared/cors.ts';
 import { authorize, threadFor, contextFor, snapshot, claim, finish, voiceTools, publicError } from '../_shared/workspace.ts';
@@ -28,7 +30,7 @@ serve(async req=>{
         parts: [
           {
             text:
-              instruction +
+              instruction + (restricted ? '' : '\n' + SESSION_REFLECTION_GUIDE + '\n' + LEARNING_ADAPTATION_GUIDE) +
               '\nWORKSPACE DATA: ' +
               JSON.stringify({ context, history }),
           },

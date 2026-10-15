@@ -925,12 +925,14 @@ function Modal({
 }
 export function MaterialUpload({
   inline = false,
+  singleUpload = false,
   onClose,
   onSaved,
 }: {
   onClose: () => void;
   onSaved: (m: Material) => void;
   inline?: boolean;
+  singleUpload?: boolean;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
@@ -945,7 +947,7 @@ export function MaterialUpload({
   );
   const [isMultiSubject, setIsMultiSubject] = useState(false);
   const [importMode, setImportMode] = useState<"all" | "single" | "combined">(
-    "all",
+    singleUpload ? "combined" : "all",
   );
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -1020,7 +1022,7 @@ export function MaterialUpload({
       }
 
       // Handle Compiled Multi-Subject Import
-      if (isMultiSubject && detectedSubjects.length > 1) {
+      if (!singleUpload && isMultiSubject && detectedSubjects.length > 1) {
         if (importMode === "all") {
           const toImport = detectedSubjects.filter((s) => s.selected);
           if (toImport.length === 0) {
@@ -1233,6 +1235,7 @@ export function MaterialUpload({
                 <div className="import-mode-selector">
                   <button
                     type="button"
+                    disabled={singleUpload}
                     className={`mode-btn ${importMode === "all" ? "active" : ""}`}
                     onClick={() => setImportMode("all")}
                   >
@@ -1241,6 +1244,7 @@ export function MaterialUpload({
                   </button>
                   <button
                     type="button"
+                    disabled={singleUpload}
                     className={`mode-btn ${importMode === "single" ? "active" : ""}`}
                     onClick={() => setImportMode("single")}
                   >

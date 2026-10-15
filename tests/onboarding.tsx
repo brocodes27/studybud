@@ -1,10 +1,14 @@
 // Isolated browser harness. Never sends auth, billing, or profile traffic remotely.
 import type { AuthContextType } from "../src/contexts/AuthContext";
 const uid = "00000000-0000-4000-8000-000000000001";
+if (new URLSearchParams(window.location.search).has('preview') && !sessionStorage.getItem('curve-onboarding-fixture')) {
+  sessionStorage.setItem('curve-onboarding-fixture', JSON.stringify({ user_id: uid, goal: 'exam', courses: ['Mathematics'], daily_minutes: 30, completed: true, onboarding_answers: {} }));
+}
 const realFetch = window.fetch.bind(window);
 let paid = false;
 let failSave = false;
 let failAccess = false;
+let previewMaterial: Record<string, unknown> | null = null;
 window.fetch = async (input, opts = {}) => {
   const url = new URL(
     typeof input === "string"
@@ -17,12 +21,12 @@ window.fetch = async (input, opts = {}) => {
   let data: unknown = null;
   let status = 200;
   if (url.pathname.endsWith("/curve_study_preferences")) {
-    if (opts.method === "POST") {
+    if (opts.method === "POST" || opts.method === "PATCH") {
       if (failSave) {
         data = { message: "Fixture save error" };
         status = 500;
       } else {
-        data = JSON.parse(String(opts.body));
+        data = { ...JSON.parse(sessionStorage.getItem("curve-onboarding-fixture") || "{}"), ...JSON.parse(String(opts.body)) };
         sessionStorage.setItem(
           "curve-onboarding-fixture",
           JSON.stringify(data),
@@ -35,6 +39,18 @@ window.fetch = async (input, opts = {}) => {
   } else if (url.pathname.endsWith("/curve_has_paid_access")) {
     data = failAccess ? { message: "Fixture access error" } : paid;
     status = failAccess ? 500 : 200;
+  } else if (url.pathname.endsWith("/materials")) {
+    if (opts.method === "POST") {
+      previewMaterial = { ...JSON.parse(String(opts.body)), id: "00000000-0000-4000-8000-000000000002", created_at: new Date().toISOString() };
+      data = previewMaterial;
+    } else data = previewMaterial ? [{ ...previewMaterial, ...(previewMaterial.metadata as object) }] : [];
+  } else if (url.pathname.endsWith("/curve_free_syllabus_uploads")) {
+    data = previewMaterial ? { material_id: previewMaterial.id } : null;
+  } else if (url.pathname.endsWith("/curve_material_sessions") || url.pathname.endsWith("/curve_enrollments")) {
+    data = [];
+  } else if (url.pathname.endsWith("/material-study")) {
+    data = { topics: ["Limits", "Continuity", "Differentiation"], summary: "Planned course coverage." };
+    if (previewMaterial) (previewMaterial.metadata as Record<string, unknown>).topics = (data as { topics: string[] }).topics;
   } else if (url.pathname.endsWith("/create-dodo-payment")) {
     data = { error: "Fixture checkout unavailable. Your saved setup is safe." };
     status = 503;
@@ -74,6 +90,7 @@ createRoot(document.getElementById("root")!).render(
         }}
       >
         <b>Isolated fixture</b>
+        <button onClick={() => { sessionStorage.removeItem('curve-onboarding-fixture'); window.location.href = '/tests/onboarding.html'; }}>Start new student setup</button>
         <button
           onClick={() => {
             paid = true;

@@ -1,7 +1,7 @@
 /* Reference-inspired split workspace, using Curve's shared learning tokens. */
 .learn.agent-workspace-container {
   display: grid;
-  grid-template-columns: 84px minmax(350px, 0.9fr) minmax(420px, 1.1fr);
+  grid-template-columns: 72px minmax(0, 1fr) minmax(320px, 400px);
   grid-template-rows: minmax(0, 1fr);
   height: 100dvh;
   min-height: 0;
@@ -235,68 +235,32 @@
   padding: 20px;
   min-height: 0;
 }
-.agent-workspace-container .workspace-mode-bar {
-  padding: 17px 20px;
-  gap: 8px;
-  background: var(--learn-bg);
-}
-.agent-workspace-container .workspace-mode-bar .learn-button {
-  font-size: 10px;
-  padding: 7px 10px;
-}
-.agent-workspace-container .research-toggle {
-  font-size: 10px;
-}
-.agent-workspace-container .research-status {
-  width: 100%;
-  font-size: 10px;
-}
-.agent-workspace-container .agent-tabs-bar {
-  padding: 9px 16px;
-  min-height: 48px;
-  background: var(--learn-bg);
-  gap: 8px;
-}
-.agent-workspace-container .artifact-tab {
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  padding: 7px 9px;
-  font-size: 11px;
-}
-.agent-workspace-container .artifact-tab.active {
-  margin: 0;
-  background: var(--learn-surface);
-}
-.agent-workspace-container .tabs-quick-action {
-  padding: 0;
-  flex-shrink: 0;
-}
-.agent-workspace-container .tabs-quick-action button {
-  font-size: 10px;
-  padding: 7px 9px;
-}
-.agent-workspace-container .artifact-tab-select {
+/* Secondary actions stay available without competing with the current task. */
+.workspace-toolbar {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 0;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  min-width: 0;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--learn-line);
+  background: var(--learn-surface);
 }
-.agent-workspace-container .artifact-tab-select span {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.agent-workspace-container .tabs-scroll-area {
-  min-width: 0;
-}
+.workspace-activity-picker { flex: 1; min-width: 0; }
+.workspace-activity-picker label { display: block; font-size: 11px; color: var(--learn-muted); margin-bottom: 3px; }
+.learn .workspace-activity-picker select { width: 100%; max-width: 100%; border: 0; background: transparent; color: var(--learn-ink); padding: 4px 20px 4px 0; font-size: 14px; text-overflow: ellipsis; }
+.workspace-icon-button { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: transparent; color: var(--learn-muted); flex-shrink: 0; }
+.workspace-icon-button:hover { background: var(--learn-bg); color: var(--learn-ink); }
+.workspace-options { position: relative; flex-shrink: 0; }
+.workspace-options > summary, .assessment-options > summary { cursor: pointer; padding: 8px 0 8px 8px; font-size: 12px; color: var(--learn-muted); border-radius: 6px; }
+.workspace-options-panel { position: absolute; right: 0; top: calc(100% + 12px); z-index: 20; width: min(290px, calc(100vw - 40px)); padding: 8px; background: var(--learn-surface); border: 1px solid var(--learn-line); border-radius: 12px; box-shadow: 0 12px 32px #25282412; }
+.workspace-options-panel > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px; border-radius: 7px; background: transparent; text-align: left; font-size: 13px; }
+.workspace-options-panel > button:hover { background: var(--learn-bg); }
+.workspace-research-settings { border-top: 1px solid var(--learn-line); margin-top: 8px; padding: 16px 12px 8px; }
+.learn .workspace-research-settings .research-toggle { margin: 0; font-size: 13px; }
+.workspace-research-settings .research-status { margin-top: 7px; font-size: 12px; }
+.workspace-research-settings .research-notice { margin-top: 10px; padding: 10px; font-size: 12px; border-radius: 6px; }
 .has-artifact.learn.agent-workspace-container {
-  grid-template-columns: 84px minmax(450px, 1.5fr) minmax(340px, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr) minmax(320px, 400px);
 }
 .curve-dashboard {
   width: 100%;
@@ -308,8 +272,9 @@
 }
 .study-agent-card {
   background: var(--learn-surface);
+  border: 1px solid var(--learn-line);
   padding: 24px;
-  border-radius: 12px;
+  border-radius: var(--learn-radius);
 }
 .study-agent-header {
   display: flex;
@@ -567,16 +532,16 @@
     opacity: 0.4;
   }
 }
-.agent-workspace-container :is(button, a, input, textarea):focus-visible {
+.agent-workspace-container :is(button, a, input, textarea, select, summary):focus-visible {
   outline: 2px solid var(--learn-accent);
   outline-offset: 4px;
 }
 @media (min-width: 769px) and (max-width: 1150px) {
   .learn.agent-workspace-container {
-    grid-template-columns: 68px minmax(320px, 0.9fr) minmax(340px, 1fr);
+    grid-template-columns: 64px minmax(0, 1fr) minmax(290px, 340px);
   }
   .has-artifact.learn.agent-workspace-container {
-    grid-template-columns: 68px minmax(360px, 1fr) minmax(300px, 0.8fr);
+    grid-template-columns: 64px minmax(0, 1fr) minmax(290px, 340px);
   }
   .assistant-greeting time {
     display: none;
@@ -651,9 +616,7 @@
   .agent-workspace-container .agent-view-canvas {
     padding: 16px;
   }
-  .agent-workspace-container .workspace-mode-bar {
-    padding: 12px 16px;
-  }
+  .workspace-toolbar { padding: 12px 16px; gap: 6px; }
   .agent-workspace-container .chat-composer-wrap {
     padding-bottom: 16px;
   }
@@ -695,4 +658,39 @@
 }
 .agent-workspace-container .orb-status-text {
   text-transform: none;
+}
+
+/* Conversation gets the space previously occupied by the idle voice hero. */
+.has-conversation .assistant-greeting { padding: 24px 0 18px; border-bottom: 1px solid var(--learn-line); }
+.learn .has-conversation .assistant-greeting h1, .learn.has-conversation .assistant-greeting h1 { font-size: 19px; }
+.has-conversation .assistant-greeting p, .has-conversation .assistant-greeting time { display: none; }
+.agent-workspace-container.has-conversation .orb-hero-stage { flex-direction: row; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--learn-line); }
+.has-conversation .orb-status-details { text-align: left; }
+.has-conversation .orb-caption { display: none; }
+.has-conversation .orb-quick-controls { margin-top: 8px; }
+.agent-workspace-container .composer-form { min-height: 90px; padding: 10px 12px; }
+.agent-workspace-container .composer-textarea { min-height: 32px; }
+.agent-workspace-container .agent-view-canvas { padding: clamp(16px, 2.5vw, 36px); }
+.agent-workspace-container .workflow-view { max-width: 780px; padding: 8px 0 32px; }
+.workflow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.workflow-heading > div { min-width: 0; }
+.workflow-eyebrow { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--learn-muted); }
+.learn .workflow-heading h2 { font-size: clamp(23px, 2.3vw, 30px); margin: 10px 0 8px; }
+.workflow-heading p { font-size: 13px; max-width: 60ch; }
+.assessment-options { flex-shrink: 0; text-align: right; }
+.assessment-options .learn-button { margin-top: 6px; max-width: 180px; }
+.workflow-plan-meta { margin: 8px 0 12px !important; color: var(--learn-muted); font-size: 13px; }
+.workflow-note { font-size: 12px; }
+.workflow-study-step { margin-top: 24px; padding: clamp(20px, 3vw, 32px); border: 0; border-radius: 12px; }
+.learn .workflow-study-step h3 { font-size: clamp(21px, 2vw, 27px); line-height: 1.35; text-wrap: pretty; }
+.workflow-study-step > p { font-size: 14px; line-height: 1.75; max-width: 65ch; }
+.workflow-gap-details { margin-top: 20px; border-top: 1px solid var(--learn-line); padding-top: 14px; font-size: 13px; }
+.workflow-gap-details summary { cursor: pointer; color: var(--learn-muted); }
+.workflow-gap { margin-top: 12px !important; border-left-width: 2px; }
+@media (max-width: 768px) {
+  .learn.agent-workspace-container, .has-artifact.learn.agent-workspace-container { grid-template-columns: minmax(0, 1fr); }
+  .agent-workspace-container .workspace-toolbar { padding: 10px 16px; }
+  .workspace-options > summary { font-size: 11px; }
+  .agent-workspace-container.has-conversation .assistant-greeting { padding: 18px 0 14px; }
+  .workflow-actions > .learn-button { flex: 1 1 160px; justify-content: center; }
 }
