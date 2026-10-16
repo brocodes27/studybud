@@ -1194,19 +1194,6 @@
 @media (prefers-reduced-motion:reduce) { .typing-dots i { animation:none; } }
 @media (max-width:700px) { .workflow-view { padding:20px 16px; } .workspace-mode-bar { gap:8px;padding:10px; } .learn .research-toggle { margin-left:0; } .workflow-stages { gap:10px;font-size:11px; } }
 
-/* Shared liquid-glass chrome; content keeps an opaque reading surface. */
-.agent-workspace-container {
-  background: radial-gradient(ellipse at 0% 0%, #e2defa80, transparent 50%), radial-gradient(ellipse at 100% 100%, #e4f5cf90, transparent 60%), #f0f4ec;
-}
-.agent-chat-pane, .agent-working-pane { background: transparent; }
-.chat-pane-header, .agent-tabs-bar, .chat-composer-wrap {
-  background: linear-gradient(125deg, #ffffffb8, #f1f5ec80);
-  backdrop-filter: blur(24px) saturate(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(120%);
-  border-color: #ffffffb0;
-  box-shadow: inset 0 1px 1px #fff;
-}
-
 /* ==========================================================================
    Proactive Semester Kickoff in Chat
    ========================================================================== */

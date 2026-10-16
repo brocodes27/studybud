@@ -81,6 +81,7 @@ export function AgentWorkspace() {
   const [workspaceError, setWorkspaceError] = useState('');
   const [workspaceRevision, setWorkspaceRevision] = useState(0);
   const loadedUserRef = useRef<string | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<'chat' | 'workspace'>('workspace');
 
   // Library & sessions data for home state & fallback
@@ -206,6 +207,7 @@ export function AgentWorkspace() {
       setThread(event.thread);
       if (event.thread.state.activeId) setMobileTab('workspace');
     } else if (event.type === 'done') {
+      setLibraryRevision(value => value + 1);
       if (event.snapshot) {
         setResearch(event.snapshot.research);
         setSnapshot(event.snapshot);
@@ -395,6 +397,7 @@ export function AgentWorkspace() {
     <div
       className={`learn agent-workspace-container ${activeArtifact ? 'has-artifact' : 'is-dashboard'} ${messages.length || busy ? 'has-conversation' : 'is-welcome'}`}
       data-mobile-view={mobileTab}
+      data-assistant-open={assistantOpen || voice.state !== 'disconnected'}
     >
       <header className="agent-app-header">
         <Link className="learn-brand" to="/" aria-label="Curve dashboard">
@@ -439,7 +442,7 @@ export function AgentWorkspace() {
       </nav>
 
       {/* Conversation and voice assistant */}
-      <aside className="agent-chat-pane">
+      <aside className="agent-chat-pane" id="curve-assistant">
         <header className="chat-pane-header">
           <div className="chat-header-brand">
             <Sparkles size={16} />
@@ -456,11 +459,10 @@ export function AgentWorkspace() {
         </header>
 
         <div className="assistant-greeting">
-          <div><h1>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {fullName?.trim().split(/\s+/)[0] || 'friend'}.</h1><p>Your learning, a little more connected.</p></div>
-          <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'})}<span>Your study workspace</span></time>
+          <div><h1>Curve</h1><p>Ask about your notes, plan, or a difficult topic.</p></div>
         </div>
         {/* Living Curve Orb Stage */}
-        {(!messages.length || voice.state !== 'disconnected') && <section
+        {voice.state !== 'disconnected' && <section
           className={`orb-hero-stage state-${voice.state}`}
           aria-label="Curve Voice Orb"
         >
@@ -480,9 +482,7 @@ export function AgentWorkspace() {
             <div className="orb-status-badge">
               <span className={`orb-status-light ${voice.state}`} />
               <span className="orb-status-text">
-                {voice.state === 'disconnected'
-                  ? 'Curve is ready'
-                  : voice.state === 'connecting'
+                {voice.state === 'connecting'
                     ? 'Connecting…'
                     : voice.state === 'listening'
                       ? 'Listening'
@@ -494,9 +494,7 @@ export function AgentWorkspace() {
               </span>
             </div>
             <p className="orb-caption">
-              {voice.state === 'disconnected'
-                ? 'Waiting for your instructions or voice command'
-                : voice.state === 'connecting'
+              {voice.state === 'connecting'
                   ? 'Connecting voice…'
                 : voice.state === 'listening'
                   ? 'Speak your goal or question naturally'
@@ -507,7 +505,6 @@ export function AgentWorkspace() {
                       : 'Microphone is currently muted'}
             </p>
 
-            {voice.state !== 'disconnected' && (
               <div className="orb-quick-controls">
                 <button
                   type="button"
@@ -530,7 +527,6 @@ export function AgentWorkspace() {
                   <span>End call</span>
                 </button>
               </div>
-            )}
           </div>
 
           {/* Live Transcript ticker directly beneath the orb */}
@@ -555,49 +551,11 @@ export function AgentWorkspace() {
           )}
           {!workspaceLoading && !workspaceError && messages.length === 0 && !streamingText && (
             <div className="chat-proactive-kickoff">
-              <div className="kickoff-header">
-                <Sparkles size={15} />
-                <span>SEMESTER ONBOARDING</span>
-              </div>
-              <h3>Where are you in your semester?</h3>
-              <p>
-                What has been taught to you so far? Let’s enlist your upcoming exams and build your break-respectful study plan.
-              </p>
-              <div className="kickoff-chips">
-                <button
-                  type="button"
-                  className="chip-btn"
-                  onClick={() =>
-                    void handleSendMessage(
-                      "I'm in mid-semester. We've covered core chapters and I have midterms coming up in 10 days."
-                    )
-                  }
-                >
-                  Mid-semester · Prep for midterms
-                </button>
-                <button
-                  type="button"
-                  className="chip-btn"
-                  onClick={() =>
-                    void handleSendMessage(
-                      'Early semester. Setting up my study rhythm for my subjects.'
-                    )
-                  }
-                >
-                  Early semester · Daily rhythm
-                </button>
-                <button
-                  type="button"
-                  className="chip-btn"
-                  onClick={() =>
-                    void handleSendMessage(
-                      'Finals countdown. I need an intensive break-respectful revision plan.'
-                    )
-                  }
-                >
-                  Finals countdown · Full revision
-                </button>
-              </div>
+              <h3>{semesterPlan ? 'Your plan is ready.' : 'Start with your semester.'}</h3>
+              <p>{semesterPlan ? 'Ask a question here, or follow your next study step.' : 'Add your subjects and exams to get a study plan.'}</p>
+              <button type="button" className="learn-button subtle" disabled={busy} onClick={() => { void handleSelectTab(null); setMobileTab('workspace'); }}>
+                {semesterPlan ? 'Open today’s plan' : 'Set up my plan'}
+              </button>
             </div>
           )}
 
@@ -637,29 +595,6 @@ export function AgentWorkspace() {
 
         {/* Composer */}
         <div className="chat-composer-wrap">
-          {messages.length === 0 && (
-            <div className="composer-quick-chips">
-              <button
-                className="chip-btn"
-                onClick={() =>
-                  void handleSendMessage(
-                    'My exam is tomorrow. Assess me and help me revise.'
-                  )
-                }
-              >
-                Exam tomorrow
-              </button>
-              <button
-                className="chip-btn"
-                onClick={() =>
-                  void handleSendMessage('Test my independent understanding.')
-                }
-              >
-                Independent check
-              </button>
-            </div>
-          )}
-
           <form
             className="composer-form"
             onSubmit={(e: FormEvent) => {
@@ -684,7 +619,7 @@ export function AgentWorkspace() {
               placeholder={
                 thread.state.checkpointId
                   ? 'Independent check: type A, B, C, or D…'
-                  : 'Ask Curve or give instructions…'
+                  : 'Ask Curve…'
               }
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -729,13 +664,14 @@ export function AgentWorkspace() {
           <div className="workspace-activity-picker">
             <label htmlFor="workspace-activity">Study space</label>
             <select id="workspace-activity" aria-label="Open activity" value={activeArtifact?.id || ''} disabled={busy || workspaceLoading} onChange={e=>void handleSelectTab(e.target.value || null)}>
-              <option value="">Dashboard</option>
+              <option value="">Today</option>
               {artifacts.map(a=><option key={a.id} value={a.id}>{activityTitle(a)}{a.kind === 'assessment' ? ` · ${a.status === 'ready' ? 'Revision plan' : a.status === 'assessing' ? 'In progress' : 'Draft'} · ${a.goal.slice(0,55)}` : ''}</option>)}
             </select>
           </div>
           {activeArtifact && <button type="button" className="workspace-icon-button" disabled={busy} onClick={()=>handleCloseTab(activeArtifact.id)} aria-label={`Close ${activityTitle(activeArtifact)}`} title="Close activity"><X size={16}/></button>}
+          <button type="button" className="assistant-toggle" aria-controls="curve-assistant" aria-expanded={assistantOpen} onClick={() => { setAssistantOpen(!assistantOpen); setMobileTab(assistantOpen ? 'workspace' : 'chat'); }}>Ask Curve</button>
           <details className="workspace-options">
-            <summary>Study options</summary>
+            <summary>Options</summary>
             <div className="workspace-options-panel">
               <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;setShowUpload(true);}}><Plus size={16}/> Add material</button>
               <button type="button" disabled={busy || workspaceLoading} onClick={e=>{e.currentTarget.closest('details')!.open=false;void handleSelectTab(null);}}><CalendarDays size={16}/> Adjust semester plan & exams</button>
@@ -749,7 +685,9 @@ export function AgentWorkspace() {
             </div>
           </details>
         </header>
-        {thread.state.plan && <StudyPlanBanner plan={thread.state.plan} onStepClick={handlePlanStepClick}/>}
+        {actionError && <p role="alert" className="learn-error workspace-action-error">{actionError}</p>}
+        {busy && <p role="status" className="workspace-running">Preparing your next step…</p>}
+        {activeArtifact && thread.state.plan && <details className="session-plan-details"><summary>Your study plan</summary><StudyPlanBanner plan={thread.state.plan} onStepClick={handlePlanStepClick}/></details>}
 
         {/* Working Area Canvas View */}
         <div className="agent-view-canvas">
@@ -819,11 +757,8 @@ export function AgentWorkspace() {
                       void handleSendMessage(
                         `I completed the final gap check for ${s.topic} (${correct}/${total} correct). Review my recorded results and recommend the next action based on any remaining gaps.`
                       );
-                    } else {
-                      void handleSendMessage(
-                        `I completed my practice check on ${s.topic} (${correct}/${total} correct).`
-                      );
                     }
+                    // The saved result drives the daily recommendation without navigating away from it.
                   }}
                 />
               );
@@ -855,6 +790,7 @@ export function AgentWorkspace() {
               onOpenSession={handleOpenSession}
               onUploadClick={() => setShowUpload(true)}
               onPromptClick={(p) => {
+                setAssistantOpen(true);
                 setMobileTab('chat');
                 void handleSendMessage(p);
               }}

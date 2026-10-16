@@ -3,10 +3,8 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
   Plus,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -20,6 +18,7 @@ import { buildSemesterSchedule } from './semesterPlanner';
 import { SemesterIntake } from "./SemesterIntake";
 import { SemesterRoadmapView } from "./SemesterRoadmapView";
 import "./dashboard.css";
+import "./focus.css";
 
 export function HomeView({
   materials,
@@ -145,20 +144,22 @@ export function HomeView({
             />
           )}
 
+          <details className="daily-supporting-details">
+            <summary>Your materials & progress</summary>
           {/* Active Pending Session Alert if exists */}
           {pending && (
             <div className="pending-session-banner">
               <div className="pending-info">
                 <span className="pending-dot" />
-                <span>Optional: continue your saved session on <strong>{pending.topic}</strong>.</span>
+                <span>Saved session: <strong>{pending.topic}</strong>.</span>
               </div>
               <button
                 type="button"
-                className="learn-button dark compact-btn"
+                className="learn-button subtle compact-btn"
                 onClick={() => onOpenSession(pending.id)}
                 disabled={busy}
               >
-                <span>Resume Session</span>
+                <span>Resume</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -170,12 +171,8 @@ export function HomeView({
             aria-labelledby="library-agent-title"
           >
             <header className="study-agent-header">
-              <span className="study-agent-icon lavender">
-                <BookOpen size={21} />
-              </span>
               <div>
                 <h2 id="library-agent-title">Your library</h2>
-                <p>Knowledge, collected</p>
               </div>
               <button
                 className="icon-button"
@@ -230,7 +227,7 @@ export function HomeView({
               </>
             ) : (
               <p className="study-card-note">
-                Your notes belong here. Add your first material or lecture slides to deepen your semester plan.
+                Add your notes or slides to study from your course material.
               </p>
             )}
             <Link className="study-card-link" to="/library">
@@ -245,12 +242,8 @@ export function HomeView({
             aria-labelledby="progress-agent-title"
           >
             <header className="study-agent-header">
-              <span className="study-agent-icon mint">
-                <Sparkles size={21} />
-              </span>
               <div>
-                <h2 id="progress-agent-title">Learning progress</h2>
-                <p>One session at a time</p>
+                <h2 id="progress-agent-title">Progress</h2>
               </div>
               <Link
                 className="icon-button"
@@ -307,6 +300,7 @@ export function HomeView({
               <ArrowRight size={14} />
             </button>
           </section>
+          </details>
         </>
       )}
     </div>

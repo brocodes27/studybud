@@ -1,3 +1,5 @@
+import { dailyFocus, sessionEvidence } from './dailyFocus';
+import type { Material, StudySession } from '../model';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildSemesterSchedule, localDate, semesterExamTimeline, plannedSessionContext } from './semesterPlanner';
@@ -108,4 +110,41 @@ test('connects today to saved work using course, topic and local completion date
   assert.equal(plannedSessionContext('Math', 'Limits', materials, finished, now).completed?.id, 'saved');
   assert.equal(plannedSessionContext('Math', 'Limits', materials, finished, new Date(2026, 9, 16)).completed, undefined);
   assert.equal(plannedSessionContext('Chemistry', 'Limits', materials, sessions, now).pending, undefined);
+});
+
+const focusMaterials: Material[] = [{ id: 'math', title: 'Math notes', created_at: now.toISOString(), extracted_text: null, metadata: { course: 'Math', confirmed: true, topics: ['Limits', 'Integration'] } }];
+function focusSession(topic: string, correct: boolean): StudySession {
+  return { id: topic, material_id: 'math', topic, mode: 'practice', questions: [{ id: 'q', topic, question: 'Question', options: ['A'], page: 1 }], answers: { q: 0 }, hints: [], results: [{ question_id: 'q', correct, assisted: false, expected: 'A', explanation: 'Explanation', quote: '', page: 1 }], created_at: new Date(2026, 9, 14, 10).toISOString(), completed_at: new Date(2026, 9, 14, 10).toISOString() };
+}
+test('daily focus uses a recent gap within the scheduled exam scope', () => {
+  const current = buildSemesterSchedule(plan([exam('math', 'Math', '2026-10-20', ['Limits', 'Integration'])]), 30, now).semesterPlan;
+  const focus = dailyFocus(current, focusMaterials, [focusSession('Integration', false)], now);
+  assert.equal(focus?.topic, 'Integration');
+  assert.match(focus!.reason, /missed 1 of 1/);
+  assert.equal(focus?.context.material?.id, 'math');
+});
+test('daily focus ignores old gaps after newer successful evidence', () => {
+  const current = buildSemesterSchedule(plan([exam('math', 'Math', '2026-10-20', ['Limits', 'Integration'])]), 30, now).semesterPlan;
+  const old = focusSession('Integration', false);
+  const newer = { ...focusSession('Integration', true), id: 'newer', completed_at: new Date(2026, 9, 14, 15).toISOString() };
+  assert.equal(dailyFocus(current, focusMaterials, [old, newer], now)?.topic, 'Limits');
+});
+test('daily focus respects exam scope, course ownership, and rest days', () => {
+  const current = buildSemesterSchedule(plan([exam('math', 'Math', '2026-10-20', ['Limits'])]), 30, now).semesterPlan;
+  assert.equal(dailyFocus(current, focusMaterials, [focusSession('Integration', false), { ...focusSession('Limits', false), material_id: 'physics' }], now)?.reason, 'This topic is in your Math exam scope.');
+  const rest = { ...current, roadmap: [{ date: localDate(now), dayLabel: 'Today', type: 'rest' as const, title: 'Rest', minutes: 0 }] };
+  assert.equal(dailyFocus(rest, focusMaterials, [focusSession('Limits', false)], now), null);
+});
+test('today completion produces a review receipt instead of another practice demand', () => {
+  const current = buildSemesterSchedule(plan([exam('math', 'Math', '2026-10-20', ['Limits', 'Integration'])]), 30, now).semesterPlan;
+  const done = { ...focusSession('Integration', false), completed_at: now.toISOString() };
+  const focus = dailyFocus(current, focusMaterials, [done], now);
+  assert.equal(focus?.context.completed?.id, done.id);
+  assert.equal(focus?.result?.missed, 1);
+  assert.match(focus!.reason, /take a break/);
+});
+test('assisted correct answers remain distinct from independent recall', () => {
+  const session = focusSession('Limits', true);
+  session.results![0].assisted = true;
+  assert.deepEqual(sessionEvidence(session), { total: 1, correct: 1, missed: 0, assisted: 1 });
 });

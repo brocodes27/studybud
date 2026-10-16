@@ -1,4 +1,5 @@
 import './workspace.css';
+import './focus.css';
 import { buildSemesterSchedule, localDate } from './semesterPlanner';
 import { getActualAndSuggestedTopics } from './semesterTopics';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -350,31 +351,33 @@ export function SemesterIntake({
       <div className="intake-header">
         <div className="intake-badge">
           <CalendarDays size={18} className="intake-badge-icon" />
-          <span>PROACTIVE STUDY SETUP</span>
+          <span>Your semester</span>
         </div>
-        <h2>Let’s build your study plan together.</h2>
+        <h2>Your study plan</h2>
         <p>
-          First, tell me where you are in your semester and what has been taught. Next, we’ll add your exams and protect your breaks. I’ll turn your answers into a study plan.
+          Add what you’ve covered, then plan around your exams and breaks.
         </p>
 
         {/* Progress Stepper */}
-        <div className="intake-stepper" role="tablist">
+        <div className="intake-stepper" role="group" aria-label="Setup steps">
           <button
             type="button"
             className={`intake-step-pill ${step === 1 ? 'is-active' : 'is-completed'}`}
+            aria-current={step === 1 ? 'step' : undefined}
             onClick={() => setStep(1)}
           >
             <span className="step-num">{step > 1 ? <Check size={14} /> : '1'}</span>
-            <span>Where You Are in Your Semester</span>
+            <span>Subjects & topics</span>
           </button>
           <div className="step-divider" />
           <button
             type="button"
             className={`intake-step-pill ${step === 2 ? 'is-active' : ''}`}
+            aria-current={step === 2 ? 'step' : undefined}
             onClick={continueToExams}
           >
             <span className="step-num">2</span>
-            <span>Exams & Break-Respectful Pacing</span>
+            <span>Exams & breaks</span>
           </button>
         </div>
       </div>
@@ -389,7 +392,7 @@ export function SemesterIntake({
               <GraduationCap size={18} className="section-icon" />
               <div>
                 <h3>Where are you in your semester?</h3>
-                <p>Pick the stage that best matches your current academic calendar.</p>
+                <p>Choose your current stage.</p>
               </div>
             </div>
 
@@ -418,7 +421,7 @@ export function SemesterIntake({
               <div>
                 <h3>What has been taught to you so far?</h3>
                 <p>
-                  List the core topics or chapters your professors have covered. Use quick-add to instantly import actual parsed topics from your syllabus.
+                  Add covered topics, or choose topics from your uploaded syllabus.
                 </p>
               </div>
             </div>
@@ -582,7 +585,7 @@ export function SemesterIntake({
                   onClick={onUploadSyllabusClick}
                 >
                   <UploadCloud size={15} />
-                  <span>Drop syllabus or lecture notes to extract topics</span>
+                  <span>Upload syllabus or notes</span>
                 </button>
               )}
             </div>
@@ -600,14 +603,14 @@ export function SemesterIntake({
               className="learn-button dark primary-next"
               onClick={continueToExams}
             >
-              <span>Next: Enlist Exams & Breaks</span>
+              <span>Next: Exams & breaks</span>
               <ArrowRight size={16} />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: Exam Enlistment & Break-Respectful Pacing */}
+      {/* STEP 2: Exam Enlistment & Study pace */}
       {step === 2 && (
         <div className="intake-body step-2">
           <section className="intake-section">
@@ -616,12 +619,12 @@ export function SemesterIntake({
               <div>
                 <h3>Do you have an upcoming or recent exam?</h3>
                 <p>
-                  Had an exam recently, or have one coming up? Add each exam separately, choose its subject and topics, and I’ll plan around it. No exams yet? We’ll build a steady study routine.
+                  Add dates, subjects, and topics. You can add more exams later.
                 </p>
               </div>
             </div>
 
-            {exams.length === 0 && <p>No exams added yet. You can continue with a study routine and add exams later.</p>}
+            {exams.length === 0 && <p>No exams yet? Continue with a regular study routine.</p>}
             {/* Exam Cards */}
             <div className="exams-enlist-grid">
               {exams.map((exam, exIdx) => {
@@ -747,14 +750,14 @@ export function SemesterIntake({
             </button>
           </section>
 
-          {/* Section 2B: Break-Respectful Pacing */}
+          {/* Section 2B: Study pace */}
           <section className="intake-section break-pacing-section">
             <div className="section-title-wrap">
               <Coffee size={18} className="section-icon warm" />
               <div>
-                <h3>Break-Respectful Pacing</h3>
+                <h3>Study pace</h3>
                 <p>
-                  High mastery doesn't come from burning out. Curve intentionally embeds rest intervals and low-intensity buffers before exams.
+                  Choose rest days and lighter review before exams.
                 </p>
               </div>
             </div>
@@ -762,8 +765,8 @@ export function SemesterIntake({
             <div className="break-controls-box">
               <div className="break-row">
                 <div className="break-info">
-                  <strong>Weekly Rest Days</strong>
-                  <p>Designate intentional rest days to let learned concepts consolidate.</p>
+                  <strong>Weekly rest days</strong>
+                  <p>Keep time free each week.</p>
                 </div>
                 <div className="rest-days-selector">
                   {[

@@ -1,3 +1,4 @@
+import { sessionEvidence } from './dailyFocus';
 import { useEffect, useState, FormEvent } from 'react';
 import {
   BookOpen,
@@ -348,6 +349,7 @@ export function SessionView({
 
   if (!session) return null;
 
+  const evidence = sessionEvidence(session);
   const isCheckpoint = session.mode === 'checkpoint';
   const questions = session.questions || [];
   const question = questions[index];
@@ -366,15 +368,13 @@ export function SessionView({
         <div className="session-results-pane">
           <div className="learn-panel session-finish">
             <CheckCircle2 size={36} className="text-mint" />
-            <h2>Session Completed</h2>
+            <h2>{evidence.missed ? "Here’s what to work on next." : "That’s today’s practice done."}</h2>
             <strong>
               {session.results.filter((r) => r.correct).length} /{' '}
               {session.results.length} correct
             </strong>
             <p>
-              {isCheckpoint
-                ? 'Your independent check is recorded in your progress history.'
-                : 'Guided practice complete. Ready for an independent check?'}
+              {evidence.missed ? `${evidence.missed} answer${evidence.missed === 1 ? '' : 's'} to revisit. Review the explanations below; your next recommendation will use these results.` : evidence.assisted ? 'You got these right with some help. Try recalling them independently next time.' : 'Your results are saved. Take a break; we’ll use this evidence when choosing your next practice.'}
             </p>
             {onReturnToPlan && (
               <button
@@ -389,12 +389,12 @@ export function SessionView({
           </div>
 
           <div className="results-list">
-            {session.results.map((r, i) => (
-              <article key={r.question_id} className="learn-panel result-card">
+            {session.results.map((r) => (
+              <details key={r.question_id} className="learn-panel result-card" open={!r.correct || r.assisted}>
+                <summary>{questions.find(question => question.id === r.question_id)?.question || 'Review answer'}</summary>
                 <span className={`pill ${r.correct ? 'mint' : 'peach'}`}>
-                  {r.correct ? 'Correct' : 'Review needed'}
+                  {r.correct ? (r.assisted ? 'Correct · with help' : 'Correct') : 'Review needed'}
                 </span>
-                <h4>{questions[i]?.question}</h4>
                 <p>
                   <strong>Expected: </strong>
                   {r.expected}
@@ -406,7 +406,7 @@ export function SessionView({
                     {r.quote}
                   </blockquote>
                 )}
-              </article>
+              </details>
             ))}
           </div>
 
