@@ -19,3 +19,10 @@ test('handoff course codes and enrolled course topics are included and deduplica
   const parsed = [{ title: 'Programming', courseCode: 'CS201', topics: [{ topic: 'Loops' }] }] as ParsedSyllabus[];
   assert.deepEqual(getActualAndSuggestedTopics('CS201', [material('CS201', ['Loops'])], parsed, { CS201: ['Functions'] }), { topics: ['Loops', 'Functions'], isActual: true });
 });
+
+test('semester selection separates identically named courses and excludes unlabelled sources', () => {
+  const first = material('Math', ['Limits']); first.metadata.semester = 'Semester 1';
+  const second = material('Math', ['Integration']); second.metadata.semester = 'Semester 2';
+  const pending = [{ title: 'Math', term: 'Semester 2', topics: [{ topic: 'Series' }] }] as ParsedSyllabus[];
+  assert.deepEqual(getActualAndSuggestedTopics('Math', [first, second, material('Math', ['Unknown scope'])], pending, { Math: ['Unlabelled enrollment'] }, 'Semester 2'), { topics: ['Integration', 'Series'], isActual: true });
+});

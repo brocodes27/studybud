@@ -53,6 +53,16 @@ export interface StudySession {
   completed_at: string | null;
 }
 
+export function restoreSessionAnswers(session: StudySession, draft: unknown): Record<string, number> {
+  const answers = { ...session.answers };
+  if (session.completed_at || !draft || typeof draft !== 'object' || Array.isArray(draft)) return answers;
+  for (const question of session.questions) {
+    const choice = (draft as Record<string, unknown>)[question.id];
+    if (typeof choice === 'number' && Number.isInteger(choice) && choice >= 0 && choice < question.options.length) answers[question.id] = choice;
+  }
+  return answers;
+}
+
 export function normalizeTopics(text: string): string[] {
   return [
     ...new Set(

@@ -69,13 +69,13 @@ export default defineConfig({
         ]
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        // Precache the app, not the legacy world's unused artwork and frames.
+        globPatterns: ['assets/**/*.{js,css,png,svg}', 'index.html', 'manifest.webmanifest', 'pwa-*.png'],
       },
     }),
     cjsShimPlugin(),
   ],
   optimizeDeps: {
-    exclude: ['lucide-react'],
     include: [
       '@vapi-ai/web',
       '@vapi-ai/web > events',

@@ -804,7 +804,16 @@
 .session-mode-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+}
+
+.session-mode-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .session-mode-bar h3 {
@@ -812,6 +821,67 @@
   font-weight: 600;
   letter-spacing: -0.03em;
   color: var(--learn-ink, #252824);
+}
+
+.session-quit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--learn-muted, #687062);
+  border: 1px solid var(--learn-line, #e8ece5);
+  border-radius: 9999px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.session-quit-btn:hover:not(:disabled) {
+  background: var(--learn-surface, #ffffff);
+  color: var(--learn-ink, #252824);
+  border-color: #cbd5c8;
+}
+
+.subtle-quit-action {
+  font-size: 12.5px;
+  color: var(--learn-muted, #687062);
+}
+
+.subtle-quit-action:hover {
+  color: var(--learn-ink, #252824);
+  text-decoration: underline;
+}
+
+.workspace-toolbar-artifact-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.workspace-end-activity-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--learn-muted, #687062);
+  border: 1px solid var(--learn-line, #e8ece5);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.workspace-end-activity-button:hover:not(:disabled) {
+  background: var(--learn-bg, #f5f8f5);
+  color: var(--learn-ink, #252824);
+  border-color: #cbd5c8;
 }
 
 .session-runner-pane {
@@ -1150,6 +1220,9 @@
 .research-status,.research-notice { font-size:12px; color:var(--learn-muted); }
 .research-notice { padding:8px 20px; margin:0; background:var(--learn-peach); }
 .workflow-view { max-width:900px; margin:0 auto; padding:32px; }
+.workflow-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.workflow-heading-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.workflow-quit-btn { font-size: 12.5px; }
 .workflow-heading h2 { font-size:30px; letter-spacing:-.04em; margin:16px 0 8px; }
 .workflow-heading p,.workflow-form fieldset>p,.workflow-summary p { color:var(--learn-muted); line-height:1.65; }
 .workflow-heading .pill { display:inline-flex; align-items:center; gap:8px; }

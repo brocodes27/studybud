@@ -1,3 +1,6 @@
+import { SemesterContextFields, SEMESTER_STAGES } from './SemesterContextFields';
+import { sameSemester } from '../../../supabase/functions/_shared/semester-scope';
+import './material-journey.css';
 import './workspace.css';
 import './focus.css';
 import { buildSemesterSchedule, localDate } from './semesterPlanner';
@@ -6,7 +9,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import {
   CalendarDays,
   Check,
-  CheckCircle2,
   Coffee,
   FileText,
   Flame,
@@ -43,38 +45,6 @@ interface SemesterIntakeProps {
   busy?: boolean;
   initialDailyMinutes?: number;
 }
-
-const SEMESTER_STAGES: Array<{
-  id: 'early' | 'mid' | 'late' | 'finals';
-  label: string;
-  weeks: string;
-  desc: string;
-}> = [
-  {
-    id: 'early',
-    label: 'Early Semester',
-    weeks: 'Weeks 1–4',
-    desc: 'Setting foundations, early lectures, and initial problem sets.',
-  },
-  {
-    id: 'mid',
-    label: 'Mid-Semester',
-    weeks: 'Weeks 5–8',
-    desc: 'Core coursework underway, midterms approaching or happening now.',
-  },
-  {
-    id: 'late',
-    label: 'Late Semester',
-    weeks: 'Weeks 9–12',
-    desc: 'Wrapping up final syllabus modules and starting intensive revisions.',
-  },
-  {
-    id: 'finals',
-    label: 'Finals Countdown',
-    weeks: 'Weeks 13+',
-    desc: 'Syllabus finished. Dedicated exam gap-closing and testing focus.',
-  },
-];
 
 function addDaysToDate(days: number): string {
   const d = new Date();
@@ -142,10 +112,12 @@ export function SemesterIntake({
   }, [user?.id]);
 
   // Stage 1 State: Semester Position & Topics
-  const [stage, setStage] = useState<'early' | 'mid' | 'late' | 'finals'>(
-    initialPlan?.stage || 'mid'
+  const [stage, setStage] = useState<'early' | 'mid' | 'late' | 'finals' | ''>(
+    initialPlan?.stage || ''
   );
 
+  const [semester, setSemester] = useState(initialPlan?.semester || '');
+  const scopedMaterials = materials.filter(m => sameSemester(m.metadata.semester, semester));
   const [courses, setCourses] = useState<SemesterCourseInfo[]>(() => {
     if (initialPlan?.courses?.length) return initialPlan.courses;
 
@@ -155,13 +127,13 @@ export function SemesterIntake({
       candidateCourses.push(...initialCourses);
     }
     // Also include courses found in materials or pending parse if not present
-    for (const m of materials) {
+    for (const m of materials.filter(m => sameSemester(m.metadata.semester, initialPlan?.semester || ''))) {
       const c = m.metadata?.course;
       if (c && !candidateCourses.some((x) => x.toLowerCase() === c.toLowerCase())) {
         candidateCourses.push(c);
       }
     }
-    for (const p of pendingSyllabusCourses) {
+    for (const p of pendingSyllabusCourses.filter(p => sameSemester(p.term, initialPlan?.semester || ''))) {
       const c = p.title || p.courseCode;
       if (c && !candidateCourses.some((x) => x.toLowerCase() === c.toLowerCase())) {
         candidateCourses.push(c);
@@ -198,6 +170,7 @@ export function SemesterIntake({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   function continueToExams() {
+    if (!semester || !stage) { setError('Choose your current semester and stage first.'); return; }
     if (!courses.length || courses.some(course => !course.taughtTopics.length)) {
       setError('Add your subjects and at least one taught topic for each. I’ll use those to plan your next steps.');
       return;
@@ -213,10 +186,10 @@ export function SemesterIntake({
   // Uploads enrich quick-add without discarding answers already entered.
   useEffect(() => {
     setCourses(current => {
-      const additions = materials.map(m => m.metadata.course || m.title).filter(name => name && !current.some(c => c.course.toLowerCase() === name.toLowerCase()));
+      const additions = scopedMaterials.map(m => m.metadata.course || m.title).filter(name => name && !current.some(c => c.course.toLowerCase() === name.toLowerCase()));
       return [...current, ...Array.from(new Set(additions)).map(course => ({ course, taughtTopics: [] }))];
     });
-  }, [materials]);
+  }, [materials, semester]);
 
   // Handlers for Course & Topic Management
   const handleAddCourse = (e: FormEvent) => {
@@ -319,6 +292,7 @@ export function SemesterIntake({
   const handleBuildPlan = async () => {
     setSubmitting(true);
     try {
+      if (!semester || !stage) { setError('Choose your current semester and stage first.'); setStep(1); return; }
       const stageObj = SEMESTER_STAGES.find((s) => s.id === stage) || SEMESTER_STAGES[1];
 
       if (!courses.length || courses.some(course => !course.taughtTopics.length)) {
@@ -333,7 +307,7 @@ export function SemesterIntake({
         return;
       }
       const { semesterPlan, studyPlan } = buildSemesterSchedule({
-        stage, stageLabel: stageObj.label, courses, exams, breaks, roadmap: [],
+        semester, stage, stageLabel: stageObj.label, courses, exams, breaks, roadmap: [],
         createdAt: initialPlan?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(),
       }, dailyMinutes);
 
@@ -396,23 +370,12 @@ export function SemesterIntake({
               </div>
             </div>
 
-            <div className="stage-cards-grid">
-              {SEMESTER_STAGES.map((s) => (
-                <button
-                  type="button"
-                  key={s.id}
-                  className={`stage-select-card ${stage === s.id ? 'is-selected' : ''}`}
-                  onClick={() => setStage(s.id)}
-                >
-                  <div className="stage-card-top">
-                    <span className="stage-weeks">{s.weeks}</span>
-                    {stage === s.id && <CheckCircle2 size={16} className="selected-icon" />}
-                  </div>
-                  <h4>{s.label}</h4>
-                  <p>{s.desc}</p>
-                </button>
-              ))}
-            </div>
+            <SemesterContextFields semester={semester} stage={stage}
+              semesters={materials.map(m => m.metadata.semester).filter((s): s is string => !!s)}
+              onSemester={value => {
+                if (value === semester) return;
+                setSemester(value); setCourses([]); setExams([]); setActiveTopicInput({}); setError('');
+              }} onStage={setStage} />
           </section>
 
           <section className="intake-section">
@@ -428,13 +391,14 @@ export function SemesterIntake({
 
             {/* Courses and Topic Tagging */}
             <div className="courses-list">
-              {courses.map((courseItem, cIdx) => {
+              {semester && stage && courses.map((courseItem, cIdx) => {
                 // Resolve actual parsed topics from materials, pending parse, and enrolled courses
                 const { topics: candidateTopics, isActual } = getActualAndSuggestedTopics(
                   courseItem.course,
                   materials,
                   pendingSyllabusCourses,
-                  enrolledCourseTopics
+                  enrolledCourseTopics,
+                  semester
                 );
 
                 const unaddedTopics = candidateTopics.filter(
@@ -720,7 +684,7 @@ export function SemesterIntake({
                       <div className="exam-topics-checklist">
                         {availableTopics.length === 0 ? (
                           <p className="no-topics-alert">
-                            No topics specified for {exam.course} yet. All class materials will be included.
+                            No topics specified for {exam.course} yet. Go back and select topics in your current syllabus.
                           </p>
                         ) : (
                           availableTopics.map((top) => {

@@ -11,6 +11,7 @@ import {
   Home,
   Settings2,
   FileText,
+  LogOut,
   Mic,
   MicOff,
   Paperclip,
@@ -19,11 +20,11 @@ import {
   Send,
   Sparkles,
   TrendingUp,
-  X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchLibrary } from '../api';
+import { useStudyPreferences } from '../StudyPreferences';
+import { confirmMaterial, fetchLibrary, fetchMaterial } from '../api';
 import type { Material, StudySession } from '../model';
 import { MaterialUpload } from '../Workspace';
 import {
@@ -55,12 +56,18 @@ import {
   StudyPlanBanner,
 } from './WorkspaceViews';
 import { HomeView } from './DashboardHome';
+import { StageQueue } from '../../curve/StageQueue';
 import { CurveMark } from '../Preview';
 import { CurveOrb } from './CurveOrb';
+import { ActivityTabs } from './ActivityTabs';
+import { ResearchArrival } from './ResearchArrival';
+import { canPresentResearch, unreadResearch } from './researchBriefing';
 import './workspace.css';
+import './study-flow.css';
 
 export function AgentWorkspace() {
   const { user, fullName } = useAuth();
+  const preferences = useStudyPreferences();
   const [, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
   const [thread, setThread] = useState<WorkspaceThread>({
     id: 'local',
@@ -82,6 +89,7 @@ export function AgentWorkspace() {
   const [workspaceRevision, setWorkspaceRevision] = useState(0);
   const loadedUserRef = useRef<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [researchArrivalDismissed, setResearchArrivalDismissed] = useState(false);
   const [mobileTab, setMobileTab] = useState<'chat' | 'workspace'>('workspace');
 
   // Library & sessions data for home state & fallback
@@ -100,32 +108,20 @@ export function AgentWorkspace() {
       return null;
     }
   });
-  const [userCourses, setUserCourses] = useState<string[]>([]);
-  const [preferencesLoading, setPreferencesLoading] = useState(true);
+  const [userCourses, setUserCourses] = useState<string[]>(preferences?.courses || []);
 
+  // LearningEntry has already fetched these preferences before mounting us.
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('curve_study_preferences')
-      .select('courses, onboarding_answers')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setPreferencesLoading(false);
-        if (!data) return;
-        if (Array.isArray(data.courses) && data.courses.length) {
-          setUserCourses(data.courses);
-        }
-        const answers = data.onboarding_answers as Record<string, unknown> | undefined;
-        const remotePlan = answers?.semester_plan as SemesterPlan | undefined;
-        if (remotePlan) {
-          setSemesterPlan(remotePlan);
-          try {
-            localStorage.setItem(`curve:semester-plan:${user.id}`, JSON.stringify(remotePlan));
-          } catch {}
-        }
-      }, () => setPreferencesLoading(false));
-  }, [user?.id]);
+    if (preferences) setUserCourses(preferences.courses);
+    const remotePlan = preferences?.onboarding_answers?.semester_plan as unknown as SemesterPlan | undefined;
+    if (!remotePlan) return;
+    setSemesterPlan(remotePlan);
+    if (user) {
+      try {
+        localStorage.setItem(`curve:semester-plan:${user.id}`, JSON.stringify(remotePlan));
+      } catch {}
+    }
+  }, [preferences, user?.id]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -162,7 +158,7 @@ export function AgentWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [user, libraryRevision]);
+  }, [user?.id, libraryRevision]);
 
   useEffect(() => {
     if (!user) return;
@@ -170,6 +166,7 @@ export function AgentWorkspace() {
     if (loadedUserRef.current !== user.id) {
       loadedUserRef.current = user.id;
       setMessages([]);
+      setResearchArrivalDismissed(false);
       setThread({ id: 'local', state: emptyWorkspace(), updated_at: new Date().toISOString() });
     }
     setWorkspaceLoading(true);
@@ -193,7 +190,7 @@ export function AgentWorkspace() {
     };
   }, [user?.id, workspaceRevision]);
 
-  const handleEvent = (event: WorkspaceEvent) => {
+  const handleEvent = (event: WorkspaceEvent, refreshLibrary = true) => {
     if (event.type === 'text') {
       setStreamingText((prev) => prev + event.text);
     } else if (event.type === 'action') {
@@ -207,7 +204,7 @@ export function AgentWorkspace() {
       setThread(event.thread);
       if (event.thread.state.activeId) setMobileTab('workspace');
     } else if (event.type === 'done') {
-      setLibraryRevision(value => value + 1);
+      if (refreshLibrary) setLibraryRevision(value => value + 1);
       if (event.snapshot) {
         setResearch(event.snapshot.research);
         setSnapshot(event.snapshot);
@@ -226,6 +223,7 @@ export function AgentWorkspace() {
   const handleSendMessage = async (textToSend?: string, signal?: AbortSignal) => {
     const text = (textToSend ?? input).trim();
     if (!text || operationRef.current || workspaceLoading || workspaceError) return;
+    setResearchArrivalDismissed(true);
     operationRef.current = true;
     setActionError('');
 
@@ -284,6 +282,7 @@ export function AgentWorkspace() {
 
   const runTool = async (tool: WorkspaceTool) => {
     if (operationRef.current || workspaceLoading || workspaceError) throw new Error('Please wait for the current action to finish.');
+    setResearchArrivalDismissed(true);
     operationRef.current = true; setBusy(true); setActionError('');
     try { await executeWorkspaceTool(tool,handleEvent); }
     catch(e) { setActionError(e instanceof Error ? e.message : 'Could not finish. Please retry.'); throw e; }
@@ -293,13 +292,39 @@ export function AgentWorkspace() {
 
   const handleSelectTab = async (artifactId: string | null) => {
     if (operationRef.current) return;
+    setResearchArrivalDismissed(true);
+    if (thread.state.checkpointId && artifactId !== null) {
+      const target = artifacts.find(a => a.id === artifactId);
+      const isCurrentCheck = target && ((target.kind === 'session' && target.sessionId === thread.state.checkpointId) || (target.kind === 'assessment' && target.sessionIds.includes(thread.state.checkpointId)));
+      if (!isCurrentCheck) {
+        const confirmQuit = window.confirm("You have an independent check in progress. Would you like to end the check and switch activities?");
+        if (!confirmQuit) return;
+        operationRef.current = true; setBusy(true); setActionError('');
+        try {
+          await activateWorkspaceArtifact(artifactId, handleEvent, true);
+        } catch (e) {
+          setActionError(e instanceof Error ? e.message : 'Could not switch tabs.');
+        } finally {
+          operationRef.current = false; setBusy(false);
+        }
+        return;
+      }
+    }
+    if (artifactId === thread.state.activeId) return;
+    const previousActiveId = thread.state.activeId;
+    // The artifact is already loaded; only persisting the selection needs the server.
+    setThread(current => ({ ...current, state: { ...current.state, activeId: artifactId } }));
     operationRef.current=true;setBusy(true);setActionError('');
-    try { await activateWorkspaceArtifact(artifactId,handleEvent); }
-    catch(e) {setActionError(e instanceof Error ? e.message : 'Could not switch tabs.');}
+    try { await activateWorkspaceArtifact(artifactId, event => handleEvent(event, false)); }
+    catch(e) {
+      setThread(current => ({ ...current, state: { ...current.state, activeId: previousActiveId } }));
+      setActionError(e instanceof Error ? e.message : 'Could not switch tabs.');
+    }
     finally {operationRef.current=false;setBusy(false);}
   };
 
-  const handleCloseTab = (artifactId: string) => launchTool({name:'close_artifact',args:{artifactId}});
+  const handleQuitCheckpoint = () => runTool({ name: 'cancel_checkpoint', args: {} });
+  const handleCloseTab = (artifactId: string) => runTool({ name: 'close_artifact', args: { artifactId } });
 
   // Refresh completed background work on return and while the dashboard is open.
   // A response started before a foreground action must never overwrite that action.
@@ -354,11 +379,13 @@ export function AgentWorkspace() {
     const existingAnswers = (current?.onboarding_answers as Record<string, unknown>) || {};
     const { error: saveError } = await supabase.from('curve_study_preferences').update({
       courses: newPlan.courses.map(c => c.course),
+      daily_minutes: newPlan.dailyMinutes || 30,
       exam_date: newPlan.exams.filter(e => !e.isRecent && e.date >= localDate()).sort((a, b) => a.date.localeCompare(b.date))[0]?.date || null,
       onboarding_answers: { ...existingAnswers, semester_plan: newPlan, day_one_plan: newStudyPlan, semester_stage: newPlan.stage },
-    }).eq('user_id', user.id);
+    }).eq('user_id', user.id).select('user_id').single();
     if (saveError) throw new Error('Could not save your updated plan. Your answers are still here.');
     setSemesterPlan(newPlan);
+    setUserCourses(newPlan.courses.map(course => course.course));
     try { localStorage.setItem(`curve:semester-plan:${user.id}`, JSON.stringify(newPlan)); } catch {}
     setThread(prev => ({ ...prev, state: { ...prev.state, plan: newStudyPlan, semesterPlan: newPlan } }));
 
@@ -373,7 +400,7 @@ export function AgentWorkspace() {
 
   useEffect(() => {
     const refresh = () => {
-      if (preferencesLoading || !semesterPlan || !semesterPlan.courses.length || semesterPlan.roadmap[0]?.date === localDate() || operationRef.current) return;
+      if (!semesterPlan || !semesterPlan.courses.length || semesterPlan.roadmap[0]?.date === localDate() || operationRef.current) return;
       const updated = buildSemesterSchedule(semesterPlan, semesterPlan.dailyMinutes || 30);
       void handleSaveSemesterPlan(updated.semesterPlan, updated.studyPlan).catch(() => setActionError('Your daily plan could not refresh. Please retry from Adjust Plan & Exams.'));
     };
@@ -381,7 +408,7 @@ export function AgentWorkspace() {
     window.addEventListener('focus', refresh);
     const timer = window.setInterval(refresh, 60000);
     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
-  }, [semesterPlan, user?.id, preferencesLoading]);
+  }, [semesterPlan, user?.id]);
 
   const handleOpenMaterial = (m: Material) => launchTool({name:'open_material',args:{materialId:m.id}});
   const handleOpenSession = (sessionId:string) => launchTool({name:'resume_session',args:{sessionId}});
@@ -390,7 +417,9 @@ export function AgentWorkspace() {
 
   // Active artifact
   const artifacts = thread.state.artifacts || [];
-  const activeArtifact = artifacts.find((a) => a.id === thread.state.activeId);
+  const unreadBriefs = unreadResearch(thread.state);
+  const presentResearch = !workspaceLoading && !workspaceError && !researchArrivalDismissed && unreadBriefs.length > 0 && canPresentResearch(thread.state);
+  const activeArtifact = presentResearch ? undefined : artifacts.find((a) => a.id === thread.state.activeId);
   const activityTitle = (artifact: typeof artifacts[number]) => artifact.kind === 'assessment' ? assessmentLabel(artifact) : artifact.title;
 
   return (
@@ -406,11 +435,12 @@ export function AgentWorkspace() {
         </Link>
         <nav aria-label="Workspace">
           <Link className="active" aria-current="page" to="/" title="Dashboard">
-            <Home size={20} /><span>Dashboard</span>
+            <Home size={20} /><span>Today</span>
           </Link>
           <Link to="/library" title="Library"><BookOpen size={20} /><span>Library</span></Link>
           <Link to="/courses" title="Courses"><FileText size={20} /><span>Courses</span></Link>
           <Link to="/progress" title="Progress"><TrendingUp size={20} /><span>Progress</span></Link>
+          <Link to="/map" title="Learning stages"><CalendarDays size={20} /><span>Topic map</span></Link>
         </nav>
         <Link
           className="agent-account"
@@ -540,7 +570,22 @@ export function AgentWorkspace() {
 
         {/* Scrollable messages */}
         <div className="chat-messages-container" role="log" aria-label="Study conversation" aria-live="polite">
-          {actionError && <p role="alert" className="learn-error">{actionError}</p>}
+          {actionError && (
+            <div role="alert" className="learn-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <span>{actionError}</span>
+              {thread.state.checkpointId && (
+                <button
+                  type="button"
+                  className="learn-button subtle small"
+                  disabled={busy}
+                  onClick={() => { void handleQuitCheckpoint().catch(() => {}); }}
+                  style={{ flexShrink: 0, padding: '4px 10px', fontSize: '12px' }}
+                >
+                  Quit independent check
+                </button>
+              )}
+            </div>
+          )}
           {workspaceLoading && <p role="status">Loading your conversation…</p>}
           {voice.error && <p role="alert" className="learn-error">{voice.error}</p>}
           {workspaceError && (
@@ -562,6 +607,11 @@ export function AgentWorkspace() {
           {messages.map((m) => (
             <div key={m.id} className={`message-bubble ${m.role}`}>
               <div className="message-content"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+              {m.role === 'assistant' && m.request_id && artifacts.filter(a => a.kind === 'explanation' && a.ui && a.id.startsWith(`explanation:${m.request_id}:`)).map(a => (
+                <button key={a.id} type="button" className="learn-button subtle" disabled={busy || workspaceLoading} onClick={() => { void handleSelectTab(a.id); setMobileTab('workspace'); }}>
+                  Explore {a.title} interactively
+                </button>
+              ))}
               <span className="message-time">
                 {new Date(m.created_at).toLocaleTimeString([], {
                   hour: '2-digit',
@@ -660,15 +710,26 @@ export function AgentWorkspace() {
 
       {/* Study activity and artifact workspace */}
       <main className="agent-working-pane">
+        <a className="flow-skip-link" href="#study-canvas">Skip to study space</a>
+        <ActivityTabs artifacts={artifacts} activeId={activeArtifact?.id} busy={busy || workspaceLoading} revealIds={presentResearch ? unreadBriefs.map(brief => brief.id) : []} reviewedIds={thread.state.reviewedArtifactIds} onSelect={id => { void handleSelectTab(id); }} onClose={id => { void handleCloseTab(id).catch(() => {}); }}/>
         <header className="workspace-toolbar">
-          <div className="workspace-activity-picker">
-            <label htmlFor="workspace-activity">Study space</label>
-            <select id="workspace-activity" aria-label="Open activity" value={activeArtifact?.id || ''} disabled={busy || workspaceLoading} onChange={e=>void handleSelectTab(e.target.value || null)}>
-              <option value="">Today</option>
-              {artifacts.map(a=><option key={a.id} value={a.id}>{activityTitle(a)}{a.kind === 'assessment' ? ` · ${a.status === 'ready' ? 'Revision plan' : a.status === 'assessing' ? 'In progress' : 'Draft'} · ${a.goal.slice(0,55)}` : ''}</option>)}
-            </select>
-          </div>
-          {activeArtifact && <button type="button" className="workspace-icon-button" disabled={busy} onClick={()=>handleCloseTab(activeArtifact.id)} aria-label={`Close ${activityTitle(activeArtifact)}`} title="Close activity"><X size={16}/></button>}
+          <span className="workspace-activity-title">{activeArtifact ? activityTitle(activeArtifact) : 'Your study space'}</span>
+          {activeArtifact && activeArtifact.kind !== 'session' && !(activeArtifact.kind === 'assessment' && activeArtifact.status === 'assessing') && (
+            <div className="workspace-toolbar-artifact-actions">
+              <button
+                type="button"
+                className="workspace-end-activity-button"
+                disabled={busy}
+                onClick={() => { void handleCloseTab(activeArtifact.id).catch(() => {}); }}
+                aria-label={`Quit ${activityTitle(activeArtifact)}`}
+                title="End this activity and return to Today"
+              >
+                <LogOut size={13} />
+                <span>{activeArtifact.kind === 'assessment' ? 'Leave activity' : 'Close activity'}</span>
+              </button>
+
+            </div>
+          )}
           <button type="button" className="assistant-toggle" aria-controls="curve-assistant" aria-expanded={assistantOpen} onClick={() => { setAssistantOpen(!assistantOpen); setMobileTab(assistantOpen ? 'workspace' : 'chat'); }}>Ask Curve</button>
           <details className="workspace-options">
             <summary>Options</summary>
@@ -685,17 +746,32 @@ export function AgentWorkspace() {
             </div>
           </details>
         </header>
-        {actionError && <p role="alert" className="learn-error workspace-action-error">{actionError}</p>}
+        {actionError && (
+          <div role="alert" className="learn-error workspace-action-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <span>{actionError}</span>
+            {thread.state.checkpointId && (
+              <button
+                type="button"
+                className="learn-button subtle small"
+                disabled={busy}
+                onClick={() => { void handleQuitCheckpoint().catch(() => {}); }}
+                style={{ flexShrink: 0, padding: '4px 10px', fontSize: '12px' }}
+              >
+                Quit independent check
+              </button>
+            )}
+          </div>
+        )}
         {busy && <p role="status" className="workspace-running">Preparing your next step…</p>}
         {activeArtifact && thread.state.plan && <details className="session-plan-details"><summary>Your study plan</summary><StudyPlanBanner plan={thread.state.plan} onStepClick={handlePlanStepClick}/></details>}
 
         {/* Working Area Canvas View */}
-        <div className="agent-view-canvas">
+        <div className="agent-view-canvas" id="study-canvas" role="tabpanel" aria-labelledby={`activity-tab-${activeArtifact?.id || 'today'}`} tabIndex={-1}>
           {activeArtifact ? (
             activeArtifact.kind === 'assessment' ? (
               <AssessmentView drafts={assessmentDrafts.current} revision={thread.updated_at} key={activeArtifact.id} artifact={activeArtifact} materials={materials} busy={busy} onAction={runTool}/>
             ) : activeArtifact.kind === 'research' ? (
-              <ResearchView artifact={activeArtifact} busy={busy} reviewed={!!thread.state.reviewedArtifactIds?.includes(activeArtifact.id)} onNext={()=>launchTool({name:'review_artifact',args:{artifactId:activeArtifact.id}})}/>
+              <ResearchView key={activeArtifact.id} artifact={activeArtifact} busy={busy} reviewed={!!thread.state.reviewedArtifactIds?.includes(activeArtifact.id)} onNext={()=>launchTool({name:'review_artifact',args:{artifactId:activeArtifact.id}})} onClose={()=>{ void handleCloseTab(activeArtifact.id).catch(() => {}); }}/>
             ) : activeArtifact.kind === 'material' ? (
               <>
               <button type="button" className="learn-button subtle" disabled={busy} onClick={() => { void handleSelectTab(null); }}>Back to today’s plan</button>
@@ -740,6 +816,7 @@ export function AgentWorkspace() {
                         }
                       : () => { void handleSelectTab(null); }
                   }
+                  onQuit={() => handleCloseTab(activeArtifact.id)}
                   returnToPlanLabel={readyAssessment ? undefined : "Back to today’s plan →"}
                   nextTopic={nextTopicName}
                   onCompleted={(s) => {
@@ -767,6 +844,7 @@ export function AgentWorkspace() {
                 title={activeArtifact.title}
                 text={activeArtifact.text}
                 citations={activeArtifact.citations}
+                ui={activeArtifact.ui}
                 onOpenCitation={handleOpenCitation}
               />
             ) : activeArtifact.kind === 'progress' ? (
@@ -774,8 +852,16 @@ export function AgentWorkspace() {
             ) : null
           ) : (
             <HomeView
+              researchDesk={!workspaceLoading && !workspaceError ? <ResearchArrival briefs={unreadBriefs} firstName={fullName?.trim().split(/\s+/)[0] || 'friend'} research={research} busy={busy} onOpen={id => { void handleSelectTab(id); }} /> : undefined}
+              stageQueue={<StageQueue hideWhenEmpty />}
+              onLoadMaterial={material => fetchMaterial(material.id, user!.id)}
+              onConfirmMaterial={async material => {
+                if (!user) throw new Error('Sign in again to save your topics.');
+                const saved = await confirmMaterial(user.id, material);
+                setMaterials(current => current.map(item => item.id === saved.id ? saved : item));
+              }}
               firstName={fullName?.trim().split(/\s+/)[0] || 'friend'}
-              loading={libraryLoading || preferencesLoading}
+              loading={libraryLoading}
               error={libraryError}
               busy={busy}
               semesterPlan={semesterPlan}
@@ -805,8 +891,10 @@ export function AgentWorkspace() {
           onClose={() => setShowUpload(false)}
           onSaved={(newMat) => {
             setShowUpload(false);
-            setMaterials((prev) => [newMat, ...prev]);
-            handleOpenMaterial(newMat);
+            setLibraryRevision(value => value + 1);
+            setMaterials((prev) => [newMat, ...prev.filter(material => material.id !== newMat.id)]);
+            if (semesterPlan) handleOpenMaterial(newMat);
+            else void handleSelectTab(null);
           }}
         />
       )}

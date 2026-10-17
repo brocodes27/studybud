@@ -197,3 +197,29 @@ export async function fetchMaterial(
     throw new Error("Could not open your material. Please retry.");
   return data as Material;
 }
+
+/** Confirm review choices without replacing source pages omitted by the library list. */
+export async function confirmMaterial(userId: string, reviewed: Material): Promise<Material> {
+  const course = reviewed.metadata.course?.trim();
+  const topics = normalizeTopicsForConfirmation(reviewed.metadata.topics);
+  if (!course || !topics.length) throw new Error('Name your course and confirm at least one topic.');
+  const full = await fetchMaterial(reviewed.id, userId);
+  const metadata: Material['metadata'] = {
+    ...full.metadata,
+    course,
+    semester: reviewed.metadata.semester || full.metadata.semester || null,
+    topics,
+    confirmed_topics: (reviewed.metadata.confirmed_topics || []).filter(topic => topics.includes(topic)),
+    confirmed: true,
+    exam_on: reviewed.metadata.exam_on || null,
+  };
+  const { data, error } = await supabase.from('materials').update({ metadata })
+    .eq('id', reviewed.id).eq('owner_user_id', userId)
+    .select('id,title,created_at,extracted_text,metadata').single();
+  if (error || !data) throw new Error('Your topic review could not save. Your choices are still here; please retry.');
+  return data as Material;
+}
+
+function normalizeTopicsForConfirmation(topics: string[] | undefined): string[] {
+  return [...new Set((topics || []).map(topic => topic.trim().slice(0, 200)).filter(Boolean))].slice(0, 30);
+}

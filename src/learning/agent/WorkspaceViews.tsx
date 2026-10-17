@@ -1,3 +1,5 @@
+import { InteractiveAnswer } from './InteractiveAnswer';
+import type { InteractiveUI } from '../../../supabase/functions/_shared/interactive-ui';
 import { sessionEvidence } from './dailyFocus';
 import { useEffect, useState, FormEvent } from 'react';
 import {
@@ -9,6 +11,7 @@ import {
   Flag,
   Lightbulb,
   Loader2,
+  LogOut,
   Play,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -17,6 +20,7 @@ import { fetchMaterial, learningAction } from '../api';
 import {
   independentAccuracy,
   weeklyActivity,
+  restoreSessionAnswers,
   type Material,
   type StudySession,
 } from '../model';
@@ -25,6 +29,8 @@ import type {
   StudyPlan,
 } from './contracts';
 import { MaterialEditor } from '../Workspace';
+import { SessionExitDialog } from '../SessionExitDialog';
+import './material-journey.css';
 
 export function StudyPlanBanner({
   plan,
@@ -76,17 +82,23 @@ export function MaterialView({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [focusTopic, setFocusTopic] = useState('');
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setLoading(true);
+    setShowEditor(false);
+    setFocusTopic('');
     fetchMaterial(materialId, user.id)
       .then((m) => {
+        if (cancelled) return;
         setMaterial(m);
         setError(null);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load material.'))
-      .finally(() => setLoading(false));
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load material.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [materialId, user]);
 
   useEffect(() => {
@@ -113,9 +125,11 @@ export function MaterialView({
   const pages = material.metadata.pages || [];
   const currentPage = pages.find((p) => p.page === pageIndex) || pages[0];
   const topics = material.metadata.topics || [];
+  const currentIndex = currentPage ? pages.indexOf(currentPage) : 0;
+  const selectedTopic = topics.includes(focusTopic) ? focusTopic : topics[0] || '';
 
   return (
-    <div className="agent-material-view">
+    <div className="agent-material-view material-journey-reader">
       <header className="material-view-header">
         <div>
           <h2>{material.title}</h2>
@@ -139,7 +153,7 @@ export function MaterialView({
           material={material}
           onClose={() => setShowEditor(false)}
           onSaved={() => {
-            fetchMaterial(materialId, user!.id).then((m) => setMaterial(m));
+            fetchMaterial(materialId, user!.id).then((m) => setMaterial(m)).catch(error => setError(error instanceof Error ? error.message : 'Could not reload this material.'));
             setShowEditor(false);
             onSaved?.();
           }}
@@ -150,38 +164,37 @@ export function MaterialView({
         />
       )}
 
-      {topics.length > 0 && (
-        <div className="material-topics-bar">
-          <span className="bar-label">Topics:</span>
-          {topics.slice(0, 8).map((t, idx) => (
-            <button
-              key={idx}
-              className="topic-tag"
-              onClick={() => onStartPractice(material, t)}
-              title={`Practice ${t}`}
-            >
-              {t} <Play size={10} />
-            </button>
-          ))}
+      <section className="material-next-action" aria-label="Next learning action">
+        <div><span className="journey-eyebrow">{material.metadata.confirmed ? 'Source reviewed' : 'Before you begin'}</span>
+          <h3>{material.metadata.confirmed ? 'Turn your notes into practice.' : 'Make this material yours.'}</h3>
+          <p>{material.metadata.confirmed ? 'Choose a topic for guided practice. Your source stays here whenever you need to revisit it.' : 'Check the extracted topics against your source. Edit anything that needs correcting before you begin.'}</p>
         </div>
-      )}
+        {material.metadata.confirmed && topics.length ? <>
+          <label className="journey-field">Practice topic<select value={selectedTopic} onChange={e => setFocusTopic(e.target.value)}>{topics.map(topic => <option key={topic}>{topic}</option>)}</select></label>
+          <button className="learn-button dark" onClick={() => onStartPractice(material, selectedTopic)}><Play size={15} /> Start guided practice</button>
+        </> : <button className="learn-button dark" onClick={() => setShowEditor(true)}>Review & confirm topics</button>}
+      </section>
+      {topics.length > 0 && <details className="material-topic-directory">
+        <summary>{topics.length} topics in this material</summary>
+        <div className="material-topics-bar">{topics.map(topic => <button key={topic} className="topic-tag" onClick={() => { setFocusTopic(topic); const source = pages.find(page => page.text.toLocaleLowerCase().includes(topic.toLocaleLowerCase())); if (source) setPageIndex(source.page); }}>{topic}</button>)}</div>
+      </details>}
 
       <div className="material-reader">
         <div className="reader-pagination">
           <span>
-            Page {currentPage ? currentPage.page : 1} of {pages.length || 1}
+            {currentPage ? `Source page ${currentPage.page} · ${pages.length} pages total` : 'Source material'}
           </span>
           <div className="pagination-buttons">
             <button
-              disabled={pageIndex <= 1}
-              onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
+              disabled={currentIndex <= 0}
+              onClick={() => setPageIndex(pages[currentIndex - 1].page)}
               className="text-button small"
             >
               Previous
             </button>
             <button
-              disabled={pageIndex >= pages.length}
-              onClick={() => setPageIndex((p) => Math.min(pages.length, p + 1))}
+              disabled={!pages.length || currentIndex >= pages.length - 1}
+              onClick={() => setPageIndex(pages[currentIndex + 1].page)}
               className="text-button small"
             >
               Next
@@ -208,6 +221,7 @@ export function SessionView({
   onReturnToPlan,
   nextTopic,
   returnToPlanLabel,
+  onQuit,
 }: {
   sessionId: string;
   onCompleted?: (session: StudySession) => void;
@@ -215,6 +229,7 @@ export function SessionView({
   onReturnToPlan?: () => void;
   nextTopic?: string | null;
   returnToPlanLabel?: string;
+  onQuit?: () => Promise<void> | void;
 }) {
   const { user } = useAuth();
   const [session, setSession] = useState<StudySession | null>(null);
@@ -227,6 +242,7 @@ export function SessionView({
   const [report, setReport] = useState('');
   const [reported, setReported] = useState(false);
   const [reportError, setReportError] = useState('');
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -248,7 +264,10 @@ export function SessionView({
         } else {
           const s = data as StudySession;
           setSession(s);
-          const draft = s.answers || {};
+          let savedDraft: unknown;
+          try { savedDraft = JSON.parse(sessionStorage.getItem(`curve-draft:${userId}:${s.id}`) || 'null'); }
+          catch { /* Remote answers remain available when local storage cannot be read. */ }
+          const draft = restoreSessionAnswers(s, savedDraft);
           setAnswers(draft);
           const unanswered = (s.questions || []).findIndex(
             (q) => draft[q.id] === undefined
@@ -265,7 +284,7 @@ export function SessionView({
     return () => {
       cancelled = true;
     };
-  }, [sessionId, user, revision]);
+  }, [sessionId, user?.id, revision]);
 
   async function next() {
     if (!session) return;
@@ -292,10 +311,30 @@ export function SessionView({
         session_id: session.id,
         answers,
       });
+      try { sessionStorage.removeItem(`curve-draft:${user!.id}:${session.id}`); }
+      catch { /* Completed sessions ignore local drafts. */ }
       setSession(res);
       onCompleted?.(res);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not submit answers.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function quitWithoutSubmitting() {
+    if (!session) return;
+    setBusy(true);
+    setError('');
+    try {
+      if (Object.keys(answers).length > 0) {
+        await learningAction({ action: 'save', session_id: session.id, answers });
+      }
+      if (onQuit) await onQuit();
+      else if (onReturnToPlan) onReturnToPlan();
+      setShowQuitDialog(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save session.');
     } finally {
       setBusy(false);
     }
@@ -357,10 +396,25 @@ export function SessionView({
   return (
     <div className="agent-session-view">
       <div className="session-mode-bar">
-        <span className={`pill ${isCheckpoint ? 'peach' : 'lavender'}`}>
-          {isCheckpoint ? 'INDEPENDENT CHECK' : 'GUIDED PRACTICE'}
-        </span>
-        <h3>{session.topic}</h3>
+        <div className="session-mode-title-wrap">
+          <span className={`pill ${isCheckpoint ? 'peach' : 'lavender'}`}>
+            {isCheckpoint ? 'INDEPENDENT CHECK' : 'GUIDED PRACTICE'}
+          </span>
+          <h3>{session.topic}</h3>
+        </div>
+        {!session.results && (
+          <button
+            type="button"
+            className="session-quit-btn"
+            disabled={busy}
+            onClick={() => setShowQuitDialog(true)}
+            aria-label={isCheckpoint ? "End independent check" : "Quit practice session"}
+            title={isCheckpoint ? "End independent check" : "Quit practice session"}
+          >
+            <LogOut size={13} />
+            <span>{isCheckpoint ? 'End check' : 'Quit practice'}</span>
+          </button>
+        )}
       </div>
 
       {error && <p role="alert" className="learn-error">{error}</p>}
@@ -458,7 +512,10 @@ export function SessionView({
                   answers[question.id] === optIdx ? 'selected' : ''
                 }`}
                 onClick={() => {
-                  setAnswers({ ...answers, [question.id]: optIdx });
+                  const draft = { ...answers, [question.id]: optIdx };
+                  setAnswers(draft);
+                  try { sessionStorage.setItem(`curve-draft:${user!.id}:${session.id}`, JSON.stringify(draft)); }
+                  catch { /* Save & continue still persists remotely. */ }
                 }}
               >
                 <span className="opt-letter">
@@ -495,6 +552,15 @@ export function SessionView({
               <span />
             )}
 
+            <button
+              type="button"
+              className="text-button subtle-quit-action"
+              disabled={busy}
+              onClick={() => setShowQuitDialog(true)}
+            >
+              {isCheckpoint ? 'End check early' : 'Quit practice'}
+            </button>
+
             {!isCheckpoint && (
               <button
                 className="text-button hint-btn"
@@ -521,6 +587,9 @@ export function SessionView({
           </div>
         </div>
       ) : null}
+
+      {showQuitDialog && <SessionExitDialog answered={Object.keys(answers).filter(id => answers[id] !== undefined).length} total={questions.length} busy={busy} error={error} onClose={() => setShowQuitDialog(false)} onSaveExit={() => void quitWithoutSubmitting()} />}
+
     </div>
   );
 }
@@ -529,11 +598,13 @@ export function ExplanationView({
   title,
   text,
   citations,
+  ui,
   onOpenCitation,
 }: {
   title: string;
   text: string;
   citations: Citation[];
+  ui?: InteractiveUI;
   onOpenCitation: (c: Citation) => void;
 }) {
   return (
@@ -542,6 +613,8 @@ export function ExplanationView({
         <span className="pill mint">SOURCE-GROUNDED EXPLANATION</span>
         <h2>{title}</h2>
       </header>
+
+      {ui && <InteractiveAnswer key={title + ui.html + ui.js} ui={ui} title={title} />}
 
       <div className="explanation-body">
         <p className="explanation-prose">{text}</p>

@@ -1,17 +1,17 @@
 import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 
-import { AddCourse } from "./AddCourse";
-import { CourseDetail } from "./CourseDetail";
-import { CourseTracker } from "./CourseTracker";
-import {
-  LearningWorkspace,
-  MaterialStudy,
-  WorkspaceSettings,
-} from "../learning/Workspace";
-import { AgentWorkspace } from "../learning/agent/AgentWorkspace";
-import { StageMap } from "./StageMap";
-import { StageSession } from "./StageSession";
-import { StudySession } from "./StudySession";
+import { lazy } from 'react';
+
+const AddCourse = lazy(() => import("./AddCourse").then(m => ({ default: m.AddCourse })));
+const CourseDetail = lazy(() => import("./CourseDetail").then(m => ({ default: m.CourseDetail })));
+const CourseTracker = lazy(() => import("./CourseTracker").then(m => ({ default: m.CourseTracker })));
+const LearningWorkspace = lazy(() => import("../learning/Workspace").then(m => ({ default: m.LearningWorkspace })));
+const MaterialStudy = lazy(() => import("../learning/Workspace").then(m => ({ default: m.MaterialStudy })));
+const WorkspaceSettings = lazy(() => import("../learning/Workspace").then(m => ({ default: m.WorkspaceSettings })));
+const AgentWorkspace = lazy(() => import("../learning/agent/AgentWorkspace").then(m => ({ default: m.AgentWorkspace })));
+const StageMap = lazy(() => import("./StageMap").then(m => ({ default: m.StageMap })));
+const StageSession = lazy(() => import("./StageSession").then(m => ({ default: m.StageSession })));
+const StudySession = lazy(() => import("./StudySession").then(m => ({ default: m.StudySession })));
 import "./curve.css";
 
 /**

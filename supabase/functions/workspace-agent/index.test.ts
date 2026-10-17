@@ -151,3 +151,19 @@ test('a memory write failure is reported and does not claim feedback was remembe
   assert.ok(!events.some(e=>e.type==='text'));
   assert.equal(globals.__assessmentChat.thread.state.learningMemory,undefined);
 });
+
+test('only an explicit exit request ends a checkpoint, not negated or descriptive language', async () => {
+  const calls: string[] = [];
+  const fixture = globals.__assessmentChat = {
+    thread: { id: 'thread', state: { artifacts: [{ id: 'check-artifact', kind: 'session', sessionId: 'check' }], activeId: 'check-artifact', checkpointId: 'check' } },
+    checkpoint: { id: 'check', questions: [], answers: {} },
+    execute: async (_access: unknown, _thread: unknown, tool: any) => { calls.push(tool.name); return {}; },
+  };
+  for (const text of ["Don't stop the check", 'Explain stop conditions', 'How do I stop?', 'Please stop the check']) {
+    const response = await handler(new Request('https://project.supabase.co/functions/v1/workspace-agent', { method: 'POST', body: JSON.stringify({ operation: 'message', requestId: crypto.randomUUID(), text }) }));
+    const events = (await response.text()).trim().split('\n').map(line => JSON.parse(line));
+    assert.ok(!events.some(event => event.type === 'error'));
+  }
+  assert.deepEqual(calls, ['close_artifact']);
+  assert.equal(fixture.thread.state.activeId, 'check-artifact'); // Fixture doesn't mutate; execution is asserted above.
+});

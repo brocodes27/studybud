@@ -26,6 +26,15 @@ test('A2A rejects cross-origin credential forwarding before sending a message',a
   await assert.rejects(researchViaA2A({cardUrl:'https://agent.example/card',token:'secret'},{course:'Math',topic:'Algebra'},f.transport),/origin/);
   assert.equal(f.calls.length,1);
 });
+test('A2A preserves interactive briefs and drops invalid visuals without losing the report', async () => {
+  const ui = { html: '<button>Reveal example</button>', css: 'button{color:green}', js: '' };
+  for (const payload of [ui, { ...ui, html: '' }]) {
+    const f = fixture({ message: { parts: [{ data: { ...brief, ui: payload } }] } });
+    const result = await researchViaA2A({ cardUrl: 'https://agent.example/card' }, { course: 'Math', topic: 'Algebra' }, f.transport);
+    assert.deepEqual(result, { ...brief, ...(payload.html ? { ui } : {}) });
+    assert.match(JSON.parse(f.calls[1].body.params.message.parts[0].text).task, /Always include an interactive activity/);
+  }
+});
 test('A2A handles direct messages but rejects failed tasks and unsafe citations',async()=>{
   const invoke=(result:any)=>researchViaA2A({cardUrl:'https://agent.example/card'},{course:'Math',topic:'Algebra'},fixture(result).transport);
   assert.deepEqual(await invoke({message:{role:'ROLE_AGENT',parts:[{data:brief}]}}),brief);

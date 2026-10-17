@@ -1,0 +1,8 @@
+.learn.session-exit-dialog { width: min(440px, calc(100vw - 32px)); min-height: 0; margin: auto; padding: 28px; border: 1px solid var(--learn-line); border-radius: var(--learn-radius); background: var(--learn-surface); color: var(--learn-ink); box-shadow: 0 18px 64px #25282424; }
+.session-exit-dialog::backdrop { background: #25282470; }
+.learn.session-exit-dialog h2 { margin: 10px 0; font-size: 27px; }
+.learn.session-exit-dialog > p { font-size: 13px; line-height: 1.8; color: var(--learn-muted); }
+.session-exit-eyebrow { font-size: 11px; color: var(--learn-muted); }
+.session-exit-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+.session-exit-actions .learn-button { font-size: 12px; padding: 11px 15px; }
+@media (max-width: 480px) { .session-exit-actions > button { flex: 1; justify-content: center; } }

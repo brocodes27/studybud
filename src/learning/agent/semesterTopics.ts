@@ -1,3 +1,4 @@
+import { sameSemester } from '../../../supabase/functions/_shared/semester-scope';
 import type { Material } from '../model';
 import type { ParsedSyllabus } from '../../curve/ai';
 
@@ -9,13 +10,15 @@ export function getActualAndSuggestedTopics(
   courseName: string,
   materials: Material[] = [],
   pendingCourses: ParsedSyllabus[] = [],
-  enrolledCourseTopics: Record<string, string[]> = {}
+  enrolledCourseTopics: Record<string, string[]> = {},
+  semester?: string
 ): { topics: string[]; isActual: boolean } {
   const norm = courseName.trim().toLowerCase();
   const collected = new Set<string>();
 
   // 1. Check user materials from library
   for (const mat of materials) {
+    if (semester && !sameSemester(mat.metadata.semester, semester)) continue;
     const matCourse = (mat.metadata?.course || mat.title || '').trim().toLowerCase();
     const isDirectMatch =
       !!norm && !!matCourse && (norm === matCourse || norm.includes(matCourse) || matCourse.includes(norm));
@@ -34,6 +37,7 @@ export function getActualAndSuggestedTopics(
 
   // 2. Check pending syllabus handoff from landing page / onboarding parse
   for (const pCourse of pendingCourses) {
+    if (semester && !sameSemester(pCourse.term, semester)) continue;
     const isMatch =
       !!norm && [pCourse.title, pCourse.courseCode].some((name) => {
         const candidate = name?.trim().toLowerCase();
@@ -50,7 +54,7 @@ export function getActualAndSuggestedTopics(
   }
 
   // 3. Check enrolled course topics from curve courses
-  for (const [enrollName, tops] of Object.entries(enrolledCourseTopics)) {
+  for (const [enrollName, tops] of Object.entries(semester ? {} : enrolledCourseTopics)) {
     const eNorm = enrollName.trim().toLowerCase();
     const isMatch = !!norm && !!eNorm && (norm === eNorm || norm.includes(eNorm) || eNorm.includes(norm));
     if (isMatch && Array.isArray(tops)) {

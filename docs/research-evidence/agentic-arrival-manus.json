@@ -1,0 +1,233 @@
+{
+  "evidence_id": "ev_f520c7ceb42a99d3de39baac256d6de4567cf0aefa9f2f13bdfd697861a63dc1",
+  "subject": null,
+  "provider": {
+    "id": "rea-playwright-browser-scenario",
+    "name": "REA Playwright browser scenario capture provider",
+    "version": "1"
+  },
+  "analysis_profile": null,
+  "predicate_type": "rea.browser-scenario-capture",
+  "operation": "capture_browser_scenario",
+  "parameters": {
+    "browser": {
+      "mode": "launch",
+      "executable_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "headless": true
+    },
+    "start_url": {
+      "url": "https://manus.im/solutions/analysts",
+      "query": []
+    },
+    "environment": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "device_scale_factor": 1
+      },
+      "locale": "en-US",
+      "timezone": "UTC",
+      "color_scheme": "light",
+      "reduced_motion": "reduce",
+      "service_workers": "block"
+    },
+    "actions": [
+      {
+        "step_id": "settle",
+        "action": "wait_for_timeout",
+        "duration_ms": 2000
+      }
+    ],
+    "storage": {
+      "cookies": [],
+      "local_storage": [],
+      "session_storage": []
+    },
+    "secrets": [],
+    "capture": {
+      "after_each_step": [],
+      "at_end": [
+        "accessibility",
+        "url"
+      ],
+      "events": [],
+      "network": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      }
+    },
+    "scenario_sha256": "472fe352536165435432a78cdf3d10afd64181c1036e04aeafcb70ac8b523083"
+  },
+  "raw_result": null,
+  "normalized_result": {
+    "browser": {
+      "mode": "launch",
+      "process_ownership": "provider-owned",
+      "cleanup": "terminated-owned-process",
+      "product": "Chromium",
+      "version": "156.0.8078.35"
+    },
+    "scenario": {
+      "start_origin": "https://manus.im",
+      "action_count": 1,
+      "secret_references": [],
+      "network_content": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      },
+      "event_families": []
+    },
+    "duration_ms": 8923,
+    "steps": [
+      {
+        "step_index": 0,
+        "step_id": "scenario_start",
+        "action": "goto_start",
+        "elapsed_ms": 6745,
+        "before_url": {
+          "url": "about:blank",
+          "origin": null,
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "after_url": {
+          "url": "https://manus.im/solutions/analysts",
+          "origin": "https://manus.im",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "event_sequence_start": 1,
+        "event_sequence_end": 0,
+        "artifacts": {
+          "screenshot": {
+            "state": "not_requested"
+          },
+          "dom": {
+            "state": "not_requested"
+          },
+          "accessibility": {
+            "state": "not_requested"
+          },
+          "url": {
+            "state": "not_requested"
+          },
+          "history": {
+            "state": "not_requested"
+          },
+          "storage": {
+            "state": "not_requested"
+          }
+        },
+        "completeness": {
+          "status": "complete",
+          "equality_eligible": true,
+          "missing_sections": [],
+          "truncated_sections": []
+        },
+        "status": "completed",
+        "error": null
+      },
+      {
+        "step_index": 1,
+        "step_id": "settle",
+        "action": "wait_for_timeout",
+        "elapsed_ms": 2049,
+        "before_url": {
+          "url": "https://manus.im/solutions/analysts",
+          "origin": "https://manus.im",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "after_url": {
+          "url": "https://manus.im/solutions/analysts",
+          "origin": "https://manus.im",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "event_sequence_start": 1,
+        "event_sequence_end": 0,
+        "artifacts": {
+          "screenshot": {
+            "state": "not_requested"
+          },
+          "dom": {
+            "state": "not_requested"
+          },
+          "accessibility": {
+            "state": "captured",
+            "value": {
+              "sha256": "7bd42a63c169f73e295aed846e2547659adbc02758a901d804ac6b4bfc2a9456",
+              "bytes": 12422,
+              "text": "- document:\n  - main:\n    - link:\n      - /url: /?index=1\n      - img\n      - img\n    - text: Features Solutions Resources\n    - link \"Events\":\n      - /url: /events\n    - link \"Business\":\n      - /url: /team\n    - link \"Pricing\":\n      - /url: /pricing\n    - button \"English\"\n    - button \"Get started\"\n    - link \"Introducing Manus 2.0\":\n      - /url: http://manus.im/blog/introducing-manus-2-0\n    - heading \"Manus for Analysts\" [level=1]\n    - paragraph: Your autonomous action engine for business analysis.\n    - link \"Get started\":\n      - /url: /app\n      - button \"Get started\"\n    - button \"Strategic Analysis\"\n    - button \"Competitor Analysis\"\n    - button \"Data Visualization\"\n    - button \"Data Scraping\"\n    - button \"Data Processing\"\n    - button \"Market Research\"\n    - text: Strategic Analysis\n    - heading \"Craft data-driven growth strategies\" [level=3]\n    - paragraph: Go from raw market data to a full strategic plan. Manus researches, synthesizes, and delivers client-ready decks in minutes.\n    - img \"Strategy analysis presentation generated by Manus\"\n    - button \"Previous\" [disabled]\n    - button \"Next\"\n    - heading \"Only Manus Can Do\" [level=2]\n    - paragraph: Handle complex, end-to-end analysis workflows that other AI tools can't. Go from raw data to final deliverable in a single prompt.\n    - img \"Financial model spreadsheet generated by Manus\"\n    - text: Strategic Analysis\n    - heading \"Build integrated financial models instantly\" [level=3]\n    - text: Generate multi-scenario financial models from a single prompt. Get a fully functional spreadsheet in minutes.\n    - link \"Watch demo\":\n      - /url: /share/ldvrbPLw6mfmfRa5ZxOquw?replay=1\n    - img \"Automated market trend monitoring dashboard\"\n    - text: Data Visualization\n    - heading \"Monitor market trends automatically\" [level=3]\n    - text: Schedule autonomous agents to monitor market trends from any source and deliver recurring intelligence reports on autopilot.\n    - link \"Watch demo\":\n      - /url: /share/XCLAuPFpEYUQ8EtXd8CaEn?replay=1\n    - img \"Parallel company research dataset\"\n    - text: Competitor Analysis\n    - heading \"Research hundreds of companies at once\" [level=3]\n    - text: Deploy AI agents to research hundreds of companies in parallel. Go from a target list to a rich dataset in minutes, not weeks.\n    - link \"Watch demo\":\n      - /url: /share/QuDjfnuE4oBjFLLeHk68ik?replay=1\n    - img \"Market sizing and validation report\"\n    - text: Market Research\n    - heading \"Size and validate new market opportunities\" [level=3]\n    - text: Automate the full market research workflow, from data gathering and synthesis to market size analysis and visual report generation.\n    - link \"Watch demo\":\n      - /url: /share/HT84Askz87iD9IxkidN7Bp?replay=1\n    - img \"Structured database from scraped web data\"\n    - text: Data Scraping\n    - heading \"Turn unstructured web data into a database\" [level=3]\n    - text: Scrape data points from unstructured websites and organize them into a clean, structured database in Notion or Airtable.\n    - link \"Watch demo\":\n      - /url: /share/IXdMjxObbFKbIjUUkBk4EH?replay=1\n    - img \"Website traffic analysis for multiple sites\"\n    - text: Data Processing\n    - heading \"Analyze website traffic for hundreds of sites\" [level=3]\n    - text: Go from a list of companies to a full traffic and engagement analysis. Automate data collection and benchmarking at scale.\n    - link \"Watch demo\":\n      - /url: /share/8WkcFukEnMoUReMDgfJuHp?replay=1\n    - heading \"Everything an analyst needs, in one agent\" [level=2]\n    - paragraph: From data scraping to executive decks, Manus handles the tools so you can focus on insight. One prompt sets the entire workflow in motion.\n    - heading \"Slides\" [level=3]\n    - paragraph: Generate polished executive decks and strategy presentations from a brief. Manus handles layout, copy, and data charts so your story lands every time.\n    - heading \"Design\" [level=3]\n    - paragraph: Create branded reports, one-pagers, and infographics without a designer. Describe what you need and get stakeholder-ready assets in minutes.\n    - heading \"Video\" [level=3]\n    - paragraph: Produce data walkthroughs, explainer clips, and recorded briefings from your scripts and charts. Complete with voiceover, music, and captions.\n    - heading \"Web\" [level=3]\n    - paragraph: Build interactive dashboards, data portals, and internal tools that are live and shareable. No code, no staging environment, no developer tickets.\n    - heading \"Browser Operator\" [level=3]\n    - paragraph: Let Manus navigate the web on your behalf to scrape datasets, pull financial filings, or monitor industry sources. Hands-free research at scale.\n    - heading \"Connectors\" [level=3]\n    - paragraph: Plug into Slack, Google Drive, Notion, Airtable, and more. Manus reads your existing data and writes results back where your team already works.\n    - heading \"Data visualization\" [level=3]\n    - paragraph: Turn raw metrics into clear, presentation-ready charts and dashboards. Spot trends, compare segments, and share insights with stakeholders at a glance.\n    - heading \"Spreadsheet\" [level=3]\n    - paragraph: Clean, enrich, and analyze data across CSVs and Excel files. Manus builds formulas, pivot tables, and scoring models so you never start from scratch.\n    - heading \"Wide Research\" [level=3]\n    - paragraph: Research hundreds of companies, markets, or data points in a single prompt. Manus works in parallel across sources and delivers structured findings ready for analysis.\n    - heading \"Skills\" [level=3]\n    - paragraph: Extend Manus with reusable workflows for data pipelines, report templates, competitive trackers, and more. Build once, run on every project that follows.\n    - heading \"Connectors for Analysts\" [level=2]\n    - paragraph: Pull data from your sources and push results back where your team works — no manual exports, no copy-pasting, no context switching.\n    - img \"Google Drive\"\n    - paragraph: Google Drive\n    - img \"Notion\"\n    - paragraph: Notion\n    - img \"Airtable\"\n    - paragraph: Airtable\n    - img \"Canva\"\n    - paragraph: Canva\n    - img \"Jotform\"\n    - paragraph: Jotform\n    - heading \"Frequently Asked Questions\" [level=2]\n    - paragraph: Find answers to common questions about our AI business analysis tools.\n    - heading \"Can I customize the generated financial models?\" [level=3]\n    - paragraph: Yes, all generated spreadsheets and models are fully customizable. Manus can use AI to a build financial model from data to give you a strong starting point. You can then easily edit formulas, change assumptions, and adjust the formatting to fit your specific needs.\n    - heading \"What data sources can Manus connect to?\" [level=3]\n    - paragraph: Manus connects seamlessly to various data sources including Google Drive, Notion, and Airtable. Furthermore, it can automate data scraping and analysis to extract valuable information from unstructured websites. This ensures you always have the right data for your research.\n    - heading \"How can I analyze competitor data with AI?\" [level=3]\n    - paragraph: You can easily analyze competitor data using our advanced benchmarking tools. The system automatically scans competitor pages and financial filings to extract valuable insights. This allows you to track social performance, ad spend, and product launches to stay ahead of the market.\n    - heading \"Is it possible to automate recurring market reports?\" [level=3]\n    - paragraph: Yes, you can schedule autonomous agents to monitor market trends and deliver recurring intelligence reports on autopilot. This ensures your team always has the latest market sizing and validation data without having to manually repeat the same research workflows every week.\n    - heading \"Can Manus create interactive dashboards from CSV files?\" [level=3]\n    - paragraph: Yes, Manus lets you create dashboard from spreadsheet data in just a few minutes. Simply upload your CSV files, and it will transform those raw numbers into live, filterable dashboards. This makes it incredibly easy to visualize trends and share insights.\n    - heading \"How do I process unstructured data like PDFs?\" [level=3]\n    - paragraph: To process unstructured data, just upload your PDFs or images. Manus will extract the information, clean it, and organize it into a structured dataset in Excel or your preferred database. This eliminates hours of tedious manual data entry and reconciliation work.\n    - heading \"Can I use Manus to research hundreds of companies at once?\" [level=3]\n    - paragraph: Yes, Manus makes it easy to batch research companies by deploying AI agents in parallel. You can go from a simple target list to a rich, comprehensive dataset in minutes. This dramatically accelerates your top-of-funnel deal sourcing and market research efforts.\n    - heading \"Is it secure to let Manus browse the web on my behalf?\" [level=3]\n    - paragraph: Yes. The Browser Operator functions as a secure extension that transforms your local web browser into an autonomous agent. It securely utilizes your existing logins and active tabs to complete tasks on authenticated sites (like CRMs or premium research tools) without triggering CAPTCHAs. You maintain full control, must authorize every session, and can stop the agent at any time by closing the browser tab. All actions are logged for complete transparency.\n    - heading \"Leave it to Manus.\" [level=2]\n    - link \"Get started\":\n      - /url: /app\n      - button \"Get started\"\n    - heading \"Less structure, more intelligence.\" [level=2]\n    - heading \"Product\" [level=3]\n    - link \"Pricing\":\n      - /url: /pricing\n    - link \"Web app\":\n      - /url: /features/webapp\n    - link \"AI design\":\n      - /url: /tools/ai-design\n    - link \"AI slides\":\n      - /url: /tools/nano-banana-pro-slides\n    - link \"AI image generator\":\n      - /url: /tools/ai-image-generator\n    - link \"AI music generator\":\n      - /url: /tools/ai-music-generator\n    - link \"Video\":\n      - /url: /features/video\n    - link \"Wide Research\":\n      - /url: /features/wide-research\n    - link \"Slack integration\":\n      - /url: /integrations/slack\n    - link \"All models\":\n      - /url: /models\n    - link \"More features\":\n      - /url: /features\n    - heading \"Resources\" [level=3]\n    - link \"Download\":\n      - /url: /download\n    - link \"Blog\":\n      - /url: /blog\n    - link \"Docs\":\n      - /url: https://manus.im/docs\n    - link \"Updates\":\n      - /url: /updates\n    - link \"Help center\":\n      - /url: https://help.manus.im/en\n    - link \"Trust center\":\n      - /url: https://trust.manus.im/\n    - link \"API\":\n      - /url: https://open.manus.ai/docs\n    - link \"Team plan\":\n      - /url: /team\n    - link \"Startups\":\n      - /url: /startups\n    - link \"Playbook\":\n      - /url: /playbook\n    - link \"Brand assets\":\n      - /url: /brand\n    - heading \"Community\" [level=3]\n    - link \"Events\":\n      - /url: /events\n    - link \"Fellows\":\n      - /url: /fellows\n    - heading \"Compare\" [level=3]\n    - link \"VS ChatGPT\":\n      - /url: /compare/vs-chatgpt\n    - link \"VS Lovable\":\n      - /url: /compare/lovable\n    - link \"VS Replit\":\n      - /url: /compare/manus-vs-replit\n    - heading \"Download\" [level=3]\n    - link \"Mobile app\":\n      - /url: https://manus.go.link/eyNGY\n    - link \"Desktop app\":\n      - /url: /desktop\n    - text: My Browser\n    - heading \"Business\" [level=3]\n    - link \"Team plan\":\n      - /url: /team\n    - link \"SSO\":\n      - /url: https://help.manus.im/en/articles/12807937-where-can-i-enable-subscribe-to-a-single-sign-on-sso-subscription-for-manus-team\n    - link \"API\":\n      - /url: https://open.manus.ai/docs\n    - heading \"Company\" [level=3]\n    - link \"About us\":\n      - /url: /about\n    - link \"Careers\":\n      - /url: https://careers.manus.im/\n    - link \"For media\":\n      - /url: mailto:media@manus.ai\n    - link \"Terms of service\":\n      - /url: /terms\n    - link \"Privacy policy\":\n      - /url: /privacy\n    - text: © 2026 Manus AI\n    - link:\n      - /url: https://www.linkedin.com/company/manus-im/\n      - img\n    - link:\n      - /url: https://x.com/manusai\n      - img\n    - link:\n      - /url: https://www.youtube.com/@Manus-AI/videos\n      - img\n    - link:\n      - /url: https://www.instagram.com/manus/\n      - img\n    - link:\n      - /url: http://www.tiktok.com/@manusaiofficial\n      - img\n    - button \"English\"\n  - list\n  - alert"
+            }
+          },
+          "url": {
+            "state": "captured",
+            "value": {
+              "url": "https://manus.im/solutions/analysts",
+              "origin": "https://manus.im",
+              "query_parameter_names": [],
+              "redacted": false
+            }
+          },
+          "history": {
+            "state": "not_requested"
+          },
+          "storage": {
+            "state": "not_requested"
+          }
+        },
+        "completeness": {
+          "status": "complete",
+          "equality_eligible": true,
+          "missing_sections": [],
+          "truncated_sections": []
+        },
+        "status": "completed",
+        "error": null
+      }
+    ],
+    "events": {
+      "retained": 0,
+      "dropped": 0,
+      "items": []
+    },
+    "completeness": {
+      "status": "complete",
+      "equality_eligible": true,
+      "missing_sections": [],
+      "truncated_sections": []
+    },
+    "limitations": [
+      "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+      "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+      "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+      "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+      "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+      "Storage values are hashed only after declared-secret redaction."
+    ]
+  },
+  "confidence": "observed",
+  "authority": "controlled-replay",
+  "environment": {
+    "id": "Chromium@156.0.8078.35",
+    "platform": "unknown",
+    "architecture": "unknown",
+    "isolation": "process"
+  },
+  "limitations": [
+    "Artifact identity is unavailable for this observation.",
+    "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+    "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+    "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+    "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+    "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+    "Storage values are hashed only after declared-secret redaction.",
+    "Browser host platform and architecture were not observed."
+  ],
+  "relationship_coverage": null,
+  "locations": [],
+  "evidence_links": []
+}

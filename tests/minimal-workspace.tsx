@@ -23,6 +23,12 @@ const snapshot: WorkspaceSnapshot = {
   messages: [{ id: 'hello', role: 'assistant', content: 'Your Physics midterm is tomorrow. Today is a short review of optics. Start whenever you’re ready.', created_at: now.toISOString() }],
   research: { enabled: true, status: 'pending' },
 };
+// Slow-save fixture: the selected activity must render before this request resolves.
+const tabTest = new URLSearchParams(window.location.search).get('tabTest');
+if (tabTest) snapshot.thread.state.artifacts = [
+  { id: 'research-test', kind: 'research', title: 'Slow network research', topic: 'Optics', text: 'This research should appear immediately while the tab selection saves.', sources: [], createdAt: now.toISOString() },
+  { id: 'progress-test', kind: 'progress', title: 'Saved progress' },
+];
 const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12).toISOString();
 const question = { id: 'q1', topic: 'Optics', question: 'When light enters glass from air at an angle, which way does it bend?', options: ['Toward the normal', 'Away from the normal', 'It does not bend'], page: 1 };
 const results = [{ question_id: 'q1', correct: false, assisted: false, expected: 'Toward the normal', explanation: 'Light slows down in glass, so the refracted ray bends toward the normal.', quote: 'A ray entering a medium with a higher refractive index bends toward the normal.', page: 1 }];
@@ -57,7 +63,11 @@ window.fetch = async (resource, options) => {
       snapshot.thread.state.artifacts = [{ id: 'practice', kind: 'session', title: 'Optics', sessionId: id }];
       snapshot.thread.state.activeId = 'practice';
     }
-    if (request.operation === 'activate') snapshot.thread.state.activeId = request.artifactId;
+    if (request.operation === 'activate') {
+      if (tabTest) await new Promise(resolve => setTimeout(resolve, 3000));
+      if (tabTest === 'failure') return new Response(JSON.stringify({ error: 'Simulated tab save failure' }), { status: 503 });
+      snapshot.thread.state.activeId = request.artifactId;
+    }
     snapshot.thread.updated_at = new Date().toISOString();
     data = request.operation === 'load' ? snapshot : { snapshot };
   }

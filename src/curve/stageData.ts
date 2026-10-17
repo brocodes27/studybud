@@ -45,6 +45,7 @@ export function localToday(): string {
 export interface StageSnapshot {
   topics: PlannerTopic[];
   plan: DayPlan;
+  error?: string;
 }
 
 /**
@@ -121,14 +122,15 @@ export async function fetchStageSnapshot(
     return { topics, plan: planDay({ today, topics, minuteBudget }) };
   } catch (err) {
     console.warn('Stage snapshot failed:', err);
-    return empty;
+    return { ...empty, error: 'Your study plan could not load. Please try again.' };
   }
 }
 
 async function fetchStageRows(userId: string): Promise<Map<string, TopicStage>> {
   const result = new Map<string, TopicStage>();
   const { data, error } = await supabase.from('curve_topic_stage').select('*').eq('user_id', userId);
-  if (error || !data) return result;
+  if (error) throw new Error('Your saved learning stages could not load. Please try again.');
+  if (!data) return result;
 
   for (const row of data as any[]) {
     result.set(row.topic_id, fromRow(row));
@@ -145,7 +147,8 @@ async function fetchMasteryByKc(kcIds: string[]): Promise<Map<string, number>> {
     .select('kc_id, p_mastery')
     .in('kc_id', kcIds);
 
-  if (error || !data) return result;
+  if (error) throw new Error('Your mastery evidence could not load. Please try again.');
+  if (!data) return result;
   for (const row of data as any[]) {
     result.set(row.kc_id, Number(row.p_mastery ?? 0));
   }
@@ -276,7 +279,7 @@ export async function recordStageCompletion(
     examOn: completion.examOn ?? null,
   });
 
-  await supabase.from('curve_stage_events').insert({
+  const { error: eventError } = await supabase.from('curve_stage_events').insert({
     user_id: completion.userId,
     enrollment_id: completion.enrollmentId,
     topic_id: completion.topicId,
@@ -289,14 +292,17 @@ export async function recordStageCompletion(
     payload: completion.payload ?? {},
     was_prescribed: completion.wasPrescribed,
   });
+  if (eventError) throw new Error('Your session could not save. Your work is still here; please try again.');
 
   const { error } = await supabase
     .from('curve_topic_stage')
     .update(toRow(after))
     .eq('user_id', completion.userId)
-    .eq('topic_id', completion.topicId);
+    .eq('topic_id', completion.topicId)
+    .select('topic_id')
+    .single();
 
-  if (error) console.error('Stage write failed:', error);
+  if (error) throw new Error('Your session evidence was saved, but your stage could not update. Please retry.');
 
   const advanced = after.stage !== before.stage;
 
@@ -423,7 +429,8 @@ export async function fetchTopicStage(userId: string, topicId: string): Promise<
     .eq('topic_id', topicId)
     .maybeSingle();
 
-  if (error || !data) return emptyTopicStage();
+  if (error) throw new Error('Your saved stage could not load. Please try again.');
+  if (!data) return emptyTopicStage();
   return fromRow(data);
 }
 

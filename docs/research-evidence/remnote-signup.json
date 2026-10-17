@@ -1,0 +1,139 @@
+{
+  "evidence_id": "ev_6a099934bb944355d305c3e891052fc61200d1fe30bb1ef2a5e3d3cddf4a35bd",
+  "operation": "capture_browser_scenario",
+  "confidence": "observed",
+  "authority": "controlled-replay",
+  "parameters": {
+    "browser": {
+      "mode": "launch",
+      "executable_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "headless": true
+    },
+    "start_url": {
+      "url": "https://www.remnote.com/sign_up",
+      "query": []
+    },
+    "environment": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "device_scale_factor": 1
+      },
+      "locale": "en-US",
+      "timezone": "UTC",
+      "color_scheme": "light",
+      "reduced_motion": "reduce",
+      "service_workers": "block"
+    },
+    "actions": [
+      {
+        "step_id": "render-signup",
+        "action": "wait_for_timeout",
+        "duration_ms": 2000
+      }
+    ],
+    "storage": {
+      "cookies": [],
+      "local_storage": [],
+      "session_storage": []
+    },
+    "secrets": [],
+    "capture": {
+      "after_each_step": [],
+      "at_end": [
+        "accessibility",
+        "url"
+      ],
+      "events": [],
+      "network": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      }
+    },
+    "scenario_sha256": "4c03b7df571c4a5ee2dcc4a4a0e29a4e8414582f9c1c9c3158d55d35aba4b118"
+  },
+  "browser": {
+    "mode": "launch",
+    "process_ownership": "provider-owned",
+    "cleanup": "terminated-owned-process",
+    "product": "Chromium",
+    "version": "156.0.8078.35"
+  },
+  "completeness": {
+    "status": "complete",
+    "equality_eligible": true,
+    "missing_sections": [],
+    "truncated_sections": []
+  },
+  "steps": [
+    {
+      "step_id": "scenario_start",
+      "action": "goto_start",
+      "status": "completed",
+      "before_url": {
+        "url": "about:blank",
+        "origin": null,
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "after_url": {
+        "url": "https://www.remnote.com/sign_up",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "accessibility": {
+        "state": "not_requested"
+      },
+      "url": {
+        "state": "not_requested"
+      }
+    },
+    {
+      "step_id": "render-signup",
+      "action": "wait_for_timeout",
+      "status": "completed",
+      "before_url": {
+        "url": "https://www.remnote.com/sign_up",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "after_url": {
+        "url": "https://www.remnote.com/sign_up",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "accessibility": {
+        "state": "captured",
+        "value": {
+          "sha256": "3ef886c10b371ee58bf743bd7f4d6a3279765c8b72e48a0a7930d34c9d8d93c0",
+          "bytes": 878,
+          "text": "- document:\n  - heading \"Your data. Your choice.\" [level=3]\n  - paragraph: We always try to improve the product and discover problems. By accepting, you agree to the usage of cookies for the purpose of analytics.\n  - paragraph:\n    - text: Visit our\n    - link \"Privacy Hub\":\n      - /url: https://www.remnote.com/privacy-hub\n    - text: for more information.\n  - button \"Accept\"\n  - button \"Disable\"\n  - img \"RemNote logo\"\n  - heading \"Sign Up\" [level=2]\n  - button \"Continue with Google\"\n  - button \"Continue with Apple\"\n  - text: or email Email\n  - textbox \"Enter your email address\"\n  - text: Password\n  - textbox \"Enter your password\"\n  - button \"Sign Up\" [disabled]\n  - text: Already have an account?\n  - link \"Sign in.\":\n    - /url: \"#\"\n  - text: By signing up, you agree to our\n  - link \"Privacy Policy\":\n    - /url: /privacy_policy\n  - text: .\n  - textbox \"cursor-park\""
+        }
+      },
+      "url": {
+        "state": "captured",
+        "value": {
+          "url": "https://www.remnote.com/sign_up",
+          "origin": "https://www.remnote.com",
+          "query_parameter_names": [],
+          "redacted": false
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Artifact identity is unavailable for this observation.",
+    "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+    "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+    "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+    "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+    "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+    "Storage values are hashed only after declared-secret redaction.",
+    "Browser host platform and architecture were not observed."
+  ],
+  "scope": "Selected metadata and full accessibility artifacts; excludes homepage DOM. Not a complete evidence bundle."
+}

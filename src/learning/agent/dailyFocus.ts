@@ -1,3 +1,4 @@
+import { scopeLibrary } from '../../../supabase/functions/_shared/semester-scope';
 import type { Material, StudySession } from '../model';
 import type { SemesterPlan } from './contracts';
 import { localDate, plannedSessionContext, semesterExamTimeline } from './semesterPlanner';
@@ -16,6 +17,7 @@ export function sessionEvidence(session: StudySession) {
 
 /** Recommends within the scheduled subject and exam scope; saved results are the evidence. */
 export function dailyFocus(plan: SemesterPlan, materials: Material[], sessions: StudySession[], now = new Date()) {
+  materials = scopeLibrary(materials, plan);
   const day = plan.roadmap.find(item => item.date === localDate(now));
   if (!day || !['study', 'buffer'].includes(day.type) || !day.course || !day.topics?.length) return null;
   const course = day.course;

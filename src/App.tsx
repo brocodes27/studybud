@@ -6,11 +6,12 @@ import {
   Routes,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { LearningAuth as Auth } from "./learning/Auth";
 import { Toaster } from "./components/Toaster";
 import { useToast } from "./hooks/useToast";
 import { isStudentRole, STAFF_SIGN_IN_MESSAGE } from "./lib/consumerAccess";
-import { LearningEntry, OnboardingDemo } from "./learning/Onboarding";
+const Auth = lazy(() => import("./learning/Auth").then((m) => ({ default: m.LearningAuth })));
+const LearningEntry = lazy(() => import("./learning/Onboarding").then((m) => ({ default: m.LearningEntry })));
+const OnboardingDemo = lazy(() => import("./learning/Onboarding").then((m) => ({ default: m.OnboardingDemo })));
 
 const PublicReceipt = lazy(() =>
   import("./pages/PublicReceipt").then((m) => ({ default: m.PublicReceipt })),

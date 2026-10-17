@@ -1,0 +1,140 @@
+{
+  "evidence_id": "ev_7cd10faed0e040c3b9d93469eb78bca6ea1b05936c81b00b7cdd20599edd762c",
+  "operation": "capture_browser_scenario",
+  "confidence": "observed",
+  "authority": "controlled-replay",
+  "parameters": {
+    "browser": {
+      "mode": "launch",
+      "executable_path": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "headless": true
+    },
+    "start_url": {
+      "url": "https://www.remnote.com/",
+      "query": []
+    },
+    "environment": {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "device_scale_factor": 1
+      },
+      "locale": "en-US",
+      "timezone": "UTC",
+      "color_scheme": "light",
+      "reduced_motion": "reduce",
+      "service_workers": "block"
+    },
+    "actions": [
+      {
+        "step_id": "render-home",
+        "action": "wait_for_timeout",
+        "duration_ms": 2000
+      }
+    ],
+    "storage": {
+      "cookies": [],
+      "local_storage": [],
+      "session_storage": []
+    },
+    "secrets": [],
+    "capture": {
+      "after_each_step": [],
+      "at_end": [
+        "dom",
+        "accessibility",
+        "url"
+      ],
+      "events": [],
+      "network": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      }
+    },
+    "scenario_sha256": "d8db324017c5509bd2de75c8694523f19d3ac261a68573801ff491619a3b6ba4"
+  },
+  "browser": {
+    "mode": "launch",
+    "process_ownership": "provider-owned",
+    "cleanup": "terminated-owned-process",
+    "product": "Chromium",
+    "version": "156.0.8078.35"
+  },
+  "completeness": {
+    "status": "complete",
+    "equality_eligible": true,
+    "missing_sections": [],
+    "truncated_sections": []
+  },
+  "steps": [
+    {
+      "step_id": "scenario_start",
+      "action": "goto_start",
+      "status": "completed",
+      "before_url": {
+        "url": "about:blank",
+        "origin": null,
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "after_url": {
+        "url": "https://www.remnote.com/",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "accessibility": {
+        "state": "not_requested"
+      },
+      "url": {
+        "state": "not_requested"
+      }
+    },
+    {
+      "step_id": "render-home",
+      "action": "wait_for_timeout",
+      "status": "completed",
+      "before_url": {
+        "url": "https://www.remnote.com/",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "after_url": {
+        "url": "https://www.remnote.com/",
+        "origin": "https://www.remnote.com",
+        "query_parameter_names": [],
+        "redacted": false
+      },
+      "accessibility": {
+        "state": "captured",
+        "value": {
+          "sha256": "1fd84f8c4f74f0e411d85b35707a2113dfc0ff46fbd2b343017a395f64bad628",
+          "bytes": 12286,
+          "text": "- document:\n  - heading \"Your data. Your choice.\" [level=3]\n  - paragraph: We always try to improve the product and discover problems. By accepting, you agree to the usage of cookies for the purpose of analytics.\n  - paragraph:\n    - text: Visit our\n    - link \"Privacy Hub\":\n      - /url: https://www.remnote.com/privacy-hub\n    - text: for more information.\n  - button \"Accept\"\n  - button \"Disable\"\n  - navigation:\n    - link:\n      - /url: /\n    - button \"Download\"\n    - link \"Desktop\":\n      - /url: /download\n    - link \"iOS & Android\":\n      - /url: /mobile\n    - button \"Features\"\n    - text: Learning\n    - link \"Make Flashcards\":\n      - /url: /feature/flashcards-in-your-notes\n    - link \"Spaced Repetition\":\n      - /url: /feature/spaced-repetition\n    - link \"Learn Any PDF\":\n      - /url: /feature/learn-any-pdf\n    - link \"Exam Scheduler\":\n      - /url: /feature/exam-scheduler\n    - text: Thinking\n    - link \"Notes\":\n      - /url: /feature/folders-and-documents\n    - link \"Handwritten Notes\":\n      - /url: /feature/handwritten-notes\n    - link \"Folders & Documents\":\n      - /url: /feature/folders-and-documents\n    - link \"References & Tags\":\n      - /url: /feature/linking-references\n    - text: Organizing\n    - link \"Annotate PDF\":\n      - /url: /feature/annotate-pdf\n    - link \"Instant Search\":\n      - /url: /feature/instant-search\n    - link \"Offline Mode\":\n      - /url: /feature/offline-mode\n    - link \"Lecture Recorder\":\n      - /url: /feature/lecture-recorder\n    - link \"Pricing\":\n      - /url: /pricing\n    - link \"Tutorials\":\n      - /url: https://www.youtube.com/channel/UCgETcD9IVBbTIL9OjCoaloA\n    - link \"Blog\":\n      - /url: /blog\n    - link \"AI Cards\":\n      - /url: /ai\n    - link \"About Us\":\n      - /url: /about\n    - link \"Community\":\n      - /url: /learn\n    - link \"Log in\":\n      - /url: /sign_in\n    - link \"Get RemNote Free\":\n      - /url: /sign_up\n  - main:\n    - img\n    - img\n    - text: Trusted by 1,000,000+ students to get higher grades.\n    - heading \"The AI note taking tool that actually helps you learn.\" [level=1]\n    - subscript: Notes, flashcards, PDFs, and advanced AI study tools. Serious learners use RemNote to save time and get higher grades.\n    - button \"Sign up for free\"\n    - text: Upload a PDF. Master Study Materials.\n    - button \"Flashcards Auto-generated for spaced repetition\"\n    - button \"Practice Quizzes Test yourself section by section\"\n    - button \"Summary For high-yield info.\"\n    - button \"Mastery Tracking See your progress per topic\"\n    - text: Start learning in seconds\n    - img\n    - img\n    - img\n    - text: Drop your PDFs here or\n    - button \"Select the file\"\n    - text: or\n    - img\n    - img\n    - textbox \"Paste YouTube, PDF, or Website Link\"\n    - paragraph: Everything you need in one tool\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - heading \"Notes that Build Understanding\" [level=2]\n    - paragraph: Make powerful, rich notes that build understanding. Add flashcards, drawings, references, and more directly in your notes.\n    - heading \"Typed Notes\" [level=4]\n    - paragraph: Write freely with our powerful outlining editor. Structure your thoughts and connect ideas.\n    - heading \"Handwritten Notes\" [level=4]\n    - paragraph: Take handwritten notes in lecture on your tablet. Add sketches, and convert to text instantly.\n    - heading \"PDF & Slide Annotation\" [level=4]\n    - paragraph: Upload PDFs and slides. Annotate with highlights, drawings, and shapes alongside your notes.\n    - button \"Try it now\"\n    - img \"Typed Notes\"\n    - img \"Handwritten Notes\"\n    - img \"PDF & Slide Annotation\"\n    - heading \"Flashcards for Exam-Day Success\" [level=2]\n    - paragraph: Use our powerful flashcard maker to memorize anything and get higher grades. You'll get a personalized practice schedule each day, tailored to your exam date.\n    - heading \"Exam Scheduler\" [level=4]\n    - paragraph: Set your exam date and we'll tell you exactly what to study each day.\n    - heading \"Spaced Repetition\" [level=4]\n    - paragraph: Cards resurface at the optimal time for retention. Study less, remember more.\n    - heading \"Image Occlusion & More\" [level=4]\n    - paragraph: \"Every kind of flashcard you need: image occlusion, question/answer, fill in the blank, lists, clusters, and more.\"\n    - button \"Try it now\"\n    - img \"Exam Scheduler\"\n    - img \"Spaced Repetition\"\n    - img \"Image Occlusion & More\"\n    - heading \"Your Personal AI Tutor\" [level=2]\n    - paragraph: Instant help whenever you need it. Ask questions, generate study materials, and learn faster.\n    - heading \"AI Flashcards & Quizzes\" [level=4]\n    - paragraph: Use our built-in AI quiz generator to create study material in one click from notes, PDFs, or any source.\n    - heading \"Explanations on Your Cards\" [level=4]\n    - paragraph: Every card includes an AI explanation to deepen understanding.\n    - heading \"AI Tutor Chat\" [level=4]\n    - paragraph: Ask questions about your notes, get explanations, and learn concepts faster.\n    - button \"Try it now\"\n    - img \"AI Flashcards & Quizzes\"\n    - img \"Explanations on Your Cards\"\n    - img \"AI Tutor Chat\"\n    - heading \"A Knowledge-Base for Life\" [level=2]\n    - paragraph: RemNote scales with you throughout your studies and career. Build a life-long knowledge base that you can rely on for academic and professional success.\n    - heading \"Tables & Databases\" [level=4]\n    - paragraph: Organize projects, notes, and flashcards with customizable tables.\n    - heading \"Desktop & Mobile Apps\" [level=4]\n    - paragraph: Study and take notes anywhere. Your notes sync seamlessly across all devices.\n    - heading \"Works Offline\" [level=4]\n    - paragraph: No internet? No problem. Take notes offline and sync when you reconnect.\n    - button \"Try it now\"\n    - img \"Tables & Databases\"\n    - img \"Desktop & Mobile Apps\"\n    - img \"Works Offline\"\n    - img\n    - heading \"Join 1,000,000+ students getting higher grades in less time!\" [level=2]\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - img\n    - text: James Lin Med student at Harvard I began my premed journey as a Power-User of Anki. The greatest hassle was converting my lecture notes into cards. RemNote streamlines this process unlike anything else out there. It allows you to study while facilitating memorization and card creation without breaking flow. It’s a priceless superpower for all students! Shabab Bin Maahdi High school student Everyone in this team is so passionate. And did I mention the product itself? MINDBLOWING!!! The rate at which it accelerates learning is insanely high! Safe to say, It is going to be the best knowledge handling app out here. Danny Geisz CS student at Berkeley RemNote is like a hardcore drug, except when you get hopelessly addicted to it your life is more organized and you're probably smarter. Savannah Feder Student at UBC RemNote has quickly become one of my favourite products of all time. I used to forget nearly all the information captured into my knowledge base – but now I feel like I have this superpower to remember anything I find important. Super satisfying to run through flashcards too :) For any students out there, I scored top marks with half as much effort the term I switched to RemNote. Works like magic 🪄\n    - button \"Show More\"\n    - text: Ready to get higher grades in less time?\n    - button \"Join 1 million students - it's free\"\n    - heading \"Frequently Asked Questions\" [level=2]\n    - heading \"What makes RemNote different from other flashcard tools?\" [level=3]\n    - paragraph: RemNote combines note-taking, PDF annotation, and flashcard creation in one app, so you don't need to switch between tools like Notion, Anki, or Quizlet. You can write notes and generate flashcards instantly, then study them using a built-in spaced repetition algorithm to retain information long-term.\n    - heading \"Do I have to make flashcards manually?\" [level=3]\n    - paragraph: No. RemNote's AI can automatically generate flashcards from your notes, PDFs, or even lecture transcripts. You can also refine or customize them with tags, images, and formatting to suit your learning style.\n    - paragraph: You can also create flashcards directly inside your notes as you write, making card-writing twice as fast and helping you learn the material in the process. Because your flashcards live alongside your notes, you build understanding while you study.\n    - heading \"How does RemNote help me remember more in less time?\" [level=3]\n    - paragraph: RemNote uses spaced repetition, a science-backed memory technique that reminds you of concepts right before you're about to forget them. This dramatically increases long-term retention and helps you study more efficiently, whether you're prepping for finals, the MCAT, or language exams.\n    - heading \"Can I study offline or on mobile?\" [level=3]\n    - paragraph: Yes. RemNote offers offline access and mobile apps for iOS and Android. Whether you're commuting or in a no-WiFi zone, your notes and flashcards are always available.\n    - heading \"Is RemNote free to use?\" [level=3]\n    - paragraph: Yes. RemNote has a robust free plan with core features like note-taking, flashcards, spaced repetition, and PDF annotation. Power users can upgrade for advanced AI tools, backups, and customizations.\n    - navigation:\n      - link:\n        - /url: https://twitter.com/remnote\n      - link:\n        - /url: https://www.youtube.com/channel/UCgETcD9IVBbTIL9OjCoaloA\n      - link:\n        - /url: https://www.reddit.com/r/remNote/\n      - link:\n        - /url: https://www.facebook.com/remnote.io/\n      - link:\n        - /url: https://www.instagram.com/remnote/\n      - link:\n        - /url: https://www.tiktok.com/@getremnote\n      - link:\n        - /url: https://www.linkedin.com/company/remnote-llc\n      - link:\n        - /url: https://remnote.myspreadshop.com/\n      - link \"Originated at MIT logo\":\n        - /url: /about\n        - text: Originated at\n        - img \"MIT logo\"\n      - link \"Backed by General Catalyst Logo\":\n        - /url: /about\n        - text: Backed by\n        - img \"General Catalyst Logo\"\n      - text: Product\n      - link \"Pricing\":\n        - /url: /pricing\n      - link \"Shared Flashcards\":\n        - /url: /learn\n      - link \"Download\":\n        - /url: /download\n      - link \"MCAT\":\n        - /url: /mcat_landing_page\n      - link \"AP Score Calculator\":\n        - /url: /score-calculator\n      - link \"Updates\":\n        - /url: https://feedback.remnote.com/changelog\n      - link \"Merchandise\":\n        - /url: https://remnote.myspreadshop.com/\n      - text: AI Tools\n      - link \"PDF to Cards\":\n        - /url: /pdf_to_cards\n      - link \"PDF to Quiz\":\n        - /url: /pdf_to_quiz\n      - link \"PowerPoint to Cards\":\n        - /url: /powerpoint_to_cards\n      - link \"YouTube to Cards\":\n        - /url: /youtube_to_cards\n      - link \"YouTube to Quiz\":\n        - /url: /youtube_to_quiz\n      - link \"Text to Quiz\":\n        - /url: /text_to_quiz\n      - link \"PDF to Summary\":\n        - /url: /pdf_to_summary\n      - link \"PowerPoint to Summary\":\n        - /url: /powerpoint_to_summary\n      - link \"PowerPoint to Quiz\":\n        - /url: /powerpoint_to_quiz\n      - link \"YouTube to Summary\":\n        - /url: /youtube_to_summary\n      - text: Company\n      - link \"About us\":\n        - /url: /about\n      - link \"Careers\":\n        - /url: /career\n      - link \"Media Kit\":\n        - /url: /media_kit\n      - link \"Terms\":\n        - /url: /terms_of_service\n      - link \"Privacy\":\n        - /url: /privacy_policy\n      - text: Compare\n      - link \"Obsidian vs RemNote\":\n        - /url: /obsidian\n      - link \"Roam vs RemNote\":\n        - /url: /roam-research\n      - link \"Notion vs RemNote\":\n        - /url: /notion\n      - link \"Anki vs RemNote\":\n        - /url: /anki\n      - link \"Quizlet vs RemNote\":\n        - /url: /quizlet\n      - text: Language English © 2026 RemNote Inc.\n      - link \"Privacy Hub\":\n        - /url: /privacy-hub\n      - link \"Disclaimer\":\n        - /url: /disclaimer\n      - link \"Return Policy\":\n        - /url: /return_policy\n  - textbox \"cursor-park\""
+        }
+      },
+      "url": {
+        "state": "captured",
+        "value": {
+          "url": "https://www.remnote.com/",
+          "origin": "https://www.remnote.com",
+          "query_parameter_names": [],
+          "redacted": false
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Artifact identity is unavailable for this observation.",
+    "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+    "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+    "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+    "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+    "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+    "Storage values are hashed only after declared-secret redaction.",
+    "Browser host platform and architecture were not observed."
+  ],
+  "scope": "Selected metadata and full accessibility artifacts; excludes homepage DOM. Not a complete evidence bundle."
+}

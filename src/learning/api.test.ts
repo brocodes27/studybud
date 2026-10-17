@@ -116,3 +116,35 @@ it("does not analyze a material whose upload failed", async () => {
   );
   assert.equal(requests.length, 1);
 });
+
+it('confirms topic review without losing source pages from a slim library item', async () => {
+  const full = { id: 'material-1', title: 'Calculus', created_at: '2026-10-17', extracted_text: 'Source text', metadata: { workspace: 'curve', course: 'Old name', pages: [{ page: 5, text: 'Limits' }], summary: 'Keep this summary', semester: 'Fall', topics: ['Limits'], confirmed: false } };
+  const requests: { url: URL; method: string; body: any }[] = [];
+  mock.method(globalThis, 'fetch', async (input: string | URL | Request, options?: RequestInit) => {
+    const url = new URL(String(input));
+    const method = options?.method || 'GET';
+    const body = JSON.parse(String(options?.body || '{}'));
+    requests.push({ url, method, body });
+    return new Response(JSON.stringify(method === 'GET' ? full : { ...full, metadata: body.metadata }), { headers: { 'Content-Type': 'application/json' } });
+  });
+  const saved = await api.confirmMaterial('owner-1', { ...full, metadata: { course: 'Calculus II', topics: ['Limits', 'Derivatives'], confirmed_topics: ['Limits'] } });
+  assert.equal(saved.metadata.course, 'Calculus II');
+  assert.deepEqual(saved.metadata.pages, full.metadata.pages);
+  assert.equal(saved.metadata.summary, full.metadata.summary);
+  assert.equal(saved.metadata.semester, 'Fall');
+  const reassigned = await api.confirmMaterial('owner-1', { ...full, metadata: { course: 'Calculus II', semester: 'Semester 2', topics: ['Limits'], confirmed_topics: ['Limits'] } });
+  assert.equal(reassigned.metadata.semester, 'Semester 2');
+  assert.equal(saved.metadata.confirmed, true);
+  assert.deepEqual(saved.metadata.confirmed_topics, ['Limits']);
+  assert.equal(requests.length, 4);
+  for (const request of requests) {
+    assert.equal(request.url.searchParams.get('owner_user_id'), 'eq.owner-1');
+    assert.equal(request.url.searchParams.get('id'), 'eq.material-1');
+  }
+});
+
+it('keeps a failed confirmation retryable and rejects empty topics before a write', async () => {
+  await assert.rejects(api.confirmMaterial('owner', { id: 'm', metadata: { course: 'Math', topics: [] } } as any), /confirm at least one topic/);
+  mock.method(globalThis, 'fetch', async (_input: unknown, options?: RequestInit) => new Response(JSON.stringify(options?.method === 'PATCH' ? { message: 'Write rejected' } : { id: 'm', metadata: { pages: [{ page: 1, text: 'Original' }] } }), { status: options?.method === 'PATCH' ? 403 : 200, headers: { 'Content-Type': 'application/json' } }));
+  await assert.rejects(api.confirmMaterial('owner', { id: 'm', metadata: { course: 'Math', topics: ['Limits'] } } as any), /topic review could not save/);
+});

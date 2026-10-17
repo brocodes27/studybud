@@ -1,3 +1,4 @@
+import type { InteractiveUI } from '../../../supabase/functions/_shared/interactive-ui';
 import type { LearningMemory } from '../../../supabase/functions/_shared/learning-memory';
 import type { AssessmentArtifact, ResearchArtifact, ResearchStatus } from '../../../supabase/functions/_shared/learning-workflows';
 /**
@@ -29,7 +30,7 @@ export type WorkspaceArtifact =
   | ResearchArtifact
   | { id: string; kind: 'material'; title: string; materialId: string; page?: number }
   | { id: string; kind: 'session'; title: string; sessionId: string }
-  | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
+  | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[]; ui?: InteractiveUI }
   | { id: string; kind: 'progress'; title: string };
 
 export interface EnlistedExam {
@@ -63,6 +64,7 @@ export interface RoadmapDay {
 }
 
 export interface SemesterPlan {
+  semester?: string;
   dailyMinutes?: number;
   stage: 'early' | 'mid' | 'late' | 'finals';
   stageLabel: string;
@@ -135,7 +137,7 @@ export const emptyWorkspace = (): WorkspaceState => ({
 });
 
 export const TOOL_NAMES = [
-  'open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'find_materials',
+  'open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'cancel_checkpoint', 'find_materials',
   'open_material',
   'review_topics',
   'build_plan',

@@ -215,3 +215,66 @@ test('workspace authorization requires paid access and fails closed on billing e
   };
   assert.equal((await workspace.authorize(req)).user.id, 'student');
 });
+
+test('cancelling or closing an independent check clears the checkpoint lock and unblocks tools', async () => {
+  const f = assessmentStore(), t: any = thread(), emit = () => {};
+  const sessionId = '00000000-0000-4000-8000-000000000099';
+  f.rows.set(sessionId, {
+    id: sessionId,
+    material_id: f.material.id,
+    topic: 'Calculus',
+    mode: 'checkpoint',
+    questions: [{ id: 'q1', question: 'What is a derivative?', options: ['Rate of change', 'Sum'], correct_answer: 0 }],
+    answers: {},
+    completed_at: null,
+    results: null,
+  });
+  t.state.checkpointId = sessionId;
+  t.state.artifacts = [{ id: `session:${sessionId}`, kind: 'session', sessionId, title: 'Calculus' }];
+  t.state.activeId = `session:${sessionId}`;
+
+  // Tools not in CHECKPOINT_TOOLS should throw
+  await assert.rejects(workspace.execute(f.access, t, { name: 'explain', args: { materialId: f.material.id, topic: 'Calculus' } }, 'exp', emit), /Finish your independent check/);
+
+  // But close_artifact is allowed and clears checkpointId
+  await workspace.execute(f.access, t, { name: 'close_artifact', args: { artifactId: `session:${sessionId}` } }, 'close', emit);
+  assert.equal(t.state.checkpointId, null);
+  assert.equal(t.state.artifacts.length, 0);
+
+  // Now tools like find_materials or explain are unblocked
+  const materials = await workspace.execute(f.access, t, { name: 'find_materials', args: { query: '' } }, 'find', emit);
+  assert.ok(Array.isArray(materials));
+
+  // Test cancel_checkpoint explicitly
+  t.state.checkpointId = sessionId;
+  t.state.artifacts = [{ id: `session:${sessionId}`, kind: 'session', sessionId, title: 'Calculus' }];
+  t.state.activeId = `session:${sessionId}`;
+  await workspace.execute(f.access, t, { name: 'cancel_checkpoint', args: { artifactId: `session:${sessionId}` } }, 'cancel', emit);
+  assert.equal(t.state.checkpointId, null);
+
+  // Test orphaned checkpoint auto-clear in checkpointFor
+  t.state.checkpointId = sessionId;
+  t.state.artifacts = []; // artifact is no longer open
+  const session = await workspace.checkpointFor(f.access, t);
+  assert.equal(session, null);
+  assert.equal(t.state.checkpointId, null);
+});
+
+
+test('cancelling a check cannot close an unrelated activity or discard its lock', async () => {
+  const f = assessmentStore(), t: any = thread();
+  const sessionId = '00000000-0000-4000-8000-000000000098';
+  f.rows.set(sessionId, { id: sessionId, material_id: f.material.id, mode: 'checkpoint', questions: [], answers: { q1: 0 }, completed_at: null, results: null });
+  const check = { id: `session:${sessionId}`, kind: 'session', sessionId, title: 'Check' };
+  const notes = { id: 'notes', kind: 'material', materialId: f.material.id, title: 'Notes' };
+  t.state = { ...t.state, checkpointId: sessionId, activeId: check.id, artifacts: [notes, check] };
+  await assert.rejects(workspace.execute(f.access, t, { name: 'cancel_checkpoint', args: { artifactId: notes.id } }, 'wrong-exit', () => {}), /not the current independent check/);
+  assert.equal(t.state.checkpointId, sessionId);
+  assert.equal(t.state.artifacts.length, 2);
+  await workspace.execute(f.access, t, { name: 'cancel_checkpoint', args: {} }, 'exit', () => {});
+  assert.equal(t.state.activeId, null);
+  assert.equal(t.state.checkpointId, null);
+  assert.deepEqual(t.state.artifacts, [notes]);
+  assert.deepEqual(f.rows.get(sessionId).answers, { q1: 0 });
+  assert.equal(f.rows.get(sessionId).completed_at, null);
+});

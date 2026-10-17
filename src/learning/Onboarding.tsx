@@ -1,9 +1,8 @@
 import { passPrice } from '../../supabase/functions/_shared/curve-billing';
 import { LearningPageFrame } from './LearningPageFrame';
-import { FreeStudyPreview } from './agent/FreeStudyPreview';
 import {
-  createContext,
-  useContext,
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -15,19 +14,12 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { usePayment, type CurvePlan } from "../hooks/usePayment";
 import "./learning.css";
-import { GuidedSemesterSetup } from "./agent/GuidedSemesterSetup";
-import type { OnboardingAnswers } from "../../supabase/functions/_shared/onboarding-profile";
 
-export type StudyPreferences = {
-  goal: string;
-  courses: string[];
-  exam_date: string;
-  daily_minutes: number;
-  completed: boolean;
-  onboarding_answers?: OnboardingAnswers;
-};
-const StudyPreferencesContext = createContext<StudyPreferences | null>(null);
-export const useStudyPreferences = () => useContext(StudyPreferencesContext);
+import { StudyPreferencesContext, type StudyPreferences } from './StudyPreferences';
+export { useStudyPreferences, type StudyPreferences } from './StudyPreferences';
+
+const FreeStudyPreview = lazy(() => import('./agent/FreeStudyPreview').then(m => ({ default: m.FreeStudyPreview })));
+const GuidedSemesterSetup = lazy(() => import('./agent/GuidedSemesterSetup').then(m => ({ default: m.GuidedSemesterSetup })));
 
 const empty: StudyPreferences = {
   goal: "exam",
@@ -56,7 +48,11 @@ export function OnboardingForm({
   onSave: (value: StudyPreferences) => Promise<void>;
   demo?: boolean;
 }) {
-  return <GuidedSemesterSetup initial={initial} onSave={onSave} demo={demo} />;
+  return (
+    <Suspense fallback={<div className="learn loading-state" role="status">Loading study setup…</div>}>
+      <GuidedSemesterSetup initial={initial} onSave={onSave} demo={demo} />
+    </Suspense>
+  );
 }
 
 export function PlanSelection({
@@ -379,7 +375,11 @@ export function LearningEntry({ children }: { children: ReactNode }) {
         checking={checking}
       />
     );
-  if (!state.paid) return <FreeStudyPreview preferences={state.preferences} />;
+  if (!state.paid) return (
+    <Suspense fallback={<div className="learn loading-state" role="status">Loading your study preview…</div>}>
+      <FreeStudyPreview preferences={state.preferences} />
+    </Suspense>
+  );
   return (
     <StudyPreferencesContext.Provider value={state.preferences}>
       {children}

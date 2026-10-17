@@ -1,3 +1,4 @@
+import type { InteractiveUI } from './interactive-ui.ts';
 import type { LearningMemory } from './learning-memory.ts';
 import { topicConfirmed, type TopicMetadata, type AssessmentArtifact, type ResearchArtifact, type ResearchStatus } from './learning-workflows.ts';
 /** Shared wire contracts. Artifact payloads contain references, never answer keys. */
@@ -11,7 +12,7 @@ export type WorkspaceArtifact =
   | ResearchArtifact
   | { id: string; kind: 'material'; title: string; materialId: string; page?: number }
   | { id: string; kind: 'session'; title: string; sessionId: string }
-  | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[] }
+  | { id: string; kind: 'explanation'; title: string; text: string; citations: Citation[]; ui?: InteractiveUI }
   | { id: string; kind: 'progress'; title: string };
 export interface WorkspaceState {
   learningMemory?: LearningMemory;
@@ -34,10 +35,10 @@ export type WorkspaceEvent =
   | { type: 'done'; snapshot: WorkspaceSnapshot; result?: unknown }
   | { type: 'error'; error: string };
 export const emptyWorkspace = (): WorkspaceState => ({ artifacts: [], activeId: null, plan: null, checkpointId: null });
-export const TOOL_NAMES = ['open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'find_materials', 'open_material', 'review_topics', 'build_plan', 'explain', 'start_practice', 'resume_session', 'read_question', 'select_answer', 'hint', 'submit_session', 'show_progress'] as const;
+export const TOOL_NAMES = ['open_assessment', 'open_exam_results', 'configure_assessment', 'begin_assessment', 'restart_assessment', 'complete_assessment', 'set_daily_research', 'review_artifact', 'close_artifact', 'cancel_checkpoint', 'find_materials', 'open_material', 'review_topics', 'build_plan', 'explain', 'start_practice', 'resume_session', 'read_question', 'select_answer', 'hint', 'submit_session', 'show_progress'] as const;
 export type ToolName = typeof TOOL_NAMES[number];
 export interface WorkspaceTool { name: ToolName; args: Record<string, unknown> }
-export const CHECKPOINT_TOOLS: readonly string[] = ['read_question', 'select_answer', 'submit_session', 'resume_session', 'restart_assessment'];
+export const CHECKPOINT_TOOLS: readonly string[] = ['read_question', 'select_answer', 'submit_session', 'resume_session', 'restart_assessment', 'close_artifact', 'cancel_checkpoint'];
 export function assertTool(name: unknown, checkpoint: boolean): asserts name is ToolName {
   if (typeof name !== 'string' || !TOOL_NAMES.includes(name as ToolName)) throw new Error('Unsupported workspace action.');
   if (checkpoint && !CHECKPOINT_TOOLS.includes(name)) throw new Error('Finish your independent check before opening notes or getting help.');

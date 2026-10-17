@@ -56,8 +56,9 @@ import {
   type StudySession,
 } from "./model";
 import { CurveMark, ProductPreview } from "./Preview";
-import { useStudyPreferences } from "./Onboarding";
+import { useStudyPreferences } from "./StudyPreferences";
 import { StudyDoodle } from "./StudyDoodle";
+import { SessionExitDialog } from "./SessionExitDialog";
 import "./learning.css";
 
 const navigation = [
@@ -240,7 +241,7 @@ export function LearningWorkspace() {
     } catch {
       /* Materials work independently of legacy course records. */
     }
-  }, [user]);
+  }, [user?.id]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -1118,14 +1119,14 @@ export function MaterialUpload({
   return (
     <Modal
       inline={inline}
-      title="Make room for something new."
+      title="Start with your course material."
       onClose={() => {
         if (!busy) onClose();
       }}
     >
       <p className="modal-description">
-        Your material sets the curriculum. Bring any course or complete
-        syllabus.
+        Bring a syllabus or a set of notes. Next, review the extracted topics
+        and choose where to begin.
       </p>
       <form onSubmit={(e) => void submit(e)}>
         {/* File Upload Zone */}
@@ -1402,8 +1403,8 @@ export function MaterialUpload({
         </label>
 
         <p className="field-note">
-          Saved privately to your account. Topics are fetched during upload and
-          ready for you to review.
+          Saved privately to your account. We’ll extract suggested topics for
+          you to review. Your upload stays here if extraction needs a retry.
         </p>
         {error && <ErrorNotice error={error} />}
         <button
@@ -1428,7 +1429,7 @@ export function MaterialUpload({
             </>
           ) : (
             <>
-              Add to my library <ArrowRight size={16} />
+              Save & review topics <ArrowRight size={16} />
             </>
           )}
         </button>
@@ -1497,6 +1498,7 @@ export function MaterialEditor({
             exam_on: exam || null,
             summary,
             topics: list,
+            confirmed_topics: list,
             confirmed: true,
           },
         })
@@ -1555,9 +1557,9 @@ export function MaterialEditor({
         {busy ? "Working…" : "Suggest topics from my material"}
       </button>
       <label>
-        What’s on your exam?
+        Review your course topics
         <span className="field-note">
-          Review, edit, or add up to 30 topics. One per line.
+          Check these suggestions against the source below. Edit or add up to 30 topics, one per line. Confirming topics does not mark them as mastered.
         </span>
         <textarea
           rows={7}
@@ -1617,7 +1619,7 @@ export function MaterialEditor({
             <Loader2 className="spin" size={16} />
           ) : (
             <>
-              Confirm & start <ArrowRight size={16} />
+              Confirm & start practice <ArrowRight size={16} />
             </>
           )}
         </button>
@@ -1669,6 +1671,7 @@ export function MaterialEditor({
 export function MaterialStudy() {
   const { sessionId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [session, setSession] = useState<StudySession | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [index, setIndex] = useState(0);
@@ -1679,6 +1682,7 @@ export function MaterialStudy() {
   const [reported, setReported] = useState(false);
   const [reportError, setReportError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showQuitModal, setShowQuitModal] = useState(false);
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -1763,6 +1767,22 @@ export function MaterialStudy() {
       setBusy(false);
     }
   }
+  async function quitToLibrary() {
+    if (!session) return;
+    setBusy(true);
+    setError("");
+    try {
+      if (Object.keys(answers).length > 0) {
+        await learningAction({ action: "save", session_id: session.id, answers });
+      }
+      setShowQuitModal(false);
+      navigate("/library");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save session.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function showHint() {
     if (!session) return;
     setBusy(true);
@@ -1809,12 +1829,28 @@ export function MaterialStudy() {
       ) : (
         <div className="study-layout">
           <div className="study-main">
-            <span className="pill lavender">
-              {session.mode === "checkpoint"
-                ? "INDEPENDENT CHECK"
-                : "GUIDED PRACTICE"}
-            </span>
-            <h1>{session.topic}</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+              <div>
+                <span className="pill lavender">
+                  {session.mode === "checkpoint"
+                    ? "INDEPENDENT CHECK"
+                    : "GUIDED PRACTICE"}
+                </span>
+                <h1>{session.topic}</h1>
+              </div>
+              {!session.results && (
+                <button
+                  type="button"
+                  className="learn-button subtle small"
+                  disabled={busy}
+                  onClick={() => setShowQuitModal(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 4 }}
+                >
+                  <LogOut size={14} />
+                  {session.mode === "checkpoint" ? "End check" : "Quit practice"}
+                </button>
+              )}
+            </div>
             <p className="study-subtitle">
               {session.mode === "checkpoint"
                 ? "A little space to think. No hints in this check."
@@ -1960,6 +1996,15 @@ export function MaterialStudy() {
                   ) : (
                     <span />
                   )}
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() => setShowQuitModal(true)}
+                    style={{ fontSize: 13, color: "var(--learn-muted)" }}
+                  >
+                    {session.mode === "checkpoint" ? "End check early" : "Quit practice"}
+                  </button>
                   {session.mode === "practice" && (
                     <button
                       className="text-button"
@@ -2017,6 +2062,8 @@ export function MaterialStudy() {
           </aside>
         </div>
       )}
+      {showQuitModal && session && <SessionExitDialog answered={Object.keys(answers).filter(id => answers[id] !== undefined).length} total={session.questions.length} busy={busy} error={error} onClose={() => setShowQuitModal(false)} onSaveExit={() => void quitToLibrary()} />}
+
     </WorkspaceShell>
   );
 }

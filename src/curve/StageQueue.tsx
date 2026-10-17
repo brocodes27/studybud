@@ -1,168 +1,228 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Grid3x3, Loader2, Shuffle } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  Clock3,
+  Grid3x3,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Shuffle,
+  Sparkles,
+} from "lucide-react";
 
-import { useAuth } from '../contexts/AuthContext';
-import { labelFor } from '../lib/perirO';
-import type { DayPlan, PlannedAction } from '../lib/studyPlanner';
-import { trackPrescribed } from '../lib/stageTelemetry';
-import { fetchStageSnapshot, localToday } from './stageData';
-import { CurveButton, Eyebrow, Panel } from './ui';
+import { useAuth } from "../contexts/AuthContext";
+import type { StageAction } from "../lib/perirO";
+import type { DayPlan, PlannedAction } from "../lib/studyPlanner";
+import { trackPrescribed } from "../lib/stageTelemetry";
+import { fetchStageSnapshot, localToday } from "./stageData";
+import "./stage-flow.css";
 
-/**
- * Today's queue (PRD v2 §7.1).
- *
- * At most three actions plus one interleaved set, drawn from every subject the
- * student is carrying. The cap is the feature: a student with six courses and
- * thirty live topics does not need a list, they need to know the next three
- * things and why those three.
- *
- * Every card names its stage and says why now. A prescription without a reason
- * is just a chore, and a chore is what gets skipped.
- */
-export function StageQueue() {
+export const STUDENT_STAGE_LABEL: Record<StageAction, string> = {
+  prime: "Get ready",
+  encode: "Make sense of it",
+  reference: "Save the essentials",
+  retrieve: "Recall without notes",
+  interleave: "Mix it up",
+  overlearn: "Build exam fluency",
+};
+
+/** A bounded daily plan, backed by topic evidence rather than dashboard activity. */
+export function StageQueue({
+  hideWhenEmpty = false,
+}: {
+  hideWhenEmpty?: boolean;
+}) {
   const { user } = useAuth();
   const navigate = useNavigate();
-
   const [plan, setPlan] = useState<DayPlan | null>(null);
+  const [hasTopics, setHasTopics] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
     if (!user?.id) {
       setLoading(false);
       return;
     }
-
-    let cancelled = false;
     fetchStageSnapshot(user.id, localToday())
       .then((snapshot) => {
         if (cancelled) return;
+        if ("error" in snapshot && snapshot.error)
+          throw new Error(String(snapshot.error));
         setPlan(snapshot.plan);
-        trackPrescribed(snapshot.plan.actions, snapshot.plan.interleave !== null);
+        setHasTopics(snapshot.topics.length > 0);
+        trackPrescribed(
+          snapshot.plan.actions,
+          snapshot.plan.interleave !== null,
+        );
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Your study plan could not load.",
+          );
       })
       .finally(() => !cancelled && setLoading(false));
-
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, attempt]);
 
-  if (loading) {
-    return (
-      <Panel className="mt-4 flex items-center gap-2 text-sm text-curve-muted">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Working out what today needs
-      </Panel>
-    );
-  }
+  const nothingDue = plan?.actions.length === 0;
+  const availableMinutes =
+    plan?.actions.reduce((sum, action) => sum + action.minutes, 0) ?? 0;
 
-  if (!plan) return null;
-
-  const nothingToDo = plan.actions.length === 0 && plan.interleave === null;
+  if (hideWhenEmpty && !loading && !error && !hasTopics) return null;
 
   return (
-    <Panel className="mt-4">
-      <div className="flex items-center justify-between gap-4">
-        <Eyebrow>Today</Eyebrow>
-        {plan.totalMinutes > 0 ? (
-          <span className="text-xs text-curve-faint">about {plan.totalMinutes} minutes</span>
+    <section className="stage-queue" aria-labelledby="daily-plan-heading">
+      <div className="stage-queue-heading">
+        <div>
+          <p className="stage-kicker">
+            <Sparkles size={14} aria-hidden="true" /> A little focus, every day
+          </p>
+          <h2 id="daily-plan-heading">Your next steps</h2>
+        </div>
+        {!loading && !error && hasTopics ? (
+          <button
+            type="button"
+            className="stage-text-button"
+            onClick={() => navigate("/map")}
+          >
+            Topic map <Grid3x3 size={15} aria-hidden="true" />
+          </button>
         ) : null}
       </div>
-
-      {nothingToDo ? (
-        <div className="mt-3">
-          <p className="text-sm text-curve-muted">
-            Nothing is due and nothing is waiting on a stage. That is the system working, not a gap
-            to fill — rest counts.
+      {loading ? (
+        <p className="stage-queue-message" role="status">
+          <Loader2 size={17} className="animate-spin" /> Finding the right place
+          to start…
+        </p>
+      ) : error ? (
+        <div className="stage-empty" role="alert">
+          <h3>Let’s try that again</h3>
+          <p>{error}</p>
+          <button
+            type="button"
+            className="stage-secondary"
+            onClick={() => setAttempt((value) => value + 1)}
+          >
+            <RotateCcw size={15} /> Retry study plan
+          </button>
+        </div>
+      ) : !hasTopics ? (
+        <div className="stage-empty">
+          <span className="stage-empty-icon">
+            <Plus size={22} aria-hidden="true" />
+          </span>
+          <h3>Your materials. A clearer way forward.</h3>
+          <p>
+            Add a course and syllabus. Review your topics, then we’ll help you
+            choose what to study first.
           </p>
-          <CurveButton ghost className="mt-4 !px-4 !py-2 !text-sm" onClick={() => navigate('/map')}>
-            <Grid3x3 className="h-4 w-4" strokeWidth={2.2} />
-            See where everything stands
-          </CurveButton>
+          <button
+            type="button"
+            className="stage-primary"
+            onClick={() => navigate("/add-course")}
+          >
+            Add your first course <ArrowRight size={16} />
+          </button>
+        </div>
+      ) : nothingDue ? (
+        <div className="stage-empty">
+          <h3>You have room to breathe.</h3>
+          <p>
+            No individual topic sessions are due right now. Explore your map to
+            see what you’ve covered and what comes next.
+          </p>
+          <button
+            type="button"
+            className="stage-secondary"
+            onClick={() => navigate("/map")}
+          >
+            Explore your topics <ArrowRight size={16} />
+          </button>
         </div>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {plan.actions.map((action) => (
-            <li key={`${action.topicId}-${action.action}`}>
-              <ActionCard
-                action={action}
-                onStart={() =>
-                  navigate(
-                    `/stage/${action.enrollmentId}/${action.topicId}?action=${action.action}`,
-                  )
-                }
-              />
-            </li>
-          ))}
-
-          {plan.interleave ? (
-            <li>
-              <InterleaveCard
-                subjects={plan.interleave.subjects}
-                why={plan.interleave.why}
-                minutes={plan.interleave.minutes}
-              />
-            </li>
-          ) : null}
-        </ul>
+        <>
+          <p className="stage-plan-caption">
+            <Clock3 size={14} aria-hidden="true" /> About {availableMinutes}{" "}
+            minutes · A small plan across your courses
+          </p>
+          <ol className="stage-action-list">
+            {plan?.actions.map((action, index) => (
+              <li key={`${action.topicId}-${action.action}`}>
+                <ActionCard
+                  action={action}
+                  index={index}
+                  onStart={() =>
+                    navigate(
+                      `/stage/${action.enrollmentId}/${action.topicId}?action=${action.action}`,
+                    )
+                  }
+                />
+              </li>
+            ))}
+          </ol>
+        </>
       )}
-    </Panel>
+      {!loading && !error && plan?.interleave ? (
+        <div className="stage-coming-next">
+          <Shuffle size={17} aria-hidden="true" />
+          <div>
+            <strong>Mix it up · {plan.interleave.subjects.join(" + ")}</strong>
+            <p>{plan.interleave.why}</p>
+            <span>
+              Mixed practice is coming soon · planned for{" "}
+              {plan.interleave.minutes} min
+            </span>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
-function ActionCard({ action, onStart }: { action: PlannedAction; onStart: () => void }) {
+function ActionCard({
+  action,
+  index,
+  onStart,
+}: {
+  action: PlannedAction;
+  index: number;
+  onStart: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onStart}
-      className="group flex w-full items-center justify-between gap-4 rounded-xl border border-white/10 px-4 py-3 text-left transition hover:border-white/25 hover:bg-white/[0.03]"
+      className={`stage-action-card ${index === 0 ? "stage-action-first" : ""}`}
     >
-      <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-curve-violet-soft">
-          {labelFor(action.action)} · {action.subject}
-        </p>
-        <p className="mt-0.5 truncate text-sm font-semibold text-white">{action.title}</p>
-        <p className="mt-0.5 text-xs text-curve-muted">{action.why}</p>
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="text-xs text-curve-faint">{action.minutes} min</span>
-        <ArrowRight
-          className="h-4 w-4 text-curve-faint transition group-hover:text-white"
-          strokeWidth={2.2}
-        />
-      </div>
+      <span className="stage-action-index" aria-hidden="true">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+      <span className="stage-action-copy">
+        <span className="stage-action-meta">
+          {action.subject} <span>·</span> {STUDENT_STAGE_LABEL[action.action]}
+        </span>
+        <strong>{action.title}</strong>
+        <span className="stage-action-reason">{action.why}</span>
+        <span className="stage-action-mobile-time">{action.minutes} min</span>
+      </span>
+      <span className="stage-action-go">
+        <span>{action.minutes} min</span>
+        <span className="stage-action-arrow">
+          <ArrowRight size={18} aria-hidden="true" />
+        </span>
+      </span>
     </button>
-  );
-}
-
-/**
- * The interleaved set is deliberately not startable yet — item selection lands
- * with P2.5. Showing it now, greyed and explained, is honest about what the
- * plan wants; a button that does nothing would not be.
- */
-function InterleaveCard({
-  subjects,
-  why,
-  minutes,
-}: {
-  subjects: string[];
-  why: string;
-  minutes: number;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-white/10 px-4 py-3">
-      <div className="flex min-w-0 items-start gap-3">
-        <Shuffle className="mt-0.5 h-4 w-4 shrink-0 text-curve-mint" />
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-curve-mint">
-            Interleave · {subjects.join(' + ')}
-          </p>
-          <p className="mt-0.5 text-sm text-curve-muted">{why}</p>
-          <p className="mt-0.5 text-xs text-curve-faint">Mixed sets arrive in the next release.</p>
-        </div>
-      </div>
-      <span className="shrink-0 text-xs text-curve-faint">{minutes} min</span>
-    </div>
   );
 }
 

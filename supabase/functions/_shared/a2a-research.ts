@@ -1,7 +1,8 @@
 import { safeSourceUrl } from './learning-workflows.ts';
+import { INTERACTIVE_UI_GUIDE, parseInteractiveUI, type InteractiveUI } from './interactive-ui.ts';
 
 type ObjectValue = Record<string, any>;
-export type ResearchBrief = {text: string; sources: {title: string; url: string}[]};
+export type ResearchBrief = {text: string; sources: {title: string; url: string}[]; ui?: InteractiveUI};
 
 /** Narrow, server-configured A2A 1.0 JSON-RPC client. Never accepts a student-supplied endpoint. */
 export async function researchViaA2A(
@@ -47,7 +48,7 @@ export async function researchViaA2A(
   };
   const result = await rpc('SendMessage', {
     message:{messageId:crypto.randomUUID(),role:'ROLE_USER',parts:[{text:JSON.stringify({
-      task:'Research this study topic using reliable sources. Return only JSON {text:string,sources:[{title:string,url:string}]}, with a concise explanation, a supported worked example and a practice question. Cite numbered sources inline. Do not invent sources.',
+      task:`Research this study topic using reliable sources. Return only JSON {text:string,sources:[{title:string,url:string}],ui:{html:string,css:string,js:string}}, with a concise explanation, a supported worked example and a practice question. Cite numbered sources inline. Do not invent sources. ${INTERACTIVE_UI_GUIDE} Always include an interactive activity for this brief; use a selectable walkthrough if a simulation is not supported by the sources.`,
       course:input.course.slice(0,150),topic:input.topic.slice(0,200),
     })}]},configuration:{acceptedOutputModes:['application/json'],historyLength:0,returnImmediately:false},
   });
@@ -72,5 +73,6 @@ export async function researchViaA2A(
     if (!url || typeof s.title !== 'string' || !s.title.trim() || s.title.length>200) throw new Error('Invalid A2A source.');
     return {title:s.title,url};
   });
-  return {text:brief.text,sources};
+  const ui = parseInteractiveUI(brief.ui);
+  return {text:brief.text,sources,...(ui ? {ui} : {})};
 }

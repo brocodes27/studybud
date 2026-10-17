@@ -5,9 +5,15 @@ import {
   normalizeTopics,
   recommendedMaterials,
   weeklyActivity,
+  restoreSessionAnswers,
   type Material,
   type StudySession,
 } from "./model";
+const draftSession: StudySession = { id: 'draft', material_id: 'notes', mode: 'checkpoint', topic: 'Limits', created_at: '2026-10-18', hints: [], results: null, answers: { q1: 0 }, completed_at: null, questions: ['q1', 'q2'].map(id => ({ id, topic: 'Limits', question: 'Sample question', page: 1, options: ['A', 'B', 'C', 'D'] })) };
+assert.deepEqual(restoreSessionAnswers(draftSession, { q1: 2, q2: 1, unrelated: 3 }), { q1: 2, q2: 1 });
+assert.deepEqual(restoreSessionAnswers(draftSession, { q1: -1, q2: '1' }), { q1: 0 });
+assert.deepEqual(restoreSessionAnswers({ ...draftSession, completed_at: '2026-10-18' }, { q1: 2 }), { q1: 0 });
+assert.deepEqual(restoreSessionAnswers(draftSession, null), { q1: 0 });
 assert.deepEqual(normalizeTopics("Limits, Limits\nDerivatives\n "), [
   "Limits",
   "Derivatives",

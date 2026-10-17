@@ -7,6 +7,9 @@ import type { WorkspaceTool } from './contracts';
 import { SessionView } from './WorkspaceViews';
 import ReactMarkdown from 'react-markdown';
 import { useAssessmentDraft, type AssessmentDraftCache } from './useAssessmentDraft';
+import { InteractiveAnswer } from './InteractiveAnswer';
+import { parseInteractiveUI } from '../../../supabase/functions/_shared/interactive-ui';
+import './research-brief.css';
 
 export function AssessmentView({artifact,materials,busy,onAction,revision,drafts}: {
   artifact: AssessmentArtifact; materials:Material[]; busy:boolean; revision?:string; drafts?:AssessmentDraftCache;
@@ -42,7 +45,18 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
   return <section className="workflow-view" aria-label={assessmentLabel(artifact)}>
     <header className="workflow-heading">
       <div><span className="workflow-eyebrow"><ClipboardCheck size={14}/> {assessmentLabel(artifact)}</span><h2>{artifact.status === 'ready' ? 'Your revision plan' : artifact.status === 'assessing' ? 'Check your understanding' : 'Find your starting point'}</h2>{artifact.status === 'setup' && <p>{artifact.goal}</p>}</div>
-      {artifact.status !== 'setup' && <details className="assessment-options"><summary>Options</summary><button className="learn-button subtle small" disabled={busy} onClick={()=>void action({name:'restart_assessment',args:{artifactId:artifact.id}})}>Restart with fresh questions</button></details>}
+      <div className="workflow-heading-actions">
+        {artifact.status !== 'assessing' && <button
+          type="button"
+          className="learn-button subtle small workflow-quit-btn"
+          disabled={busy}
+          onClick={() => void action({name:'close_artifact',args:{artifactId:artifact.id}})}
+          title="Quit assessment and return to study space"
+        >
+          Quit assessment
+        </button>}
+        {artifact.status !== 'setup' && <details className="assessment-options"><summary>Options</summary><button className="learn-button subtle small" disabled={busy} onClick={()=>void action({name:'restart_assessment',args:{artifactId:artifact.id}})}>Restart with fresh questions</button></details>}
+      </div>
     </header>
     {artifact.status !== 'ready' && <ol className="workflow-stages" aria-label="Assessment progress"><li className={artifact.status === 'setup' ? 'current' : ''}>1. Choose topics</li><li className={artifact.status === 'assessing' ? 'current' : ''}>2. Knowledge check</li><li>3. Revision plan</li></ol>}
     {error && <p className="learn-error" role="alert">{error}</p>}
@@ -70,7 +84,7 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
       </fieldset>
     </form> : artifact.status === 'assessing' ? <>
       <p className="workflow-progress">Topic {artifact.sessionIds.length} of {artifact.targets.length}. Your answers will update this plan and the conversation.</p>
-      <SessionView revision={revision} key={artifact.sessionIds[artifact.sessionIds.length-1]} sessionId={artifact.sessionIds[artifact.sessionIds.length-1]} onCompleted={() => {void action({name:'complete_assessment',args:{artifactId:artifact.id}});}}/>
+      <SessionView revision={revision} key={artifact.sessionIds[artifact.sessionIds.length-1]} sessionId={artifact.sessionIds[artifact.sessionIds.length-1]} onCompleted={() => {void action({name:'complete_assessment',args:{artifactId:artifact.id}});}} onQuit={() => onAction({name:'close_artifact',args:{artifactId:artifact.id}})}/>
       <button className="learn-button subtle" disabled={busy} onClick={()=>void action({name:'complete_assessment',args:{artifactId:artifact.id}})}>{busy ? 'Preparing the next step…' : 'Continue after submitting answers'}</button>
     </> : <>
       <p className="workflow-plan-meta">{artifact.minutes} minutes · {artifact.steps?.length || 0} topics · Based on your in-app diagnostic</p>
@@ -84,10 +98,21 @@ export function AssessmentView({artifact,materials,busy,onAction,revision,drafts
   </section>;
 }
 
-export function ResearchView({artifact,onNext,busy,reviewed}: {artifact:ResearchArtifact;onNext:()=>void;busy:boolean;reviewed:boolean}) {
-  return <article className="workflow-view"><header className="workflow-heading"><span className="pill mint">PREPARED FOR YOU · {new Date(artifact.createdAt).toLocaleDateString()}</span><h2>{artifact.title}</h2><p>Research selected from your syllabus and recent knowledge checks.</p></header>
-    <div className="workflow-research"><ReactMarkdown>{artifact.text}</ReactMarkdown></div>
-    <aside className="workflow-sources"><h3>Read the sources</h3>{artifact.sources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">[{i+1}] {s.title} ↗</a>)}</aside>
-    <button className="learn-button dark" disabled={busy} onClick={onNext}>{reviewed ? 'Continue to next unread brief' : 'Mark reviewed & continue'}<ArrowRight size={16}/></button>
+export function ResearchView({artifact,onNext,onClose,busy,reviewed}: {artifact:ResearchArtifact;onNext:()=>void;onClose?:()=>void;busy:boolean;reviewed:boolean}) {
+  const ui = parseInteractiveUI(artifact.ui);
+  const [view, setView] = useState<'explore' | 'report' | 'sources'>(() => ui ? 'explore' : 'report');
+  return <article className="workflow-view research-brief"><header className="workflow-heading"><div><span className="workflow-eyebrow">DAILY RESEARCH · {new Date(artifact.createdAt).toLocaleDateString()}</span><h2>{artifact.title}</h2><p>Selected from your syllabus and recent knowledge checks.</p></div><span className={`brief-review-status ${reviewed ? 'reviewed' : ''}`}>{reviewed ? 'Reviewed' : 'Unread brief'}</span></header>
+    <nav className="brief-view-switcher" aria-label="Brief sections">
+      {ui && <button type="button" aria-pressed={view === 'explore'} onClick={() => setView('explore')}>Explore</button>}
+      <button type="button" aria-pressed={view === 'report'} onClick={() => setView('report')}>Full report</button>
+      <button type="button" aria-pressed={view === 'sources'} onClick={() => setView('sources')}>Sources <span>{artifact.sources.length}</span></button>
+    </nav>
+    {view === 'explore' && ui && <div className="brief-explorer"><p>Try the controls, work through the ideas, then check the full report.</p><InteractiveAnswer key={artifact.id} ui={ui} title={artifact.title}/></div>}
+    {(view === 'report' || (view === 'explore' && !ui)) && <div className="workflow-research"><ReactMarkdown>{artifact.text}</ReactMarkdown></div>}
+    {view === 'sources' && <aside className="workflow-sources"><h3>Read the sources</h3><p>Source numbers match the citations in your report.</p>{artifact.sources.length ? artifact.sources.map((s,i)=><a key={s.url} href={s.url} target="_blank" rel="noreferrer">[{i+1}] {s.title} ↗</a>) : <p>No sources are attached to this saved brief.</p>}</aside>}
+    <div className="workflow-actions">
+      <button className="learn-button dark" disabled={busy} onClick={onNext}>{reviewed ? 'Continue to next unread brief' : 'Mark reviewed & continue'}<ArrowRight size={16}/></button>
+      {onClose && <button type="button" className="learn-button subtle" disabled={busy} onClick={onClose}>Close brief</button>}
+    </div>
   </article>;
 }

@@ -15,6 +15,10 @@ export function semesterExamTimeline(plan: SemesterPlan, now = new Date()) {
 
 /** Rebuild from the student's confirmed subjects, exam scopes, and rest preferences. */
 export function buildSemesterSchedule(plan: SemesterPlan, dailyMinutes: number, now = new Date()): { semesterPlan: SemesterPlan; studyPlan: StudyPlan } {
+  // Discard stale exam scope after a student removes topics or changes subjects.
+  plan = { ...plan, exams: plan.exams.filter(exam => plan.courses.some(c => c.course === exam.course)).map(exam => ({
+    ...exam, topics: exam.topics.filter(topic => plan.courses.find(c => c.course === exam.course)!.taughtTopics.includes(topic)),
+  })) };
   const { upcoming } = semesterExamTimeline(plan, now);
   const allocations = new Map<string, number>();
   const topicOffsets = new Map<string, number>();

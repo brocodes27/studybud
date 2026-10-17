@@ -49,7 +49,13 @@ serve(async req => {
           if(body.operation==='activate'){
             const active=thread.state.artifacts.find(x=>x.id===body.artifactId);if(!active && body.artifactId !== null)throw new Error('This tab is unavailable.');
             const checkpoint=await checkpointFor(a,thread);
-            if(checkpoint && (!active || !((active.kind==='session' && active.sessionId===checkpoint.id) || (active.kind==='assessment' && active.sessionIds.includes(checkpoint.id)))))throw new Error('Finish your independent check before switching activities.');
+            if(checkpoint && (!active || !((active.kind==='session' && active.sessionId===checkpoint.id) || (active.kind==='assessment' && active.sessionIds.includes(checkpoint.id))))) {
+              if (body.artifactId === null || body.clearCheckpoint) {
+                await saveState(a, thread, { ...thread.state, checkpointId: null, activeId: active?.id || null });
+                return;
+              }
+              throw new Error('Finish your independent check before switching activities.');
+            }
             await saveState(a,thread,{...thread.state,activeId:active?.id || null});
           }else if(body.operation==='transcript'){
             if(!['user','assistant'].includes(body.role))throw new Error('Invalid transcript.');
@@ -75,7 +81,15 @@ serve(async req => {
               // No generative tutoring during checks, even if a prompt asks to ignore the rules.
               const match=text.trim().match(/^(?:choose |answer |option )?([a-d])[.!]?$/i);
               const q=checkpoint.questions.find((q:{id:string})=>checkpoint.answers[q.id]===undefined)||checkpoint.questions[0];
-              if (/^(?:restart|restart (?:the |my )?assessment|start over)[.!]?$/i.test(text.trim())) {
+              if (/^(?:please\s+)?(?:(?:i want to|let me|can i)\s+)?(?:quit|exit|leave|stop|cancel|end)(?:\s+(?:the|my|this))?(?:\s+(?:independent\s+)?(?:check|activity|session|practice|test|assessment))?(?:\s+please)?[.!?]*$/i.test(text.trim())) {
+                const sessionArt = thread.state.artifacts.find(a => (a.kind === 'session' && a.sessionId === checkpoint.id) || (a.kind === 'assessment' && a.sessionIds.includes(checkpoint.id)));
+                if (sessionArt) {
+                  await execute(a, thread, { name: 'close_artifact', args: { artifactId: sessionArt.id } }, `${requestId}:0`, emit);
+                } else {
+                  await saveState(a, thread, { ...thread.state, checkpointId: null, activeId: null });
+                }
+                reply = 'I have ended the check and returned you to Today. Your saved draft remains available; this check was not graded.';
+              } else if (/^(?:restart|restart (?:the |my )?assessment|start over)[.!]?$/i.test(text.trim())) {
                 const artifact=thread.state.artifacts.find(a => a.kind === 'assessment' && a.sessionIds.includes(checkpoint.id));
                 if (!artifact) throw new Error('This check is not part of an assessment.');
                 result=await execute(a,thread,{name:'restart_assessment',args:{artifactId:artifact.id}},`${requestId}:0`,emit);

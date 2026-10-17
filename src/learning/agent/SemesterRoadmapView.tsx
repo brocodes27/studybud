@@ -3,6 +3,7 @@ import { buildSemesterSchedule, localDate, semesterExamTimeline } from './semest
 import type { Material, StudySession } from '../model';
 import { dailyFocus } from './dailyFocus';
 import { ArrowRight, Edit3 } from 'lucide-react';
+import { StudyDoodle } from '../StudyDoodle';
 import type { SemesterPlan, StudyPlanStep } from './contracts';
 
 interface SemesterRoadmapViewProps {
@@ -64,6 +65,7 @@ export function SemesterRoadmapView({
 
   return (
     <section className="semester-roadmap-view" aria-label="Active Semester Study Plan">
+      {plan.semester && <p className="journey-small">{plan.semester} · {plan.stageLabel} · Confirmed syllabus topics</p>}
       {/* Top Banner Card */}
       <div className="roadmap-hero-card">
         <div className="roadmap-hero-header">
@@ -83,6 +85,7 @@ export function SemesterRoadmapView({
         </div>
 
         <div className="daily-focus-story">
+          <StudyDoodle kind="orbit" className="flow-focus-doodle" />
           <p className="daily-focus-eyebrow">{nextStudyDay ? `${activeCourse} · ${defaultStep.minutes} min${today?.type === 'buffer' ? ' · Light review' : ''}` : today?.type === 'exam' ? 'Exam day' : 'Rest day'}</p>
           <h2>{nextStudyDay ? context.completed ? 'You showed up. Now let it settle.' : context.pending ? `Pick up ${activeTopic}.` : `Let’s work on ${activeTopic}.` : today?.type === 'exam' ? 'You’ve got this.' : 'A little space to recharge.'}</h2>
           <p className="daily-focus-reason">{focus?.reason || (today?.type === 'exam' ? 'Your revision stays saved. Come back after your exam to review how it went.' : 'No study session scheduled today. Your next study day is already in the plan.')}</p>

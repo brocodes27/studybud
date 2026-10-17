@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-18",
+  "scope": "Selected REA metadata for local fixture rendering. Not a complete evidence bundle. Authenticated persistence was covered by mocked regression tests, not a live account.",
+  "captures": [
+    {
+      "evidence_id": "ev_2ac4088b66b7be77ea03ec4d3109ec970f22a122b6997cc2fbee325fb84b98b2",
+      "authority": "controlled-replay",
+      "confidence": "observed",
+      "url": "http://127.0.0.1:5173/tests/learning-flow.html",
+      "viewport": {
+        "width": 1440,
+        "height": 1050,
+        "device_scale_factor": 1
+      },
+      "steps": [
+        {
+          "step_id": "scenario_start",
+          "status": "completed",
+          "error": null
+        },
+        {
+          "step_id": "render-current-workspace",
+          "status": "completed",
+          "error": null
+        }
+      ],
+      "events": {
+        "retained": 0,
+        "dropped": 0,
+        "items": []
+      },
+      "limitations": [
+        "Artifact identity is unavailable for this observation.",
+        "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+        "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+        "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+        "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+        "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+        "Storage values are hashed only after declared-secret redaction.",
+        "Browser host platform and architecture were not observed."
+      ]
+    }
+  ]
+}

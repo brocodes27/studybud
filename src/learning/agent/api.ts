@@ -145,8 +145,12 @@ export async function executeWorkspaceTool(
   );
 }
 
-export async function activateWorkspaceArtifact(artifactId: string | null, onEvent: (event: WorkspaceEvent) => void = () => {}) {
-  return streamAgentRequest({operation:'activate',requestId:crypto.randomUUID(),artifactId},onEvent);
+export async function activateWorkspaceArtifact(
+  artifactId: string | null,
+  onEvent: (event: WorkspaceEvent) => void = () => {},
+  clearCheckpoint = artifactId === null
+) {
+  return streamAgentRequest({ operation: 'activate', requestId: crypto.randomUUID(), artifactId, clearCheckpoint }, onEvent);
 }
 
 let transcriptQueue: Promise<unknown> = Promise.resolve();

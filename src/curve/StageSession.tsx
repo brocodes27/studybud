@@ -1,20 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Loader2, Lock, Plus, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Check, Loader2, Lock, Plus, X } from "lucide-react";
 
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { STAGE_EVENTS, trackStage } from '../lib/stageTelemetry';
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
+import { STAGE_EVENTS, trackStage } from "../lib/stageTelemetry";
 import {
   STAGE_GATES,
   STAGE_MINUTES,
-  labelFor,
   nextAction,
   type StageAction,
   type TopicStage,
-} from '../lib/perirO';
-import { KnowledgeTracingService } from '../lib/knowledgeTracing';
-import type { PlannerTopic } from '../lib/studyPlanner';
+} from "../lib/perirO";
+import { KnowledgeTracingService } from "../lib/knowledgeTracing";
+import type { PlannerTopic } from "../lib/studyPlanner";
 import {
   fetchReferenceCards,
   fetchStageSnapshot,
@@ -23,13 +22,13 @@ import {
   recordStageOutcome,
   saveReferenceCards,
   type DraftCard,
-} from './stageData';
+} from "./stageData";
 import {
   gradeEncoding,
   probeEncoding,
   type EncodingArtifactKind,
   type EncodingRubric,
-} from './ai';
+} from "./ai";
 import {
   Banner,
   CurveButton,
@@ -40,8 +39,25 @@ import {
   Select,
   TextArea,
   TextInput,
-} from './ui';
-import { StudySession } from './StudySession';
+} from "./ui";
+import { StudySession } from "./StudySession";
+import { STUDENT_STAGE_LABEL } from "./StageQueue";
+import "./stage-flow.css";
+
+const STAGE_PURPOSE: Record<StageAction, string> = {
+  prime:
+    "Start with the bigger picture. Write the questions you want your next class to answer.",
+  encode:
+    "Make the material your own. Explain it, connect it, and put your understanding into words.",
+  reference:
+    "Keep a small, useful set of reference cards to return to when you need them.",
+  retrieve:
+    "Find out what sticks. Answer from memory, then use the feedback to guide your next review.",
+  interleave:
+    "Practice switching between topics so you can choose the right approach on your own.",
+  overlearn:
+    "Build accuracy and fluency with focused practice before your exam.",
+};
 
 /**
  * The session shell for all six PERIR-O stages (PRD v2 §4).
@@ -58,12 +74,12 @@ import { StudySession } from './StudySession';
  */
 
 const VALID_ACTIONS: StageAction[] = [
-  'prime',
-  'encode',
-  'reference',
-  'retrieve',
-  'interleave',
-  'overlearn',
+  "prime",
+  "encode",
+  "reference",
+  "retrieve",
+  "interleave",
+  "overlearn",
 ];
 
 interface SessionContext {
@@ -74,44 +90,75 @@ interface SessionContext {
 }
 
 export function StageSession() {
-  const { enrollmentId, topicId } = useParams<{ enrollmentId: string; topicId: string }>();
+  const { enrollmentId, topicId } = useParams<{
+    enrollmentId: string;
+    topicId: string;
+  }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const requested = searchParams.get('action') as StageAction | null;
-  const overridden = searchParams.get('override') === '1';
+  const requested = searchParams.get("action") as StageAction | null;
+  const overridden = searchParams.get("override") === "1";
 
   const [context, setContext] = useState<SessionContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [completed, setCompleted] = useState<boolean | null>(null);
 
   const today = localToday();
 
   useEffect(() => {
-    if (!user?.id || !topicId) return;
+    if (!user?.id || !topicId) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setCompleted(null);
+    setContext(null);
 
     fetchStageSnapshot(user.id, today)
       .then((snapshot) => {
         if (cancelled) return;
-        const topic = snapshot.topics.find((candidate) => candidate.topicId === topicId) ?? null;
-        if (!topic) {
-          setError('That topic is not on any of your current syllabi.');
+        if (snapshot.error) {
+          setError(snapshot.error);
           return;
         }
-        const planned = snapshot.plan.actions.find((action) => action.topicId === topicId);
-        setContext({ topic, prescribed: planned?.action ?? null, allTopics: snapshot.topics });
+        const topic =
+          snapshot.topics.find(
+            (candidate) =>
+              candidate.topicId === topicId &&
+              candidate.enrollmentId === enrollmentId,
+          ) ?? null;
+        if (!topic) {
+          setError("That topic is not on any of your current syllabi.");
+          return;
+        }
+        const planned = snapshot.plan.actions.find(
+          (action) => action.topicId === topicId,
+        );
+        setContext({
+          topic,
+          prescribed: planned?.action ?? null,
+          allTopics: snapshot.topics,
+        });
       })
-      .catch((cause: unknown) =>
-        setError(cause instanceof Error ? cause.message : 'Could not load this topic.'),
-      )
+      .catch((cause: unknown) => {
+        if (!cancelled)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Could not load this topic.",
+          );
+      })
       .finally(() => !cancelled && setLoading(false));
 
     return () => {
       cancelled = true;
     };
-  }, [user?.id, topicId, today]);
+  }, [user?.id, topicId, enrollmentId, today]);
 
   const needed = useMemo(() => {
     if (!context) return null;
@@ -126,7 +173,8 @@ export function StageSession() {
   const action: StageAction | null =
     requested && VALID_ACTIONS.includes(requested) ? requested : needed;
 
-  const blocked = needed !== null && action !== null && action !== needed && !overridden;
+  const blocked =
+    needed !== null && action !== null && action !== needed && !overridden;
 
   useEffect(() => {
     if (!context || !action) return;
@@ -142,7 +190,7 @@ export function StageSession() {
 
   if (loading) {
     return (
-      <Frame onBack={() => navigate('/')}>
+      <Frame onBack={() => navigate("/")}>
         <Panel className="mt-6 flex items-center gap-2 text-sm text-curve-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading this topic
@@ -153,9 +201,55 @@ export function StageSession() {
 
   if (error || !context || !action) {
     return (
-      <Frame onBack={() => navigate('/')}>
+      <Frame onBack={() => navigate("/")}>
         <div className="mt-6">
-          <Banner tone="error">{error ?? 'Nothing to do on this topic right now.'}</Banner>
+          <Banner tone="error">
+            {error ?? "Nothing to do on this topic right now."}
+          </Banner>
+        </div>
+      </Frame>
+    );
+  }
+
+  if (completed !== null) {
+    return (
+      <Frame onBack={() => navigate("/")}>
+        <Eyebrow>
+          {context.topic.subject} · {STUDENT_STAGE_LABEL[action]}
+        </Eyebrow>
+        <div className="stage-session-result" role="status">
+          <Check className="h-7 w-7 text-[#54713f]" />
+          <h2>
+            {completed
+              ? "A little more understood."
+              : "Make room for your next review."}
+          </h2>
+          <p>
+            {completed
+              ? `Your work on ${context.topic.title} has been saved, and this stage is complete.`
+              : `You’ve reviewed the feedback for ${context.topic.title}. Your topic map shows the latest recorded progress.`}
+          </p>
+          <p className="mt-3">
+            {completed
+              ? "Your next step will follow the evidence from your learning. See your topic map or return to today’s plan."
+              : "Progress follows what you demonstrate. Come back to the suggested activity when you’re ready."}
+          </p>
+          <div className="stage-session-result-actions">
+            <button
+              type="button"
+              className="stage-primary"
+              onClick={() => navigate("/")}
+            >
+              Back to today
+            </button>
+            <button
+              type="button"
+              className="stage-secondary"
+              onClick={() => navigate("/map")}
+            >
+              See my topic map
+            </button>
+          </div>
         </div>
       </Frame>
     );
@@ -163,10 +257,36 @@ export function StageSession() {
 
   return (
     <Frame onBack={() => navigate(`/course/${enrollmentId}`)}>
-      <Eyebrow>
-        {labelFor(action)} · {context.topic.subject}
-      </Eyebrow>
-      <h1 className="curve-display mt-2 !text-[clamp(1.6rem,4vw,2.4rem)]">{context.topic.title}</h1>
+      <header className="stage-session-header">
+        <Eyebrow>
+          {context.topic.subject} · {STUDENT_STAGE_LABEL[action]}
+        </Eyebrow>
+        <h1 className="curve-display mt-2 !text-[clamp(1.6rem,4vw,2.4rem)]">
+          {context.topic.title}
+        </h1>
+        <p className="stage-session-intro">{STAGE_PURPOSE[action]}</p>
+        <ol className="stage-session-steps" aria-label="Your learning stages">
+          {VALID_ACTIONS.map((step, index) => (
+            <li
+              key={step}
+              aria-label={STUDENT_STAGE_LABEL[step]}
+              aria-current={step === action ? "step" : undefined}
+              data-complete={
+                index <
+                [
+                  "new",
+                  "primed",
+                  "encoded",
+                  "referenced",
+                  "retrieved",
+                  "interleaved",
+                  "overlearned",
+                ].indexOf(context.topic.stage.stage)
+              }
+            />
+          ))}
+        </ol>
+      </header>
 
       {blocked ? (
         <GateBlocked
@@ -184,15 +304,16 @@ export function StageSession() {
                   action,
                   wasPrescribed: false,
                 },
-                'overridden',
+                "overridden",
                 { needed },
               );
             }
-            setSearchParams({ action, override: '1' });
+            setSearchParams({ action, override: "1" });
           }}
         />
       ) : (
         <StageBody
+          key={`${enrollmentId}-${topicId}-${action}`}
           action={action}
           topic={context.topic}
           allTopics={context.allTopics}
@@ -201,23 +322,29 @@ export function StageSession() {
           userId={user!.id}
           wasPrescribed={context.prescribed === action}
           today={today}
-          onDone={() => navigate('/')}
+          onDone={(cleared = true) => setCompleted(cleared)}
         />
       )}
     </Frame>
   );
 }
 
-function Frame({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+function Frame({
+  children,
+  onBack,
+}: {
+  children: React.ReactNode;
+  onBack: () => void;
+}) {
   return (
-    <CurveShell>
+    <CurveShell className="stage-session">
       <button
         type="button"
         onClick={onBack}
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-curve-muted transition hover:text-white"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back
+        Leave session
       </button>
       {children}
     </CurveShell>
@@ -243,15 +370,20 @@ function GateBlocked({
       <div className="flex items-start gap-3">
         <Lock className="mt-0.5 h-5 w-5 shrink-0 text-curve-risk" />
         <div>
-          <p className="text-sm font-semibold text-white">{reasonFor(requested, topic.stage)}</p>
+          <p className="text-sm font-semibold text-white">
+            {reasonFor(requested, topic.stage)}
+          </p>
           <p className="mt-2 text-sm text-curve-muted">
-            {labelFor(needed)} is what this topic needs next — about {STAGE_MINUTES[needed]} minutes.
+            {STUDENT_STAGE_LABEL[needed]} is what this topic needs next — about{" "}
+            {STAGE_MINUTES[needed]} minutes.
           </p>
         </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <CurveButton onClick={onTakeCorrect}>{labelFor(needed)} instead</CurveButton>
+        <CurveButton onClick={onTakeCorrect}>
+          {STUDENT_STAGE_LABEL[needed]} instead
+        </CurveButton>
         <button
           type="button"
           onClick={onOverride}
@@ -265,13 +397,13 @@ function GateBlocked({
 }
 
 function reasonFor(requested: StageAction, stage: TopicStage): string {
-  if (requested === 'overlearn') {
-    return 'Overlearning is a polish stage. Clear interleaving first — drilling something that has not survived mixed testing builds speed on a shaky foundation.';
+  if (requested === "overlearn") {
+    return "Overlearning is a polish stage. Clear interleaving first — drilling something that has not survived mixed testing builds speed on a shaky foundation.";
   }
   if (stage.remedial) {
-    return 'This topic has faded. It needs rebuilding before it is worth testing again.';
+    return "This topic has faded. It needs rebuilding before it is worth testing again.";
   }
-  return `This topic is at ${stage.stage}, so ${labelFor(requested).toLowerCase()} would skip a step. Skipped stages are where study time leaks.`;
+  return `There’s a useful step before ${STUDENT_STAGE_LABEL[requested].toLowerCase()}. Start with the recommended activity to build on what you’ve already learned.`;
 }
 
 interface BodyProps {
@@ -283,14 +415,14 @@ interface BodyProps {
   userId: string;
   wasPrescribed: boolean;
   today: string;
-  onDone: () => void;
+  onDone: (cleared?: boolean) => void;
 }
 
 function StageBody(props: BodyProps) {
-  if (props.action === 'prime') return <PrimingBody {...props} />;
-  if (props.action === 'encode') return <EncodingBody {...props} />;
-  if (props.action === 'reference') return <ReferenceBody {...props} />;
-  if (props.action === 'retrieve') return <RetrievalBody {...props} />;
+  if (props.action === "prime") return <PrimingBody {...props} />;
+  if (props.action === "encode") return <EncodingBody {...props} />;
+  if (props.action === "reference") return <ReferenceBody {...props} />;
+  if (props.action === "retrieve") return <RetrievalBody {...props} />;
   // Interleaving and Overlearning land next. Until then the topic opens in the
   // existing coach session rather than a dead end.
   return <StudySession />;
@@ -315,10 +447,18 @@ interface PrimerContent {
  * starting points: they are editable, removable, and the student can add their
  * own.
  */
-function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, today, onDone }: BodyProps) {
+function PrimingBody({
+  topic,
+  enrollmentId,
+  topicId,
+  userId,
+  wasPrescribed,
+  today,
+  onDone,
+}: BodyProps) {
   const [primer, setPrimer] = useState<PrimerContent | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -328,19 +468,29 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
     let cancelled = false;
 
     supabase.functions
-      .invoke('generate-primer', { body: { topic_id: topicId } })
+      .invoke("generate-primer", { body: { topic_id: topicId } })
       .then(({ data, error: invokeError }) => {
         if (cancelled) return;
         if (invokeError || !data?.content) {
-          setError('Could not build a primer for this topic. You can still write your own questions.');
+          setError(
+            "Could not build a primer for this topic. You can still write your own questions.",
+          );
           return;
         }
         setPrimer(data.content as PrimerContent);
         setQuestions((data.content as PrimerContent).listenFor.slice(0, 3));
         trackStage(
-          data.fallback ? STAGE_EVENTS.primerFallbackUsed : STAGE_EVENTS.primerCacheHit,
+          data.fallback
+            ? STAGE_EVENTS.primerFallbackUsed
+            : STAGE_EVENTS.primerCacheHit,
           { topic_id: topicId, cached: Boolean(data.cached) },
         );
+      })
+      .catch(() => {
+        if (!cancelled)
+          setError(
+            "Could not build your primer. You can still write your own questions below.",
+          );
       })
       .finally(() => !cancelled && setLoading(false));
 
@@ -349,28 +499,39 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
     };
   }, [topicId]);
 
-  const enough = questions.filter((question) => question.trim().length > 0).length >= 3;
+  const enough =
+    questions.filter((question) => question.trim().length > 0).length >= 3;
 
   async function finish() {
     setSaving(true);
     const kept = questions.map((question) => question.trim()).filter(Boolean);
 
-    const result = await recordStageCompletion({
-      userId,
-      enrollmentId,
-      topicId,
-      action: 'prime',
-      evidence: { primingQuestions: kept.length },
-      wasPrescribed,
-      durationSec: Math.round((Date.now() - startedAt.current) / 1000),
-      payload: { questions: kept, usedFallback: primer === null },
-      examOn: topic.examOn,
-      today,
-    });
+    setError(null);
+    try {
+      const result = await recordStageCompletion({
+        userId,
+        enrollmentId,
+        topicId,
+        action: "prime",
+        evidence: { primingQuestions: kept.length },
+        wasPrescribed,
+        durationSec: Math.round((Date.now() - startedAt.current) / 1000),
+        payload: { questions: kept, usedFallback: primer === null },
+        examOn: topic.examOn,
+        today,
+      });
 
-    setSaving(false);
-    if (result.advanced) onDone();
-    else setError(result.reason || 'Could not save this session.');
+      if (result.advanced) onDone();
+      else setError(result.reason || "Could not save this session.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save this session. Your questions are still here.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -415,8 +576,8 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
         <Panel className="mt-4">
           <p className="curve-label">What you want this lecture to answer</p>
           <p className="mt-1 text-xs text-curve-faint">
-            Keep at least three. Edit them into your own words — questions you actually care about
-            are the ones you will notice getting answered.
+            Keep at least three. Edit them into your own words — questions you
+            actually care about are the ones you will notice getting answered.
           </p>
 
           <ul className="mt-4 space-y-2">
@@ -426,7 +587,9 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
                   value={question}
                   onChange={(event) =>
                     setQuestions((current) =>
-                      current.map((item, i) => (i === index ? event.target.value : item)),
+                      current.map((item, i) =>
+                        i === index ? event.target.value : item,
+                      ),
                     )
                   }
                   aria-label={`Question ${index + 1}`}
@@ -434,7 +597,11 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
                 <button
                   type="button"
                   aria-label={`Remove question ${index + 1}`}
-                  onClick={() => setQuestions((current) => current.filter((_, i) => i !== index))}
+                  onClick={() =>
+                    setQuestions((current) =>
+                      current.filter((_, i) => i !== index),
+                    )
+                  }
                   className="curve-orb curve-orb-light curve-orb-static shrink-0"
                 >
                   <X className="h-4 w-4" strokeWidth={2.2} />
@@ -448,10 +615,10 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && draft.trim()) {
+                if (event.key === "Enter" && draft.trim()) {
                   event.preventDefault();
                   setQuestions((current) => [...current, draft.trim()]);
-                  setDraft('');
+                  setDraft("");
                 }
               }}
               placeholder="Add your own question"
@@ -463,7 +630,7 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
               disabled={!draft.trim()}
               onClick={() => {
                 setQuestions((current) => [...current, draft.trim()]);
-                setDraft('');
+                setDraft("");
               }}
               className="curve-orb curve-orb-light curve-orb-static shrink-0 disabled:opacity-40"
             >
@@ -472,13 +639,17 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <CurveButton onClick={() => void finish()} disabled={!enough || saving}>
-              {saving ? 'Saving' : 'Primed and ready'}
+            <CurveButton
+              onClick={() => void finish()}
+              disabled={!enough || saving}
+            >
+              {saving ? "Saving" : "Primed and ready"}
               {!saving ? <Check className="ml-2 inline h-4 w-4" /> : null}
             </CurveButton>
             {!enough ? (
               <span className="text-xs text-curve-faint">
-                {3 - questions.filter((q) => q.trim()).length} more question(s) to go
+                {3 - questions.filter((q) => q.trim()).length} more question(s)
+                to go
               </span>
             ) : null}
           </div>
@@ -490,26 +661,34 @@ function PrimingBody({ topic, enrollmentId, topicId, userId, wasPrescribed, toda
 
 /* --------------------------------------------------------------- encoding -- */
 
-const ARTIFACT_KINDS: Array<{ kind: EncodingArtifactKind; label: string; prompt: string }> = [
+const ARTIFACT_KINDS: Array<{
+  kind: EncodingArtifactKind;
+  label: string;
+  prompt: string;
+}> = [
   {
-    kind: 'explanation',
-    label: 'Explain it',
-    prompt: 'Explain this from scratch to someone who has never seen it. No notes open.',
+    kind: "explanation",
+    label: "Explain it",
+    prompt:
+      "Explain this from scratch to someone who has never seen it. No notes open.",
   },
   {
-    kind: 'analogy',
-    label: 'Find an analogy',
-    prompt: 'Map this onto something from everyday life — part for part, not just a vibe.',
+    kind: "analogy",
+    label: "Find an analogy",
+    prompt:
+      "Map this onto something from everyday life — part for part, not just a vibe.",
   },
   {
-    kind: 'simplification',
-    label: 'Simplify it',
-    prompt: 'Compress it to the smallest version that still works. What cannot be dropped?',
+    kind: "simplification",
+    label: "Simplify it",
+    prompt:
+      "Compress it to the smallest version that still works. What cannot be dropped?",
   },
   {
-    kind: 'concept_link',
-    label: 'Link it',
-    prompt: 'Connect it to something you already learned, and say what the connection buys you.',
+    kind: "concept_link",
+    label: "Link it",
+    prompt:
+      "Connect it to something you already learned, and say what the connection buys you.",
   },
 ];
 
@@ -533,13 +712,16 @@ function EncodingBody({
   today,
   onDone,
 }: BodyProps) {
-  const [kind, setKind] = useState<EncodingArtifactKind>('explanation');
-  const [artifact, setArtifact] = useState('');
-  const [linkedTopicId, setLinkedTopicId] = useState('');
+  const [kind, setKind] = useState<EncodingArtifactKind>("explanation");
+  const [artifact, setArtifact] = useState("");
+  const [linkedTopicId, setLinkedTopicId] = useState("");
   const [probe, setProbe] = useState<string | null>(null);
   const [probing, setProbing] = useState(false);
   const [rubric, setRubric] = useState<EncodingRubric | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [recorded, setRecorded] = useState(false);
+  const submitLock = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const startedAt = useRef(Date.now());
 
@@ -549,7 +731,8 @@ function EncodingBody({
     () => allTopics.filter((candidate) => candidate.topicId !== topicId),
     [allTopics, topicId],
   );
-  const linked = linkable.find((candidate) => candidate.topicId === linkedTopicId) ?? null;
+  const linked =
+    linkable.find((candidate) => candidate.topicId === linkedTopicId) ?? null;
 
   const context = {
     courseCode: topic.subject,
@@ -560,32 +743,37 @@ function EncodingBody({
   };
 
   const longEnough = artifact.trim().length >= MIN_ARTIFACT_CHARS;
-  const linkReady = kind !== 'concept_link' || linked !== null;
+  const linkReady = kind !== "concept_link" || linked !== null;
 
   async function runProbe() {
+    if (saved || scoring || probing) return;
     setProbing(true);
     setError(null);
     try {
       setProbe(await probeEncoding(context, artifact.trim()));
     } catch {
-      setError('Could not reach the tutor. You can still submit this for scoring.');
+      setError(
+        "Could not reach the tutor. You can still submit this for scoring.",
+      );
     } finally {
       setProbing(false);
     }
   }
 
   async function submit() {
+    if (recorded || submitLock.current || !longEnough || !linkReady) return;
+    submitLock.current = true;
     setScoring(true);
     setError(null);
     try {
-      const scored = await gradeEncoding(context, artifact.trim());
+      const scored = rubric ?? (await gradeEncoding(context, artifact.trim()));
       setRubric(scored);
 
       const result = await recordStageCompletion({
         userId,
         enrollmentId,
         topicId,
-        action: 'encode',
+        action: "encode",
         evidence: { rubricScore: scored.score },
         wasPrescribed,
         durationSec: Math.round((Date.now() - startedAt.current) / 1000),
@@ -603,21 +791,31 @@ function EncodingBody({
 
       // The artifact is stored either way — a revision should build on the last
       // attempt, not start from a blank box.
-      if (result.advanced) setTimeout(onDone, 1600);
+      setRecorded(true);
+      if (result.advanced) setSaved(true);
+      else
+        setError(
+          result.reason ||
+            "Your explanation was saved, but this stage did not advance. Review the feedback before revising it.",
+        );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not score that.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not score that.",
+      );
     } finally {
+      submitLock.current = false;
       setScoring(false);
     }
   }
 
   const brief = ARTIFACT_KINDS.find((option) => option.kind === kind)!;
-  const passed = rubric !== null && rubric.score >= 3;
+  const passed = rubric !== null && rubric.score >= STAGE_GATES.encodeRubricMin;
 
   return (
     <>
       <p className="mt-2 text-sm text-curve-muted">
-        Covered in class, not yet processed · about {STAGE_MINUTES.encode} minutes
+        Covered in class, not yet processed · about {STAGE_MINUTES.encode}{" "}
+        minutes
       </p>
 
       <Panel className="mt-6">
@@ -629,9 +827,11 @@ function EncodingBody({
               type="button"
               onClick={() => {
                 setKind(option.kind);
+                setRecorded(false);
                 setRubric(null);
                 setProbe(null);
               }}
+              disabled={scoring || saved || probing}
               aria-pressed={kind === option.kind}
               className="curve-chip"
             >
@@ -642,12 +842,20 @@ function EncodingBody({
 
         <p className="mt-4 text-sm text-white">{brief.prompt}</p>
 
-        {kind === 'concept_link' ? (
+        {kind === "concept_link" ? (
           <div className="mt-4">
-            <Field label="Link it to" hint="Reaching into another subject is harder — and it holds better.">
+            <Field
+              label="Link it to"
+              hint="Reaching into another subject is harder — and it holds better."
+            >
               <Select
                 value={linkedTopicId}
-                onChange={(event) => setLinkedTopicId(event.target.value)}
+                disabled={scoring || saved || probing}
+                onChange={(event) => {
+                  setLinkedTopicId(event.target.value);
+                  setRecorded(false);
+                  setRubric(null);
+                }}
               >
                 <option value="">Pick a topic</option>
                 {linkable.map((candidate) => (
@@ -663,10 +871,22 @@ function EncodingBody({
         <div className="mt-4">
           <TextArea
             value={artifact}
-            onChange={(event) => setArtifact(event.target.value)}
+            readOnly={saved}
+            disabled={scoring || probing}
+            onChange={(event) => {
+              setArtifact(event.target.value);
+              setRecorded(false);
+              setRubric(null);
+            }}
             rows={9}
             placeholder="In your own words. Close your notes first — copying them out is the thing this stage exists to replace."
             aria-label="Your encoding"
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && longEnough && linkReady && !scoring && !probing && !recorded && !saved) {
+                event.preventDefault();
+                void submit();
+              }
+            }}
           />
           <p className="mt-1 text-xs text-curve-faint">
             {longEnough
@@ -687,25 +907,58 @@ function EncodingBody({
 
         {rubric ? <RubricCard rubric={rubric} passed={passed} /> : null}
 
+        {saved ? (
+          <p className="mt-4 text-sm text-curve-muted" role="status">
+            Your explanation and feedback are saved. Read through the feedback,
+            then continue when you’re ready.
+          </p>
+        ) : null}
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <CurveButton onClick={() => void submit()} disabled={!longEnough || !linkReady || scoring}>
-            {scoring ? 'Scoring' : rubric ? 'Score the revision' : 'Submit for scoring'}
-          </CurveButton>
-          <CurveButton ghost onClick={() => void runProbe()} disabled={!longEnough || probing}>
-            {probing ? 'Thinking' : 'Poke a hole in it'}
-          </CurveButton>
+          {saved ? (
+            <CurveButton onClick={() => onDone()}>Continue</CurveButton>
+          ) : (
+            <>
+              <CurveButton
+                onClick={() => void submit()}
+                disabled={
+                  !longEnough || !linkReady || scoring || probing || recorded
+                }
+              >
+                {scoring
+                  ? "Scoring & saving"
+                  : recorded
+                    ? "Revise your explanation above"
+                    : rubric
+                      ? "Retry saving this feedback"
+                      : "Submit for scoring"}
+              </CurveButton>
+              <CurveButton
+                ghost
+                onClick={() => void runProbe()}
+                disabled={!longEnough || probing || scoring}
+              >
+                {probing ? "Thinking" : "Poke a hole in it"}
+              </CurveButton>
+            </>
+          )}
         </div>
       </Panel>
     </>
   );
 }
 
-function RubricCard({ rubric, passed }: { rubric: EncodingRubric; passed: boolean }) {
+function RubricCard({
+  rubric,
+  passed,
+}: {
+  rubric: EncodingRubric;
+  passed: boolean;
+}) {
   const dimensions: Array<[string, number]> = [
-    ['Organized', rubric.organize],
-    ['Simplified', rubric.simplify],
-    ['Connected', rubric.connect],
-    ['Analogized', rubric.analogize],
+    ["Organized", rubric.organize],
+    ["Simplified", rubric.simplify],
+    ["Connected", rubric.connect],
+    ["Analogized", rubric.analogize],
   ];
 
   return (
@@ -717,15 +970,21 @@ function RubricCard({ rubric, passed }: { rubric: EncodingRubric; passed: boolea
           <X className="h-4 w-4 text-curve-risk" />
         )}
         <p className="text-sm font-semibold text-white">
-          {rubric.score.toFixed(1)} / 5 — {passed ? 'encoded' : 'not there yet'}
+          {rubric.score.toFixed(1)} / 5 —{" "}
+          {passed ? "rubric met" : "not there yet"}
         </p>
       </div>
 
       <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
         {dimensions.map(([label, value]) => (
-          <li key={label} className="flex items-center justify-between text-xs text-curve-muted">
+          <li
+            key={label}
+            className="flex items-center justify-between text-xs text-curve-muted"
+          >
             <span>{label}</span>
-            <span aria-label={`${label}: ${value} out of 5`}>{value.toFixed(1)}</span>
+            <span aria-label={`${label}: ${value} out of 5`}>
+              {value.toFixed(1)}
+            </span>
           </li>
         ))}
       </ul>
@@ -740,7 +999,6 @@ function RubricCard({ rubric, passed }: { rubric: EncodingRubric; passed: boolea
   );
 }
 
-
 /* -------------------------------------------------------------- reference -- */
 
 /**
@@ -754,7 +1012,15 @@ function RubricCard({ rubric, passed }: { rubric: EncodingRubric; passed: boolea
  * framing rather than the textbook's, and nothing is saved until they accept
  * it: an unreviewed card is the model's work, not the student's.
  */
-function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, today, onDone }: BodyProps) {
+function ReferenceBody({
+  topic,
+  enrollmentId,
+  topicId,
+  userId,
+  wasPrescribed,
+  today,
+  onDone,
+}: BodyProps) {
   const [drafts, setDrafts] = useState<DraftCard[]>([]);
   const [kept, setKept] = useState<Set<number>>(new Set());
   const [existing, setExisting] = useState(0);
@@ -775,20 +1041,20 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
       // generic, which defeats the point of filing them in the student's own
       // words.
       const { data: events } = await supabase
-        .from('curve_stage_events')
-        .select('payload')
-        .eq('user_id', userId)
-        .eq('topic_id', topicId)
-        .eq('stage_action', 'encode')
-        .eq('outcome', 'completed')
-        .order('created_at', { ascending: false })
+        .from("curve_stage_events")
+        .select("payload")
+        .eq("user_id", userId)
+        .eq("topic_id", topicId)
+        .eq("stage_action", "encode")
+        .eq("outcome", "completed")
+        .order("created_at", { ascending: false })
         .limit(1);
 
-      const artifact = (events?.[0] as any)?.payload?.artifact ?? '';
+      const artifact = (events?.[0] as any)?.payload?.artifact ?? "";
 
       try {
         const { data, error: invokeError } = await supabase.functions.invoke(
-          'generate-flashcards',
+          "generate-flashcards",
           {
             body: {
               topic: topic.title,
@@ -805,12 +1071,14 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         if (cancelled) return;
         if (invokeError) throw invokeError;
 
-        const generated = Array.isArray(data?.flashcards) ? data.flashcards : data?.cards ?? [];
+        const generated = Array.isArray(data?.flashcards)
+          ? data.flashcards
+          : (data?.cards ?? []);
         setDrafts(
           (generated as any[])
             .map((card) => ({
-              question: String(card.question ?? '').trim(),
-              answer: String(card.answer ?? '').trim(),
+              question: String(card.question ?? "").trim(),
+              answer: String(card.answer ?? "").trim(),
             }))
             .filter((card) => card.question && card.answer),
         );
@@ -819,7 +1087,9 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         setKept(new Set((generated as any[]).map((_, index) => index)));
       } catch {
         if (!cancelled) {
-          setError('Could not draft cards for this topic. You can still write your own below.');
+          setError(
+            "Could not draft cards for this topic. You can still write your own below.",
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -845,9 +1115,11 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     });
   }
 
-  function edit(index: number, field: 'question' | 'answer', value: string) {
+  function edit(index: number, field: "question" | "answer", value: string) {
     setDrafts((current) =>
-      current.map((card, i) => (i === index ? { ...card, [field]: value } : card)),
+      current.map((card, i) =>
+        i === index ? { ...card, [field]: value } : card,
+      ),
     );
   }
 
@@ -855,29 +1127,45 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     setSaving(true);
     setError(null);
 
-    const saved = await saveReferenceCards(userId, topicId, topic.kcId, topic.title, keptCards);
-    const result = await recordStageCompletion({
-      userId,
-      enrollmentId,
-      topicId,
-      action: 'reference',
-      evidence: { acceptedCards: existing + saved },
-      wasPrescribed,
-      durationSec: Math.round((Date.now() - startedAt.current) / 1000),
-      payload: { saved, existing },
-      examOn: topic.examOn,
-      today,
-    });
+    try {
+      const saved = await saveReferenceCards(
+        userId,
+        topicId,
+        topic.kcId,
+        topic.title,
+        keptCards,
+      );
+      const result = await recordStageCompletion({
+        userId,
+        enrollmentId,
+        topicId,
+        action: "reference",
+        evidence: { acceptedCards: existing + saved },
+        wasPrescribed,
+        durationSec: Math.round((Date.now() - startedAt.current) / 1000),
+        payload: { saved, existing },
+        examOn: topic.examOn,
+        today,
+      });
 
-    setSaving(false);
-    if (result.advanced) onDone();
-    else setError(result.reason || 'Could not save these cards.');
+      if (result.advanced) onDone();
+      else setError(result.reason || "Could not save these cards.");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save these cards. Your edits are still here.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <>
       <p className="mt-2 text-sm text-curve-muted">
-        Park the details so they stop crowding your thinking · about {STAGE_MINUTES.reference} minutes
+        Park the details so they stop crowding your thinking · about{" "}
+        {STAGE_MINUTES.reference} minutes
       </p>
 
       {loading ? (
@@ -889,8 +1177,9 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         <Panel className="mt-6">
           <p className="curve-label">Keep what is worth remembering</p>
           <p className="mt-1 text-xs text-curve-faint">
-            These come from your own explanation. Cut the ones you will never need and fix any that
-            are not quite right — you will be tested on exactly these.
+            These come from your own explanation. Cut the ones you will never
+            need and fix any that are not quite right — you will be tested on
+            exactly these.
           </p>
 
           {error ? (
@@ -904,7 +1193,9 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
               <li
                 key={index}
                 className={`rounded-xl border p-3 transition ${
-                  kept.has(index) ? 'border-white/20' : 'border-white/5 opacity-50'
+                  kept.has(index)
+                    ? "border-white/20"
+                    : "border-white/5 opacity-50"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -912,7 +1203,11 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
                     type="button"
                     onClick={() => toggle(index)}
                     aria-pressed={kept.has(index)}
-                    aria-label={kept.has(index) ? `Drop card ${index + 1}` : `Keep card ${index + 1}`}
+                    aria-label={
+                      kept.has(index)
+                        ? `Drop card ${index + 1}`
+                        : `Keep card ${index + 1}`
+                    }
                     className="curve-orb curve-orb-light curve-orb-static mt-1 shrink-0"
                   >
                     {kept.has(index) ? (
@@ -924,13 +1219,17 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
                   <div className="min-w-0 flex-1 space-y-2">
                     <TextInput
                       value={card.question}
-                      onChange={(event) => edit(index, 'question', event.target.value)}
+                      onChange={(event) =>
+                        edit(index, "question", event.target.value)
+                      }
                       aria-label={`Card ${index + 1} question`}
                     />
                     <TextArea
                       value={card.answer}
                       rows={2}
-                      onChange={(event) => edit(index, 'answer', event.target.value)}
+                      onChange={(event) =>
+                        edit(index, "answer", event.target.value)
+                      }
                       aria-label={`Card ${index + 1} answer`}
                     />
                   </div>
@@ -942,7 +1241,10 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
           <button
             type="button"
             onClick={() => {
-              setDrafts((current) => [...current, { question: '', answer: '' }]);
+              setDrafts((current) => [
+                ...current,
+                { question: "", answer: "" },
+              ]);
               setKept((current) => new Set(current).add(drafts.length));
             }}
             className="mt-3 inline-flex items-center gap-2 text-xs text-curve-faint underline underline-offset-4 transition hover:text-curve-muted"
@@ -951,8 +1253,13 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
           </button>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <CurveButton onClick={() => void finish()} disabled={!enough || saving}>
-              {saving ? 'Filing' : `File ${keptCards.length} card${keptCards.length === 1 ? '' : 's'}`}
+            <CurveButton
+              onClick={() => void finish()}
+              disabled={!enough || saving}
+            >
+              {saving
+                ? "Filing"
+                : `File ${keptCards.length} card${keptCards.length === 1 ? "" : "s"}`}
             </CurveButton>
             {!enough ? (
               <span className="text-xs text-curve-faint">
@@ -965,7 +1272,6 @@ function ReferenceBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     </>
   );
 }
-
 
 /* -------------------------------------------------------------- retrieval -- */
 
@@ -995,7 +1301,15 @@ interface GradedItem {
  * individually; the gate then reads the mastery the engine produced, not a
  * score this screen calculated.
  */
-function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, today, onDone }: BodyProps) {
+function RetrievalBody({
+  topic,
+  enrollmentId,
+  topicId,
+  userId,
+  wasPrescribed,
+  today,
+  onDone,
+}: BodyProps) {
   const [items, setItems] = useState<RetrievalItem[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [graded, setGraded] = useState<GradedItem[] | null>(null);
@@ -1008,27 +1322,35 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     let cancelled = false;
 
     supabase.functions
-      .invoke('adaptive-difficulty', {
+      .invoke("adaptive-difficulty", {
         body: {
           subject: topic.subject,
           topic: topic.title,
           kc_ids: topic.kcId ? [topic.kcId] : undefined,
           count: STAGE_GATES.retrievalItemsMin,
-          source: 'perir_retrieval',
+          source: "perir_retrieval",
         },
       })
       .then(({ data, error: invokeError }) => {
         if (cancelled) return;
-        if (invokeError || !Array.isArray(data?.questions) || data.questions.length === 0) {
-          setError('Could not put a set together for this topic. Try again in a moment.');
+        if (
+          invokeError ||
+          !Array.isArray(data?.questions) ||
+          data.questions.length === 0
+        ) {
+          setError(
+            "Could not put a set together for this topic. Try again in a moment.",
+          );
           return;
         }
         setItems(
           (data.questions as any[]).map((question) => ({
             id: question.id ?? null,
             kc_id: question.kc_id ?? topic.kcId ?? null,
-            question: String(question.question ?? ''),
-            options: Array.isArray(question.options) ? question.options.map(String) : null,
+            question: String(question.question ?? ""),
+            options: Array.isArray(question.options)
+              ? question.options.map(String)
+              : null,
           })),
         );
       })
@@ -1039,7 +1361,9 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     };
   }, [topic.subject, topic.title, topic.kcId]);
 
-  const answered = Object.values(answers).filter((value) => value.trim()).length;
+  const answered = Object.values(answers).filter((value) =>
+    value.trim(),
+  ).length;
 
   async function submit() {
     setSubmitting(true);
@@ -1047,20 +1371,23 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
     const elapsedMs = Date.now() - startedAt.current;
 
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('check-retrieval', {
-        body: {
-          topic: topic.title,
-          answers: items.map((item, index) => ({
-            question_id: item.id,
-            question: item.question,
-            answer: answers[index] ?? '',
-          })),
+      const { data, error: invokeError } = await supabase.functions.invoke(
+        "check-retrieval",
+        {
+          body: {
+            topic: topic.title,
+            answers: items.map((item, index) => ({
+              question_id: item.id,
+              question: item.question,
+              answer: answers[index] ?? "",
+            })),
+          },
         },
-      });
+      );
 
       if (invokeError || !Array.isArray(data?.graded)) {
         throw new Error(
-          'Could not mark this set. Nothing was recorded, so nothing was counted against you.',
+          "Could not mark this set. Nothing was recorded, so nothing was counted against you.",
         );
       }
 
@@ -1073,16 +1400,19 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
       let latestMastery = topic.pMastery;
 
       for (const item of items) {
-        const result = results.find((entry) => entry.question === item.question);
+        const result = results.find(
+          (entry) => entry.question === item.question,
+        );
         if (!result || !item.kc_id) continue;
         const update = await KnowledgeTracingService.logInteraction(
           item.kc_id,
           result.is_correct,
           perItemMs,
-          'perir_retrieval',
+          "perir_retrieval",
           { topic_id: topicId },
         );
-        if (update?.new_mastery !== undefined) latestMastery = update.new_mastery;
+        if (update?.new_mastery !== undefined)
+          latestMastery = update.new_mastery;
       }
 
       const correct = results.filter((result) => result.is_correct).length;
@@ -1092,7 +1422,7 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         userId,
         enrollmentId,
         topicId,
-        action: 'retrieve',
+        action: "retrieve",
         evidence: {
           items: results.length,
           accuracy,
@@ -1107,7 +1437,9 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
 
       if (!outcome.advanced && outcome.reason) setError(outcome.reason);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not mark this set.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not mark this set.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -1131,13 +1463,16 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         </p>
         <p className="mt-1 text-sm text-curve-muted">
           {correct === graded.length
-            ? 'Nothing slipped. This one is holding.'
-            : 'The ones you missed are the whole point — that is where the next review will start.'}
+            ? "Nothing slipped. This one is holding."
+            : "The ones you missed are the whole point — that is where the next review will start."}
         </p>
 
         <ul className="mt-4 space-y-2">
           {graded.map((result, index) => (
-            <li key={index} className="rounded-lg border border-white/10 px-3 py-2">
+            <li
+              key={index}
+              className="rounded-lg border border-white/10 px-3 py-2"
+            >
               <div className="flex items-start gap-2">
                 {result.is_correct ? (
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-curve-good" />
@@ -1147,7 +1482,9 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
                 <div className="min-w-0">
                   <p className="text-sm text-white">{result.question}</p>
                   {!result.is_correct && result.expected ? (
-                    <p className="mt-1 text-xs text-curve-muted">{result.expected}</p>
+                    <p className="mt-1 text-xs text-curve-muted">
+                      {result.expected}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -1161,8 +1498,8 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
           </div>
         ) : null}
 
-        <CurveButton className="mt-5" onClick={onDone}>
-          Done
+        <CurveButton className="mt-5" onClick={() => onDone(false)}>
+          Finish review
         </CurveButton>
       </Panel>
     );
@@ -1182,8 +1519,9 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
 
       <Panel className="mt-6">
         <p className="text-xs text-curve-faint">
-          Guessing badly is more useful than looking it up. A wrong answer you tried to reconstruct
-          tells the system exactly where the gap is; a copied one tells it nothing.
+          Guessing badly is more useful than looking it up. A wrong answer you
+          tried to reconstruct tells the system exactly where the gap is; a
+          copied one tells it nothing.
         </p>
 
         <ol className="mt-4 space-y-5">
@@ -1198,7 +1536,12 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
                     <button
                       key={option}
                       type="button"
-                      onClick={() => setAnswers((current) => ({ ...current, [index]: option }))}
+                      onClick={() =>
+                        setAnswers((current) => ({
+                          ...current,
+                          [index]: option,
+                        }))
+                      }
                       aria-pressed={answers[index] === option}
                       className="curve-chip"
                     >
@@ -1210,9 +1553,12 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
                 <TextArea
                   className="mt-2"
                   rows={2}
-                  value={answers[index] ?? ''}
+                  value={answers[index] ?? ""}
                   onChange={(event) =>
-                    setAnswers((current) => ({ ...current, [index]: event.target.value }))
+                    setAnswers((current) => ({
+                      ...current,
+                      [index]: event.target.value,
+                    }))
                   }
                   placeholder="From memory"
                   aria-label={`Answer to question ${index + 1}`}
@@ -1223,11 +1569,15 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
         </ol>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <CurveButton onClick={() => void submit()} disabled={submitting || items.length === 0}>
-            {submitting ? 'Marking' : 'Submit'}
+          <CurveButton
+            onClick={() => void submit()}
+            disabled={submitting || items.length === 0}
+          >
+            {submitting ? "Marking" : "Submit"}
           </CurveButton>
           <span className="text-xs text-curve-faint">
-            {answered} of {items.length} answered — blanks are marked wrong, which is honest data
+            {answered} of {items.length} answered — blanks are marked wrong,
+            which is honest data
           </span>
         </div>
       </Panel>
@@ -1236,19 +1586,22 @@ function RetrievalBody({ topic, enrollmentId, topicId, userId, wasPrescribed, to
 }
 
 function lectureLine(topic: PlannerTopic, today: string): string {
-  if (!topic.lectureOn) return 'Not covered in class yet';
+  if (!topic.lectureOn) return "Not covered in class yet";
   const days = Math.round(
-    (Date.parse(`${topic.lectureOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000,
+    (Date.parse(`${topic.lectureOn}T00:00:00Z`) -
+      Date.parse(`${today}T00:00:00Z`)) /
+      86_400_000,
   );
-  if (days < 0) return 'Already covered in class';
-  if (days === 0) return 'Lecture is today';
-  return days === 1 ? 'Lecture is tomorrow' : `Lecture in ${days} days`;
+  if (days < 0) return "Already covered in class";
+  if (days === 0) return "Lecture is today";
+  return days === 1 ? "Lecture is tomorrow" : `Lecture in ${days} days`;
 }
 
 function daysToExam(today: string, examOn: string | null): number | null {
   if (!examOn) return null;
   const days = Math.round(
-    (Date.parse(`${examOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000,
+    (Date.parse(`${examOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) /
+      86_400_000,
   );
   return days < 0 ? null : days;
 }

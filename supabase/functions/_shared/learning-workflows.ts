@@ -1,3 +1,5 @@
+import type { InteractiveUI } from './interactive-ui.ts';
+
 /** Public, answer-key-free contracts shared by the workspace and its forms. */
 export const MAX_ASSESSMENT_TOPICS = 15;
 export interface TopicMetadata { confirmed?: boolean; confirmed_topics?: string[]; topics?: string[] }
@@ -65,6 +67,7 @@ export interface ResearchArtifact {
   topic: string;
   materialId: string;
   text: string;
+  ui?: InteractiveUI;
   sources: { title: string; url: string }[];
   createdAt: string;
 }

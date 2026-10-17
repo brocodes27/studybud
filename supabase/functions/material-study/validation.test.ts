@@ -80,6 +80,11 @@ test("grades against private keys and distinguishes hint use", () => {
   assert.equal(results[0].page, 4);
 });
 
+test("does not grade an abandoned draft as failed answers", () => {
+  const keys = validateQuestions(raw, pages);
+  assert.throws(() => gradeChoices(keys, { q1: 0 }, []), /Answer every question/);
+});
+
 test('rejects curriculum placement questions even when the quote is real',()=>{
   const outline=[{page:7,text:'Module 3: Permissions & Ownership Process Management'}];
   const bad=raw.map(q=>({...q,page:7,quote:outline[0].text,question:'According to the Module 3 outline, in which context does Process Management reappear?'}));

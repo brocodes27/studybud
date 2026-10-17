@@ -148,3 +148,23 @@ test('assisted correct answers remain distinct from independent recall', () => {
   session.results![0].assisted = true;
   assert.deepEqual(sessionEvidence(session), { total: 1, correct: 1, missed: 0, assisted: 1 });
 });
+
+test('rebuilding drops stale topics and subjects from exam scope', () => {
+  const source = plan();
+  source.exams = [
+    { id: 'stale', title: 'Math exam', course: 'Math', date: '2026-10-18', topics: ['Limits', 'Removed topic'], isRecent: false },
+    { id: 'other', title: 'Old semester exam', course: 'Old subject', date: '2026-10-18', topics: ['Old topic'], isRecent: false },
+  ];
+  const result = buildSemesterSchedule(source, 30, new Date(2026, 9, 15));
+  assert.deepEqual(result.semesterPlan.exams.map(e => e.topics), [['Limits']]);
+  assert.ok(result.semesterPlan.roadmap.every(day => !day.topics?.includes('Removed topic') && !day.topics?.includes('Old topic')));
+});
+
+test('daily focus uses current semester material when course and topic names repeat', () => {
+  const current = { ...plan(), semester: 'Semester 2' };
+  const scheduled = buildSemesterSchedule(current, 30, now).semesterPlan;
+  const topic = scheduled.roadmap[0].topics![0];
+  const source = (id: string, semester: string) => ({ id, metadata: { course: 'Math', semester, topics: [topic], confirmed: true } }) as Material;
+  const result = dailyFocus(scheduled, [source('old', 'Semester 1'), source('current', 'Semester 2')], [], now);
+  assert.equal(result?.context.material?.id, 'current');
+});
